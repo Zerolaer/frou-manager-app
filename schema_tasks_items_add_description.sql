@@ -1,0 +1,1 @@
+alter table public.tasks_items add column if not exists description text;
