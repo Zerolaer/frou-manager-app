@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 type ModalProps = {
@@ -93,7 +94,7 @@ export default function Modal({ open, onClose, title, footer, children, closeOnO
                 className="px-2 py-1 rounded-lg hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Close modal"
               >
-                ×
+                <X size={18} />
               </button>
             </div>
           )}
