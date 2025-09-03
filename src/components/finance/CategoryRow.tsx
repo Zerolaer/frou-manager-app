@@ -65,7 +65,7 @@ export default function CategoryRow({
           )}
 
           {/* Название. Для саб-категорий даём +36px отступ (pl-9) */}
-          <span className={'flex-1 truncate ' + (row.parent_id ? 'pl-9 ' : '')}>{row.name}</span>
+          <span className={'flex-1 truncate ' + (row.parent_id ? 'pl-6 ' : '')}>{row.name}</span>
 
           {/* Три точки: на всех категориях, только по ховеру */}
           <button
