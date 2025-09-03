@@ -10,6 +10,7 @@ import Tasks from './pages/Tasks'
 import Goals from './pages/Goals'
 import Notes from './pages/Notes'
 import { supabase } from './lib/supabaseClient'
+import "@/styles/bento.css";
 
 const Protected = ({children}: {children: React.ReactNode}) => {
   const [loading, setLoading] = React.useState(true);
