@@ -37,32 +37,35 @@ export default function CategoryRow({
 }: Props) {
 
   const info: CtxCat = { id: row.id, name: row.name, type, parent_id: row.parent_id ?? null } as unknown as CtxCat
+  const isChild = !!row.parent_id
 
   return (
     <div className="finance-row contents">
-      {/* Шапка категории */}
+      {/* Левая ячейка: зарезервировать место под кнопку (24px) + зазор (8px) для ВСЕХ строк,
+          а для саб-категорий добавить дополнительный отступ 36px */}
       <div className="finance-cell">
         <div
           className={
-            'cell-head group flex items-center gap-2 ' +
-            (ctxCatHighlight === row.id ? 'ctx-active ' : '') +
-            (row.parent_id ? 'pl-9 ' : '')
+            'cell-head group flex items-center ' +
+            (ctxCatHighlight === row.id ? 'ctx-active ' : '')
           }
           onContextMenu={(e) => onNameContext(e, info)}
         >
-          {/* Квадратная кнопка сворачивания/разворачивания — строго перед названием */}
-          {hasChildren && (
+          {/* Кнопка/заглушка фиксированной ширины 24px + зазор 8px */}
+          {hasChildren ? (
             <button
-              className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100"
+              className="w-6 h-6 mr-2 rounded border flex items-center justify-center hover:bg-gray-100"
               onClick={() => onToggleCollapse(row.id)}
               aria-label={collapsed ? 'Развернуть' : 'Свернуть'}
             >
               <span aria-hidden>{collapsed ? '▸' : '▾'}</span>
             </button>
+          ) : (
+            <div className="w-6 h-6 mr-2" aria-hidden />
           )}
 
-          {/* Название — одним рядом с кнопкой */}
-          <span className="flex-1 truncate">{row.name}</span>
+          {/* Название. Для саб-категорий даём +36px отступ (pl-9) */}
+          <span className={'flex-1 truncate ' + (isChild ? 'pl-9 ' : '')}>{row.name}</span>
 
           {/* Три точки: на всех категориях, только по ховеру */}
           <button
