@@ -46,7 +46,7 @@ export default function CategoryRow({
           className={
             'cell-head group flex items-center gap-2 ' +
             (ctxCatHighlight === row.id ? 'ctx-active ' : '') +
-            (row.parent_id ? 'pl-6 ' : '')
+            (row.parent_id ? 'pl-9 ' : '')
           }
           onContextMenu={(e) => onNameContext(e, info)}
         >
