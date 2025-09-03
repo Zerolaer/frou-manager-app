@@ -40,39 +40,39 @@ export default function CategoryRow({
 
   return (
     <div className="finance-row contents">
-      {/* Название категории */}
+      {/* Шапка категории */}
       <div className="finance-cell">
         <div
           className={
-            'cell-head group ' +
+            'cell-head group flex items-center gap-2 ' +
             (ctxCatHighlight === row.id ? 'ctx-active ' : '') +
             (row.parent_id ? 'pl-6 ' : '')
           }
           onContextMenu={(e) => onNameContext(e, info)}
         >
-          {hasChildren ? (
+          {/* Квадратная кнопка сворачивания/разворачивания — строго перед названием */}
+          {hasChildren && (
             <button
-              className="w-6 h-6 mr-2 rounded border flex items-center justify-center hover:bg-gray-100"
+              className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100"
               onClick={() => onToggleCollapse(row.id)}
               aria-label={collapsed ? 'Развернуть' : 'Свернуть'}
             >
-              <span>{collapsed ? '▸' : '▾'}</span>
-            </button>
-          ) : null}
-
-          <span className="flex-1 truncate">{row.name}</span>
-
-          {/* Три точки: только у подкатегорий и только при ховере */}
-          {row.parent_id && (
-            <button
-              className="icon-btn opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => onNameContext(e, info)}
-              onContextMenu={(e) => onNameContext(e, info)}
-              aria-label="Действия с категорией"
-            >
-              <MoreVertical size={16} />
+              <span aria-hidden>{collapsed ? '▸' : '▾'}</span>
             </button>
           )}
+
+          {/* Название — одним рядом с кнопкой */}
+          <span className="flex-1 truncate">{row.name}</span>
+
+          {/* Три точки: на всех категориях, только по ховеру */}
+          <button
+            className="icon-btn opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => onNameContext(e, info)}
+            onContextMenu={(e) => onNameContext(e, info)}
+            aria-label="Действия с категорией"
+          >
+            <MoreVertical size={16} />
+          </button>
         </div>
       </div>
 
