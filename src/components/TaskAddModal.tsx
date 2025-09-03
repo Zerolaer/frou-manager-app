@@ -52,7 +52,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   }
 
   return (
-    <Modal
+    <Modal size="lg"
       open={open}
       onClose={onClose}
       title={'Новая задача'}

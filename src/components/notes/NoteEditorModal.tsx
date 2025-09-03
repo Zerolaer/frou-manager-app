@@ -36,7 +36,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
   return (
     <dialog
       ref={dialogRef}
-      className="rounded-2xl p-0 w-[720px] max-w-[95vw] backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+      className="rounded-2xl p-0 w-[880px] max-w-[95vw] backdrop:bg-black/40 backdrop:backdrop-blur-sm"
     >
       <form method="dialog" onSubmit={handleSave} className="flex flex-col">
         {/* Header without Close button */}

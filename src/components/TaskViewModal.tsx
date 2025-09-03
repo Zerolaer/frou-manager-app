@@ -185,7 +185,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       title="Задача"
       size="lg"
       bodyClassName="p-0"
-      contentClassName="w-[840px] max-w-[95vw]"
+      contentClassName="w-[880px] max-w-[95vw]"
       headerRight={
         <div className="relative" ref={menuRef}>
           <button

@@ -28,12 +28,13 @@ export default function Modal({
   open, onClose, title, subTitle, footer, headerRight,
   children, size = 'md', className, contentClassName, bodyClassName
 }: Props){
-  const sizeClass = size === 'sm' ? 'max-w-md' : size === 'lg' ? 'max-w-3xl' : 'max-w-xl'
+  const sizeClass = 'w-full'
 
   return (
     <UIModal
       open={open}
       onClose={onClose}
+      size={size === 'lg' ? 'large' : 'default'}
       title={
         <div className="flex items-center justify-between gap-3 w-full">
           <div>

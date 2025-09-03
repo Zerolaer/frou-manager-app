@@ -40,7 +40,9 @@ function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivEle
   }, [enabled, containerRef])
 }
 
-export default function Modal({ open, onClose, title, footer, children, closeOnOverlay = TrueDefault }: ModalProps){
+type ModalProps = { children: React.ReactNode, size?: 'default' | 'large' }
+
+export default function Modal({ children, size = 'default' }: ModalProps { open, onClose, title, footer, children, closeOnOverlay = TrueDefault }: ModalProps){
   const overlayRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   useFocusTrap(open, panelRef)
@@ -70,7 +72,7 @@ export default function Modal({ open, onClose, title, footer, children, closeOnO
       role="dialog"
       aria-modal="true"
       aria-label={typeof title === 'string' ? title : undefined}
-      className="fixed inset-0 z-50"
+      className={`max-w-[${size === 'large' ? '880px' : '620px'}] ` + "fixed inset-0 z-50"
       ref={overlayRef}
       onMouseDown={(e) => {
         if (!closeOnOverlay) return
