@@ -186,7 +186,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       title="Задача"
       size="lg"
       bodyClassName="p-0"
-      contentClassName="w-[840px] max-w-[95vw]"
+      contentClassName="w-[980px] max-w-[95vw]"
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
@@ -227,9 +227,9 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       }
     >
       {/* BODY: Split/Inspector */}
-      <div className="grid grid-cols-[1fr_280px] gap-4 p-0 max-md:grid-cols-1">
+      <div className="grid md:grid-cols-[minmax(0,1fr)_280px] grid-cols-1 gap-4 p-4 overflow-x-hidden">
         {/* LEFT */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Название</label>
             <input
