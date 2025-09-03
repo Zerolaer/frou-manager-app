@@ -1,3 +1,4 @@
+import { MoreVertical } from 'lucide-react'
 
 // v1.0.6: square menu button, full-width status switcher, custom checkbox for subtasks
 import { useEffect, useRef, useState } from 'react'
@@ -189,14 +190,14 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
-            className="h-8 w-8 grid place-items-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+            className="h-8 w-8 grid place-items-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Меню"
           >
-            ⋮
+            <MoreVertical size={16} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+            <div className="absolute right-0 z-50 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
               <div className="dd-item" onClick={duplicateTask}>Дублировать</div>
               <div className="dd-item text-red-600" onClick={deleteTask}>Удалить</div>
             </div>
