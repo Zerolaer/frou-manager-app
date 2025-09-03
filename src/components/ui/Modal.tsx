@@ -83,7 +83,7 @@ export default function Modal({ open, onClose, title, footer, children, closeOnO
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           ref={panelRef}
-          className={`w-full max-w-[${size === "large" ? "880px" : "620px"}] rounded-2xl bg-white shadow-xl outline-none ring-1 ring-black/5`}
+          className={`w-[${size === "large" ? "880px" : "620px"}] max-w-[95vw] rounded-2xl bg-white shadow-xl outline-none ring-1 ring-black/5`}
           tabIndex={-1}
           onMouseDown={(e) => e.stopPropagation()}
         >

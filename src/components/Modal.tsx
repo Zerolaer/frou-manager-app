@@ -28,7 +28,7 @@ export default function Modal({
   open, onClose, title, subTitle, footer, headerRight,
   children, size = 'md', className, contentClassName, bodyClassName
 }: Props){
-  const sizeClass = 'w-full'
+  const sizeClass = 'w-auto'
 
   return (
     <UIModal
