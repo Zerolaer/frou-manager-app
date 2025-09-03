@@ -9,6 +9,8 @@ type ModalProps = {
   children: React.ReactNode
   /** If true, clicking on overlay closes the modal (default true) */
   closeOnOverlay?: boolean
+
+  size?: 'default' | 'large'
 }
 
 function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivElement>) {
@@ -40,9 +42,7 @@ function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivEle
   }, [enabled, containerRef])
 }
 
-type ModalProps = { children: React.ReactNode, size?: 'default' | 'large' }
-
-export default function Modal({ children, size = 'default' }: ModalProps { open, onClose, title, footer, children, closeOnOverlay = TrueDefault }: ModalProps){
+export default function Modal({ open, onClose, title, footer, children, closeOnOverlay = TrueDefault, size = 'default' }: ModalProps){
   const overlayRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   useFocusTrap(open, panelRef)
@@ -72,7 +72,7 @@ export default function Modal({ children, size = 'default' }: ModalProps { open,
       role="dialog"
       aria-modal="true"
       aria-label={typeof title === 'string' ? title : undefined}
-      className={`max-w-[${size === 'large' ? '880px' : '620px'}] ` + "fixed inset-0 z-50"
+      className="fixed inset-0 z-50"
       ref={overlayRef}
       onMouseDown={(e) => {
         if (!closeOnOverlay) return
@@ -83,7 +83,7 @@ export default function Modal({ children, size = 'default' }: ModalProps { open,
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           ref={panelRef}
-          className="w-full max-w-lg rounded-2xl bg-white shadow-xl outline-none ring-1 ring-black/5"
+          className={`w-full max-w-[${size === "large" ? "880px" : "620px"}] rounded-2xl` bg-white shadow-xl outline-none ring-1 ring-black/5"
           tabIndex={-1}
           onMouseDown={(e) => e.stopPropagation()}
         >
