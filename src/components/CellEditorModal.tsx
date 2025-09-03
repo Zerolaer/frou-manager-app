@@ -26,9 +26,11 @@ function useDebounce() {
 }
 
 export default function CellEditorModal(props: Props) {
-  const { open, onClose, categoryId, categoryName, monthIndex, year, onApply } = props
+  const { open, onClose, userId, categoryId, categoryName, monthIndex, year, onApply } = props
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<Entry[]>([])
+  const [draftAmount, setDraftAmount] = useState<string>('')
+  const [draftNote, setDraftNote] = useState<string>('')
   const dragId = useRef<string | null>(null)
   const debounce = useDebounce()
 
@@ -67,15 +69,18 @@ export default function CellEditorModal(props: Props) {
   useEffect(() => { reload() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [open, categoryId, monthIndex, year])
 
   async function addItem() {
+    const amt = Number(draftAmount)
+    const amount = Number.isFinite(amt) ? amt : 0
     setLoading(true)
     const { data, error } = await supabase
       .from('finance_entries')
       .insert({
+        user_id: userId,
         category_id: categoryId,
         year,
         month: monthIndex + 1,
-        amount: 0,
-        note: null,
+        amount,
+        note: draftNote || null,
         included: true,
         position: items.length,
       })
@@ -85,9 +90,11 @@ export default function CellEditorModal(props: Props) {
       console.error(error)
     } else {
       const r: any = data
-      const next = items.concat([{ id: r.id, amount: 0, note: null, included: true, position: items.length }])
+      const next = items.concat([{ id: r.id, amount, note: draftNote || null, included: true, position: items.length }])
       setItems(next)
       onApply(sumIncluded(next))
+      setDraftAmount('')
+      setDraftNote('')
     }
     setLoading(false)
   }
@@ -110,13 +117,6 @@ export default function CellEditorModal(props: Props) {
       const { error } = await supabase.from('finance_entries').update({ note }).eq('id', id)
       if (error) console.error(error)
     })
-  function saveNoteImmediate(id: string, note: string) {
-    (async () => {
-      const { error } = await supabase.from('finance_entries').update({ note }).eq('id', id)
-      if (error) console.error(error)
-    })()
-  }
-
   }
 
   async function toggleInclude(id: string) {
@@ -181,9 +181,26 @@ export default function CellEditorModal(props: Props) {
   return (
     <Modal open={open} onClose={onClose} title={title} footer={footer} size="md">
       <div className="space-y-4">
+        {/* Добавить новую запись */}
         <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder="Сумма (€)"
+            className="input input-sm flex-1"
+            value={draftAmount}
+            onChange={e => setDraftAmount((e.target as HTMLInputElement).value)}
+          />
+          <input
+            type="text"
+            placeholder="Описание"
+            className="input input-sm flex-1"
+            value={draftNote}
+            onChange={e => setDraftNote((e.target as HTMLInputElement).value)}
+          />
           <button className="btn" onClick={addItem} disabled={loading}>Добавить</button>
         </div>
+
+        {/* Список существующих */}
         <div className="space-y-2">
           {items.map((e) => (
             <div
@@ -204,9 +221,9 @@ export default function CellEditorModal(props: Props) {
               <input
                 type="text"
                 className="flex-1 input input-sm"
-                placeholder="Название"
+                placeholder="Описание"
                 value={e.note ?? ''}
-                onChange={ev => setNote(e.id, (ev.target as HTMLInputElement).value)} onBlur={ev => saveNoteImmediate(e.id, (ev.target as HTMLInputElement).value)}
+                onChange={ev => setNote(e.id, (ev.target as HTMLInputElement).value)}
               />
               <button className="btn btn-outline" onClick={() => del(e.id)}>Удалить</button>
             </div>
