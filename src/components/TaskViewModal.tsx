@@ -227,9 +227,9 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       }
     >
       {/* BODY: Split/Inspector */}
-      <div className="grid md:grid-cols-[minmax(0,1fr)_280px] grid-cols-1 gap-4 p-4 overflow-x-hidden">
+      <div className="flex flex-col md:flex-row gap-4 p-4">
         {/* LEFT */}
-        <div className="space-y-4 min-w-0">
+        <div className="space-y-4 flex-1 min-w-0">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Название</label>
             <input
