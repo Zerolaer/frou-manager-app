@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { Portal } from "@/components/ui/Portal";
@@ -28,12 +27,10 @@ export const GlassModal: React.FC<Props> = ({
   const ref = useRef<HTMLDivElement>(null);
   useLockBodyScroll(open);
 
-  // Close on ESC
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onOpenChange(false);
-      // trap focus within modal
       if (e.key === "Tab" && ref.current) {
         const focusables = ref.current.querySelectorAll<HTMLElement>(
           "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -17,9 +16,7 @@ export const Portal: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
       ref.current = el;
     }
     setMounted(true);
-    return () => {
-      // do not remove; allow reuse
-    };
+    return () => {};
   }, []);
 
   return mounted && ref.current ? createPortal(children, ref.current) : null;
