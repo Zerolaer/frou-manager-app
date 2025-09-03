@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '@/ui.css'
 import '../finance-grid.css'
-import CellEditor from '@/components/CellEditor'
+import CellEditorModal from '@/components/CellEditorModal'
 import Modal from '@/components/Modal'
 import YearDropdown from '@/components/YearDropdown'
 import TypeDropdown from '@/components/TypeDropdown'
@@ -475,7 +475,7 @@ export default function Finance(){
       </Modal>
 
       {editorOpen && editorCat && (
-        <CellEditor
+        <CellEditorModal
           open={editorOpen}
           onClose={()=>setEditorOpen(false)}
           userId={userId!}
