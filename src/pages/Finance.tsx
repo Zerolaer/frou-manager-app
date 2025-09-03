@@ -484,8 +484,16 @@ export default function Finance(){
           monthIndex={editorMonth}
           year={year}
           onApply={(sum)=>{
-            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
-            if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
+            const updateRaw = (raw: Cat[]) => raw.map(c => (
+              c.id === editorCat.id
+                ? { ...c, values: c.values.map((v, i) => i === editorMonth ? sum : v) }
+                : c
+            ))
+            if (editorCat.type === 'income') {
+              setIncomeRaw(updateRaw(incomeRaw))
+            } else {
+              setExpenseRaw(updateRaw(expenseRaw))
+            }
           }}
         />
       )}

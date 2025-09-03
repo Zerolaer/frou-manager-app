@@ -176,7 +176,6 @@ export default function CellEditorModal(props: Props) {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <button className="btn" onClick={addItem} disabled={loading}>Добавить</button>
-          <button className="btn btn-outline" onClick={() => reload()} disabled={loading}>Обновить</button>
         </div>
         <div className="space-y-2">
           {items.map((e) => (
@@ -198,7 +197,7 @@ export default function CellEditorModal(props: Props) {
               <input
                 type="text"
                 className="flex-1 input input-sm"
-                placeholder="Заметка"
+                placeholder="Название"
                 value={e.note ?? ''}
                 onChange={ev => setNote(e.id, (ev.target as HTMLInputElement).value)}
               />
