@@ -110,6 +110,13 @@ export default function CellEditorModal(props: Props) {
       const { error } = await supabase.from('finance_entries').update({ note }).eq('id', id)
       if (error) console.error(error)
     })
+  function saveNoteImmediate(id: string, note: string) {
+    (async () => {
+      const { error } = await supabase.from('finance_entries').update({ note }).eq('id', id)
+      if (error) console.error(error)
+    })()
+  }
+
   }
 
   async function toggleInclude(id: string) {
@@ -199,7 +206,7 @@ export default function CellEditorModal(props: Props) {
                 className="flex-1 input input-sm"
                 placeholder="Название"
                 value={e.note ?? ''}
-                onChange={ev => setNote(e.id, (ev.target as HTMLInputElement).value)}
+                onChange={ev => setNote(e.id, (ev.target as HTMLInputElement).value)} onBlur={ev => saveNoteImmediate(e.id, (ev.target as HTMLInputElement).value)}
               />
               <button className="btn btn-outline" onClick={() => del(e.id)}>Удалить</button>
             </div>
