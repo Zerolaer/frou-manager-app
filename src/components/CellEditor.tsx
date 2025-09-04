@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '@/cell-editor.css'
 import '@/ui.css'
+import Modal from '@/components/Modal'
 
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 
@@ -138,7 +139,9 @@ export default function CellEditor({
   open={open}
   onClose={onClose}
   title={<span><b>{categoryName}</b> · {monthLabel} {year}</span>}
-  footer={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}><button className="btn btn-outline" onClick={onClose}>Закрыть</button></div>}
+  footer={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
+    <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
+  </div>}
   size="md"
 >
   <div className="editor-body">
