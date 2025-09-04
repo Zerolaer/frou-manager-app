@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '@/cell-editor.css'
 import '@/ui.css'
+import Modal from '@/components/Modal'
 
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 
@@ -132,17 +133,18 @@ export default function CellEditor({
     await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
   }
 
-  return open ? (
-    <div className="editor-modal">
-      <div className="editor-backdrop" onClick={onClose} />
-      <div className="editor-card">
-        <div className="editor-header">
-          Редактор ячейки
-          <div className="editor-sub">{categoryName} — {monthLabel} {year}</div>
-        </div>
-        <div className="editor-divider" />
-
-        <div className="editor-body">
+  return (
+  
+<Modal
+  open={open}
+  onClose={onClose}
+  title={<span><b>{categoryName}</b> · {monthLabel} {year}</span>}
+  footer={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
+    <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
+  </div>}
+  size="md"
+>
+  <div className="editor-body">
           {loading && <div className="loading-overlay">Загрузка…</div>}
           <div className="editor-add">
             <input type="number" placeholder="Сумма (€)" value={amount} onChange={e=>setAmount(e.target.value)} className="editor-input number" />
@@ -168,10 +170,7 @@ export default function CellEditor({
         </div>
 
         <div className="editor-divider" />
-        <div className="editor-footer" style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
-          <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
-        </div>
-      </div>
-    </div>
-  ) : null
+</Modal>
+
+)
 }

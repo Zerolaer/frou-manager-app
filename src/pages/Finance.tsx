@@ -17,6 +17,7 @@ import SummaryRow from '@/components/finance/SummaryRow'
 import CategoryMenu from '@/components/finance/CategoryMenu'
 import CellMenu from '@/components/finance/CellMenu'
 import type { Cat, CtxCat, CellCtx, EntryLite } from '@/features/finance/types'
+function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, CTX_MENU_W, CTX_MENU_H_CAT, CTX_MENU_H_CELL, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
@@ -296,7 +297,7 @@ export default function Finance(){
     const rows = cellClipboard.map((e, idx) => ({ where, user_id: userId, amount: e.amount, note: e.note, included: e.included, position: idx }))
     await supabase.from('finance_entries').insert(rows)
     const sum = rows.filter(r=>r.included).reduce((s,r)=>s + (r.amount||0), 0)
-    const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
+    const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { ...c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
     if (type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
     setCellCtxOpen(false); setCtxCellHighlight(null)
   }
@@ -415,6 +416,7 @@ export default function Finance(){
       {ctxOpen && ctxCat && (
         <CategoryMenu
           pos={ctxPos}
+          canAddSub={!Boolean((findCatById(ctxCat.id, incomeRaw) || findCatById(ctxCat.id, expenseRaw))?.parent_id)}
           onClose={closeCtx}
           onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
           onAddSub={()=>{ setNewType(ctxCat.type); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}
@@ -484,7 +486,7 @@ export default function Finance(){
           monthIndex={editorMonth}
           year={year}
           onApply={(sum)=>{
-            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
+            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
             if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
           }}
         />

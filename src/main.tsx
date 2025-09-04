@@ -9,6 +9,7 @@ import Finance from './pages/Finance'
 import Tasks from './pages/Tasks'
 import Goals from './pages/Goals'
 import Notes from './pages/Notes'
+import EnvelopePage from './pages/Envelope'
 import { supabase } from './lib/supabaseClient'
 
 const Protected = ({children}: {children: React.ReactNode}) => {
@@ -29,6 +30,7 @@ const Protected = ({children}: {children: React.ReactNode}) => {
 }
 
 const router = createBrowserRouter([
+  { path: '/envelope', element: <EnvelopePage /> },
   { path: '/login', element: <Login /> },
   {
     path: '/',

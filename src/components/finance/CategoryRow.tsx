@@ -41,17 +41,17 @@ export default function CategoryRow({
   return (
     <div className="finance-row contents">
       <div className={'finance-cell ' + (ctxCatHighlight === row.id ? 'ctx-active' : '')}>
-        <div className="cell-head flex items-center gap-2">
+        <div className="cell-head cell-name flex items-center gap-2">
           <button
-            className="shrink-0 rounded hover:bg-gray-100 px-1"
+            className="shrink-0 rounded-md hover:bg-gray-100 w-6 h-6 flex items-center justify-center"
             onClick={() => onToggleCollapse(row.id)}
             title={hasChildren ? (collapsed ? 'Развернуть' : 'Свернуть') : 'Категория'}
           >
-            {hasChildren ? (collapsed ? '▸' : '▾') : '•'}
+            {hasChildren ? (collapsed ? '▸' : '▾') : ''}
           </button>
           <span className="flex-1 truncate">{row.name}</span>
           <button
-            className="icon-btn"
+            className="icon-btn menu-btn"
             onClick={(e) => onNameContext(e, info)}
             onContextMenu={(e) => onNameContext(e, info)}
             aria-label="Действия с категорией"
