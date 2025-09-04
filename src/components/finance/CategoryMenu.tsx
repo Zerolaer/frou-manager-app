@@ -8,10 +8,11 @@ type Props = {
   onClose: () => void
   onRename: () => void
   onAddSub: () => void
+  canAddSub?: boolean
   onDelete: () => void
 }
 
-export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete }: Props){
+export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub = true }: Props){
   const itemsRef = useRef<Array<HTMLDivElement | null>>([])
   const [active, setActive] = useState(0)
 
@@ -52,7 +53,7 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
           aria-label="Переименовать категорию"
           data-active={active===0}
         >Переименовать</div>
-        <div
+        {canAddSub && (<div
           ref={el => itemsRef.current[1] = el}
           className="ctx-item"
           role="menuitem"
@@ -60,7 +61,7 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
           onClick={onAddSub}
           aria-label="Добавить подкатегорию"
           data-active={active===1}
-        >+ Подкатегория</div>
+        >+ Подкатегория</div>)}
         <div
           ref={el => itemsRef.current[2] = el}
           className="ctx-item"

@@ -17,6 +17,7 @@ import SummaryRow from '@/components/finance/SummaryRow'
 import CategoryMenu from '@/components/finance/CategoryMenu'
 import CellMenu from '@/components/finance/CellMenu'
 import type { Cat, CtxCat, CellCtx, EntryLite } from '@/features/finance/types'
+function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, CTX_MENU_W, CTX_MENU_H_CAT, CTX_MENU_H_CELL, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
@@ -415,6 +416,7 @@ export default function Finance(){
       {ctxOpen && ctxCat && (
         <CategoryMenu
           pos={ctxPos}
+          canAddSub={!Boolean((findCatById(ctxCat.id, incomeRaw) || findCatById(ctxCat.id, expenseRaw))?.parent_id)}
           onClose={closeCtx}
           onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
           onAddSub={()=>{ setNewType(ctxCat.type); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}
