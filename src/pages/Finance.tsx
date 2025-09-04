@@ -296,7 +296,7 @@ export default function Finance(){
     const rows = cellClipboard.map((e, idx) => ({ where, user_id: userId, amount: e.amount, note: e.note, included: e.included, position: idx }))
     await supabase.from('finance_entries').insert(rows)
     const sum = rows.filter(r=>r.included).reduce((s,r)=>s + (r.amount||0), 0)
-    const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
+    const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { ...c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
     if (type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
     setCellCtxOpen(false); setCtxCellHighlight(null)
   }
@@ -484,7 +484,7 @@ export default function Finance(){
           monthIndex={editorMonth}
           year={year}
           onApply={(sum)=>{
-            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
+            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
             if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
           }}
         />
