@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>С днём рождения, милая!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #fdf2f8, #f5f3ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .envelope {
+      position: relative;
+      width: 320px;
+      height: 220px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    .flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      border-left: 160px solid transparent;
+      border-right: 160px solid transparent;
+      border-top: 120px solid #fdf2f8;
+      transform-origin: top;
+      transition: transform 1s ease;
+      z-index: 2;
+    }
+
+    .seal {
+      position: absolute;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fbbf24, #f59e0b, #b45309);
+      box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+      z-index: 3;
+    }
+
+    .button {
+      position: absolute;
+      top: 90px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(to bottom, #7c3aed, #ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      z-index: 4;
+      transition: transform 0.2s;
+    }
+
+    .button:active {
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+
+    .ticket {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 280px;
+      height: 150px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      text-align: center;
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      transition: transform 1s ease;
+      z-index: 1;
+    }
+
+    .open .flap {
+      transform: rotateX(-180deg);
+    }
+
+    .open .ticket {
+      transform: translateX(-50%) translateY(-120%);
+    }
+
+    .greeting {
+      position: absolute;
+      top: 160px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: bold;
+      color: #333;
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #555;
+      background: rgba(255,255,255,0.8);
+      padding: 4px 10px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="envelope" id="envelope">
+    <div class="flap"></div>
+    <div class="seal"></div>
+    <button class="button" id="openBtn">Открой!</button>
+    <div class="greeting">С днём рождения, милая!</div>
+    <div class="ticket">🎟 Билет на Олимпийские игры 2026</div>
+    <div class="hint">Нажми на кнопку, чтобы открыть</div>
+  </div>
+
+  <script>
+    const envelope = document.getElementById("envelope");
+    const btn = document.getElementById("openBtn");
+
+    btn.addEventListener("click", () => {
+      envelope.classList.add("open");
+      btn.disabled = true;
+      btn.innerText = "Открыто";
+    });
+  </script>
+</body>
+</html>
