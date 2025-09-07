@@ -66,6 +66,12 @@ export default function Modal({
 
   if (!open) return null
 
+  const panelClasses = [
+    'rounded-2xl','bg-white','shadow-xl','outline-none','ring-1','ring-black/5','max-w-[95vw]',
+    size === 'large' ? 'w-[880px]' : 'w-[620px]'
+  ].join(' ')
+
+
   const content = (
     <div
       className="fixed inset-0 z-[100]"
