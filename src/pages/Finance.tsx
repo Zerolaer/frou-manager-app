@@ -221,10 +221,10 @@ export default function Finance(){
     const { error } = await supabase.from('finance_categories').update({ name }).eq('id', ctxCat.id)
     if (error) { console.error(error); return }
     if (ctxCat.type === 'income') {
-      const raw = incomeRaw.map(c => c.id === ctxCat.id ? { c, name } : c); setIncomeRaw(raw)
+      const raw = incomeRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     } else {
-      const raw = expenseRaw.map(c => c.id === ctxCat.id ? { c, name } : c); setExpenseRaw(raw)
+      const raw = expenseRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setExpenseRaw(raw)
       writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     }
     setRenameOpen(false)
@@ -284,7 +284,7 @@ export default function Finance(){
   async function copyCell(){
     const entries: EntryLite[] = (window as any).__entriesForCopy || []
     if (!entries.length) { setCellCtxOpen(false); setCtxCellHighlight(null); return }
-    setCellClipboard(entries.map(e=>({ e })))
+    setCellClipboard(entries.slice())
     try { await navigator.clipboard.writeText(JSON.stringify(entries)) } catch {}
     setCellCtxOpen(false); setCtxCellHighlight(null)
   }
@@ -342,7 +342,7 @@ export default function Finance(){
               currentMonth={currentMonth}
               hasChildren={hasChildren}
               collapsed={!!collapsed[row.id]}
-              onToggleCollapse={(id)=> setCollapsed(prev=>({prev, [id]: !prev[id]}))}
+              onToggleCollapse={(id)=> setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))}
               onNameContext={(e, info)=> onContextCategory(e, info)}
               onCellContext={onCellContext}
               onCellEdit={(t,id,mi)=>{ setEditorCat({ id, name: row.name, type: t as any } as CtxCat); setEditorMonth(mi); setEditorOpen(true) }}
@@ -367,7 +367,7 @@ export default function Finance(){
               currentMonth={currentMonth}
               hasChildren={hasChildren}
               collapsed={!!collapsed[row.id]}
-              onToggleCollapse={(id)=> setCollapsed(prev=>({prev, [id]: !prev[id]}))}
+              onToggleCollapse={(id)=> setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))}
               onNameContext={(e, info)=> onContextCategory(e, info)}
               onCellContext={onCellContext}
               onCellEdit={(t,id,mi)=>{ setEditorCat({ id, name: row.name, type: t as any } as CtxCat); setEditorMonth(mi); setEditorOpen(true) }}

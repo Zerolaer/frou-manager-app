@@ -38,7 +38,7 @@ export default function Modal({
       title={
         <div className="flex items-center justify-between gap-3 w-full">
           <div>
-            <div className="text-base font-medium leading-none">{title}</div>
+            <div className="text-base font-medium leading-none" id="modal-title">{title}</div>
             {subTitle && <div className="mt-1 text-xs opacity-70">{subTitle}</div>}
           </div>
           {headerRight ? <div className="ml-4">{headerRight}</div> : null}
