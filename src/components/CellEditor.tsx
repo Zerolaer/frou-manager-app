@@ -4,8 +4,6 @@ import '@/cell-editor.css'
 import '@/ui.css'
 import Modal from '@/components/Modal'
 
-
-import { formatEUR } from '@/lib/format'
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 
 export default function CellEditor({
