@@ -7,11 +7,11 @@ type ModalProps = {
   title?: React.ReactNode
   footer?: React.ReactNode
   children: React.ReactNode
-  /** If true, clicking on overlay closes the modal (default true) */
+  /** Если true — клик по оверлею закрывает модалку (по умолчанию true) */
   closeOnOverlay?: boolean
   /** 'default' = 620px, 'large' = 880px */
   size?: 'default' | 'large'
-  /** Optional custom class for body wrapper */
+  /** Класс для тела модалки (чтобы переопределять внутренние отступы) */
   bodyClassName?: string
 }
 
@@ -21,8 +21,12 @@ function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivEle
     const container = containerRef.current
     if (!container) return
     const selectors = [
-      'a[href]','button:not([disabled])','textarea:not([disabled])','input:not([disabled])',
-      'select:not([disabled])','[tabindex]:not([tabindex="-1"])'
+      'a[href]',
+      'button:not([disabled])',
+      'textarea:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
     ].join(',')
     const nodes = Array.from(container.querySelectorAll<HTMLElement>(selectors))
     const first = nodes[0]
@@ -57,20 +61,24 @@ export default function Modal({
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
   if (!open) return null
 
+  // БЕЗ вложенных бэктиков — безопасно для esbuild/Netlify
   const panelClasses = [
-    'rounded-2xl','bg-white','shadow-xl','outline-none','ring-1','ring-black/5','max-w-[95vw]',
-    size === 'large' ? 'w-[880px]' : 'w-[620px]'
+    size === 'large' ? 'w-[880px]' : 'w-[620px]',
+    'max-w-[95vw]',
+    'rounded-2xl',
+    'bg-white',
+    'shadow-xl',
+    'outline-none',
+    'ring-1',
+    'ring-black/5',
   ].join(' ')
-
 
   const content = (
     <div
@@ -81,7 +89,7 @@ export default function Modal({
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           ref={panelRef}
-          className={\`w-[\${size === 'large' ? '880px' : '620px'}] max-w-[95vw] rounded-2xl bg-white shadow-xl outline-none ring-1 ring-black/5\`}
+          className={panelClasses}
           tabIndex={-1}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -97,7 +105,7 @@ export default function Modal({
               </button>
             </div>
           )}
-          <div className={bodyClassName ?? "px-5 py-4"}>{children}</div>
+          <div className={bodyClassName ?? 'px-5 py-4'}>{children}</div>
           {footer && <div className="px-5 py-4 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
         </div>
       </div>
