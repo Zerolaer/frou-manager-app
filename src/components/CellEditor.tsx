@@ -135,10 +135,7 @@ export default function CellEditor({
 
   return (
   
-<Modal
-  open={open}
-  onClose={onClose}
-  title={<span><b>{categoryName}</b> · {monthLabel} {year}</span>}
+<Modal   open={open}   onClose={onClose}   title={<span bodyClassName="p-0"><b>{categoryName}</b> · {monthLabel} {year}</span>}
   footer={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
     <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
   </div>}
@@ -169,7 +166,6 @@ export default function CellEditor({
           </div>
         </div>
 
-        <div className="editor-divider" />
 </Modal>
 
 )

@@ -31,7 +31,7 @@ export default function Modal({
   const sizeClass = 'w-auto'
 
   return (
-    <UIModal
+    <UIModal bodyClassName={bodyClassName}
       open={open}
       onClose={onClose}
       size={size === 'lg' ? 'large' : 'default'}
