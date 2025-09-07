@@ -1,6 +1,8 @@
 import { MoreVertical } from "lucide-react";
 import { TableSkeleton } from '@/components/Skeleton'
 
+const CACHE_VERSION = 'v2'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '@/ui.css'
@@ -41,7 +43,7 @@ function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.Ke
 
 const fmtEUR = (n:number) => formatCurrencyEUR(n, { maximumFractionDigits: 0 })
 
-const cacheKey = (uid: string, year: number) => `finance:${uid}:${year}`
+const cacheKey = (uid: string, year: number) => `finance:${CACHE_VERSION}:${uid}:${year}`
 function writeCache(uid: string, year: number, data: {
   income: { id: string; name: string; values: number[]; parent_id?: string | null }[]
   expense:{ id: string; name: string; values: number[]; parent_id?: string | null }[]
