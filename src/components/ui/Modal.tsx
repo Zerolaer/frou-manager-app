@@ -6,8 +6,6 @@ type ModalProps = {
   onClose: () => void
   title?: React.ReactNode
   footer?: React.ReactNode
-  footerStart?: React.ReactNode
-  footerEnd?: React.ReactNode
   children: React.ReactNode
   /** If true, clicking on overlay closes the modal (default true) */
   closeOnOverlay?: boolean
@@ -102,14 +100,7 @@ export default function Modal({ open, onClose, title, footer, children, closeOnO
             </div>
           )}
           <div className="px-5 py-4">{children}</div>
-          {(footerStart || footerEnd || footer) && (
-            <div className="px-5 py-4 border-t bg-gray-50 rounded-b-2xl">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">{footerStart}</div>
-                <div className="flex items-center gap-2">{footerEnd ?? footer}</div>
-              </div>
-            </div>
-          )}
+          {footer && <div className="px-5 py-4 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
         </div>
       </div>
     </div>
