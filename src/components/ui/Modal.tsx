@@ -7,6 +7,7 @@ type ModalProps = {
   title?: React.ReactNode
   footer?: React.ReactNode
   children: React.ReactNode
+  bodyClassName?: string
   /** If true, clicking on overlay closes the modal (default true) */
   closeOnOverlay?: boolean
 
@@ -99,7 +100,7 @@ export default function Modal({ open, onClose, title, footer, children, closeOnO
               </button>
             </div>
           )}
-          <div className="px-5 py-4">{children}</div>
+          <div className={bodyClassName ?? "px-5 py-4"}>{children}</div>
           {footer && <div className="px-5 py-4 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
         </div>
       </div>
