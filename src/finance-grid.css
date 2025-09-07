@@ -104,37 +104,3 @@
   opacity: 1;
   pointer-events: auto;
 }
-
-
-/* === Sticky header & first column + scroll container === */
-.finance-scroll {
-  overflow: auto;
-  max-width: 100%;
-}
-/* Keep grid visible so sticky elements can escape */
-.finance-grid {
-  overflow: visible;
-}
-
-/* Header row cells receive .finance-head or .head-current classes */
-.finance-grid .finance-head,
-.finance-grid .head-current {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background: #ffffff;
-}
-
-/* First column (category names) */
-.finance-grid .cell-name {
-  position: sticky;
-  left: 0;
-  z-index: 20;
-  background: #ffffff;
-  box-shadow: 1px 0 0 0 #e5e7eb; /* subtle right border on top of grid lines */
-}
-
-/* When current month column is highlighted, keep its header above */
-.finance-grid .head-current {
-  font-weight: 600;
-}
