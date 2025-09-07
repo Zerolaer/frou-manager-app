@@ -4,6 +4,8 @@ import '@/cell-editor.css'
 import '@/ui.css'
 import Modal from '@/components/Modal'
 
+
+import { formatEUR } from '@/lib/format'
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 
 export default function CellEditor({
@@ -21,7 +23,6 @@ export default function CellEditor({
 }) {
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<Entry[]>([])
-const total = useMemo(() => (items ?? []).reduce((acc, e:any) => acc + (e?.included === false ? 0 : (Number(e?.amount) || 0)), 0), [items]);
   const [amount, setAmount] = useState<string>('')
   const [note, setNote] = useState<string>('')
 
@@ -140,8 +141,7 @@ const total = useMemo(() => (items ?? []).reduce((acc, e:any) => acc + (e?.inclu
   open={open}
   onClose={onClose}
   title={<span><b>{categoryName}</b> · {monthLabel} {year}</span>}
-  footerStart={<div className="text-sm text-gray-500">Итого по ячейке:&nbsp;<span className="font-medium text-gray-900">{eur.format(total)}</span></div>}
-  footerEnd={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
+  footer={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
     <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
   </div>}
   size="md"
