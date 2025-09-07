@@ -322,7 +322,8 @@ export default function Finance(){
       <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
         <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType('income'); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
 
-      <div className="finance-grid">
+      <div className="finance-scroll">
+        <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Категория</div></div>
         {months.map((m,idx) => (
           <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
@@ -414,6 +415,7 @@ export default function Finance(){
         </div>
         </div>
       </div>
+        </div>
 
       {ctxOpen && ctxCat && (
         <CategoryMenu
