@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabaseClient'
-import Button from '@/components/ui/Button'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
@@ -45,7 +44,7 @@ window.location.href = '/login'
       <div className="text-xl font-semibold text-gray-800">{title}</div>
       <div className="flex items-center gap-4">
         <div className="text-sm text-gray-600">{email ?? '—'}</div>
-        <Button variant="accent" size="sm" onClick={signOut}>Выйти</Button>
+        <button onClick={signOut} className="btn-accent text-sm">Выйти</button>
       </div>
     </div>
   )

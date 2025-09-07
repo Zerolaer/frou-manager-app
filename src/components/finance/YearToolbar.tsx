@@ -1,6 +1,5 @@
 
 import React from 'react'
-import Button from '@/components/ui/Button'
 import YearDropdown from '@/components/YearDropdown'
 
 type Props = {
@@ -18,8 +17,8 @@ export default function YearToolbar({ year, years, onYearChange, onAddCategory, 
         <YearDropdown value={year} years={years} onChange={onYearChange} />
       </div>
       <div className="flex gap-3">
-        <Button onClick={onAddCategory}>Добавить категорию</Button>
-        <Button variant="outline" onClick={onShowStats}>Годовая статистика</Button>
+        <button className="btn" onClick={onAddCategory}>Добавить категорию</button>
+        <button className="btn btn-outline text-gray-900" onClick={onShowStats}>Годовая статистика</button>
       </div>
     </div>
   )
