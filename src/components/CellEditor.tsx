@@ -1,68 +1,178 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
+import '@/cell-editor.css'
 import '@/ui.css'
 import Modal from '@/components/Modal'
 
-type Entry = {
-  id: string
-  amount: number
-  description?: string
-  inactive?: boolean
-}
+type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 
-type Props = {
+export default function CellEditor({
+  open, onClose, userId, categoryId, categoryName, monthIndex, year,
+  onApply,
+}: {
   open: boolean
   onClose: () => void
-  onSave: () => void
+  userId: string
+  categoryId: string
+  categoryName: string
+  monthIndex: number
+  year: number
+  onApply: (newSum: number) => void
+}) {
+  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState<Entry[]>([])
+const total = useMemo(() => (items ?? []).reduce((acc, e:any) => acc + (e?.included === false ? 0 : (Number(e?.amount) || 0)), 0), [items]);
+  const [amount, setAmount] = useState<string>('')
+  const [note, setNote] = useState<string>('')
 
-  /** Current cell entries (provide from parent) */
-  entries: Entry[]
-}
+  const timers = useRef<Record<string, any>>({})
+  const debounce = (key: string, fn: () => void, ms = 350) => {
+    clearTimeout(timers.current[key]); timers.current[key] = setTimeout(fn, ms)
+  }
 
-const eur = new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'EUR',
-  maximumFractionDigits: 2,
-})
+  const monthNames = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
+  const monthLabel = monthNames[monthIndex]
+  const fmt = useMemo(()=> new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'EUR' }), [])
 
-export default function CellEditor(props: Props) {
-  const { open, onClose, onSave, entries } = props
+  // Drag state
+  const dragId = useRef<string | null>(null)
 
-  // Compute total from active entries only
-  const total = useMemo(() => {
-    return (entries ?? []).reduce((acc, e) => acc + (e.inactive ? 0 : (Number(e.amount) || 0)), 0)
-  }, [entries])
+  useEffect(() => {
+    if (!open) return
+    ;(async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('finance_entries')
+        .select('id, amount, note, included, position, created_at')
+        .eq('category_id', categoryId)
+        .eq('year', year)
+        .eq('month', monthIndex + 1)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true })
+      if (error) { console.error(error); setLoading(false); return }
+      const list = (data || []).map((d:any)=>({ id: d.id, amount: Number(d.amount)||0, note: d.note, included: !!d.included, position: d.position ?? 0 }))
+      setItems(list)
+      setLoading(false)
+    })()
+  }, [open, categoryId, monthIndex, year])
+
+  function sumIncluded(list: Entry[]) {
+    return list.reduce((s, e) => s + (e.included ? e.amount : 0), 0)
+  }
+
+  async function addItem() {
+    const value = Number(String(amount).replace(',', '.'))
+    if (!userId || isNaN(value)) return
+    const insert = {
+      user_id: userId, category_id: categoryId, year, month: monthIndex + 1,
+      amount: value, note, included: true, position: items.length
+    }
+    const { data, error } = await supabase.from('finance_entries')
+      .insert(insert).select('id, amount, note, included, position').single()
+    if (error) { console.error(error); return }
+    const next: Entry[] = [...items, { id: data.id, amount: Number(data.amount)||0, note: data.note, included: !!data.included, position: data.position ?? items.length }]
+    setItems(next); setAmount(''); setNote('')
+    onApply(sumIncluded(next))
+  }
+
+  function updateItemLocal(id: string, patch: Partial<Entry>) {
+    setItems(prev => {
+      const next = prev.map(i => i.id === id ? { ...i, ...patch } : i)
+      onApply(sumIncluded(next))
+      return next
+    })
+  }
+
+  function changeAmount(id: string, value: string) {
+    const num = Number(String(value).replace(',', '.'))
+    updateItemLocal(id, { amount: isNaN(num) ? 0 : num })
+    debounce('amt:'+id, async () => {
+      const { error } = await supabase.from('finance_entries').update({ amount: isNaN(num) ? 0 : num }).eq('id', id)
+      if (error) console.error(error)
+    })
+  }
+
+  function changeNote(id: string, value: string) {
+    updateItemLocal(id, { note: value })
+    debounce('note:'+id, async () => {
+      const { error } = await supabase.from('finance_entries').update({ note: value }).eq('id', id)
+      if (error) console.error(error)
+    })
+  }
+
+  async function toggleIncluded(id: string, checked: boolean) {
+    updateItemLocal(id, { included: checked })
+    const { error } = await supabase.from('finance_entries').update({ included: checked }).eq('id', id)
+    if (error) console.error(error)
+  }
+
+  async function removeItem(id: string) {
+    const { error } = await supabase.from('finance_entries').delete().eq('id', id)
+    if (error) { console.error(error); return }
+    const next = items.filter(i => i.id !== id)
+    next.forEach((it, idx) => { it.position = idx })
+    setItems(next)
+    onApply(sumIncluded(next))
+    await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
+  }
+
+  function onDragStart(id: string) { dragId.current = id }
+  function onDragOver(e: React.DragEvent) { e.preventDefault() }
+  async function onDrop(overId: string) {
+    const fromId = dragId.current
+    dragId.current = null
+    if (!fromId || fromId === overId) return
+    const fromIdx = items.findIndex(i => i.id === fromId)
+    const overIdx = items.findIndex(i => i.id === overId)
+    if (fromIdx < 0 || overIdx < 0) return
+    const next = items.slice()
+    const [moved] = next.splice(fromIdx, 1)
+    next.splice(overIdx, 0, moved)
+    next.forEach((it, idx) => { it.position = idx })
+    setItems(next)
+    onApply(sumIncluded(next))
+    await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
+  }
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Редактирование ячейки"
-      footerStart={
-        <div className="text-sm text-gray-500">
-          Итого по ячейке:&nbsp;
-          <span className="font-medium text-gray-900">{eur.format(total)}</span>
+  
+<Modal
+  open={open}
+  onClose={onClose}
+  title={<span><b>{categoryName}</b> · {monthLabel} {year}</span>}
+  footerStart={<div className="text-sm text-gray-500">Итого по ячейке:&nbsp;<span className="font-medium text-gray-900">{eur.format(total)}</span></div>}
+  footerEnd={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
+    <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
+  </div>}
+  size="md"
+>
+  <div className="editor-body">
+          {loading && <div className="loading-overlay">Загрузка…</div>}
+          <div className="editor-add">
+            <input type="number" placeholder="Сумма (€)" value={amount} onChange={e=>setAmount(e.target.value)} className="editor-input number" />
+            <input placeholder="Описание (необязательно)" value={note} onChange={e=>setNote(e.target.value)} className="editor-input text" />
+            <button className="btn btn-outline" onClick={addItem}>Добавить</button>
+          </div>
+          <div>
+            {items.map(i => (
+              <div key={i.id} className={"entry-row " + (!i.included ? "entry-disabled" : "")}
+                draggable onDragStart={()=>onDragStart(i.id)} onDragOver={onDragOver} onDrop={()=>onDrop(i.id)}>
+                <div className="entry-drag">⋮⋮</div>
+                <label className="chk">
+                  <input type="checkbox" checked={i.included} onChange={e=>toggleIncluded(i.id, e.target.checked)} />
+                  <span className="box"><svg className="icon" viewBox="0 0 20 20"><path fill="currentColor" d="M8.143 13.314 4.829 10l-1.18 1.18 4.494 4.494 8-8-1.18-1.18z"/></svg></span>
+                </label>
+                <input type="number" className="editor-input entry-amount" value={String(i.amount)} onChange={e=>changeAmount(i.id, e.target.value)} />
+                <input className="editor-input entry-note" value={i.note || ""} onChange={e=>changeNote(i.id, e.target.value)} />
+                <button className="btn btn-danger btn-sm" onClick={()=>removeItem(i.id)}>Удалить</button>
+              </div>
+            ))}
+            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>)}
+          </div>
         </div>
-      }
-      footerEnd={
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Сохранить
-          </button>
-        </>
-      }
-    >
-      {/* Keep existing cell editor body here (list/inputs etc.) */}
-    </Modal>
-  )
+
+        <div className="editor-divider" />
+</Modal>
+
+)
 }
