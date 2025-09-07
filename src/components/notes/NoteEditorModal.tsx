@@ -1,6 +1,7 @@
 /* src/components/notes/NoteEditorModal.tsx */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Note } from '@/features/notes/types';
+import Modal from '@/components/Modal';
 
 type Props = {
   open: boolean;
@@ -13,88 +14,76 @@ type Props = {
 export default function NoteEditorModal({ open, note, onClose, onSave, onDelete }: Props) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
 
   useEffect(() => {
+    if (!open) return;
     setTitle(note?.title ?? '');
     setContent(note?.content ?? '');
-  }, [note]);
+  }, [open, note?.id]);
 
-  useEffect(() => {
-    const d = dialogRef.current;
-    if (!d) return;
-    if (open && !d.open) d.showModal();
-    if (!open && d.open) d.close();
-  }, [open]);
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    await onSave({ title, content }, note?.id);
+  async function handleSave(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    const draft: Partial<Note> = { title: title.trim(), content };
+    await onSave(draft, note?.id);
     onClose();
   }
 
-  return (
-    <dialog
-      ref={dialogRef}
-      className="rounded-2xl p-0 w-[880px] max-w-[95vw] backdrop:bg-black/40 backdrop:backdrop-blur-sm"
-    >
-      <form method="dialog" onSubmit={handleSave} className="flex flex-col">
-        {/* Header without Close button */}
-        <header className="px-6 py-4 border-b bg-white/70 backdrop-blur">
-          <h2 className="text-lg font-semibold">
-            {note ? 'Редактировать заметку' : 'Новая заметка'}
-          </h2>
-        </header>
+  const footer = (
+    <div className="flex items-center justify-between w-full">
+      {note?.id && onDelete ? (
+        <button
+          type="button"
+          className="btn-danger px-4 py-2 text-sm rounded-lg"
+          onClick={async () => {
+            await onDelete(note.id as string);
+            onClose();
+          }}
+        >
+          Удалить
+        </button>
+      ) : <span />}
 
-        {/* Body */}
-        <div className="p-6 bg-white flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <button className="btn btn-outline px-4 py-2 text-sm rounded-lg" onClick={onClose}>
+          Отмена
+        </button>
+        <button className="btn px-4 py-2 text-sm rounded-lg" onClick={() => void handleSave()}>
+          Сохранить
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={note ? 'Редактировать заметку' : 'Новая заметка'}
+      size="lg"
+      footer={footer}
+      contentClassName="w-[880px] max-w-[95vw]"
+    >
+      <div className="p-6 bg-white flex flex-col gap-4">
+        <div>
+          <label className="text-sm text-gray-600 block mb-1">Заголовок</label>
           <input
-            className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring focus:ring-blue-100"
-            placeholder="Заголовок"
+            className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring focus:ring-blue-100"
+            placeholder="Например: Идеи для поста"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            autoFocus
           />
+        </div>
+
+        <div>
+          <label className="text-sm text-gray-600 block mb-1">Содержимое</label>
           <textarea
-            className="min-h-[280px] w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring focus:ring-blue-100"
+            className="border rounded-lg px-3 py-2 text-sm w-full min-h-[240px] resize-y focus:outline-none focus:ring focus:ring-blue-100"
             placeholder="Текст заметки… Поддерживается перенос строк."
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
         </div>
-
-        {/* Footer with uniform button sizing */}
-        <footer className="px-6 py-4 border-t bg-white flex items-center justify-between">
-          {note?.id && onDelete ? (
-            <button
-              type="button"
-              className="btn-danger px-4 py-2 text-sm rounded-lg"
-              onClick={async () => {
-                await onDelete(note.id);
-                onClose();
-              }}
-            >
-              Удалить
-            </button>
-          ) : <span />}
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg border"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="btn px-4 py-2 text-sm rounded-lg"
-            >
-              Сохранить
-            </button>
-          </div>
-        </footer>
-      </form>
-    </dialog>
+      </div>
+    </Modal>
   );
 }
