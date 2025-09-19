@@ -10,6 +10,9 @@ import TaskViewModal from '@/components/TaskViewModal'
 import TaskAddModal from '@/components/TaskAddModal'
 import '@/ui.css'
 import '@/tasks.css'
+import { useErrorHandler } from '@/lib/errorHandler'
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
 
 function hexToRgba(hex: string | null | undefined, alpha: number) {
   if (!hex || typeof hex !== 'string' || !/^#?[0-9a-fA-F]{6}$/.test(hex)) return `rgba(0,0,0,0)`;
@@ -25,6 +28,8 @@ type Todo = { id:string; text:string; done:boolean }
  type TaskItem = { id:string; title:string; description?:string; date:string; position:number; priority?:string; tag?:string; todos?: Todo[] }
 
 export default function Tasks(){
+  const { handleError, handleSuccess } = useErrorHandler()
+  const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const [viewTask, setViewTask] = useState<TaskItem|null>(null)
 
   // DnD handlers
@@ -53,12 +58,7 @@ export default function Tasks(){
     await supabase.from('tasks_items').update({ date: dayKey, position: newPos }).eq('id', drag.id)
   }
 
-  // auth
-  const [uid, setUid] = useState<string|null>(null)
-  useEffect(()=>{
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUid(s?.user?.id ?? null))
-    return () => { sub.subscription.unsubscribe() }
-  }, [])
+  // Auth handled by useSupabaseAuth hook
 
   // timeline
   const [start, setStart] = useState<Date>(()=> startOfWeek(new Date(), { weekStartsOn:1 }))
@@ -70,10 +70,10 @@ export default function Tasks(){
 
   // projects
   const [projects, setProjects] = useState<Project[]>([])
-  const [activeProject, setActiveProject] = useState<string|null>('ALL')
+  const [activeProject, setActiveProject] = useState<string|null>(TASK_PROJECT_ALL)
 const projectColorById = useMemo(() => {
     const m: Record<string, string|undefined> = {}
-    for (const p of projects) m[p.id] = (p as any).color || undefined
+    for (const p of projects) m[p.id] = p.color || undefined
     return m
   }, [projects])
 
@@ -86,7 +86,7 @@ const projectColorById = useMemo(() => {
       if (!ext.error){
         const list = (ext.data || []) as Project[]
         setProjects(list)
-        if (!activeProject) setActiveProject('ALL')
+        if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
         return
       }
       // fallback to id,name only
@@ -94,7 +94,7 @@ const projectColorById = useMemo(() => {
       if (!basic.error){
         const list = (basic.data || []) as Project[]
         setProjects(list)
-        if (!activeProject) setActiveProject('ALL')
+        if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
       }
     })()
 }, [uid])
@@ -113,12 +113,23 @@ const projectColorById = useMemo(() => {
       .lte('date', format(end,   'yyyy-MM-dd'))
       .order('date',     { ascending:true })
       .order('position', { ascending:true });
-      const query = (activeProject==='ALL') ? q : q.eq('project_id', activeProject);
+      const query = (activeProject===TASK_PROJECT_ALL) ? q : q.eq('project_id', activeProject);
       query.then(({ data }) => {
         const map: Record<string, TaskItem[]> = {}
-        ;(data || []).forEach((t:any) => {
+        ;(data || []).forEach((t: { id: string; project_id: string; title: string; description?: string; date: string; position: number; priority?: string; tag?: string; todos?: Todo[]; status?: string }) => {
           const key = t.date as string
-          ;(map[key] ||= []).push({ id:t.id, project_id:t.project_id, title:t.title, description:t.description, date:t.date, position:t.position, priority:t.priority, tag:t.tag, todos: (t.todos||[]), status: (t as any).status || 'open' })
+          ;(map[key] ||= []).push({ 
+            id: t.id, 
+            project_id: t.project_id, 
+            title: t.title, 
+            description: t.description, 
+            date: t.date, 
+            position: t.position, 
+            priority: t.priority, 
+            tag: t.tag, 
+            todos: (t.todos||[]), 
+            status: (t as { status?: string }).status || TASK_STATUSES.OPEN 
+          })
         })
         setTasks(map)
       })
@@ -142,7 +153,7 @@ const projectColorById = useMemo(() => {
       const { data, error } = await supabase
         .from('tasks_items')
         .insert({
-          project_id: (task as any).project_id || activeProject,
+          project_id: (task as { project_id?: string }).project_id || activeProject,
           title: task.title,
           description: task.description || null,
           date: dayKey,
@@ -157,12 +168,12 @@ const projectColorById = useMemo(() => {
           id: data.id,
           title: data.title,
           description: data.description || undefined,
-          date: data.date as any,
-          position: data.position as any,
+          date: data.date as string,
+          position: data.position as number,
           priority: data.priority || undefined,
           tag: data.tag || undefined,
-          todos: (data.todos||[]) as any
-        } as any
+          todos: (data.todos||[]) as Todo[]
+        }
         const map = { ...tasks }
         ;(map[dayKey] ||= []).push(t)
         setTasks(map)
@@ -210,8 +221,11 @@ const projectColorById = useMemo(() => {
       const next = [...projects, { id:data.id, name:data.name }]
       setProjects(next)
       if (!activeProject) setActiveProject(data.id)
+      handleSuccess(`Проект "${name}" создан`)
       setProjectName('')
       setOpenNewProject(false)
+    } else if (error) {
+      handleError(error, 'Создание проекта')
     }
   }
 
@@ -222,11 +236,11 @@ const projectColorById = useMemo(() => {
   const [taskDesc, setTaskDesc] = useState('')
   async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string){
     if (!uid || !taskDate) return
-    const resolvedProject = projectIdFromModal || (activeProject && activeProject!=='ALL' ? activeProject : null)
+    const resolvedProject = projectIdFromModal || (activeProject && activeProject!==TASK_PROJECT_ALL ? activeProject : null)
     if (!resolvedProject) return
     const title = (titleFromModal ?? taskTitle).trim()
     const desc  = (descFromModal ?? taskDesc)
-    const priority = (priorityFromModal ?? 'normal')
+    const priority = (priorityFromModal ?? TASK_PRIORITIES.NORMAL)
     const tag = (tagFromModal ?? '')
     const todos = (Array.isArray(todosFromModal) ? todosFromModal! : [])
     if (!title) return
@@ -240,8 +254,11 @@ const projectColorById = useMemo(() => {
       const map = { ...tasks }
       ;(map[key] ||= []).push(t)
       setTasks(map)
+      handleSuccess(`Задача "${title}" создана`)
       setTaskTitle(''); setTaskDesc('')
       setOpenNewTask(false)
+    } else if (error) {
+      handleError(error, 'Создание задачи')
     }
   }
 
@@ -276,7 +293,7 @@ const projectColorById = useMemo(() => {
   {(tasks[key] || []).map((t) => (
     <div
       key={t.id}
-      className={`task-card ${t.status === 'closed' ? 'is-closed' : ''}`}
+      className={`task-card ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''}`}
       style={{
         backgroundColor: projectColorById[t.project_id]
           ? hexToRgba(projectColorById[t.project_id], 0.1)
@@ -313,11 +330,11 @@ const projectColorById = useMemo(() => {
             <span
               className={
                 "inline-block rounded-full " +
-                (t.priority === "high"
+                (                t.priority === TASK_PRIORITIES.HIGH
                   ? "w-2.5 h-2.5 bg-red-500"
-                  : t.priority === "low"
+                  : t.priority === TASK_PRIORITIES.LOW
                   ? "w-2.5 h-2.5 bg-green-500"
-                  : t.priority === "medium"
+                  : t.priority === TASK_PRIORITIES.MEDIUM
                   ? "w-2.5 h-2.5 bg-yellow-500"
                   : "w-2.5 h-2.5 bg-gray-300")
               }
@@ -347,7 +364,7 @@ const projectColorById = useMemo(() => {
         <div className="text-xs text-gray-500 mt-0">
           {(() => {
             const total = Array.isArray(t.todos) ? t.todos.length : 0;
-            const done = Array.isArray(t.todos) ? t.todos.filter((x: any) => x.done).length : 0;
+            const done = Array.isArray(t.todos) ? t.todos.filter((x: Todo) => x.done).length : 0;
             return `${done}/${total}`;
           })()}
         </div>
@@ -367,7 +384,7 @@ const projectColorById = useMemo(() => {
       <TaskViewModal
         open={!!viewTask}
         onClose={()=>setViewTask(null)}
-        task={viewTask as any}
+        task={viewTask}
         onUpdated={(t)=>{
           if(!t) return; const map={...tasks}; const list=map[t.date||""]||[]; const i=list.findIndex(x=>x.id===t.id); if(i>=0){ list[i]={...list[i], ...t}; setTasks(map); }
         }}
@@ -377,7 +394,7 @@ const projectColorById = useMemo(() => {
         <div className="ctx-backdrop" onClick={()=>setCtx(c=>({...c, open:false}))} />
         <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }}>
           <div className="ctx-item" onClick={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}>Дублировать</div>
-          <div className="ctx-item" onClick={async()=>{ if(ctx.task && ctx.dayKey){ await supabase.from('tasks_items').update({status:'closed'}).eq('id', ctx.task.id); setTasks(prev=>{ const copy={...prev}; const arr=[...(copy[ctx.dayKey]||[])]; const i=arr.findIndex(x=>x.id===ctx.task!.id); if(i>=0){ arr[i]={...arr[i], status:'closed'}; } copy[ctx.dayKey]=arr; return copy; }); setCtx(c=>({...c, open:false})) }}}>Выполнить</div>
+          <div className="ctx-item" onClick={async()=>{ if(ctx.task && ctx.dayKey){ await supabase.from('tasks_items').update({status:TASK_STATUSES.CLOSED}).eq('id', ctx.task.id); setTasks(prev=>{ const copy={...prev}; const arr=[...(copy[ctx.dayKey]||[])]; const i=arr.findIndex(x=>x.id===ctx.task!.id); if(i>=0){ arr[i]={...arr[i], status:TASK_STATUSES.CLOSED}; } copy[ctx.dayKey]=arr; return copy; }); setCtx(c=>({...c, open:false})) }}}>Выполнить</div>
           <div className="ctx-item text-red-600" onClick={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}>Удалить</div>
         </div>
       </>)}

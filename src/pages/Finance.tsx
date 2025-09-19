@@ -1,8 +1,6 @@
 import { MoreVertical } from "lucide-react";
 import { TableSkeleton } from '@/components/Skeleton'
 
-const CACHE_VERSION = 'v2'
-
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '@/ui.css'
@@ -23,6 +21,19 @@ function findCatById(id: string, list: Cat[]): Cat | undefined { return list.fin
 import { clampToViewport, CTX_MENU_W, CTX_MENU_H_CAT, CTX_MENU_H_CELL, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
+import { useErrorHandler } from '@/lib/errorHandler'
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { useFinanceCache } from '@/hooks/useFinanceCache'
+import { 
+  CACHE_VERSION, 
+  MONTHS_IN_YEAR, 
+  FINANCE_TYPES, 
+  FINANCE_MONTHS,
+  CONTEXT_MENU_WIDTH,
+  CONTEXT_MENU_HEIGHT_CATEGORY,
+  CONTEXT_MENU_HEIGHT_CELL,
+  CACHE_KEYS
+} from '@/lib/constants'
 
 
 // Added: accessible trigger for context menu
@@ -43,32 +54,18 @@ function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.Ke
 
 const fmtEUR = (n:number) => formatCurrencyEUR(n, { maximumFractionDigits: 0 })
 
-const cacheKey = (uid: string, year: number) => `finance:${CACHE_VERSION}:${uid}:${year}`
-function writeCache(uid: string, year: number, data: {
-  income: { id: string; name: string; values: number[]; parent_id?: string | null }[]
-  expense:{ id: string; name: string; values: number[]; parent_id?: string | null }[]
-}) {
-  try { localStorage.setItem(cacheKey(uid, year), JSON.stringify(data)) } catch {}
-}
-function readCache(uid: string, year: number) {
-  try {
-    const raw = localStorage.getItem(cacheKey(uid, year))
-    if (!raw) return null
-    return JSON.parse(raw) as {
-      income: { id: string; name: string; values: number[]; parent_id?: string | null }[]
-      expense:{ id: string; name: string; values: number[]; parent_id?: string | null }[]
-    }
-  } catch { return null }
-}
+// Cache functions moved to useFinanceCache hook
 
 
 export default function Finance(){
+  const { handleError, handleSuccess } = useErrorHandler()
+  const { userId, loading: authLoading } = useSupabaseAuth()
+  const { writeCache, readCache } = useFinanceCache()
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
 
   const [year, setYear] = useState(currentYear)
-  const [userId, setUserId] = useState<string | null>(null)
 
   const [incomeRaw, setIncomeRaw] = useState<Cat[]>([])
   const [expenseRaw, setExpenseRaw] = useState<Cat[]>([])
@@ -80,7 +77,7 @@ export default function Finance(){
   const [loading, setLoading] = useState(true)
 
   const [showAdd, setShowAdd] = useState(false)
-  const [newType, setNewType] = useState<'income'|'expense'>('income')
+  const [newType, setNewType] = useState<'income'|'expense'>(FINANCE_TYPES.INCOME)
   const [newName, setNewName] = useState('')
   const [newParent, setNewParent] = useState<{id:string,name:string}|null>(null)
 
@@ -97,6 +94,7 @@ export default function Finance(){
   const [cellCtx, setCellCtx] = useState<CellCtx|null>(null)
   const [cellClipboard, setCellClipboard] = useState<EntryLite[]|null>(null)
   const [cellCanCopy, setCellCanCopy] = useState(false)
+  const [cellEntries, setCellEntries] = useState<EntryLite[]|null>(null)
 
   const [showStats, setShowStats] = useState(false)
 
@@ -107,16 +105,7 @@ export default function Finance(){
   const [ctxCatHighlight, setCtxCatHighlight] = useState<string|null>(null)
   const [ctxCellHighlight, setCtxCellHighlight] = useState<CellCtx|null>(null)
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const uid = data.session?.user?.id || null
-      setUserId(uid)
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
-      setUserId(sess?.user?.id || null)
-    })
-    return () => { sub.subscription.unsubscribe() }
-  }, [])
+  // Auth loading handled by useSupabaseAuth hook
 
   useEffect(() => {
     if (!userId) return
@@ -133,20 +122,24 @@ export default function Finance(){
         supabase.from('finance_categories').select('id,name,type,parent_id').order('created_at', { ascending: true }),
         supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', year),
       ])
-      if (catsRes.error || entriesRes.error) { console.error(catsRes.error || entriesRes.error); setLoading(false); return }
+      if (catsRes.error || entriesRes.error) { 
+        handleError(catsRes.error || entriesRes.error, 'Загрузка финансовых данных'); 
+        setLoading(false); 
+        return 
+      }
       const cats = catsRes.data || []
       const entries = entriesRes.data || []
       const byId: Record<string, number[]> = {}
-      for (const c of cats) byId[c.id] = Array(12).fill(0)
+      for (const c of cats) byId[c.id] = Array(MONTHS_IN_YEAR).fill(0)
       for (const e of entries) {
         if (!e.included) continue
         const i = Math.min(11, Math.max(0, (e.month as number) - 1))
         const id = e.category_id as string
-        if (!byId[id]) byId[id] = Array(12).fill(0)
+        if (!byId[id]) byId[id] = Array(MONTHS_IN_YEAR).fill(0)
         byId[id][i] += Number(e.amount) || 0
       }
-      const income = cats.filter((c:any)=>c.type==='income').map((c:any)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(12).fill(0) }))
-      const expense = cats.filter((c:any)=>c.type==='expense').map((c:any)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(12).fill(0) }))
+      const income = cats.filter((c:any)=>c.type===FINANCE_TYPES.INCOME).map((c:any)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
+      const expense = cats.filter((c:any)=>c.type===FINANCE_TYPES.EXPENSE).map((c:any)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
       setIncomeRaw(income); setExpenseRaw(expense); setLoading(false)
       writeCache(userId, year, {
         income: income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
@@ -190,19 +183,20 @@ export default function Finance(){
     const name = newName.trim()
     if (!name || !userId) return
     const type = newType
-    const payload: any = { user_id: userId, type, name }
+    const payload: { user_id: string; type: 'income' | 'expense'; name: string; parent_id?: string } = { user_id: userId, type, name }
     if (newParent) payload.parent_id = newParent.id
     const { data, error } = await supabase.from('finance_categories').insert(payload).select('id,name,type,parent_id').single()
-    if (error) { console.error(error); return }
-    const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(12).fill(0) }
-    if (type === 'income') {
+    if (error) { handleError(error, 'Создание категории'); return }
+    const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(MONTHS_IN_YEAR).fill(0) }
+    if (type === FINANCE_TYPES.INCOME) {
       const raw = [incomeRaw, cat]; setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     } else {
       const raw = [expenseRaw, cat]; setExpenseRaw(raw)
       writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     }
-    setShowAdd(false); setNewName(''); setNewType('income'); setNewParent(null)
+    handleSuccess(`Категория "${name}" создана`)
+    setShowAdd(false); setNewName(''); setNewType(FINANCE_TYPES.INCOME); setNewParent(null)
   }
 
   function onContextCategory(e: React.MouseEvent, cat: {id:string,name:string,type:'income'|'expense'}) {
@@ -210,7 +204,7 @@ export default function Finance(){
     if (cellCtxOpen) setCellCtxOpen(false)
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
-    const cl = clampToViewport(e.clientX, e.clientY, CTX_MENU_W, CTX_MENU_H_CAT)
+    const cl = clampToViewport(e.clientX, e.clientY, CONTEXT_MENU_WIDTH, CONTEXT_MENU_HEIGHT_CATEGORY)
     setCtxPos({ x: cl.x, y: cl.y })
     setCtxCat(cat)
     setCtxOpen(true)
@@ -221,7 +215,7 @@ export default function Finance(){
     const name = renameValue.trim()
     if (!name || !ctxCat) { setRenameOpen(false); return }
     const { error } = await supabase.from('finance_categories').update({ name }).eq('id', ctxCat.id)
-    if (error) { console.error(error); return }
+    if (error) { handleError(error, 'Создание категории'); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -235,7 +229,7 @@ export default function Finance(){
   async function confirmDelete(){
     if (!ctxCat) return
     const { error } = await supabase.from('finance_categories').delete().eq('id', ctxCat.id)
-    if (error) { console.error(error); return }
+    if (error) { handleError(error, 'Создание категории'); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.filter(c => c.id !== ctxCat.id); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -262,7 +256,7 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    const cl = clampToViewport(e.clientX, e.clientY, CTX_MENU_W, CTX_MENU_H_CELL)
+    const cl = clampToViewport(e.clientX, e.clientY, CONTEXT_MENU_WIDTH, CONTEXT_MENU_HEIGHT_CELL)
     setCellCtx({catId, type, month})
     setCellCtxPos({ x: cl.x, y: cl.y })
     setCellCanCopy(false)
@@ -273,8 +267,13 @@ export default function Finance(){
       .select('amount, note, included, position')
       .match(where)
       .order('position', { ascending: true }).order('created_at', { ascending: true })
-    const entries: EntryLite[] = (data || []).map((d:any)=>({ amount:Number(d.amount)||0, note:d.note, included:!!d.included, position: d.position ?? 0 }))
-    ;(window as any).__entriesForCopy = entries
+    const entries: EntryLite[] = (data || []).map((d: { amount: number; note: string | null; included: boolean; position: number | null })=>({ 
+      amount: Number(d.amount) || 0, 
+      note: d.note, 
+      included: !!d.included, 
+      position: d.position ?? 0 
+    }))
+    setCellEntries(entries)
     if (!entries.length && !canPaste) {
       setCellCtxOpen(false); setCtxCellHighlight(null)
       return
@@ -284,7 +283,7 @@ export default function Finance(){
   }
 
   async function copyCell(){
-    const entries: EntryLite[] = (window as any).__entriesForCopy || []
+    const entries: EntryLite[] = cellEntries || []
     if (!entries.length) { setCellCtxOpen(false); setCtxCellHighlight(null); return }
     setCellClipboard(entries.slice())
     try { await navigator.clipboard.writeText(JSON.stringify(entries)) } catch {}
@@ -320,17 +319,17 @@ export default function Finance(){
   return (
     <>
       <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
-        <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType('income'); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
+        <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
 
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Категория</div></div>
-        {months.map((m,idx) => (
+        {FINANCE_MONTHS.map((m,idx) => (
           <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
             <div className="cell-head cell-right">{m} {year}</div>
           </div>
         ))}
 
-        <SectionHeader title="Доходы" onAdd={()=>{ setNewType('income'); setNewParent(null); setShowAdd(true) }} />
+        <SectionHeader title="Доходы" onAdd={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} />
 
         {incomeCategories.map((row)=> {
           const hasChildren = !!aggregatedIncomeByParent[row.id]
@@ -347,7 +346,7 @@ export default function Finance(){
               onToggleCollapse={(id)=> setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))}
               onNameContext={(e, info)=> onContextCategory(e, info)}
               onCellContext={onCellContext}
-              onCellEdit={(t,id,mi)=>{ setEditorCat({ id, name: row.name, type: t as any } as CtxCat); setEditorMonth(mi); setEditorOpen(true) }}
+              onCellEdit={(t,id,mi)=>{ setEditorCat({ id, name: row.name, type: t } as CtxCat); setEditorMonth(mi); setEditorOpen(true) }}
               fmt={fmtEUR}
               ctxCatHighlight={ctxCatHighlight}
               ctxCellHighlight={ctxCellHighlight}
@@ -355,7 +354,7 @@ export default function Finance(){
           )
         })}
 
-        <SectionHeader title="Расходы" onAdd={()=>{ setNewType('expense'); setNewParent(null); setShowAdd(true) }} />
+        <SectionHeader title="Расходы" onAdd={()=>{ setNewType(FINANCE_TYPES.EXPENSE); setNewParent(null); setShowAdd(true) }} />
 
         {expenseCategories.map((row)=> {
           const hasChildren = !!aggregatedExpenseByParent[row.id]
@@ -372,7 +371,7 @@ export default function Finance(){
               onToggleCollapse={(id)=> setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))}
               onNameContext={(e, info)=> onContextCategory(e, info)}
               onCellContext={onCellContext}
-              onCellEdit={(t,id,mi)=>{ setEditorCat({ id, name: row.name, type: t as any } as CtxCat); setEditorMonth(mi); setEditorOpen(true) }}
+              onCellEdit={(t,id,mi)=>{ setEditorCat({ id, name: row.name, type: t } as CtxCat); setEditorMonth(mi); setEditorOpen(true) }}
               fmt={fmtEUR}
               ctxCatHighlight={ctxCatHighlight}
               ctxCellHighlight={ctxCellHighlight}
@@ -383,7 +382,7 @@ export default function Finance(){
 
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Показатель</div></div>
-        {months.map((m,idx) => (
+        {FINANCE_MONTHS.map((m,idx) => (
           <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
             <div className="cell-head cell-right">{m} {year}</div>
           </div>
@@ -421,7 +420,7 @@ export default function Finance(){
           canAddSub={!Boolean((findCatById(ctxCat.id, incomeRaw) || findCatById(ctxCat.id, expenseRaw))?.parent_id)}
           onClose={closeCtx}
           onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
-          onAddSub={()=>{ setNewType(ctxCat.type); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}
+          onAddSub={()=>{ setNewType(ctxCat.type as 'income' | 'expense'); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}
           onDelete={()=>{ setDeleteOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
         />
       )}{cellCtxOpen && cellCtx && (

@@ -25,14 +25,26 @@ export type GoalUpsert = {
 
 const table = 'goals'
 
-function computeProgress(row: any): number {
+interface GoalRow {
+  id: number
+  user_id: string
+  title: string
+  notes?: string | null
+  target_amount?: number | null
+  current_amount?: number | null
+  deadline?: string | null
+  created_at: string
+  type?: string | null
+}
+
+function computeProgress(row: GoalRow): number {
   const tgt = Number(row.target_amount ?? 0)
   const cur = Number(row.current_amount ?? 0)
   if (tgt > 0) return Math.max(0, Math.min(100, (cur / tgt) * 100))
   return 0
 }
 
-function mapRow(row: any): Goal {
+function mapRow(row: GoalRow): Goal {
   const p = computeProgress(row)
   return {
     id: row.id,
@@ -61,9 +73,7 @@ export async function listGoals(): Promise<Goal[]> {
 export async function createGoal(g: GoalUpsert): Promise<Goal> {
   const p = Math.max(0, Math.min(100, Math.round(g.progress ?? 0)))
 
-  // ВАЖНО: подставляем допустимое значение type.
-  // Если твой CHECK требует другое — поменяй на 'amount' или своё.
-  const payload: any = {
+  const payload: Omit<GoalRow, 'id' | 'user_id' | 'created_at'> = {
     title: g.title,
     notes: g.description ?? null,
     type: 'checklist',
@@ -78,7 +88,7 @@ export async function createGoal(g: GoalUpsert): Promise<Goal> {
 }
 
 export async function updateGoal(id: number, g: GoalUpsert): Promise<Goal> {
-  const patch: any = {
+  const patch: Partial<Pick<GoalRow, 'title' | 'notes' | 'deadline' | 'current_amount' | 'target_amount'>> = {
     title: g.title,
     notes: g.description ?? null,
     deadline: g.deadline ?? null,

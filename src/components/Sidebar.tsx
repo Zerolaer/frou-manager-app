@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, Home, Wallet, ListTodo, StickyNote, Goal } from "lucide-react";
 import SidebarItem from "./SidebarItem";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { CACHE_KEYS, APP_NAME } from "@/lib/constants";
 import "../sidebar.css";
 
 type Item = { to: string; label: string; icon?: any };
@@ -16,13 +18,7 @@ const NAV: Item[] = [
 ];
 
 export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem("app.sidebar.collapsed") === "1"; } catch { return false; }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem("app.sidebar.collapsed", collapsed ? "1" : "0"); } catch {}
-  }, [collapsed]);
+  const [collapsed, setCollapsed] = useLocalStorage(CACHE_KEYS.SIDEBAR_COLLAPSED, false);
 
   return (
     <aside className={collapsed ? "frou-sidebar is-collapsed" : "frou-sidebar"} role="navigation" aria-label="Основное меню">
@@ -30,7 +26,7 @@ export default function Sidebar() {
       <div className="fs-header">
         <Link to="/" className="fs-logo" aria-label="На главную">
           <div className="fs-badge">F</div>
-          {!collapsed && <div className="fs-brand">Finance Suite</div>}
+          {!collapsed && <div className="fs-brand">{APP_NAME}</div>}
         </Link>
       </div>
 
