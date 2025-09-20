@@ -23,9 +23,7 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-type Project = { id:string; name:string; color?: string | null }
-type Todo = { id:string; text:string; done:boolean }
- type TaskItem = { id:string; title:string; description?:string; date:string; position:number; priority?:string; tag?:string; todos?: Todo[] }
+import type { Project, Todo, TaskItem } from '@/types/shared'
 
 export default function Tasks(){
   const { handleError, handleSuccess } = useErrorHandler()

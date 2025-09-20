@@ -1,24 +1,7 @@
-export type MoneyType = 'income' | 'expense'
+// Re-export types from shared types for backward compatibility
+export type { MoneyType, Cat, CtxCat } from '@/types/shared'
 
-export type Cat = {
-  id: string
-  name: string
-  type: MoneyType
-  values: number[]
-  parent_id?: string | null
-}
-
-export type CtxCat = {
-  id: string
-  name: string
-  type: MoneyType
-}
-
-export type CellCtx = {
-  catId: string
-  type: MoneyType
-  month: number
-}
+export type { FinanceCellCtx as CellCtx } from '@/types/shared'
 
 export type EntryLite = {
   amount: number

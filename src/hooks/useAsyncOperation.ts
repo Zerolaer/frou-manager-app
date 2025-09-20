@@ -7,7 +7,7 @@ interface AsyncOperationState<T> {
   error: Error | null
 }
 
-export function useAsyncOperation<T = any>() {
+export function useAsyncOperation<T = unknown>() {
   const { handleError } = useErrorHandler()
   const [state, setState] = useState<AsyncOperationState<T>>({
     data: null,

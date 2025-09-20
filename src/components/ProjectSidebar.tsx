@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
 import Modal from '@/components/Modal'
 
-type Project = { id:string; name:string; color?:string; position?:number }
+import type { Project } from '@/types/shared'
 
 type Props = {
   userId: string

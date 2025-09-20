@@ -16,7 +16,7 @@ import CategoryRow from '@/components/finance/CategoryRow'
 import SummaryRow from '@/components/finance/SummaryRow'
 import CategoryMenu from '@/components/finance/CategoryMenu'
 import CellMenu from '@/components/finance/CellMenu'
-import type { Cat, CtxCat, CellCtx, EntryLite } from '@/features/finance/types'
+import type { Cat, CtxCat, CellCtx, EntryLite } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, CTX_MENU_W, CTX_MENU_H_CAT, CTX_MENU_H_CELL, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
@@ -138,8 +138,8 @@ export default function Finance(){
         if (!byId[id]) byId[id] = Array(MONTHS_IN_YEAR).fill(0)
         byId[id][i] += Number(e.amount) || 0
       }
-      const income = cats.filter((c:any)=>c.type===FINANCE_TYPES.INCOME).map((c:any)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
-      const expense = cats.filter((c:any)=>c.type===FINANCE_TYPES.EXPENSE).map((c:any)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
+      const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
+      const expense = cats.filter((c)=>c.type===FINANCE_TYPES.EXPENSE).map((c)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
       setIncomeRaw(income); setExpenseRaw(expense); setLoading(false)
       writeCache(userId, year, {
         income: income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),

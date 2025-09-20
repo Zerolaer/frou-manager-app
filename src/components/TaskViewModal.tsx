@@ -5,7 +5,8 @@ import Modal from '@/components/Modal'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
 
-type Todo = { id: string; text: string; done: boolean }
+import type { Todo, Project } from '@/types/shared'
+
 type Task = {
   id: string
   project_id?: string | null
@@ -18,8 +19,6 @@ type Task = {
   todos?: Todo[]
   status?: 'open' | 'closed'
 }
-
-type Project = { id: string; name: string | null }
 
 type Props = {
   open: boolean

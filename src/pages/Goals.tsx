@@ -5,8 +5,10 @@ import GoalCard from '@/components/goals/GoalCard'
 import GoalModal from '@/components/goals/GoalModal'
 import GoalsStats from '@/components/goals/GoalsStats'
 import { listGoals, createGoal, updateGoal, deleteGoal, completeGoal, type Goal, type GoalUpsert } from '@/features/goals/api'
+import { useErrorHandler } from '@/lib/errorHandler'
 
 export default function GoalsPage(){
+  const { handleError, handleSuccess } = useErrorHandler()
   const [items, setItems] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -20,11 +22,13 @@ export default function GoalsPage(){
         setLoading(true)
         const data = await listGoals()
         setItems(data)
+      } catch (error) {
+        handleError(error, 'Загрузка целей')
       } finally {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [handleError])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -35,22 +39,38 @@ export default function GoalsPage(){
   const onEdit = (g: Goal) => { setEditing(g); setModalOpen(true) }
   const onDelete = async (g: Goal) => {
     if (!confirm('Удалить цель?')) return
-    await deleteGoal(g.id)
-    setItems(s => s.filter(x => x.id !== g.id))
+    try {
+      await deleteGoal(g.id)
+      setItems(s => s.filter(x => x.id !== g.id))
+      handleSuccess('Цель удалена')
+    } catch (error) {
+      handleError(error, 'Удаление цели')
+    }
   }
   const onComplete = async (g: Goal) => {
-    const updated = await completeGoal(g.id)
-    setItems(s => s.map(x => x.id === g.id ? updated : x))
+    try {
+      const updated = await completeGoal(g.id)
+      setItems(s => s.map(x => x.id === g.id ? updated : x))
+      handleSuccess('Цель завершена')
+    } catch (error) {
+      handleError(error, 'Завершение цели')
+    }
   }
   const onSave = async (payload: GoalUpsert, id?: string) => {
-    if (id) {
-      const updated = await updateGoal(id, payload)
-      setItems(s => s.map(x => x.id === id ? updated : x))
-    } else {
-      const created = await createGoal(payload)
-      setItems(s => [created, ...s])
+    try {
+      if (id) {
+        const updated = await updateGoal(id, payload)
+        setItems(s => s.map(x => x.id === id ? updated : x))
+        handleSuccess('Цель обновлена')
+      } else {
+        const created = await createGoal(payload)
+        setItems(s => [created, ...s])
+        handleSuccess('Цель создана')
+      }
+      setModalOpen(false)
+    } catch (error) {
+      handleError(error, id ? 'Обновление цели' : 'Создание цели')
     }
-    setModalOpen(false)
   }
 
   return (

@@ -1,18 +1,18 @@
 import React from 'react'
 
 type Props = { children: React.ReactNode, fallback?: React.ReactNode }
-type State = { hasError: boolean, error?: any }
+type State = { hasError: boolean, error?: Error }
 
 export default class AppErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props){
     super(props)
     this.state = { hasError: false }
   }
-  static getDerivedStateFromError(error: any){
+  static getDerivedStateFromError(error: Error){
     return { hasError: true, error }
   }
-  componentDidCatch(error: any, info: any){
-    console.error('AppErrorBoundary caught:', error, info)
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo){
+    console.error('AppErrorBoundary caught:', error, errorInfo)
   }
   render(){
     if (this.state.hasError){

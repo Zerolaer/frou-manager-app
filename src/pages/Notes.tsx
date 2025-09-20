@@ -5,8 +5,11 @@ import NoteEditorModal from '@/components/notes/NoteEditorModal';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote, type SortKey } from '@/features/notes/api';
 import { useDebounce } from '@/features/notes/useDebounce';
+import { useErrorHandler } from '@/lib/errorHandler';
+import { LoadingState, ListSkeleton } from '@/components/LoadingStates';
 
 export default function NotesPage() {
+  const { handleError, handleSuccess } = useErrorHandler();
   const [notes, setNotes] = useState<Note[]>([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('updated_at');
@@ -22,6 +25,10 @@ export default function NotesPage() {
       const data = await listNotes(debouncedSearch, sort);
       if (signal?.aborted) return;
       setNotes(data);
+    } catch (error) {
+      if (!signal?.aborted) {
+        handleError(error, 'Загрузка заметок');
+      }
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
@@ -34,23 +41,39 @@ export default function NotesPage() {
   }, [sort, debouncedSearch]);
 
   async function handleSave(draft: Partial<Note>, id?: string) {
-    if (!id) {
-      const created = await createNote(draft);
-      setNotes((prev) => [created, ...prev]);
-    } else {
-      const updated = await updateNote(id, draft);
-      setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+    try {
+      if (!id) {
+        const created = await createNote(draft);
+        setNotes((prev) => [created, ...prev]);
+        handleSuccess('Заметка создана');
+      } else {
+        const updated = await updateNote(id, draft);
+        setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+        handleSuccess('Заметка обновлена');
+      }
+    } catch (error) {
+      handleError(error, id ? 'Обновление заметки' : 'Создание заметки');
     }
   }
 
   async function handleDelete(id: string) {
-    await deleteNote(id);
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await deleteNote(id);
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+      handleSuccess('Заметка удалена');
+    } catch (error) {
+      handleError(error, 'Удаление заметки');
+    }
   }
 
   async function handleTogglePin(n: Note) {
-    const updated = await togglePin(n.id, !n.pinned);
-    setNotes((prev) => prev.map((x) => (x.id === n.id ? updated : x)));
+    try {
+      const updated = await togglePin(n.id, !n.pinned);
+      setNotes((prev) => prev.map((x) => (x.id === n.id ? updated : x)));
+      handleSuccess(n.pinned ? 'Закрепление снято' : 'Заметка закреплена');
+    } catch (error) {
+      handleError(error, 'Изменение закрепления');
+    }
   }
 
   const empty = !loading && notes.length === 0 && !search;
@@ -87,22 +110,12 @@ export default function NotesPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-sm text-gray-500 py-10">Загрузка…</div>
-      ) : empty ? (
-        <div className="py-16 text-center text-gray-500">
-          <p className="text-sm">Пока нет заметок.</p>
-          <button
-            className="btn mt-4 px-4 py-2 text-sm"
-            onClick={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
-          >
-            Создать первую
-          </button>
-        </div>
-      ) : (
+      <LoadingState
+        loading={loading}
+        empty={empty}
+        emptyMessage="Пока нет заметок"
+        loadingComponent={<ListSkeleton count={6} />}
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {notes.map((n) => (
             <NoteCard
@@ -117,7 +130,7 @@ export default function NotesPage() {
             />
           ))}
         </div>
-      )}
+      </LoadingState>
 
       <NoteEditorModal
         open={modalOpen}
