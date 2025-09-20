@@ -8,9 +8,12 @@ import { listGoals, createGoal, updateGoal, deleteGoal, completeGoal, type Goal,
 import { useErrorHandler } from '@/lib/errorHandler'
 import { LoadingState, ListSkeleton } from '@/components/LoadingStates'
 import { VirtualizedList } from '@/components/VirtualizedList'
+import { PageErrorBoundary } from '@/components/ErrorBoundaries'
+import { useApiWithRetry } from '@/hooks/useRetry'
 
-export default function GoalsPage(){
+function GoalsPageContent(){
   const { handleError, handleSuccess } = useErrorHandler()
+  const { executeApiCall } = useApiWithRetry()
   const [items, setItems] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -22,15 +25,17 @@ export default function GoalsPage(){
     (async () => {
       try {
         setLoading(true)
-        const data = await listGoals()
-        setItems(data)
+        const data = await executeApiCall(() => listGoals())
+        if (data) {
+          setItems(data)
+        }
       } catch (error) {
         handleError(error, 'Загрузка целей')
       } finally {
         setLoading(false)
       }
     })()
-  }, [handleError])
+  }, [handleError, executeApiCall])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -116,4 +121,17 @@ export default function GoalsPage(){
       <GoalsStats open={statsOpen} onClose={() => setStatsOpen(false)} goals={items} />
     </div>
   )
+}
+
+export default function GoalsPage(){
+  return (
+    <PageErrorBoundary 
+      pageName="Цели"
+      onError={(error, errorInfo) => {
+        console.error('Goals page error:', error, errorInfo);
+      }}
+    >
+      <GoalsPageContent />
+    </PageErrorBoundary>
+  );
 }

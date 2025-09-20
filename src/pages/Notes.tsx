@@ -10,9 +10,12 @@ import { LoadingState, ListSkeleton } from '@/components/LoadingStates';
 import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { AccessibleInput, AccessibleButton } from '@/components/AccessibleComponents';
 import { ARIA_LABELS } from '@/lib/accessibility';
+import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
+import { useApiWithRetry } from '@/hooks/useRetry';
 
-export default function NotesPage() {
+function NotesPageContent() {
   const { handleError, handleSuccess } = useErrorHandler();
+  const { executeApiCall, isLoading, retryCount } = useApiWithRetry();
   const [notes, setNotes] = useState<Note[]>([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('updated_at');
@@ -25,9 +28,11 @@ export default function NotesPage() {
   async function reload(signal?: AbortSignal) {
     setLoading(true);
     try {
-      const data = await listNotes(debouncedSearch, sort);
+      const data = await executeApiCall(() => listNotes(debouncedSearch, sort));
       if (signal?.aborted) return;
-      setNotes(data);
+      if (data) {
+        setNotes(data);
+      }
     } catch (error) {
       if (!signal?.aborted) {
         handleError(error, 'Загрузка заметок');
@@ -200,5 +205,18 @@ export default function NotesPage() {
         onDelete={handleDelete}
       />
     </div>
+  );
+}
+
+export default function NotesPage() {
+  return (
+    <PageErrorBoundary 
+      pageName="Заметки"
+      onError={(error, errorInfo) => {
+        console.error('Notes page error:', error, errorInfo);
+      }}
+    >
+      <NotesPageContent />
+    </PageErrorBoundary>
   );
 }
