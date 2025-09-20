@@ -247,14 +247,14 @@ export const srOnly = {
 
 // Skip links for keyboard navigation
 export function SkipLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 bg-blue-600 text-white p-2 z-50"
-      style={srOnly.style}
-    >
-      {children}
-    </a>
+  return React.createElement(
+    'a',
+    {
+      href,
+      className: "sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 bg-blue-600 text-white p-2 z-50",
+      style: srOnly.style
+    },
+    children
   )
 }
 

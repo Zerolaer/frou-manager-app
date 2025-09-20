@@ -8,10 +8,11 @@ export function createLazyComponent<T extends ComponentType<any>>(
   const LazyComponent = lazy(importFunction)
   
   return function LazyWrapper(props: React.ComponentProps<T>) {
-    return (
-      <React.Suspense fallback={fallback ? React.createElement(fallback) : <div>Загрузка...</div>}>
-        <LazyComponent {...props} />
-      </React.Suspense>
+    const FallbackComponent = fallback || (() => React.createElement('div', null, 'Загрузка...'))
+    return React.createElement(
+      React.Suspense,
+      { fallback: React.createElement(FallbackComponent) },
+      React.createElement(LazyComponent, props)
     )
   }
 }
@@ -58,25 +59,25 @@ export const LazyPages = {
 
 // Feature-based code splitting
 export const LazyFeatures = {
-  FinanceGrid: lazy(() => import('@/components/finance/FinanceGrid')),
   TaskModal: lazy(() => import('@/components/TaskViewModal')),
   GoalModal: lazy(() => import('@/components/goals/GoalModal')),
   NoteEditor: lazy(() => import('@/components/notes/NoteEditorModal'))
+  // FinanceGrid: lazy(() => import('@/components/finance/FinanceGrid')), // Uncomment when component exists
 }
 
 // Component-based code splitting
 export const LazyComponents = {
-  Chart: lazy(() => import('@/components/Chart')),
-  Calendar: lazy(() => import('@/components/Calendar')),
-  FileUpload: lazy(() => import('@/components/FileUpload')),
-  RichTextEditor: lazy(() => import('@/components/RichTextEditor'))
+  // Chart: lazy(() => import('@/components/Chart')), // Uncomment when component exists
+  // Calendar: lazy(() => import('@/components/Calendar')), // Uncomment when component exists
+  // FileUpload: lazy(() => import('@/components/FileUpload')), // Uncomment when component exists
+  // RichTextEditor: lazy(() => import('@/components/RichTextEditor')) // Uncomment when component exists
 }
 
 // Dynamic imports for heavy libraries
 export const LazyLibraries = {
-  dateFns: () => import('date-fns'),
-  chartJs: () => import('chart.js'),
-  monaco: () => import('@monaco-editor/react')
+  dateFns: () => import('date-fns')
+  // chartJs: () => import('chart.js'), // Uncomment when chart.js is installed
+  // monaco: () => import('@monaco-editor/react') // Uncomment when @monaco-editor/react is installed
 }
 
 // Hook for loading states
