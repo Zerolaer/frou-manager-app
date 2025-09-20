@@ -556,3 +556,4 @@ export const ANIMATION_CSS = `
 .animate-ping { animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
 .animate-wiggle { animation: wiggle 1s ease-in-out infinite; }
 `
+

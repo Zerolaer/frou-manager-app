@@ -381,3 +381,4 @@ export const DataSavingMode: React.FC<DataSavingModeProps> = ({
 
   return <>{children}</>
 }
+

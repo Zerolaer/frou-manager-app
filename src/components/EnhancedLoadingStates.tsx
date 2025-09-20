@@ -354,3 +354,4 @@ if (typeof document !== 'undefined') {
   styleSheet.textContent = animationStyles
   document.head.appendChild(styleSheet)
 }
+

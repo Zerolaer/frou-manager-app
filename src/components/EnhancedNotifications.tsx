@@ -409,3 +409,4 @@ if (typeof document !== 'undefined') {
   styleSheet.textContent = progressBarCSS
   document.head.appendChild(styleSheet)
 }
+

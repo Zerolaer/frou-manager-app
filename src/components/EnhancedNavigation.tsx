@@ -472,3 +472,4 @@ export const SearchNavigation: React.FC<{
     </div>
   )
 }
+
