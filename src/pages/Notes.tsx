@@ -1,5 +1,5 @@
 /* src/pages/Notes.tsx */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
 import type { Note } from '@/features/notes/types';
@@ -7,6 +7,9 @@ import { createNote, deleteNote, listNotes, togglePin, updateNote, type SortKey 
 import { useDebounce } from '@/features/notes/useDebounce';
 import { useErrorHandler } from '@/lib/errorHandler';
 import { LoadingState, ListSkeleton } from '@/components/LoadingStates';
+import { VirtualizedGrid } from '@/components/VirtualizedList';
+import { AccessibleInput, AccessibleButton } from '@/components/AccessibleComponents';
+import { ARIA_LABELS } from '@/lib/accessibility';
 
 export default function NotesPage() {
   const { handleError, handleSuccess } = useErrorHandler();
@@ -40,7 +43,7 @@ export default function NotesPage() {
     return () => ctl.abort();
   }, [sort, debouncedSearch]);
 
-  async function handleSave(draft: Partial<Note>, id?: string) {
+  const handleSave = useCallback(async (draft: Partial<Note>, id?: string) => {
     try {
       if (!id) {
         const created = await createNote(draft);
@@ -54,9 +57,9 @@ export default function NotesPage() {
     } catch (error) {
       handleError(error, id ? 'Обновление заметки' : 'Создание заметки');
     }
-  }
+  }, [handleError, handleSuccess]);
 
-  async function handleDelete(id: string) {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await deleteNote(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
@@ -64,9 +67,9 @@ export default function NotesPage() {
     } catch (error) {
       handleError(error, 'Удаление заметки');
     }
-  }
+  }, [handleError, handleSuccess]);
 
-  async function handleTogglePin(n: Note) {
+  const handleTogglePin = useCallback(async (n: Note) => {
     try {
       const updated = await togglePin(n.id, !n.pinned);
       setNotes((prev) => prev.map((x) => (x.id === n.id ? updated : x)));
@@ -74,39 +77,78 @@ export default function NotesPage() {
     } catch (error) {
       handleError(error, 'Изменение закрепления');
     }
-  }
+  }, [handleError, handleSuccess]);
 
   const empty = !loading && notes.length === 0 && !search;
+
+  // Memoized event handlers
+  const handleCreateNote = useCallback(() => {
+    setEditing(null);
+    setModalOpen(true);
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+  }, []);
+
+  const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSort(e.target.value as SortKey);
+  }, []);
+
+  const handleEditNote = useCallback((note: Note) => {
+    setEditing(note);
+    setModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
+  // Memoized grid columns based on screen size
+  const gridColumns = useMemo(() => {
+    // This could be enhanced with a hook to detect screen size
+    return 4; // Default for 2xl screens
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <button
-            className="btn px-4 py-2 text-sm"
-            onClick={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
+          <AccessibleButton
+            variant="primary"
+            size="sm"
+            onClick={handleCreateNote}
+            ariaLabel={ARIA_LABELS.ADD + ' заметку'}
+            announceOnClick="Открыто окно создания заметки"
           >
             + Добавить заметку
-          </button>
-          <input
-            className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring focus:ring-blue-100 w-64"
+          </AccessibleButton>
+          
+          <AccessibleInput
+            label="Поиск заметок"
             placeholder="Поиск по заголовку…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearchChange}
+            className="w-64"
+            ariaLabel={ARIA_LABELS.SEARCH + ' заметок'}
           />
-          <select
-            className="border rounded-lg px-3 py-2 text-sm"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            title="Сортировка"
-          >
-            <option value="updated_at">По обновлению</option>
-            <option value="created_at">По созданию</option>
-            <option value="title">По алфавиту</option>
-          </select>
+          
+          <div className="flex flex-col">
+            <label htmlFor="sort-select" className="text-sm font-medium text-gray-700 mb-1">
+              Сортировка
+            </label>
+            <select
+              id="sort-select"
+              className="border rounded-lg px-3 py-2 text-sm"
+              value={sort}
+              onChange={handleSortChange}
+              aria-label="Выберите способ сортировки заметок"
+            >
+              <option value="updated_at">По обновлению</option>
+              <option value="created_at">По созданию</option>
+              <option value="title">По алфавиту</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -116,28 +158,46 @@ export default function NotesPage() {
         emptyMessage="Пока нет заметок"
         loadingComponent={<ListSkeleton count={6} />}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {notes.map((n) => (
-            <NoteCard
-              key={n.id}
-              note={n}
-              onEdit={(note) => {
-                setEditing(note);
-                setModalOpen(true);
-              }}
-              onDelete={(note) => handleDelete(note.id)}
-              onTogglePin={handleTogglePin}
-            />
-          ))}
-        </div>
+        {notes.length > 50 ? (
+          <VirtualizedGrid
+            items={notes}
+            columns={gridColumns}
+            itemHeight={200}
+            containerHeight={600}
+            renderItem={(note, index) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onEdit={handleEditNote}
+                onDelete={handleDelete}
+                onTogglePin={handleTogglePin}
+              />
+            )}
+            keyExtractor={(note) => note.id}
+            gap={16}
+            className="p-4"
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {notes.map((n) => (
+              <NoteCard
+                key={n.id}
+                note={n}
+                onEdit={handleEditNote}
+                onDelete={handleDelete}
+                onTogglePin={handleTogglePin}
+              />
+            ))}
+          </div>
+        )}
       </LoadingState>
 
       <NoteEditorModal
         open={modalOpen}
         note={editing}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSave}
-        onDelete={async (id) => handleDelete(id)}
+        onDelete={handleDelete}
       />
     </div>
   );

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabaseClient'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { AccessibleButton } from './AccessibleComponents'
+import { ARIA_LABELS } from '@/lib/accessibility'
 
 function clearFinanceCache(){
   try{
@@ -40,12 +42,26 @@ window.location.href = '/login'
   }
 
   return (
-    <div className="hidden lg:flex bg-white border-b border-gray-200 px-6 py-4 items-center justify-between">
-      <div className="text-xl font-semibold text-gray-800">{title}</div>
+    <header 
+      className="hidden lg:flex bg-white border-b border-gray-200 px-6 py-4 items-center justify-between"
+      role="banner"
+      aria-label="Заголовок страницы"
+    >
+      <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
       <div className="flex items-center gap-4">
-        <div className="text-sm text-gray-600">{email ?? '—'}</div>
-        <button onClick={signOut} className="btn-accent text-sm">Выйти</button>
+        <div className="text-sm text-gray-600" aria-label={`Пользователь: ${email ?? 'неизвестно'}`}>
+          {email ?? '—'}
+        </div>
+        <AccessibleButton
+          variant="secondary"
+          size="sm"
+          onClick={signOut}
+          ariaLabel="Выйти из системы"
+          announceOnClick="Выход из системы"
+        >
+          Выйти
+        </AccessibleButton>
       </div>
-    </div>
+    </header>
   )
 }

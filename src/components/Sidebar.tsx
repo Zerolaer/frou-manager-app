@@ -21,7 +21,12 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useLocalStorage(CACHE_KEYS.SIDEBAR_COLLAPSED, false);
 
   return (
-    <aside className={collapsed ? "frou-sidebar is-collapsed" : "frou-sidebar"} role="navigation" aria-label="Основное меню">
+    <aside 
+      id="main-navigation"
+      className={collapsed ? "frou-sidebar is-collapsed" : "frou-sidebar"} 
+      role="navigation" 
+      aria-label="Основное меню"
+    >
       {/* Header */}
       <div className="fs-header">
         <Link to="/" className="fs-logo" aria-label="На главную">

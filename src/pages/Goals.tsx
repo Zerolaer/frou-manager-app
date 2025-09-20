@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import '@/ui.css'
 import GoalsToolbar from '@/components/goals/GoalsToolbar'
 import GoalCard from '@/components/goals/GoalCard'
@@ -6,6 +6,8 @@ import GoalModal from '@/components/goals/GoalModal'
 import GoalsStats from '@/components/goals/GoalsStats'
 import { listGoals, createGoal, updateGoal, deleteGoal, completeGoal, type Goal, type GoalUpsert } from '@/features/goals/api'
 import { useErrorHandler } from '@/lib/errorHandler'
+import { LoadingState, ListSkeleton } from '@/components/LoadingStates'
+import { VirtualizedList } from '@/components/VirtualizedList'
 
 export default function GoalsPage(){
   const { handleError, handleSuccess } = useErrorHandler()
@@ -35,8 +37,27 @@ export default function GoalsPage(){
     return q ? items.filter(g => (g.title + ' ' + (g.description ?? '')).toLowerCase().includes(q)) : items
   }, [items, query])
 
-  const onCreate = () => { setEditing(null); setModalOpen(true) }
-  const onEdit = (g: Goal) => { setEditing(g); setModalOpen(true) }
+  const onCreate = useCallback(() => { 
+    setEditing(null); 
+    setModalOpen(true) 
+  }, []);
+  
+  const onEdit = useCallback((g: Goal) => { 
+    setEditing(g); 
+    setModalOpen(true) 
+  }, []);
+  
+  const onOpenStats = useCallback(() => {
+    setStatsOpen(true);
+  }, []);
+  
+  const onCloseStats = useCallback(() => {
+    setStatsOpen(false);
+  }, []);
+  
+  const onCloseModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
   const onDelete = async (g: Goal) => {
     if (!confirm('Удалить цель?')) return
     try {
