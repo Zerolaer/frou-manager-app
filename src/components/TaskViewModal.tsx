@@ -1,9 +1,10 @@
 
 // v1.0.6: square menu button, full-width status switcher, custom checkbox for subtasks
-import { useEffect, useRef, useState } from 'react'
-import Modal from '@/components/Modal'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import Modal from '@/components/ui/Modal'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
+import { useDebounceCallback } from '@/hooks/usePerformanceOptimization'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -139,7 +140,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
     onClose()
   }
 
-  async function save(): Promise<boolean> {
+  const save = useCallback(async (): Promise<boolean> => {
     if (!task) return false
     setSaving(true)
     const payload: any = {
@@ -165,14 +166,15 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       return true
     }
     return false
-  }
+  }, [task, title, description, priority, tag, date, todos, status, projectId, onUpdated])
 
-  // autosave debounce
+  // Debounced autosave
+  const debouncedSave = useDebounceCallback(save, 900, [save])
+
   useEffect(() => {
     if (!open || !task) return
-    const t = setTimeout(() => { void save() }, 900)
-    return () => clearTimeout(t)
-  }, [title, description, priority, tag, date, todos, status, projectId, open])
+    debouncedSave()
+  }, [title, description, priority, tag, date, todos, status, projectId, open, debouncedSave])
 
   const doneCount = todos.filter((t) => t.done).length
   const totalCount = todos.length

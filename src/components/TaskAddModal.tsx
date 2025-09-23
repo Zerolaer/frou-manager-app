@@ -1,4 +1,4 @@
-import Modal from '@/components/Modal'
+import Modal from '@/components/ui/Modal'
 import CheckFinance from '@/components/CheckFinance'
 import { useEffect, useState } from 'react'
 

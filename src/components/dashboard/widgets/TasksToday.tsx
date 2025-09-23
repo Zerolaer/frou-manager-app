@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { startOfTodayTZ, endOfTodayTZ } from '@/lib/date';
+import { startOfTodayTZ, endOfTodayTZ } from '@/lib/dateUtils';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { getUserId } from '@/lib/auth';
 type Task = { id: string; title: string | null; due: string | null; status?: string | null; priority?: string | null; };

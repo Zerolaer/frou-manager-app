@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Modal from '@/components/Modal'
+import Modal from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabaseClient'
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']

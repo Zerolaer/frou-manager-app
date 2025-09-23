@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '@/cell-editor.css'
 import '@/ui.css'
-import Modal from '@/components/Modal'
+import Modal from '@/components/ui/Modal'
 
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 

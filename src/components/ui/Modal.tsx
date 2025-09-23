@@ -5,12 +5,18 @@ type ModalProps = {
   open: boolean
   onClose: () => void
   title?: React.ReactNode
+  subTitle?: React.ReactNode
   footer?: React.ReactNode
+  headerRight?: React.ReactNode
   children: React.ReactNode
   /** Если true — клик по оверлею закрывает модалку (по умолчанию true) */
   closeOnOverlay?: boolean
-  /** 'default' = 620px, 'large' = 880px */
-  size?: 'default' | 'large'
+  /** 'default' = 620px, 'large' = 880px. Legacy support: 'sm'|'md'|'lg' map to 'default'|'large' */
+  size?: 'default' | 'large' | 'sm' | 'md' | 'lg'
+  /** Extra classes on outer container (kept for back-compat) */
+  className?: string
+  /** Extra classes on content panel */
+  contentClassName?: string
   /** Класс для тела модалки (чтобы переопределять внутренние отступы) */
   bodyClassName?: string
 }
@@ -50,10 +56,14 @@ export default function Modal({
   open,
   onClose,
   title,
+  subTitle,
   footer,
+  headerRight,
   children,
   closeOnOverlay = true,
   size = 'default',
+  className,
+  contentClassName,
   bodyClassName,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -68,9 +78,12 @@ export default function Modal({
 
   if (!open) return null
 
+  // Map legacy sizes to new sizes
+  const actualSize = size === 'sm' || size === 'md' ? 'default' : size === 'lg' ? 'large' : size
+  
   // БЕЗ вложенных бэктиков — безопасно для esbuild/Netlify
   const panelClasses = [
-    size === 'large' ? 'w-[880px]' : 'w-[620px]',
+    actualSize === 'large' ? 'w-[880px]' : 'w-[620px]',
     'max-w-[95vw]',
     'rounded-2xl',
     'bg-white',
@@ -93,19 +106,29 @@ export default function Modal({
           tabIndex={-1}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {(title || onClose) && (
+          {(title || subTitle || onClose) && (
             <div className="flex items-center justify-between px-5 py-4 border-b">
-              <div className="text-base font-medium">{title}</div>
-              <button
-                onClick={onClose}
-                className="px-2 py-1 rounded-lg hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-blue-500"
-                aria-label="Close"
-              >
-                ×
-              </button>
+              <div>
+                <div className="text-base font-medium leading-none" id="modal-title">{title}</div>
+                {subTitle && <div className="mt-1 text-xs opacity-70">{subTitle}</div>}
+              </div>
+              <div className="flex items-center gap-3">
+                {headerRight && <div className="ml-4">{headerRight}</div>}
+                <button
+                  onClick={onClose}
+                  className="px-2 py-1 rounded-lg hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-blue-500"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           )}
-          <div className={bodyClassName ?? 'px-5 py-4'}>{children}</div>
+          <div className={bodyClassName ?? 'px-5 py-4'}>
+            <div className={`w-auto ${contentClassName ?? ''} mx-auto`}>
+              {children}
+            </div>
+          </div>
           {footer && <div className="px-5 py-4 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import{e as Xe,r as l,j as i,s as W,f as Ve,T as ie,g as le,h as fe}from"./index-CXPc7nnv.js";import{M as me}from"./Modal-CCkwcyuC.js";import{C as Qe,T as Be}from"./TaskViewModal-DDRIOUmv.js";/* empty css           */import{u as ze}from"./errorHandler-Dlfvmkcl.js";import{u as Je}from"./useSupabaseAuth-C9m-EltV.js";/* empty css                    *//**
+import{e as Xe,r as l,j as i,s as W,f as Ve,T as ie,g as le,h as fe}from"./index-De27cj0q.js";import{M as me}from"./Modal-C1HSv8SS.js";import{C as Qe,T as Be}from"./TaskViewModal-BA_zL7tc.js";/* empty css           */import{u as ze}from"./errorHandler-B8Obt8fF.js";import{u as Je}from"./useSupabaseAuth-DHGgAXve.js";/* empty css                    *//**
  * @license lucide-react v0.453.0 - ISC
  *
  * This source code is licensed under the ISC license.

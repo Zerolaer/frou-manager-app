@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { monthRangeTZ } from '@/lib/date';
+import { monthRangeTZ } from '@/lib/dateUtils';
 import { formatCurrencyEUR } from '@/lib/format';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { getUserId } from '@/lib/auth';

@@ -1,5 +1,5 @@
 import React from 'react'
-import Modal from '@/components/Modal'
+import Modal from '@/components/ui/Modal'
 import { Goal } from '@/features/goals/api'
 
 type Props = { open: boolean; onClose: () => void; goals: Goal[] }

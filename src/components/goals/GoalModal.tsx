@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import Modal from '@/components/Modal'
+import Modal from '@/components/ui/Modal'
 import { Goal, GoalUpsert, GoalCategory, Priority } from '@/features/goals/api'
 
 type Props = {

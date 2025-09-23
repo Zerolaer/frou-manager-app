@@ -1,5 +1,5 @@
 
-import Modal from './Modal'
+import Modal from '@/components/ui/Modal'
 
 type Props = {
   open: boolean

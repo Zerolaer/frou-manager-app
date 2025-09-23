@@ -41,6 +41,23 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 }
 
+// AppErrorBoundary - simplified version for app-level error catching
+export default function AppErrorBoundary({ 
+  children, 
+  fallback 
+}: { 
+  children: React.ReactNode
+  fallback?: React.ReactNode 
+}) {
+  return (
+    <ErrorBoundary
+      fallback={fallback ? () => <>{fallback}</> : undefined}
+    >
+      {children}
+    </ErrorBoundary>
+  )
+}
+
 function DefaultErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {
   return (
     <div className="p-6">

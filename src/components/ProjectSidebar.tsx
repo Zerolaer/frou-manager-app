@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
-import Modal from '@/components/Modal'
+import Modal from '@/components/ui/Modal'
 
 import type { Project } from '@/types/shared'
 
