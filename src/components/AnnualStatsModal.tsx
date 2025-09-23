@@ -1,5 +1,5 @@
 
-import Modal from '@/components/ui/Modal'
+import { UnifiedModal, ModalButton, ModalFooter } from '@/components/ui/ModalSystem'
 
 type Props = {
   open: boolean
@@ -18,8 +18,20 @@ export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, e
   const maxBar = Math.max(...incomeByMonth, ...expenseByMonth, 1)
 
   return (
-    <Modal open={open} onClose={onClose} title={`Годовая статистика — ${year}`} size="lg"
-      footer={<button className="btn btn-outline" onClick={onClose}>Закрыть</button>}
+    <UnifiedModal 
+      open={open} 
+      onClose={onClose} 
+      title={`Годовая статистика — ${year}`} 
+      size="lg"
+      footer={
+        <ModalFooter
+          right={
+            <ModalButton variant="secondary" onClick={onClose}>
+              Закрыть
+            </ModalButton>
+          }
+        />
+      }
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <div className="border rounded-xl p-3">
@@ -66,6 +78,6 @@ export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, e
           </div>
         </div>
       </div>
-    </Modal>
+    </UnifiedModal>
   )
 }

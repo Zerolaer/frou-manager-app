@@ -1,7 +1,7 @@
 
 // v1.0.6: square menu button, full-width status switcher, custom checkbox for subtasks
 import { useEffect, useRef, useState, useCallback } from 'react'
-import Modal from '@/components/ui/Modal'
+import { UnifiedModal, ModalButton, ModalFooter } from '@/components/ui/ModalSystem'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
 import { useDebounceCallback } from '@/hooks/usePerformanceOptimization'
@@ -180,13 +180,12 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   const totalCount = todos.length
 
   return (
-    <Modal
+    <UnifiedModal
       open={open}
       onClose={onClose}
       title="Задача"
-      size="lg"
+      size="xl"
       bodyClassName="p-0"
-      contentClassName="w-[880px] max-w-[95vw]"
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
@@ -205,25 +204,27 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         </div>
       }
       footer={
-        <div className="flex w-full items-center justify-between">
-          <div className="text-xs text-gray-400">{savedAt ? `Сохранено ${savedAt}` : ''}</div>
-          <div className="flex items-center gap-2">
-            <button
-              className="h-9 px-4 rounded-lg border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 disabled:opacity-60"
-              onClick={onClose}
-              disabled={saving}
-            >
-              Закрыть
-            </button>
-            <button
-              className="h-9 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-              onClick={async () => { const ok = await save(); if (ok) onClose(); }}
-              disabled={saving}
-            >
-              {saving ? 'Сохраняю…' : 'Сохранить'}
-            </button>
-          </div>
-        </div>
+        <ModalFooter
+          left={
+            <div className="text-xs text-gray-400">
+              {savedAt ? `Сохранено ${savedAt}` : ''}
+            </div>
+          }
+          right={
+            <>
+              <ModalButton variant="secondary" onClick={onClose} disabled={saving}>
+                Закрыть
+              </ModalButton>
+              <ModalButton 
+                variant="primary" 
+                onClick={async () => { const ok = await save(); if (ok) onClose(); }}
+                loading={saving}
+              >
+                Сохранить
+              </ModalButton>
+            </>
+          }
+        />
       }
     >
       {/* BODY: Split/Inspector */}
@@ -320,7 +321,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
           </section>
         </aside>
       </div>
-    </Modal>
+    </UnifiedModal>
   )
 }
 

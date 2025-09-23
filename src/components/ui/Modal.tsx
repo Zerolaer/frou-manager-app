@@ -11,8 +11,8 @@ type ModalProps = {
   children: React.ReactNode
   /** Если true — клик по оверлею закрывает модалку (по умолчанию true) */
   closeOnOverlay?: boolean
-  /** 'default' = 620px, 'large' = 880px. Legacy support: 'sm'|'md'|'lg' map to 'default'|'large' */
-  size?: 'default' | 'large' | 'sm' | 'md' | 'lg'
+  /** 'default' = 620px, 'large' = 880px. Legacy support: 'sm'|'md'|'lg'|'xl' map to 'default'|'large' */
+  size?: 'default' | 'large' | 'sm' | 'md' | 'lg' | 'xl'
   /** Extra classes on outer container (kept for back-compat) */
   className?: string
   /** Extra classes on content panel */
@@ -79,7 +79,7 @@ export default function Modal({
   if (!open) return null
 
   // Map legacy sizes to new sizes
-  const actualSize = size === 'sm' || size === 'md' ? 'default' : size === 'lg' ? 'large' : size
+  const actualSize = size === 'sm' || size === 'md' ? 'default' : (size === 'lg' || size === 'xl') ? 'large' : size
   
   // БЕЗ вложенных бэктиков — безопасно для esbuild/Netlify
   const panelClasses = [

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import Modal from '@/components/ui/Modal'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { ModalField, ModalInput, ModalTextarea, ModalSelect, ModalGrid, ModalContent } from '@/components/ui/ModalForm'
 import { Goal, GoalUpsert, GoalCategory, Priority } from '@/features/goals/api'
 
 type Props = {
@@ -19,6 +20,8 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
   const [deadline, setDeadline] = useState<string>('')
   const [progress, setProgress] = useState<number>(0)
   const [priority, setPriority] = useState<Priority>('medium')
+  const [loading, setLoading] = useState(false)
+  const { createStandardFooter } = useModalActions()
 
   useEffect(() => {
     if (initial) {
@@ -33,64 +36,90 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
     }
   }, [initial, open])
 
-  const footer = (
-    <div className="flex justify-end gap-2">
-      <button className="btn-secondary" onClick={onClose}>Отмена</button>
-      <button
-        className="btn"
-        onClick={() => onSave({
-          title,
-          description,
-          category: (category || 'Прочее') as any,
-          deadline: deadline || null,
-          progress,
-          priority,
-          status: progress >= 100 ? 'completed' : 'active'
-        }, initial?.id)}
-        disabled={!title.trim()}
-      >
-        {initial ? 'Сохранить' : 'Создать'}
-      </button>
-    </div>
-  )
+  async function handleSave() {
+    setLoading(true)
+    try {
+      await onSave({
+        title,
+        description,
+        category: (category || 'Прочее') as any,
+        deadline: deadline || null,
+        progress,
+        priority,
+        status: progress >= 100 ? 'completed' : 'active'
+      }, initial?.id)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <Modal open={open} onClose={onClose} title={initial ? 'Редактировать цель' : 'Новая цель'} footer={footer}>
-      <div className="space-y-4">
-        <div>
-          <label className="label">Название</label>
-          <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Например, Сбросить 5 кг" />
-        </div>
-        <div>
-          <label className="label">Описание</label>
-          <textarea className="textarea" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="label">Категория</label>
-            <select className="input" value={category} onChange={e => setCategory(e.target.value as any)}>
+    <UnifiedModal 
+      open={open} 
+      onClose={onClose} 
+      title={initial ? 'Редактировать цель' : 'Новая цель'}
+      footer={createStandardFooter(
+        { 
+          label: initial ? 'Сохранить' : 'Создать', 
+          onClick: handleSave, 
+          loading, 
+          disabled: !title.trim() 
+        },
+        { label: 'Отмена', onClick: onClose }
+      )}
+    >
+      <ModalContent>
+        <ModalField label="Название" required>
+          <ModalInput 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
+            placeholder="Например, Сбросить 5 кг" 
+          />
+        </ModalField>
+        
+        <ModalField label="Описание">
+          <ModalTextarea 
+            value={description} 
+            onChange={e => setDescription(e.target.value)} 
+            rows={3}
+          />
+        </ModalField>
+        
+        <ModalGrid cols={2}>
+          <ModalField label="Категория">
+            <ModalSelect value={category} onChange={e => setCategory(e.target.value as any)}>
               <option value="">Выбрать…</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Дедлайн</label>
-            <input className="input" type="date" value={deadline ?? ''} onChange={e => setDeadline(e.target.value)} />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="label">Прогресс (%)</label>
-            <input className="input" type="number" min={0} max={100} value={progress} onChange={e => setProgress(Number(e.target.value))} />
-          </div>
-          <div>
-            <label className="label">Приоритет</label>
-            <select className="input" value={priority} onChange={e => setPriority(e.target.value as Priority)}>
+            </ModalSelect>
+          </ModalField>
+          
+          <ModalField label="Дедлайн">
+            <ModalInput 
+              type="date" 
+              value={deadline ?? ''} 
+              onChange={e => setDeadline(e.target.value)} 
+            />
+          </ModalField>
+        </ModalGrid>
+        
+        <ModalGrid cols={2}>
+          <ModalField label="Прогресс (%)">
+            <ModalInput 
+              type="number" 
+              min={0} 
+              max={100} 
+              value={progress} 
+              onChange={e => setProgress(Number(e.target.value))} 
+            />
+          </ModalField>
+          
+          <ModalField label="Приоритет">
+            <ModalSelect value={priority} onChange={e => setPriority(e.target.value as Priority)}>
               {priorities.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
-    </Modal>
+            </ModalSelect>
+          </ModalField>
+        </ModalGrid>
+      </ModalContent>
+    </UnifiedModal>
   )
 }
