@@ -1,10 +1,9 @@
 
 // v1.0.6: square menu button, full-width status switcher, custom checkbox for subtasks
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { UnifiedModal, ModalButton, ModalFooter } from '@/components/ui/ModalSystem'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
-import { useDebounceCallback } from '@/hooks/usePerformanceOptimization'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -37,11 +36,12 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   const [todos, setTodos] = useState<Todo[]>([])
   const [status, setStatus] = useState<'open' | 'closed'>('open')
   const [menuOpen, setMenuOpen] = useState(false)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
   const [projectId, setProjectId] = useState<string>('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const { createDangerFooter } = useModalActions()
 
   // Close header menu on outside click
   useEffect(() => {
@@ -64,7 +64,6 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
     setTodos(Array.isArray(task?.todos) ? (task!.todos as Todo[]) : [])
     setStatus((task as any)?.status || 'open')
     setProjectId(task?.project_id || '')
-    setSavedAt(null)
   }, [open, task])
 
   // Load projects for the Project select (use same columns as Tasks.tsx)
@@ -134,10 +133,13 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
 
   async function deleteTask() {
     if (!task) return
-    const ok = confirm('Удалить эту задачу?')
-    if (!ok) return
-    await supabase.from('tasks_items').delete().eq('id', task.id)
-    onClose()
+    setDeleteLoading(true)
+    try {
+      await supabase.from('tasks_items').delete().eq('id', task.id)
+      onClose()
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const save = useCallback(async (): Promise<boolean> => {
@@ -162,19 +164,18 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
     setSaving(false)
     if (!error && data) {
       onUpdated(data as unknown as Task)
-      setSavedAt(new Date().toLocaleTimeString())
       return true
     }
     return false
   }, [task, title, description, priority, tag, date, todos, status, projectId, onUpdated])
 
-  // Debounced autosave
-  const debouncedSave = useDebounceCallback(save, 900, [save])
-
-  useEffect(() => {
-    if (!open || !task) return
-    debouncedSave()
-  }, [title, description, priority, tag, date, todos, status, projectId, open, debouncedSave])
+  // Manual save only - no autosave
+  const handleSave = async () => {
+    const ok = await save()
+    if (ok) {
+      onClose()
+    }
+  }
 
   const doneCount = todos.filter((t) => t.done).length
   const totalCount = todos.length
@@ -203,29 +204,22 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
           )}
         </div>
       }
-      footer={
-        <ModalFooter
-          left={
-            <div className="text-xs text-gray-400">
-              {savedAt ? `Сохранено ${savedAt}` : ''}
-            </div>
-          }
-          right={
-            <>
-              <ModalButton variant="secondary" onClick={onClose} disabled={saving}>
-                Закрыть
-              </ModalButton>
-              <ModalButton 
-                variant="primary" 
-                onClick={async () => { const ok = await save(); if (ok) onClose(); }}
-                loading={saving}
-              >
-                Сохранить
-              </ModalButton>
-            </>
-          }
-        />
-      }
+      footer={createDangerFooter(
+        { 
+          label: 'Удалить', 
+          onClick: deleteTask,
+          loading: deleteLoading
+        },
+        { 
+          label: 'Сохранить', 
+          onClick: handleSave,
+          loading: saving
+        },
+        { 
+          label: 'Закрыть', 
+          onClick: onClose
+        }
+      )}
     >
       {/* BODY: Split/Inspector */}
       <div className="grid grid-cols-[1fr_280px] gap-4 p-0 max-md:grid-cols-1">
