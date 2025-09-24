@@ -1,5 +1,5 @@
 import React from 'react'
-import Modal from '@/components/ui/Modal'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { Goal } from '@/features/goals/api'
 
 type Props = { open: boolean; onClose: () => void; goals: Goal[] }
@@ -9,9 +9,18 @@ export default function GoalsStats({ open, onClose, goals }: Props){
   const completed = goals.filter(g => g.status === 'completed').length
   const active = total - completed
   const avg = Math.round((goals.reduce((s, g) => s + (g.progress ?? 0), 0) / Math.max(1, total)))
+  const { createSimpleFooter } = useModalActions()
 
   return (
-    <Modal open={open} onClose={onClose} title="Статистика по целям">
+    <UnifiedModal 
+      open={open} 
+      onClose={onClose} 
+      title="Статистика по целям"
+      size="lg"
+      footer={createSimpleFooter(
+        { label: 'Закрыть', onClick: onClose }
+      )}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg p-4 border">
           <div className="text-sm text-gray-500">Всего целей</div>
@@ -32,6 +41,6 @@ export default function GoalsStats({ open, onClose, goals }: Props){
           <div className="h-2 bg-blue-600 rounded" style={{ width: `${avg}%` }} />
         </div>
       </div>
-    </Modal>
+    </UnifiedModal>
   )
 }

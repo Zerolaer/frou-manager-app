@@ -9,11 +9,9 @@ import { useErrorHandler } from '@/lib/errorHandler'
 import { LoadingState, ListSkeleton } from '@/components/LoadingStates'
 import { VirtualizedList } from '@/components/VirtualizedList'
 import { PageErrorBoundary } from '@/components/ErrorBoundaries'
-import { useApiWithRetry } from '@/hooks/useRetry'
 
 function GoalsPageContent(){
   const { handleError, handleSuccess } = useErrorHandler()
-  const { executeApiCall } = useApiWithRetry()
   const [items, setItems] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -22,20 +20,27 @@ function GoalsPageContent(){
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false
+    ;(async () => {
       try {
         setLoading(true)
-        const data = await executeApiCall(() => listGoals())
-        if (data) {
+        const data = await listGoals()
+        if (!cancelled && data) {
           setItems(data)
         }
       } catch (error) {
-        handleError(error, 'Загрузка целей')
+        if (!cancelled) {
+          handleError(error, 'Загрузка целей')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     })()
-  }, [handleError, executeApiCall])
+    
+    return () => { cancelled = true }
+  }, [handleError])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -85,8 +90,8 @@ function GoalsPageContent(){
   const onSave = async (payload: GoalUpsert, id?: string) => {
     try {
       if (id) {
-        const updated = await updateGoal(id, payload)
-        setItems(s => s.map(x => x.id === id ? updated : x))
+        const updated = await updateGoal(Number(id), payload)
+        setItems(s => s.map(x => x.id === Number(id) ? updated : x))
         handleSuccess('Цель обновлена')
       } else {
         const created = await createGoal(payload)
@@ -107,13 +112,17 @@ function GoalsPageContent(){
       </div>
 
       {loading ? (
-        <div className="text-gray-500">Загрузка…</div>
+        <ListSkeleton count={6} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(g => (
             <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
           ))}
-          {filtered.length === 0 && <div className="text-gray-500">Ничего не найдено</div>}
+          {filtered.length === 0 && !loading && (
+            <div className="col-span-full text-center text-gray-500 py-8">
+              {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
+            </div>
+          )}
         </div>
       )}
 

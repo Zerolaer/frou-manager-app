@@ -87,7 +87,7 @@ export async function createGoal(g: GoalUpsert): Promise<Goal> {
   return mapRow(data)
 }
 
-export async function updateGoal(id: number, g: GoalUpsert): Promise<Goal> {
+export async function updateGoal(id: string | number, g: GoalUpsert): Promise<Goal> {
   const patch: Partial<Pick<GoalRow, 'title' | 'notes' | 'deadline' | 'current_amount' | 'target_amount'>> = {
     title: g.title,
     notes: g.description ?? null,
@@ -102,12 +102,12 @@ export async function updateGoal(id: number, g: GoalUpsert): Promise<Goal> {
   return mapRow(data)
 }
 
-export async function deleteGoal(id: number): Promise<void> {
+export async function deleteGoal(id: string | number): Promise<void> {
   const { error } = await supabase.from(table).delete().eq('id', id)
   if (error) throw error
 }
 
-export async function completeGoal(id: number): Promise<Goal> {
+export async function completeGoal(id: string | number): Promise<Goal> {
   const { data, error } = await supabase
     .from(table)
     .update({ current_amount: 100, target_amount: 100 })

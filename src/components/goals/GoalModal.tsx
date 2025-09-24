@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { ModalField, ModalInput, ModalTextarea, ModalSelect, ModalGrid, ModalContent } from '@/components/ui/ModalForm'
-import { Goal, GoalUpsert, GoalCategory, Priority } from '@/features/goals/api'
+import { Goal, GoalUpsert } from '@/features/goals/api'
 
 type Props = {
   open: boolean
@@ -10,16 +10,12 @@ type Props = {
   onSave: (values: GoalUpsert, id?: string) => void
 }
 
-const categories: GoalCategory[] = ['Здоровье', 'Финансы', 'Работа', 'Обучение', 'Прочее']
-const priorities: Priority[] = ['low', 'medium', 'high']
 
 export default function GoalModal({ open, initial, onClose, onSave }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState<GoalCategory | ''>('')
   const [deadline, setDeadline] = useState<string>('')
   const [progress, setProgress] = useState<number>(0)
-  const [priority, setPriority] = useState<Priority>('medium')
   const [loading, setLoading] = useState(false)
   const { createStandardFooter } = useModalActions()
 
@@ -27,12 +23,13 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
     if (initial) {
       setTitle(initial.title || '')
       setDescription(initial.description || '')
-      setCategory((initial.category as Goal['category']) || 'Прочее')
       setDeadline(initial.deadline || '')
       setProgress(initial.progress ?? 0)
-      setPriority(initial.priority ?? 'medium')
     } else {
-      setTitle(''); setDescription(''); setCategory(''); setDeadline(''); setProgress(0); setPriority('medium')
+      setTitle('')
+      setDescription('')
+      setDeadline('')
+      setProgress(0)
     }
   }, [initial, open])
 
@@ -42,12 +39,9 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
       await onSave({
         title,
         description,
-        category: (category || 'Прочее') as any,
         deadline: deadline || null,
-        progress,
-        priority,
-        status: progress >= 100 ? 'completed' : 'active'
-      }, initial?.id)
+        progress
+      }, initial?.id?.toString())
     } finally {
       setLoading(false)
     }
@@ -86,13 +80,6 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
         </ModalField>
         
         <ModalGrid cols={2}>
-          <ModalField label="Категория">
-            <ModalSelect value={category} onChange={e => setCategory(e.target.value as any)}>
-              <option value="">Выбрать…</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </ModalSelect>
-          </ModalField>
-          
           <ModalField label="Дедлайн">
             <ModalInput 
               type="date" 
@@ -100,9 +87,7 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
               onChange={e => setDeadline(e.target.value)} 
             />
           </ModalField>
-        </ModalGrid>
-        
-        <ModalGrid cols={2}>
+          
           <ModalField label="Прогресс (%)">
             <ModalInput 
               type="number" 
@@ -111,12 +96,6 @@ export default function GoalModal({ open, initial, onClose, onSave }: Props) {
               value={progress} 
               onChange={e => setProgress(Number(e.target.value))} 
             />
-          </ModalField>
-          
-          <ModalField label="Приоритет">
-            <ModalSelect value={priority} onChange={e => setPriority(e.target.value as Priority)}>
-              {priorities.map(p => <option key={p} value={p}>{p}</option>)}
-            </ModalSelect>
           </ModalField>
         </ModalGrid>
       </ModalContent>
