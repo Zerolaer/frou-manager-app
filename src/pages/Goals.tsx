@@ -24,40 +24,27 @@ function GoalsPageContent(){
     ;(async () => {
       try {
         setLoading(true)
-        console.log('Loading goals...')
-        
-        // Добавляем таймаут для отладки
-        const timeoutId = setTimeout(() => {
-          console.log('Goals loading timeout - still loading after 5 seconds')
-        }, 5000)
-        
         const data = await listGoals()
-        clearTimeout(timeoutId)
         
-        console.log('Goals loaded successfully:', data)
         if (!cancelled) {
           setItems(data || [])
-          console.log('Items set:', data || [])
         }
       } catch (error) {
-        console.error('Error loading goals:', error)
         if (!cancelled) {
           handleError(error, 'Загрузка целей')
-          setItems([]) // Устанавливаем пустой массив при ошибке
+          setItems([])
         }
       } finally {
         if (!cancelled) {
-          console.log('Setting loading to false')
           setLoading(false)
         }
       }
     })()
     
     return () => { 
-      console.log('Goals effect cleanup')
       cancelled = true 
     }
-  }, [handleError])
+  }, []) // Пустой массив зависимостей - выполняется только один раз
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -106,20 +93,17 @@ function GoalsPageContent(){
   }
   const onSave = async (payload: GoalUpsert, id?: string) => {
     try {
-      console.log('Saving goal:', payload, id)
       if (id) {
         const updated = await updateGoal(Number(id), payload)
         setItems(s => s.map(x => x.id === Number(id) ? updated : x))
         handleSuccess('Цель обновлена')
       } else {
         const created = await createGoal(payload)
-        console.log('Goal created:', created)
         setItems(s => [created, ...s])
         handleSuccess('Цель создана')
       }
       setModalOpen(false)
     } catch (error) {
-      console.error('Error saving goal:', error)
       handleError(error, id ? 'Обновление цели' : 'Создание цели')
     }
   }
@@ -132,23 +116,17 @@ function GoalsPageContent(){
       </div>
 
       {loading ? (
-        <div>
-          <div className="text-sm text-gray-500 mb-4">Загрузка целей... (loading: {loading.toString()})</div>
-          <ListSkeleton count={6} />
-        </div>
+        <ListSkeleton count={6} />
       ) : (
-        <div>
-          <div className="text-sm text-gray-500 mb-4">Цели загружены: {items.length} шт. (loading: {loading.toString()})</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(g => (
-              <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
-            ))}
-            {filtered.length === 0 && !loading && (
-              <div className="col-span-full text-center text-gray-500 py-8">
-                {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
-              </div>
-            )}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map(g => (
+            <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
+          ))}
+          {filtered.length === 0 && !loading && (
+            <div className="col-span-full text-center text-gray-500 py-8">
+              {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
+            </div>
+          )}
         </div>
       )}
 

@@ -59,38 +59,29 @@ function mapRow(row: GoalRow): Goal {
 }
 
 export async function listGoals(): Promise<Goal[]> {
-  console.log('API: listGoals called')
   try {
     // Проверяем аутентификацию
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    console.log('API: Auth check', { user: user?.id, authError })
     
     if (authError) {
-      console.error('API: Auth error', authError)
       throw new Error('Не авторизован')
     }
     
     if (!user) {
-      console.error('API: No user found')
       throw new Error('Пользователь не найден')
     }
     
     const { data, error } = await supabase
       .from(table)
       .select('*')
-      .eq('user_id', user.id) // Добавляем фильтр по пользователю
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     
-    console.log('API: Supabase response', { data, error })
-    
     if (error) {
-      console.error('API: Supabase error', error)
       throw error
     }
     
-    const result = (data ?? []).map(mapRow)
-    console.log('API: Mapped goals', result)
-    return result
+    return (data ?? []).map(mapRow)
   } catch (err) {
     console.error('API: listGoals error', err)
     throw err
