@@ -24,13 +24,17 @@ function GoalsPageContent(){
     ;(async () => {
       try {
         setLoading(true)
+        console.log('Loading goals...')
         const data = await listGoals()
-        if (!cancelled && data) {
-          setItems(data)
+        console.log('Goals loaded:', data)
+        if (!cancelled) {
+          setItems(data || [])
         }
       } catch (error) {
+        console.error('Error loading goals:', error)
         if (!cancelled) {
           handleError(error, 'Загрузка целей')
+          setItems([]) // Устанавливаем пустой массив при ошибке
         }
       } finally {
         if (!cancelled) {
@@ -89,17 +93,20 @@ function GoalsPageContent(){
   }
   const onSave = async (payload: GoalUpsert, id?: string) => {
     try {
+      console.log('Saving goal:', payload, id)
       if (id) {
         const updated = await updateGoal(Number(id), payload)
         setItems(s => s.map(x => x.id === Number(id) ? updated : x))
         handleSuccess('Цель обновлена')
       } else {
         const created = await createGoal(payload)
+        console.log('Goal created:', created)
         setItems(s => [created, ...s])
         handleSuccess('Цель создана')
       }
       setModalOpen(false)
     } catch (error) {
+      console.error('Error saving goal:', error)
       handleError(error, id ? 'Обновление цели' : 'Создание цели')
     }
   }

@@ -13,7 +13,6 @@ export type Goal = {
   current_amount?: number | null
   deadline?: string | null
   created_at: string
-  type?: 'checklist' | 'amount' | string | null
 }
 
 export type GoalUpsert = {
@@ -34,7 +33,6 @@ interface GoalRow {
   current_amount?: number | null
   deadline?: string | null
   created_at: string
-  type?: string | null
 }
 
 function computeProgress(row: GoalRow): number {
@@ -57,7 +55,6 @@ function mapRow(row: GoalRow): Goal {
     current_amount: row.current_amount ?? null,
     deadline: row.deadline ?? null,
     created_at: row.created_at,
-    type: row.type ?? null,
   }
 }
 
@@ -76,7 +73,6 @@ export async function createGoal(g: GoalUpsert): Promise<Goal> {
   const payload: Omit<GoalRow, 'id' | 'user_id' | 'created_at'> = {
     title: g.title,
     notes: g.description ?? null,
-    type: 'checklist',
     target_amount: 100,
     current_amount: p,
     deadline: g.deadline ?? null,
