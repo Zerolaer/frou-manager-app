@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient'
 import '@/cell-editor.css'
 import '@/ui.css'
 import Modal from '@/components/ui/Modal'
+import { Plus, Trash2, GripVertical } from 'lucide-react'
 
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
 
@@ -146,20 +147,28 @@ export default function CellEditor({
           <div className="editor-add">
             <input type="number" placeholder="Сумма (€)" value={amount} onChange={e=>setAmount(e.target.value)} className="editor-input number" />
             <input placeholder="Описание (необязательно)" value={note} onChange={e=>setNote(e.target.value)} className="editor-input text" />
-            <button className="btn btn-outline" onClick={addItem}>Добавить</button>
+            <button className="btn btn-outline flex items-center gap-2" onClick={addItem}>
+              <Plus className="w-4 h-4" />
+              Добавить
+            </button>
           </div>
           <div>
             {items.map(i => (
               <div key={i.id} className={"entry-row " + (!i.included ? "entry-disabled" : "")}
                 draggable onDragStart={()=>onDragStart(i.id)} onDragOver={onDragOver} onDrop={()=>onDrop(i.id)}>
-                <div className="entry-drag">⋮⋮</div>
+                <div className="entry-drag">
+                  <GripVertical className="w-4 h-4" />
+                </div>
                 <label className="chk">
                   <input type="checkbox" checked={i.included} onChange={e=>toggleIncluded(i.id, e.target.checked)} />
                   <span className="box"><svg className="icon" viewBox="0 0 20 20"><path fill="currentColor" d="M8.143 13.314 4.829 10l-1.18 1.18 4.494 4.494 8-8-1.18-1.18z"/></svg></span>
                 </label>
                 <input type="number" className="editor-input entry-amount" value={String(i.amount)} onChange={e=>changeAmount(i.id, e.target.value)} />
                 <input className="editor-input entry-note" value={i.note || ""} onChange={e=>changeNote(i.id, e.target.value)} />
-                <button className="btn btn-danger btn-sm" onClick={()=>removeItem(i.id)}>Удалить</button>
+                <button className="btn btn-danger btn-sm flex items-center gap-1" onClick={()=>removeItem(i.id)}>
+                  <Trash2 className="w-4 h-4" />
+                  Удалить
+                </button>
               </div>
             ))}
             {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>)}

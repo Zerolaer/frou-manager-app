@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { MoreVertical } from 'lucide-react'
+import { MoreVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import type { Cat, CtxCat, CellCtx, MoneyType } from '@/features/finance/types'
 
 type Props = {
@@ -47,7 +47,7 @@ export default function CategoryRow({
             onClick={() => onToggleCollapse(row.id)}
             title={hasChildren ? (collapsed ? 'Развернуть' : 'Свернуть') : 'Категория'}
           >
-            {hasChildren ? (collapsed ? '▸' : '▾') : ''}
+            {hasChildren ? (collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />) : ''}
           </button>
           <span className="flex-1 truncate">{row.name}</span>
           <button

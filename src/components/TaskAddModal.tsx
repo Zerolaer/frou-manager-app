@@ -2,6 +2,7 @@ import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { ModalField, ModalInput, ModalTextarea, ModalSelect, ModalGrid, ModalContent } from '@/components/ui/ModalForm'
 import CheckFinance from '@/components/CheckFinance'
 import { useEffect, useState } from 'react'
+import { X, Plus } from 'lucide-react'
 
 type Todo = { id: string; text: string; done: boolean }
 
@@ -134,10 +135,11 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                 placeholder="Добавить пункт" 
               />
               <button 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50" 
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2" 
                 onClick={addTodo} 
                 disabled={!todoText.trim()}
               >
+                <Plus className="w-4 h-4" />
                 Добавить
               </button>
             </div>
@@ -151,11 +153,11 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                       {item.text}
                     </span>
                     <button 
-                      className="text-gray-400 hover:text-gray-600" 
+                      className="text-gray-400 hover:text-gray-600 p-1" 
                       onClick={() => removeTodo(item.id)} 
                       title="Удалить"
                     >
-                      ×
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}

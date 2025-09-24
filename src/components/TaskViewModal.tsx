@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
+import { Plus, Trash2, MoreVertical } from 'lucide-react'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -198,7 +199,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Меню"
           >
-            ⋮
+            <MoreVertical className="w-4 h-4" />
           </button>
           {menuOpen && (
             <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
@@ -265,13 +266,17 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
                     }
                     className="flex-1 bg-transparent outline-none"
                   />
-                  <button className="h-8 rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50" onClick={() => removeTodo(item.id)}>
+                  <button className="h-8 rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50 flex items-center gap-1" onClick={() => removeTodo(item.id)}>
+                    <Trash2 className="w-4 h-4" />
                     Удалить
                   </button>
                 </li>
               ))}
             </ul>
-            <button className="h-9 px-4 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 mt-3" onClick={addTodo}>+ Подзадача</button>
+            <button className="h-9 px-4 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 mt-3 flex items-center gap-2" onClick={addTodo}>
+              <Plus className="w-4 h-4" />
+              Подзадача
+            </button>
           </div>
         </div>
 

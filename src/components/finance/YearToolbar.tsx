@@ -1,6 +1,7 @@
 
 import React from 'react'
 import YearDropdown from '@/components/YearDropdown'
+import { Plus, BarChart3 } from 'lucide-react'
 
 type Props = {
   year: number
@@ -17,8 +18,14 @@ export default function YearToolbar({ year, years, onYearChange, onAddCategory, 
         <YearDropdown value={year} years={years} onChange={onYearChange} />
       </div>
       <div className="flex gap-3">
-        <button className="btn" onClick={onAddCategory}>Добавить категорию</button>
-        <button className="btn btn-outline text-gray-900" onClick={onShowStats}>Годовая статистика</button>
+        <button className="btn flex items-center gap-2" onClick={onAddCategory}>
+          <Plus className="w-4 h-4" />
+          Добавить категорию
+        </button>
+        <button className="btn btn-outline text-gray-900 flex items-center gap-2" onClick={onShowStats}>
+          <BarChart3 className="w-4 h-4" />
+          Годовая статистика
+        </button>
       </div>
     </div>
   )
