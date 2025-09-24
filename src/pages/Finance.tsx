@@ -463,7 +463,7 @@ export default function Finance(){
             className="border rounded-lg px-3 py-2 text-sm flex-1"
           />
         </div>
-      </Modal>
+      </UnifiedModal>
 
       <UnifiedModal
         open={renameOpen}
@@ -487,7 +487,7 @@ export default function Finance(){
           className="border rounded-lg px-3 py-2 text-sm w-full"
           autoFocus
         />
-      </Modal>
+      </UnifiedModal>
 
       <UnifiedModal
         open={deleteOpen}
