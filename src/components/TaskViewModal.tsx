@@ -56,6 +56,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   // Load task into local state
   useEffect(() => {
     if (!open) return
+    console.log('TaskViewModal: Loading task data', task)
     setTitle(task?.title || '')
     setDescription(task?.description || '')
     setPriority((task?.priority as any) || '')
@@ -92,19 +93,23 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   async function setStatusRemote(next: 'open' | 'closed') {
     if (!task) return
     setStatus(next)
-    await supabase.from('tasks_items').update({ status: next }).eq('id', task.id)
+    const { data, error } = await supabase.from('tasks_items').update({ status: next }).eq('id', task.id)
+      .select('id,project_id,title,description,date,position,priority,tag,todos,status')
+      .single()
+    if (!error && data) {
+      onUpdated(data as unknown as Task)
+    }
   }
 
   async function moveToProject(nextProjectId: string | null) {
     if (!task) return
     setProjectId(nextProjectId || '')
-    await supabase.from('tasks_items').update({ project_id: nextProjectId }).eq('id', task.id)
-    const { data } = await supabase
-      .from('tasks_items')
+    const { data, error } = await supabase.from('tasks_items').update({ project_id: nextProjectId }).eq('id', task.id)
       .select('id,project_id,title,description,date,position,priority,tag,todos,status')
-      .eq('id', task.id)
       .single()
-    if (data) onUpdated(data as unknown as Task)
+    if (!error && data) {
+      onUpdated(data as unknown as Task)
+    }
   }
 
   async function duplicateTask() {
@@ -186,7 +191,6 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       onClose={onClose}
       title="Задача"
       size="xl"
-      bodyClassName="p-0"
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
@@ -222,7 +226,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       )}
     >
       {/* BODY: Split/Inspector */}
-      <div className="grid grid-cols-[1fr_280px] gap-4 p-0 max-md:grid-cols-1">
+      <div className="grid grid-cols-[1fr_280px] gap-6 max-md:grid-cols-1">
         {/* LEFT */}
         <div className="space-y-4">
           <div>

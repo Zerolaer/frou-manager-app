@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import ru from 'date-fns/locale/ru'
-import Modal from '@/components/ui/Modal'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
 import TaskViewModal from '@/components/TaskViewModal'
@@ -384,7 +383,14 @@ const projectColorById = useMemo(() => {
         onClose={()=>setViewTask(null)}
         task={viewTask}
         onUpdated={(t)=>{
-          if(!t) return; const map={...tasks}; const list=map[t.date||""]||[]; const i=list.findIndex(x=>x.id===t.id); if(i>=0){ list[i]={...list[i], ...t}; setTasks(map); }
+          if(!t) return
+          const map={...tasks}
+          const list=map[t.date||""]||[]
+          const i=list.findIndex(x=>x.id===t.id)
+          if(i>=0){ 
+            list[i]={...list[i], ...t}
+            setTasks(map)
+          }
         }}
       />
 
