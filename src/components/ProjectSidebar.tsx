@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
-import Modal from '@/components/ui/Modal'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 
 import type { Project } from '@/types/shared'
 
@@ -18,6 +18,7 @@ export default function ProjectSidebar({ userId, activeId, onChange }: Props){
   const [showCreate, setShowCreate] = useState(false)
   const [hasColor, setHasColor] = useState(false)
   const [hasPosition, setHasPosition] = useState(false)
+  const { createSimpleFooter, createDangerFooter } = useModalActions()
 
   // load with feature detection
   useEffect(()=>{
@@ -171,23 +172,42 @@ export default function ProjectSidebar({ userId, activeId, onChange }: Props){
 
       <ProjectCreateModal open={showCreate} onClose={()=>setShowCreate(false)} userId={userId} onCreated={createOk} />
 
-      <Modal
+      <UnifiedModal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
         title="Переименовать проект"
-        footer={<><button className="btn btn-outline" onClick={()=>setRenameOpen(false)}>Отмена</button><button className="btn" onClick={renameOk}>Сохранить</button></>}
+        footer={createSimpleFooter(
+          { 
+            label: 'Сохранить', 
+            onClick: renameOk,
+            disabled: !renameValue.trim()
+          },
+          { 
+            label: 'Отмена', 
+            onClick: () => setRenameOpen(false)
+          }
+        )}
       >
         <input className="border rounded-lg px-3 py-2 text-sm w-full" value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
-      </Modal>
+      </UnifiedModal>
 
-      <Modal
+      <UnifiedModal
         open={delOpen}
         onClose={()=>setDelOpen(false)}
         title="Удалить проект?"
-        footer={<><button className="btn btn-outline" onClick={()=>setDelOpen(false)}>Отмена</button><button className="btn btn-danger" onClick={deleteOk}>Удалить</button></>}
+        footer={createDangerFooter(
+          { 
+            label: 'Удалить', 
+            onClick: deleteOk
+          },
+          { 
+            label: 'Отмена', 
+            onClick: () => setDelOpen(false)
+          }
+        )}
       >
         <div className="text-sm text-gray-600">Проект и связанные задачи будут удалены.</div>
-      </Modal>
+      </UnifiedModal>
     </aside>
   )
 }

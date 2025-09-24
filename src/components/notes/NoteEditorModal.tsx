@@ -17,7 +17,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
   const [content, setContent] = useState(note?.content ?? '');
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const { createStandardFooter } = useModalActions();
+  const { createStandardFooter, createDangerFooter } = useModalActions();
 
   useEffect(() => {
     setTitle(note?.title ?? '');
@@ -46,25 +46,30 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
     }
   }
 
-  const footer = createStandardFooter(
-    { 
-      label: 'Сохранить', 
-      onClick: handleSave, 
-      loading, 
-      disabled: !title.trim() 
-    },
-    { label: 'Отмена', onClick: onClose },
-    note?.id && onDelete ? (
-      <button
-        type="button"
-        className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-        onClick={handleDelete}
-        disabled={deleteLoading}
-      >
-        {deleteLoading ? 'Удаляю...' : 'Удалить'}
-      </button>
-    ) : undefined
-  );
+  const footer = note?.id && onDelete 
+    ? createDangerFooter(
+        { 
+          label: deleteLoading ? 'Удаляю...' : 'Удалить', 
+          onClick: handleDelete,
+          loading: deleteLoading
+        },
+        { 
+          label: 'Сохранить', 
+          onClick: handleSave, 
+          loading, 
+          disabled: !title.trim() 
+        },
+        { label: 'Отмена', onClick: onClose }
+      )
+    : createStandardFooter(
+        { 
+          label: 'Сохранить', 
+          onClick: handleSave, 
+          loading, 
+          disabled: !title.trim() 
+        },
+        { label: 'Отмена', onClick: onClose }
+      );
 
   return (
     <UnifiedModal

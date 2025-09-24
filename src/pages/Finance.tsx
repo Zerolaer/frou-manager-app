@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import '@/ui.css'
 import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
-import Modal from '@/components/ui/Modal'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import YearDropdown from '@/components/YearDropdown'
 import TypeDropdown from '@/components/TypeDropdown'
 import AnnualStatsModal from '@/components/AnnualStatsModal'
@@ -61,6 +61,7 @@ export default function Finance(){
   const { handleError, handleSuccess } = useErrorHandler()
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
+  const { createSimpleFooter, createDangerFooter } = useModalActions()
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
@@ -432,12 +433,22 @@ export default function Finance(){
           onCopy={copyCell}
           onPaste={pasteCell}
         />
-      )}<Modal
+      )}<UnifiedModal
         open={showAdd}
         onClose={()=>{ setShowAdd(false); setNewParent(null) }}
         title={newParent ? 'Новая подкатегория' : 'Новая категория'}
-        subTitle={newParent ? `Родитель: ${newParent.name}` : undefined}
-        footer={<><button className="btn btn-outline text-gray-900" onClick={()=>{ setShowAdd(false); setNewParent(null) }}>Отмена</button><button className="btn" onClick={addCategory}>{newParent ? 'Добавить подкатегорию' : 'Добавить категорию'}</button></>}
+        subtitle={newParent ? `Родитель: ${newParent.name}` : undefined}
+        footer={createSimpleFooter(
+          { 
+            label: newParent ? 'Добавить подкатегорию' : 'Добавить категорию', 
+            onClick: addCategory,
+            disabled: !newName.trim()
+          },
+          { 
+            label: 'Отмена', 
+            onClick: () => { setShowAdd(false); setNewParent(null) }
+          }
+        )}
       >
         <div className="flex items-center gap-3">
           <label className="text-sm text-gray-600 w-28">Тип</label>
@@ -454,11 +465,21 @@ export default function Finance(){
         </div>
       </Modal>
 
-      <Modal
+      <UnifiedModal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
         title="Переименовать категорию"
-        footer={<><button className="btn btn-outline text-gray-900" onClick={()=>setRenameOpen(false)}>Отмена</button><button className="btn" onClick={submitRename}>Сохранить</button></>}
+        footer={createSimpleFooter(
+          { 
+            label: 'Сохранить', 
+            onClick: submitRename,
+            disabled: !renameValue.trim()
+          },
+          { 
+            label: 'Отмена', 
+            onClick: () => setRenameOpen(false)
+          }
+        )}
       >
         <input
           value={renameValue}
@@ -468,14 +489,23 @@ export default function Finance(){
         />
       </Modal>
 
-      <Modal
+      <UnifiedModal
         open={deleteOpen}
         onClose={()=>setDeleteOpen(false)}
         title="Удалить категорию?"
-        footer={<><button className="btn btn-outline text-gray-900" onClick={()=>setDeleteOpen(false)}>Отмена</button><button className="btn btn-danger" onClick={confirmDelete}>Удалить</button></>}
+        footer={createDangerFooter(
+          { 
+            label: 'Удалить', 
+            onClick: confirmDelete
+          },
+          { 
+            label: 'Отмена', 
+            onClick: () => setDeleteOpen(false)
+          }
+        )}
       >
         <div className="text-sm text-gray-600">Все записи в этой категории будут удалены без возможности восстановления.</div>
-      </Modal>
+      </UnifiedModal>
 
       {editorOpen && editorCat && (
         <CellEditor

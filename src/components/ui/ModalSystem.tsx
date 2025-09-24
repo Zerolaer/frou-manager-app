@@ -190,5 +190,82 @@ export function useModalActions() {
     )
   }
 
-  return { createStandardFooter }
+  // Создание футера с негативным действием слева
+  const createDangerFooter = (
+    dangerAction: { label: string; onClick: () => void; loading?: boolean; disabled?: boolean },
+    primaryAction: { label: string; onClick: () => void; loading?: boolean; disabled?: boolean },
+    secondaryAction?: { label: string; onClick: () => void }
+  ) => {
+    return (
+      <ModalFooter
+        left={
+          <ModalButton
+            variant="danger"
+            onClick={dangerAction.onClick}
+            loading={dangerAction.loading}
+            disabled={dangerAction.disabled}
+          >
+            {dangerAction.label}
+          </ModalButton>
+        }
+        right={
+          <>
+            {secondaryAction && (
+              <ModalButton
+                variant="secondary"
+                onClick={secondaryAction.onClick}
+              >
+                {secondaryAction.label}
+              </ModalButton>
+            )}
+            <ModalButton
+              variant="primary"
+              onClick={primaryAction.onClick}
+              loading={primaryAction.loading}
+              disabled={primaryAction.disabled}
+            >
+              {primaryAction.label}
+            </ModalButton>
+          </>
+        }
+      />
+    )
+  }
+
+  // Создание футера только с позитивным действием справа
+  const createSimpleFooter = (
+    primaryAction: { label: string; onClick: () => void; loading?: boolean; disabled?: boolean },
+    secondaryAction?: { label: string; onClick: () => void }
+  ) => {
+    return (
+      <ModalFooter
+        right={
+          <>
+            {secondaryAction && (
+              <ModalButton
+                variant="secondary"
+                onClick={secondaryAction.onClick}
+              >
+                {secondaryAction.label}
+              </ModalButton>
+            )}
+            <ModalButton
+              variant="primary"
+              onClick={primaryAction.onClick}
+              loading={primaryAction.loading}
+              disabled={primaryAction.disabled}
+            >
+              {primaryAction.label}
+            </ModalButton>
+          </>
+        }
+      />
+    )
+  }
+
+  return { 
+    createStandardFooter, 
+    createDangerFooter, 
+    createSimpleFooter 
+  }
 }
