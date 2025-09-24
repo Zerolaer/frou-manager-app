@@ -59,18 +59,55 @@ function mapRow(row: GoalRow): Goal {
 }
 
 export async function listGoals(): Promise<Goal[]> {
-  const { data, error } = await supabase
-    .from(table)
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data ?? []).map(mapRow)
+  console.log('API: listGoals called')
+  try {
+    // Проверяем аутентификацию
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    console.log('API: Auth check', { user: user?.id, authError })
+    
+    if (authError) {
+      console.error('API: Auth error', authError)
+      throw new Error('Не авторизован')
+    }
+    
+    if (!user) {
+      console.error('API: No user found')
+      throw new Error('Пользователь не найден')
+    }
+    
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .eq('user_id', user.id) // Добавляем фильтр по пользователю
+      .order('created_at', { ascending: false })
+    
+    console.log('API: Supabase response', { data, error })
+    
+    if (error) {
+      console.error('API: Supabase error', error)
+      throw error
+    }
+    
+    const result = (data ?? []).map(mapRow)
+    console.log('API: Mapped goals', result)
+    return result
+  } catch (err) {
+    console.error('API: listGoals error', err)
+    throw err
+  }
 }
 
 export async function createGoal(g: GoalUpsert): Promise<Goal> {
   const p = Math.max(0, Math.min(100, Math.round(g.progress ?? 0)))
 
-  const payload: Omit<GoalRow, 'id' | 'user_id' | 'created_at'> = {
+  // Проверяем аутентификацию
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    throw new Error('Не авторизован')
+  }
+
+  const payload: Omit<GoalRow, 'id' | 'created_at'> = {
+    user_id: user.id,
     title: g.title,
     notes: g.description ?? null,
     target_amount: 100,

@@ -25,10 +25,19 @@ function GoalsPageContent(){
       try {
         setLoading(true)
         console.log('Loading goals...')
+        
+        // Добавляем таймаут для отладки
+        const timeoutId = setTimeout(() => {
+          console.log('Goals loading timeout - still loading after 5 seconds')
+        }, 5000)
+        
         const data = await listGoals()
-        console.log('Goals loaded:', data)
+        clearTimeout(timeoutId)
+        
+        console.log('Goals loaded successfully:', data)
         if (!cancelled) {
           setItems(data || [])
+          console.log('Items set:', data || [])
         }
       } catch (error) {
         console.error('Error loading goals:', error)
@@ -38,12 +47,16 @@ function GoalsPageContent(){
         }
       } finally {
         if (!cancelled) {
+          console.log('Setting loading to false')
           setLoading(false)
         }
       }
     })()
     
-    return () => { cancelled = true }
+    return () => { 
+      console.log('Goals effect cleanup')
+      cancelled = true 
+    }
   }, [handleError])
 
   const filtered = useMemo(() => {
@@ -119,17 +132,23 @@ function GoalsPageContent(){
       </div>
 
       {loading ? (
-        <ListSkeleton count={6} />
+        <div>
+          <div className="text-sm text-gray-500 mb-4">Загрузка целей... (loading: {loading.toString()})</div>
+          <ListSkeleton count={6} />
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(g => (
-            <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
-          ))}
-          {filtered.length === 0 && !loading && (
-            <div className="col-span-full text-center text-gray-500 py-8">
-              {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
-            </div>
-          )}
+        <div>
+          <div className="text-sm text-gray-500 mb-4">Цели загружены: {items.length} шт. (loading: {loading.toString()})</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(g => (
+              <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
+            ))}
+            {filtered.length === 0 && !loading && (
+              <div className="col-span-full text-center text-gray-500 py-8">
+                {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
