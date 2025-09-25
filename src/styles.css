@@ -3,6 +3,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-display: swap;
+}
+
+body {
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Critical CSS for above-the-fold content */
+.app-shell {
+  contain: layout style paint;
+}
+
+.content-scroll {
+  contain: layout style;
+}
+
+/* Optimize animations */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Reset / base */
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }

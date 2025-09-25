@@ -6,6 +6,16 @@ import App from './App'
 import { LazyPages } from './utils/codeSplitting'
 import { supabase } from './lib/supabaseClient'
 
+import { preloadCriticalResources, analyzeBundleSize } from './utils/performance'
+
+// Preload critical resources
+preloadCriticalResources()
+
+// Analyze bundle size in development
+if (process.env.NODE_ENV === 'development') {
+  setTimeout(analyzeBundleSize, 2000)
+}
+
 // Loading component for lazy routes
 const RouteLoading = () => (
   <div className="flex items-center justify-center p-8">
