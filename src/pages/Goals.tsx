@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
-import '@/ui.css'
+// CSS imports removed - styles now in styles.css
 import GoalsToolbar from '@/components/goals/GoalsToolbar'
 import GoalCard from '@/components/goals/GoalCard'
 import GoalModal from '@/components/goals/GoalModal'

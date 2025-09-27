@@ -1,10 +1,9 @@
 import { MoreVertical } from "lucide-react";
-import { TableSkeleton } from '@/components/Skeleton'
+import { SkeletonTable } from '@/components/LoadingStates'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import '@/ui.css'
-import '../finance-grid.css'
+// CSS imports removed - styles now in styles.css
 import CellEditor from '@/components/CellEditor'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import YearDropdown from '@/components/YearDropdown'
@@ -312,7 +311,7 @@ export default function Finance(){
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel) }
   }, [])
 
-  if (loading) return <div className="p-4"><TableSkeleton rows={10} /></div>
+  if (loading) return <div className="p-4"><SkeletonTable rows={10} columns={13} /></div>
 
   const isCurrentYear = year === currentYear
   const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)

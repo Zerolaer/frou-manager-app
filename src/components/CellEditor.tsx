@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import '@/cell-editor.css'
-import '@/ui.css'
+// CSS imports removed - styles now in styles.css
 import Modal from '@/components/ui/Modal'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 

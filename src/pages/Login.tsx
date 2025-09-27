@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabaseClient'
 import AuthCard from '@/components/AuthCard'
-import '@/ui.css'
+// CSS imports removed - styles now in styles.css
 
 export default function Login() {
   const [email, setEmail] = useState('')

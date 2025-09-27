@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import '@/ui.css'
+// CSS imports removed - styles now in styles.css
 
 export default function YearDropdown({
   value, years, onChange,
