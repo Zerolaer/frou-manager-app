@@ -1,10 +1,10 @@
 import React, { Suspense, lazy } from 'react';
 
 // Lazy load widgets
-const TasksToday = lazy(() => import('./widgets/TasksToday').then(m => ({ default: m.TasksToday })));
-const RecentNotes = lazy(() => import('./widgets/RecentNotes').then(m => ({ default: m.RecentNotes })));
-const FinanceMonth = lazy(() => import('./widgets/FinanceMonth').then(m => ({ default: m.FinanceMonth })));
-const DebugBanner = lazy(() => import('./widgets/DebugBanner').then(m => ({ default: m.DebugBanner })));
+const TasksToday = lazy(() => import('./widgets/TasksToday'));
+const RecentNotes = lazy(() => import('./widgets/RecentNotes'));
+const FinanceMonth = lazy(() => import('./widgets/FinanceMonth'));
+const DebugBanner = lazy(() => import('./widgets/DebugBanner'));
 
 // Loading skeleton for widgets - Jira style
 const WidgetSkeleton = () => (

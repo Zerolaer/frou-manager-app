@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { getUserId } from '@/lib/auth';
 type Note = { id: string; title: string | null; updatedAt: string };
-export function RecentNotes() {
+export default function RecentNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);

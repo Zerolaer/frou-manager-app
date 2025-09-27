@@ -5,7 +5,7 @@ import { formatCurrencyEUR } from '@/lib/format';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { getUserId } from '@/lib/auth';
 type Row = { amount: number; type?: string | null; flag?: boolean | null };
-export function FinanceMonth() {
+export default function FinanceMonth() {
   const [{ start, end }] = useState(() => monthRangeTZ(DASHBOARD.TZ));
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);

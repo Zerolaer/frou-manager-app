@@ -3,7 +3,7 @@ import { DASHBOARD } from '@/config/dashboard.config';
 import { supabase } from '@/lib/supabaseClient';
 import { getUserId } from '@/lib/auth';
 type Check = { name: string; ok: boolean; msg?: string };
-export function DebugBanner() {
+export default function DebugBanner() {
   const [checks, setChecks] = useState<Check[] | null>(null);
   useEffect(() => {
     if (!DASHBOARD.debug) return;

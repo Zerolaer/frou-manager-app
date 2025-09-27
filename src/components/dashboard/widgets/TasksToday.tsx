@@ -4,7 +4,7 @@ import { startOfTodayTZ, endOfTodayTZ } from '@/lib/dateUtils';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { getUserId } from '@/lib/auth';
 type Task = { id: string; title: string | null; due: string | null; status?: string | null; priority?: string | null; };
-export function TasksToday() {
+export default function TasksToday() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
