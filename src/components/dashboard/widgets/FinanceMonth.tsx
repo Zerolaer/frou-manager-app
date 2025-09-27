@@ -79,27 +79,33 @@ export function FinanceMonth() {
   }
   const balance = income - expense;
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold tracking-[-0.01em]">Финансы: {monthLabel}</h2>
-        <a href="/finance" className="text-sm text-blue-600 hover:underline">Открыть финансы</a>
+        <h2 className="text-lg font-semibold">Финансы: {monthLabel}</h2>
+        <a href="/finance" className="text-sm text-primary hover:underline">Открыть финансы</a>
       </div>
-      {loading ? <div className="text-sm text-gray-500">Загрузка…</div> :
-       err ? <div className="text-sm text-red-600">Ошибка: {err}</div> :
-       <div className="grid grid-cols-3 gap-3">
-         <div className="rounded-xl border border-gray-100 p-4">
-           <div className="text-xs text-gray-500 mb-1">Доходы</div>
-           <div className="text-xl font-semibold">{formatCurrencyEUR(income)}</div>
-         </div>
-         <div className="rounded-xl border border-gray-100 p-4">
-           <div className="text-xs text-gray-500 mb-1">Расходы</div>
-           <div className="text-xl font-semibold">{formatCurrencyEUR(expense)}</div>
-         </div>
-         <div className="rounded-xl border border-gray-100 p-4">
-           <div className="text-xs text-gray-500 mb-1">Баланс</div>
-           <div className={"text-xl font-semibold " + (balance >= 0 ? "text-emerald-600" : "text-red-600")}>{formatCurrencyEUR(balance)}</div>
-         </div>
-       </div>}
+      {loading ? (
+        <div className="text-sm text-neutral-500">Загрузка…</div>
+      ) : err ? (
+        <div className="text-sm text-danger">Ошибка: {err}</div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card-compact">
+            <div className="text-xs text-neutral-500 mb-1">Доходы</div>
+            <div className="text-xl font-semibold">{formatCurrencyEUR(income)}</div>
+          </div>
+          <div className="card-compact">
+            <div className="text-xs text-neutral-500 mb-1">Расходы</div>
+            <div className="text-xl font-semibold">{formatCurrencyEUR(expense)}</div>
+          </div>
+          <div className="card-compact">
+            <div className="text-xs text-neutral-500 mb-1">Баланс</div>
+            <div className={`text-xl font-semibold ${balance >= 0 ? "text-success" : "text-danger"}`}>
+              {formatCurrencyEUR(balance)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

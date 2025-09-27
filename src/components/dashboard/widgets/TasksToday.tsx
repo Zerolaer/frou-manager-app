@@ -35,24 +35,36 @@ export function TasksToday() {
     return () => { ignore = true; };
   }, [start, end]);
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-baseline gap-3"><h2 className="text-lg font-semibold tracking-[-0.01em]">Задачи на сегодня</h2><span className="text-xs text-gray-500">{new Date().toLocaleDateString('ru-RU')}</span></div>
-        <a href="/tasks" className="text-sm text-blue-600 hover:underline">Открыть все</a>
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-lg font-semibold">Задачи на сегодня</h2>
+          <span className="text-xs text-neutral-500">{new Date().toLocaleDateString('ru-RU')}</span>
+        </div>
+        <a href="/tasks" className="text-sm text-primary hover:underline">Открыть все</a>
       </div>
-      {loading ? <div className="text-sm text-gray-500">Загрузка…</div> :
-       err ? <div className="text-sm text-red-600">Ошибка: {err}</div> :
-       tasks.length === 0 ? <div className="text-sm text-gray-500">На сегодня нет задач.</div> :
-       <ul className="space-y-2">{tasks.map(t => (
-         <li key={t.id} className="flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50">
-           <div className="w-5 h-5 shrink-0 rounded border border-gray-300 bg-white" />
-           <div className="flex-1">
-             <div className="text-sm">{t.title}</div>
-             <div className="text-xs text-gray-500">{t.due ? `Срок: ${new Date(t.due).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}` : ''}</div>
-           </div>
-           <a className="btn" href={`/tasks`}>Открыть</a>
-         </li>
-       ))}</ul>}
+      {loading ? (
+        <div className="text-sm text-neutral-500">Загрузка…</div>
+      ) : err ? (
+        <div className="text-sm text-danger">Ошибка: {err}</div>
+      ) : tasks.length === 0 ? (
+        <div className="text-sm text-neutral-500">На сегодня нет задач.</div>
+      ) : (
+        <ul className="space-y-2">
+          {tasks.map(t => (
+            <li key={t.id} className="flex items-center gap-3 card-compact hover:bg-neutral-50">
+              <div className="w-5 h-5 shrink-0 rounded border border-neutral-300 bg-white" />
+              <div className="flex-1">
+                <div className="text-sm">{t.title || 'Без названия'}</div>
+                <div className="text-xs text-neutral-500">
+                  {t.due ? `Срок: ${new Date(t.due).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}` : ''}
+                </div>
+              </div>
+              <a className="btn btn-sm" href={`/tasks`}>Открыть</a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

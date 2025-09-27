@@ -459,13 +459,20 @@ body {
 .text-neutral-700 { color: var(--neutral-700); }
 .text-neutral-800 { color: var(--neutral-800); }
 .text-neutral-900 { color: var(--neutral-900); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
 
 .bg-neutral-50 { background-color: var(--neutral-50); }
 .bg-neutral-100 { background-color: var(--neutral-100); }
+.bg-neutral-200 { background-color: var(--neutral-200); }
 .bg-white { background-color: white; }
+.bg-warning-light { background-color: var(--warning-light); }
 
 .border-neutral-200 { border-color: var(--neutral-200); }
 .border-neutral-300 { border-color: var(--neutral-300); }
+.border-warning { border-color: var(--warning); }
 
 /* Responsive */
 @media (max-width: 768px) {

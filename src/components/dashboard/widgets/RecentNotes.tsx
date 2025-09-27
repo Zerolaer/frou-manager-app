@@ -26,25 +26,30 @@ export function RecentNotes() {
     return () => { ignore = true; };
   }, []);
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold tracking-[-0.01em]">Последние заметки</h2>
-        <a href="/notes" className="text-sm text-blue-600 hover:underline">Все заметки</a>
+        <h2 className="text-lg font-semibold">Последние заметки</h2>
+        <a href="/notes" className="text-sm text-primary hover:underline">Все заметки</a>
       </div>
-      {loading ? <div className="text-sm text-gray-500">Загрузка…</div> :
-       err ? <div className="text-sm text-red-600">Ошибка: {err}</div> :
-       notes.length === 0 ? <div className="text-sm text-gray-500">Заметок нет.</div> :
-       <ul className="space-y-2">
-         {notes.slice(0,3).map(n => (
-           <li key={n.id} className="flex items-center justify-between rounded-xl border border-gray-100 p-3 hover:bg-gray-50">
-             <div className="min-w-0">
-               <div className="truncate text-sm">{n.title || 'Без названия'}</div>
-               <div className="text-xs text-gray-500">Обновлено {new Date(n.updatedAt).toLocaleString('ru-RU')}</div>
-             </div>
-             <a className="btn" href={`/notes?id=${n.id}`}>Открыть</a>
-           </li>
-         ))}
-       </ul>}
+      {loading ? (
+        <div className="text-sm text-neutral-500">Загрузка…</div>
+      ) : err ? (
+        <div className="text-sm text-danger">Ошибка: {err}</div>
+      ) : notes.length === 0 ? (
+        <div className="text-sm text-neutral-500">Заметок нет.</div>
+      ) : (
+        <ul className="space-y-2">
+          {notes.slice(0,3).map(n => (
+            <li key={n.id} className="flex items-center justify-between card-compact hover:bg-neutral-50">
+              <div className="min-w-0">
+                <div className="truncate text-sm">{n.title || 'Без названия'}</div>
+                <div className="text-xs text-neutral-500">Обновлено {new Date(n.updatedAt).toLocaleString('ru-RU')}</div>
+              </div>
+              <a className="btn btn-sm" href={`/notes?id=${n.id}`}>Открыть</a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

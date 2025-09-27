@@ -32,11 +32,16 @@ export function DebugBanner() {
   const hasErr = checks.some(c => !c.ok);
   if (!hasErr) return null;
   return (
-    <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-      <div className="font-semibold mb-2">Диагностика</div>
-      <ul className="list-disc pl-5 space-y-1">
+    <div className="mb-4 card border-warning bg-warning-light">
+      <div className="font-semibold mb-2 text-warning">Диагностика</div>
+      <ul className="list-disc pl-5 space-y-1 text-sm">
         {checks.map((c, i) => (
-          <li key={i}><span className={c.ok ? 'text-emerald-700' : 'text-red-700'}>{c.name}: {c.ok ? 'OK' : 'Ошибка'}</span>{c.msg ? <span className="ml-2 opacity-80">{c.msg}</span> : null}</li>
+          <li key={i}>
+            <span className={c.ok ? 'text-success' : 'text-danger'}>
+              {c.name}: {c.ok ? 'OK' : 'Ошибка'}
+            </span>
+            {c.msg && <span className="ml-2 opacity-80">{c.msg}</span>}
+          </li>
         ))}
       </ul>
     </div>
