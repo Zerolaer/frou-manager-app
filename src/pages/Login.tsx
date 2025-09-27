@@ -79,7 +79,7 @@ if (!authChecked) {
               </div>
             }
           >
-            {error && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
+            {error ? <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div> : null}
 
             <form onSubmit={onSubmit} className="space-y-3">
               {/* Email */}

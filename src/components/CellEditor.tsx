@@ -142,7 +142,7 @@ export default function CellEditor({
   size="md"
 >
   <div className="editor-body">
-          {loading && <div className="loading-overlay">Загрузка…</div>}
+          {loading ? <div className="loading-overlay">Загрузка…</div> : null}
           <div className="editor-add">
             <input type="number" placeholder="Сумма (€)" value={amount} onChange={e=>setAmount(e.target.value)} className="editor-input number" />
             <input placeholder="Описание (необязательно)" value={note} onChange={e=>setNote(e.target.value)} className="editor-input text" />
@@ -170,7 +170,7 @@ export default function CellEditor({
                 </button>
               </div>
             ))}
-            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>)}
+            {!loading && items.length === 0 ? (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>) : null}
           </div>
         </div>
 

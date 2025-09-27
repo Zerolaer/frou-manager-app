@@ -393,14 +393,14 @@ const projectColorById = useMemo(() => {
         }}
       />
 
-      {ctx.open && (<>
+      {ctx.open ? (<>
         <div className="ctx-backdrop" onClick={()=>setCtx(c=>({...c, open:false}))} />
         <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }}>
           <div className="ctx-item" onClick={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}>Дублировать</div>
           <div className="ctx-item" onClick={async()=>{ if(ctx.task && ctx.dayKey){ await supabase.from('tasks_items').update({status:TASK_STATUSES.CLOSED}).eq('id', ctx.task.id); setTasks(prev=>{ const copy={...prev}; const arr=[...(copy[ctx.dayKey]||[])]; const i=arr.findIndex(x=>x.id===ctx.task!.id); if(i>=0){ arr[i]={...arr[i], status:TASK_STATUSES.CLOSED}; } copy[ctx.dayKey]=arr; return copy; }); setCtx(c=>({...c, open:false})) }}}>Выполнить</div>
           <div className="ctx-item text-red-600" onClick={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}>Удалить</div>
         </div>
-      </>)}
+      </>) : null}
 
 
     </div>

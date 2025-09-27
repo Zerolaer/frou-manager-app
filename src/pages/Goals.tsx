@@ -122,11 +122,11 @@ function GoalsPageContent(){
           {filtered.map(g => (
             <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
           ))}
-          {filtered.length === 0 && !loading && (
+          {filtered.length === 0 && !loading ? (
             <div className="col-span-full text-center text-gray-500 py-8">
               {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
             </div>
-          )}
+          ) : null}
         </div>
       )}
 

@@ -23,8 +23,8 @@ export default function YearDropdown({
   return (
     <div className="dd-wrap">
       <button ref={btnRef} className="btn btn-outline dd-btn" onClick={()=>setOpen(v=>!v)}>{value}</button>
-      {open && <div className="dd-backdrop" onClick={()=>setOpen(false)} />}
-      {open && (
+      {open ? <div className="dd-backdrop" onClick={()=>setOpen(false)} /> : null}
+      {open ? (
         <div className="dd-menu">
           {years.map(y => (
             <div
@@ -36,7 +36,7 @@ export default function YearDropdown({
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
