@@ -20,25 +20,11 @@ const WidgetSkeleton = () => (
 
 export default function HomeDashboard() {
   return (
-    <div className="max-w-7xl mx-auto">
-      <Suspense fallback={<div className="h-6 bg-neutral-200 rounded mb-3 animate-pulse" />}>
-        <DebugBanner />
-      </Suspense>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
-          <Suspense fallback={<WidgetSkeleton />}>
-            <TasksToday />
-          </Suspense>
-          <Suspense fallback={<WidgetSkeleton />}>
-            <FinanceMonth />
-          </Suspense>
-        </div>
-        <div className="lg:col-span-1 space-y-4">
-          <Suspense fallback={<WidgetSkeleton />}>
-            <RecentNotes />
-          </Suspense>
-        </div>
+    <div className="max-w-7xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Главная страница</h1>
+      <div className="card">
+        <p>Простая версия для отладки React ошибок #306</p>
+        <p>Если эта страница работает без ошибок, проблема в виджетах.</p>
       </div>
     </div>
   );
