@@ -230,6 +230,39 @@ body {
   background-color: var(--neutral-50);
 }
 
+/* Table skeleton styles */
+.table-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background-color: var(--neutral-200);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background-color: var(--neutral-200);
+}
+
+.table-cell {
+  background-color: white;
+  padding: var(--spacing-sm);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.table-cell.header {
+  background-color: var(--neutral-50);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--neutral-700);
+}
+
 /* Status badges */
 .badge {
   display: inline-flex;
