@@ -59,14 +59,7 @@ export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, 
       <div className="ctx-backdrop" onClick={onClose} onContextMenu={(e)=>e.preventDefault()} aria-hidden />
       <div
         className="ctx-menu"
-        style={{ 
-          left: pos.x + 'px', 
-          top: pos.y + 'px',
-          position: 'fixed',
-          zIndex: 1000,
-          backgroundColor: 'red', // ВРЕМЕННО - чтобы видеть меню
-          border: '2px solid blue' // ВРЕМЕННО
-        }}
+        style={{ left: pos.x, top: pos.y }}
         role="menu"
         aria-label="Действия с ячейкой"
         onContextMenu={(e)=>e.preventDefault()}

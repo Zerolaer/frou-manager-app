@@ -204,19 +204,8 @@ export default function Finance(){
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
     
-    console.log('CATEGORY CONTEXT MENU OPENED!', { cat });
-    
-    // ПРОБУЕМ pageX/pageY вместо clientX/clientY
-    const x = e.pageX + 5;
-    const y = e.pageY + 5;
-    
-    console.log('Category click position:', { 
-      clientX: e.clientX, 
-      clientY: e.clientY,
-      pageX: e.pageX,
-      pageY: e.pageY
-    });
-    console.log('Category menu position:', { x, y });
+    const x = e.clientX;
+    const y = e.clientY;
     
     setCtxPos({ x, y })
     setCtxCat(cat)
@@ -269,21 +258,8 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    console.log('CELL CONTEXT MENU OPENED!', { catId, type, month });
-    
-    // ПРОБУЕМ pageX/pageY вместо clientX/clientY
-    const x = e.pageX + 5;
-    const y = e.pageY + 5;
-    
-    console.log('Click position:', { 
-      clientX: e.clientX, 
-      clientY: e.clientY,
-      pageX: e.pageX,
-      pageY: e.pageY,
-      screenX: e.screenX,
-      screenY: e.screenY
-    });
-    console.log('Menu position:', { x, y });
+    const x = e.clientX;
+    const y = e.clientY;
     
     setCellCtx({catId, type, month})
     setCellCtxPos({ x, y })
