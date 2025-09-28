@@ -212,7 +212,6 @@ function NotesPageContent() {
         onSave={handleSave}
         onDelete={handleDelete}
       />
-        </div>
       </PageContainer>
     </>
   );
