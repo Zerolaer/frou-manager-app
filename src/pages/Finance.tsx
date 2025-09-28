@@ -211,31 +211,36 @@ export default function Finance(){
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    // Позиция меню - немного правее и ниже курсора
-    let x = e.clientX + offset;
-    let y = e.clientY + offset;
+    // Получаем точные координаты клика с учетом скролла
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2; // Центр ячейки по горизонтали
+    const y = rect.top + rect.height / 2; // Центр ячейки по вертикали
+    
+    // Позиция меню - немного правее и ниже центра ячейки
+    let menuX = x + offset;
+    let menuY = y + offset;
     
     // Проверяем, не выходит ли меню за правый край
-    if (x + menuWidth > vw - pad) {
-      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
+    if (menuX + menuWidth > vw - pad) {
+      menuX = x - menuWidth - offset; // Показываем слева от ячейки
     }
     
     // Проверяем, не выходит ли меню за нижний край
-    if (y + menuHeight > vh - pad) {
-      y = e.clientY - menuHeight - offset; // Показываем выше курсора
+    if (menuY + menuHeight > vh - pad) {
+      menuY = y - menuHeight - offset; // Показываем выше ячейки
     }
     
     // Проверяем, не выходит ли меню за левый край
-    if (x < pad) {
-      x = pad;
+    if (menuX < pad) {
+      menuX = pad;
     }
     
     // Проверяем, не выходит ли меню за верхний край
-    if (y < pad) {
-      y = pad;
+    if (menuY < pad) {
+      menuY = pad;
     }
     
-    setCtxPos({ x, y })
+    setCtxPos({ x: menuX, y: menuY })
     setCtxCat(cat)
     setCtxOpen(true)
   }
@@ -293,32 +298,37 @@ export default function Finance(){
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    // Позиция меню - немного правее и ниже курсора
-    let x = e.clientX + offset;
-    let y = e.clientY + offset;
+    // Получаем точные координаты клика с учетом скролла
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2; // Центр ячейки по горизонтали
+    const y = rect.top + rect.height / 2; // Центр ячейки по вертикали
+    
+    // Позиция меню - немного правее и ниже центра ячейки
+    let menuX = x + offset;
+    let menuY = y + offset;
     
     // Проверяем, не выходит ли меню за правый край
-    if (x + menuWidth > vw - pad) {
-      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
+    if (menuX + menuWidth > vw - pad) {
+      menuX = x - menuWidth - offset; // Показываем слева от ячейки
     }
     
     // Проверяем, не выходит ли меню за нижний край
-    if (y + menuHeight > vh - pad) {
-      y = e.clientY - menuHeight - offset; // Показываем выше курсора
+    if (menuY + menuHeight > vh - pad) {
+      menuY = y - menuHeight - offset; // Показываем выше ячейки
     }
     
     // Проверяем, не выходит ли меню за левый край
-    if (x < pad) {
-      x = pad;
+    if (menuX < pad) {
+      menuX = pad;
     }
     
     // Проверяем, не выходит ли меню за верхний край
-    if (y < pad) {
-      y = pad;
+    if (menuY < pad) {
+      menuY = pad;
     }
     
     setCellCtx({catId, type, month})
-    setCellCtxPos({ x, y })
+    setCellCtxPos({ x: menuX, y: menuY })
     setCellCanCopy(false)
     setCellCtxOpen(true)
 
