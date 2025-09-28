@@ -263,6 +263,7 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
+    alert('CELL CONTEXT MENU OPENED!'); // ВРЕМЕННО - чтобы точно увидеть
     console.log('CELL CONTEXT MENU OPENED!', { catId, type, month });
     
     // Простое позиционирование - прямо рядом с курсором
