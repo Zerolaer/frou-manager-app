@@ -206,15 +206,11 @@ export default function Finance(){
     
     console.log('CATEGORY CONTEXT MENU OPENED!', { cat });
     
-    // Получаем координаты элемента, на который кликнули
-    const rect = e.currentTarget.getBoundingClientRect();
-    console.log('Category element rect:', rect);
+    // ПРОСТОЕ РЕШЕНИЕ - прямо рядом с курсором
+    const x = e.clientX + 5;
+    const y = e.clientY + 5;
+    
     console.log('Category click position:', { clientX: e.clientX, clientY: e.clientY });
-    
-    // Позиция меню - прямо рядом с элементом
-    const x = rect.right + 5; // Справа от элемента
-    const y = rect.top;       // На уровне верха элемента
-    
     console.log('Category menu position:', { x, y });
     
     setCtxPos({ x, y })
@@ -270,15 +266,11 @@ export default function Finance(){
     // Open menu immediately at cursor; copy option may appear after async check
     console.log('CELL CONTEXT MENU OPENED!', { catId, type, month });
     
-    // Получаем координаты элемента, на который кликнули
-    const rect = e.currentTarget.getBoundingClientRect();
-    console.log('Element rect:', rect);
+    // ПРОСТОЕ РЕШЕНИЕ - прямо рядом с курсором
+    const x = e.clientX + 5;
+    const y = e.clientY + 5;
+    
     console.log('Click position:', { clientX: e.clientX, clientY: e.clientY });
-    
-    // Позиция меню - прямо рядом с элементом
-    const x = rect.right + 5; // Справа от элемента
-    const y = rect.top;       // На уровне верха элемента
-    
     console.log('Menu position:', { x, y });
     
     setCellCtx({catId, type, month})
