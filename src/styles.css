@@ -212,13 +212,34 @@ html, body, #root {
   position: fixed; inset: 0; background: transparent; z-index: 999;
 }
 .dd-menu, .ctx-menu{
-  position: fixed; z-index: 1000; background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.08);
+  position: fixed; z-index: 1000; 
+  background: #ffffff; 
+  border: 1px solid #d1d5db; 
+  border-radius: 12px; 
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  min-width: 200px;
+  max-width: 300px;
+  padding: 8px 0;
 }
 .dd-menu.full{ min-width: 220px; }
-.dd-item{
-  padding:8px 12px; font-size:14px; cursor:pointer;
+.dd-item, .ctx-item{
+  padding: 12px 16px; 
+  font-size: 14px; 
+  font-weight: 500;
+  cursor: pointer;
+  color: #374151;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.dd-item:hover{ background:#f8fafc; }
+.dd-item:hover, .ctx-item:hover{ 
+  background: #f3f4f6; 
+  color: #111827;
+}
+.ctx-item:active {
+  background: #e5e7eb;
+}
 
 /* Form controls */
 .label{display:block;font-weight:600;margin-bottom:6px;color:#0f172a;}

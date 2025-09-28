@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Copy, Clipboard } from 'lucide-react'
 
 type Pos = { x: number; y: number }
 
@@ -14,9 +15,19 @@ type Props = {
 
 export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, onPaste }: Props){
   const visibleItems = useMemo(() => {
-    const items: Array<{ label: string; onClick: () => void; aria: string }> = []
-    if (canCopy) items.push({ label: 'Копировать записи', onClick: onCopy, aria: 'Копировать записи' })
-    if (hasClipboard) items.push({ label: 'Вставить записи (заменить)', onClick: onPaste, aria: 'Вставить записи (заменить)' })
+    const items: Array<{ label: string; onClick: () => void; aria: string; icon: React.ReactNode }> = []
+    if (canCopy) items.push({ 
+      label: 'Копировать записи', 
+      onClick: onCopy, 
+      aria: 'Копировать записи',
+      icon: <Copy className="w-4 h-4" />
+    })
+    if (hasClipboard) items.push({ 
+      label: 'Вставить записи (заменить)', 
+      onClick: onPaste, 
+      aria: 'Вставить записи (заменить)',
+      icon: <Clipboard className="w-4 h-4" />
+    })
     return items
   }, [canCopy, hasClipboard, onCopy, onPaste])
 
@@ -67,6 +78,7 @@ export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, 
             aria-label={it.aria}
             data-active={active===idx}
           >
+            {it.icon}
             {it.label}
           </div>
         ))}

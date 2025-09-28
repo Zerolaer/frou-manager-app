@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react'
+import { Edit, Plus, Trash2 } from 'lucide-react'
 
 type Pos = { x: number; y: number }
 
@@ -57,7 +58,10 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
           onClick={onRename}
           aria-label="Переименовать категорию"
           data-active={active===0}
-        >Переименовать</div>
+        >
+          <Edit className="w-4 h-4" />
+          Переименовать
+        </div>
         {canAddSub && (<div
           ref={el => itemsRef.current[1] = el}
           className="ctx-item"
@@ -66,7 +70,10 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
           onClick={onAddSub}
           aria-label="Добавить подкатегорию"
           data-active={active===1}
-        >+ Подкатегория</div>)}
+        >
+          <Plus className="w-4 h-4" />
+          Подкатегория
+        </div>)}
         <div
           ref={el => itemsRef.current[2] = el}
           className="ctx-item"
@@ -75,8 +82,11 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
           onClick={onDelete}
           aria-label="Удалить категорию"
           data-active={active===2}
-          style={{color:'#b91c1c'}}
-        >Удалить</div>
+          style={{color:'#dc2626'}}
+        >
+          <Trash2 className="w-4 h-4" />
+          Удалить
+        </div>
       </div>
     </>
   )

@@ -204,31 +204,33 @@ export default function Finance(){
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
     
-    const menuWidth = CONTEXT_MENU_WIDTH;
-    const menuHeight = CONTEXT_MENU_HEIGHT_CATEGORY;
-    const pad = 8;
+    const menuWidth = 200;
+    const menuHeight = 120;
+    const offset = 8; // Отступ от курсора
+    const pad = 16;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    let x = e.clientX;
-    let y = e.clientY;
+    // Позиция меню - немного правее и ниже курсора
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
     
-    // Check if menu would go off the right edge
+    // Проверяем, не выходит ли меню за правый край
     if (x + menuWidth > vw - pad) {
-      x = vw - menuWidth - pad;
+      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
     }
     
-    // Check if menu would go off the bottom edge
+    // Проверяем, не выходит ли меню за нижний край
     if (y + menuHeight > vh - pad) {
-      y = vh - menuHeight - pad;
+      y = e.clientY - menuHeight - offset; // Показываем выше курсора
     }
     
-    // Ensure menu doesn't go off the left edge
+    // Проверяем, не выходит ли меню за левый край
     if (x < pad) {
       x = pad;
     }
     
-    // Ensure menu doesn't go off the top edge
+    // Проверяем, не выходит ли меню за верхний край
     if (y < pad) {
       y = pad;
     }
@@ -284,31 +286,33 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    const menuWidth = 200; // CONTEXT_MENU_WIDTH
-    const menuHeight = 80; // CONTEXT_MENU_HEIGHT_CELL
-    const pad = 8;
+    const menuWidth = 200;
+    const menuHeight = 100;
+    const offset = 8; // Отступ от курсора
+    const pad = 16;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    let x = e.clientX;
-    let y = e.clientY;
+    // Позиция меню - немного правее и ниже курсора
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
     
-    // Check if menu would go off the right edge
+    // Проверяем, не выходит ли меню за правый край
     if (x + menuWidth > vw - pad) {
-      x = vw - menuWidth - pad;
+      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
     }
     
-    // Check if menu would go off the bottom edge
+    // Проверяем, не выходит ли меню за нижний край
     if (y + menuHeight > vh - pad) {
-      y = vh - menuHeight - pad;
+      y = e.clientY - menuHeight - offset; // Показываем выше курсора
     }
     
-    // Ensure menu doesn't go off the left edge
+    // Проверяем, не выходит ли меню за левый край
     if (x < pad) {
       x = pad;
     }
     
-    // Ensure menu doesn't go off the top edge
+    // Проверяем, не выходит ли меню за верхний край
     if (y < pad) {
       y = pad;
     }
