@@ -206,41 +206,36 @@ export default function Finance(){
     
     const menuWidth = 200;
     const menuHeight = 120;
-    const offset = 8; // Отступ от курсора
-    const pad = 16;
+    const offset = 4; // Минимальный отступ от курсора
+    const pad = 8;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    // Получаем точные координаты клика с учетом скролла
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = rect.left + rect.width / 2; // Центр ячейки по горизонтали
-    const y = rect.top + rect.height / 2; // Центр ячейки по вертикали
-    
-    // Позиция меню - немного правее и ниже центра ячейки
-    let menuX = x + offset;
-    let menuY = y + offset;
+    // Используем точные координаты клика мыши
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
     
     // Проверяем, не выходит ли меню за правый край
-    if (menuX + menuWidth > vw - pad) {
-      menuX = x - menuWidth - offset; // Показываем слева от ячейки
+    if (x + menuWidth > vw - pad) {
+      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
     }
     
     // Проверяем, не выходит ли меню за нижний край
-    if (menuY + menuHeight > vh - pad) {
-      menuY = y - menuHeight - offset; // Показываем выше ячейки
+    if (y + menuHeight > vh - pad) {
+      y = e.clientY - menuHeight - offset; // Показываем выше курсора
     }
     
     // Проверяем, не выходит ли меню за левый край
-    if (menuX < pad) {
-      menuX = pad;
+    if (x < pad) {
+      x = pad;
     }
     
     // Проверяем, не выходит ли меню за верхний край
-    if (menuY < pad) {
-      menuY = pad;
+    if (y < pad) {
+      y = pad;
     }
     
-    setCtxPos({ x: menuX, y: menuY })
+    setCtxPos({ x, y })
     setCtxCat(cat)
     setCtxOpen(true)
   }
@@ -293,42 +288,37 @@ export default function Finance(){
     // Open menu immediately at cursor; copy option may appear after async check
     const menuWidth = 200;
     const menuHeight = 100;
-    const offset = 8; // Отступ от курсора
-    const pad = 16;
+    const offset = 4; // Минимальный отступ от курсора
+    const pad = 8;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    // Получаем точные координаты клика с учетом скролла
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = rect.left + rect.width / 2; // Центр ячейки по горизонтали
-    const y = rect.top + rect.height / 2; // Центр ячейки по вертикали
-    
-    // Позиция меню - немного правее и ниже центра ячейки
-    let menuX = x + offset;
-    let menuY = y + offset;
+    // Используем точные координаты клика мыши
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
     
     // Проверяем, не выходит ли меню за правый край
-    if (menuX + menuWidth > vw - pad) {
-      menuX = x - menuWidth - offset; // Показываем слева от ячейки
+    if (x + menuWidth > vw - pad) {
+      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
     }
     
     // Проверяем, не выходит ли меню за нижний край
-    if (menuY + menuHeight > vh - pad) {
-      menuY = y - menuHeight - offset; // Показываем выше ячейки
+    if (y + menuHeight > vh - pad) {
+      y = e.clientY - menuHeight - offset; // Показываем выше курсора
     }
     
     // Проверяем, не выходит ли меню за левый край
-    if (menuX < pad) {
-      menuX = pad;
+    if (x < pad) {
+      x = pad;
     }
     
     // Проверяем, не выходит ли меню за верхний край
-    if (menuY < pad) {
-      menuY = pad;
+    if (y < pad) {
+      y = pad;
     }
     
     setCellCtx({catId, type, month})
-    setCellCtxPos({ x: menuX, y: menuY })
+    setCellCtxPos({ x, y })
     setCellCanCopy(false)
     setCellCtxOpen(true)
 
