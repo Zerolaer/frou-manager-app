@@ -1,15 +1,15 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import React, { Suspense } from 'react'
+import React, { Suspense, lazy } from 'react'
 import AppErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './lib/toast'
 import { SkipLinks } from './components/AccessibleComponents'
 
-// Import components directly (no lazy loading for now)
-import Header from './components/Header'
-import Toaster from './components/Toaster'
-import KeyboardShortcuts from './components/KeyboardShortcuts'
-import OfflineSupport from './components/OfflineSupport'
-import PerformanceMonitor from './components/PerformanceMonitor'
+// Lazy load heavy components
+const Header = lazy(() => import('./components/Header'))
+const Toaster = lazy(() => import('./components/Toaster'))
+const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
+const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
+const PerformanceMonitor = lazy(() => import('./components/PerformanceMonitor'))
 
 export default function App(){
   const location = useLocation()
@@ -21,7 +21,9 @@ export default function App(){
         <SkipLinks />
         <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Header */}
-        <Header />
+        <Suspense fallback={<div className="h-12 bg-white border-b border-gray-300 animate-pulse" />}>
+          <Header />
+        </Suspense>
         
         {/* Main Content */}
         <main 
@@ -37,10 +39,18 @@ export default function App(){
         </div>
         
         {/* Global Components */}
-        <Toaster />
-        <KeyboardShortcuts />
-        <OfflineSupport />
-        <PerformanceMonitor />
+        <Suspense fallback={null}>
+          <Toaster />
+        </Suspense>
+        <Suspense fallback={null}>
+          <KeyboardShortcuts />
+        </Suspense>
+        <Suspense fallback={null}>
+          <OfflineSupport />
+        </Suspense>
+        <Suspense fallback={null}>
+          <PerformanceMonitor />
+        </Suspense>
       </AppErrorBoundary>
     </ToastProvider>
   )
