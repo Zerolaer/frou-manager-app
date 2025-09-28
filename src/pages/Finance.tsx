@@ -284,8 +284,8 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    const menuWidth = CONTEXT_MENU_WIDTH;
-    const menuHeight = CONTEXT_MENU_HEIGHT_CELL;
+    const menuWidth = 200; // CONTEXT_MENU_WIDTH
+    const menuHeight = 80; // CONTEXT_MENU_HEIGHT_CELL
     const pad = 8;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
