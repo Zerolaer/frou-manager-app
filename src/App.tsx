@@ -39,18 +39,18 @@ export default function App(){
         </div>
         
         {/* Global Components */}
-      <Suspense fallback={null}>
-        <Toaster />
-      </Suspense>
-      <Suspense fallback={null}>
-        <KeyboardShortcuts />
-      </Suspense>
-      <Suspense fallback={null}>
-        <OfflineSupport />
-      </Suspense>
-      <Suspense fallback={null}>
-        <PerformanceMonitor />
-      </Suspense>
+        <Suspense fallback={null}>
+          <Toaster />
+        </Suspense>
+        <Suspense fallback={null}>
+          <KeyboardShortcuts />
+        </Suspense>
+        <Suspense fallback={null}>
+          <OfflineSupport />
+        </Suspense>
+        <Suspense fallback={null}>
+          <PerformanceMonitor />
+        </Suspense>
       </AppErrorBoundary>
     </ToastProvider>
   )
