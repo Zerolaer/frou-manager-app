@@ -22,6 +22,7 @@ export default function CellEditor({
   const [items, setItems] = useState<Entry[]>([])
   const [amount, setAmount] = useState<string>('')
   const [note, setNote] = useState<string>('')
+  const amountInputRef = useRef<HTMLInputElement>(null)
 
   const timers = useRef<Record<string, any>>({})
   const debounce = (key: string, fn: () => void, ms = 350) => {
@@ -54,6 +55,15 @@ export default function CellEditor({
     })()
   }, [open, categoryId, monthIndex, year])
 
+  // Auto-focus on amount input when modal opens
+  useEffect(() => {
+    if (open && amountInputRef.current) {
+      setTimeout(() => {
+        amountInputRef.current?.focus()
+      }, 100)
+    }
+  }, [open])
+
   function sumIncluded(list: Entry[]) {
     return list.reduce((s, e) => s + (e.included ? e.amount : 0), 0)
   }
@@ -71,6 +81,17 @@ export default function CellEditor({
     const next: Entry[] = [...items, { id: data.id, amount: Number(data.amount)||0, note: data.note, included: !!data.included, position: data.position ?? items.length }]
     setItems(next); setAmount(''); setNote('')
     onApply(sumIncluded(next))
+    // Focus back to amount input after adding
+    setTimeout(() => {
+      amountInputRef.current?.focus()
+    }, 50)
+  }
+
+  function handleKeyPress(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addItem()
+    }
   }
 
   function updateItemLocal(id: string, patch: Partial<Entry>) {
@@ -143,8 +164,22 @@ export default function CellEditor({
   <div className="editor-body">
           {loading && <div className="loading-overlay">Загрузка…</div>}
           <div className="editor-add">
-            <input type="number" placeholder="Сумма (€)" value={amount} onChange={e=>setAmount(e.target.value)} className="editor-input number" />
-            <input placeholder="Описание (необязательно)" value={note} onChange={e=>setNote(e.target.value)} className="editor-input text" />
+            <input 
+              ref={amountInputRef}
+              type="number" 
+              placeholder="Сумма (€)" 
+              value={amount} 
+              onChange={e=>setAmount(e.target.value)} 
+              onKeyPress={handleKeyPress}
+              className="editor-input number" 
+            />
+            <input 
+              placeholder="Описание (необязательно)" 
+              value={note} 
+              onChange={e=>setNote(e.target.value)} 
+              onKeyPress={handleKeyPress}
+              className="editor-input text" 
+            />
             <button className="btn btn-outline flex items-center gap-2" onClick={addItem}>
               <Plus className="w-4 h-4" />
               Добавить

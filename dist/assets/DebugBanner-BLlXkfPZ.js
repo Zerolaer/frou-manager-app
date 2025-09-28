@@ -1,1 +1,0 @@
-import"./index-B4bR3R9C.js";import{r as t}from"./vendor-CqGws4Uo.js";import"./supabase-BmeMSZYH.js";function u(){const[e,r]=t.useState(null);return t.useEffect(()=>{},[]),null}export{u as DebugBanner};

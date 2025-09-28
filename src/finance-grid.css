@@ -13,6 +13,7 @@
   border-right: 1px solid #e5e7eb;
   background: #ffffff;
   padding: 0;
+  min-height: 32px;
 }
 .finance-row:last-child .finance-cell { border-bottom: 0; }
 .finance-cell:last-child { border-right: 0; }
@@ -41,7 +42,7 @@
   padding: 8px;
   font-size: 13px;
   font-weight: 600;
-  cursor: context-menu;
+  cursor: default;
 }
 
 .cell-btn {
@@ -77,14 +78,10 @@
 }
 
 
-/* === APPEND: hover for all data cells (not only category) === */
-.finance-grid .finance-row .finance-cell:not(.cell-name):hover{
-  background:#f8fafc;
-  outline:1px solid #e5e7eb;
-  outline-offset:-1px;
-}
+/* === APPEND: hover for clickable data cells only === */
 .finance-grid .finance-row .finance-cell:not(.cell-name):hover .cell-btn{
-  background:transparent;
+  background:#f8fafc;
+  border-color:#e5e7eb;
 }
 
 
