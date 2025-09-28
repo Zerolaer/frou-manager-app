@@ -36,9 +36,9 @@ export default function App(){
             <Outlet />
           </Suspense>
         </main>
-      </div>
-      
-      {/* Global Components */}
+        </div>
+        
+        {/* Global Components */}
       <Suspense fallback={null}>
         <Toaster />
       </Suspense>
