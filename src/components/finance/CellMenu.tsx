@@ -14,6 +14,8 @@ type Props = {
 }
 
 export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, onPaste }: Props){
+  console.log('CellMenu rendered with pos:', pos);
+  
   const visibleItems = useMemo(() => {
     const items: Array<{ label: string; onClick: () => void; aria: string; icon: React.ReactNode }> = []
     if (canCopy) items.push({ 

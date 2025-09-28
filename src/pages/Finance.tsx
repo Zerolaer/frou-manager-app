@@ -204,39 +204,13 @@ export default function Finance(){
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
     
-    const menuWidth = 200;
-    const menuHeight = 120;
-    const offset = 8;
-    const pad = 8;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    console.log('CATEGORY CONTEXT MENU OPENED!', { cat });
     
-    // Получаем точные координаты элемента, на который кликнули
-    const rect = e.currentTarget.getBoundingClientRect();
+    // Простое позиционирование - прямо рядом с курсором
+    const x = e.clientX + 10;
+    const y = e.clientY + 10;
     
-    // Позиция меню - правее и ниже элемента
-    let x = rect.right + offset; // Справа от элемента
-    let y = rect.top + offset;   // На уровне верха элемента
-    
-    // Проверяем, не выходит ли меню за правый край
-    if (x + menuWidth > vw - pad) {
-      x = rect.left - menuWidth - offset; // Показываем слева от элемента
-    }
-    
-    // Проверяем, не выходит ли меню за нижний край
-    if (y + menuHeight > vh - pad) {
-      y = rect.bottom - menuHeight - offset; // Показываем выше элемента
-    }
-    
-    // Проверяем, не выходит ли меню за левый край
-    if (x < pad) {
-      x = pad;
-    }
-    
-    // Проверяем, не выходит ли меню за верхний край
-    if (y < pad) {
-      y = pad;
-    }
+    console.log('Category menu position:', { x, y, clientX: e.clientX, clientY: e.clientY });
     
     setCtxPos({ x, y })
     setCtxCat(cat)
@@ -289,39 +263,13 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    const menuWidth = 200;
-    const menuHeight = 100;
-    const offset = 8;
-    const pad = 8;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    console.log('CELL CONTEXT MENU OPENED!', { catId, type, month });
     
-    // Получаем точные координаты элемента, на который кликнули
-    const rect = e.currentTarget.getBoundingClientRect();
+    // Простое позиционирование - прямо рядом с курсором
+    const x = e.clientX + 10;
+    const y = e.clientY + 10;
     
-    // Позиция меню - правее и ниже элемента
-    let x = rect.right + offset; // Справа от элемента
-    let y = rect.top + offset;   // На уровне верха элемента
-    
-    // Проверяем, не выходит ли меню за правый край
-    if (x + menuWidth > vw - pad) {
-      x = rect.left - menuWidth - offset; // Показываем слева от элемента
-    }
-    
-    // Проверяем, не выходит ли меню за нижний край
-    if (y + menuHeight > vh - pad) {
-      y = rect.bottom - menuHeight - offset; // Показываем выше элемента
-    }
-    
-    // Проверяем, не выходит ли меню за левый край
-    if (x < pad) {
-      x = pad;
-    }
-    
-    // Проверяем, не выходит ли меню за верхний край
-    if (y < pad) {
-      y = pad;
-    }
+    console.log('Menu position:', { x, y, clientX: e.clientX, clientY: e.clientY });
     
     setCellCtx({catId, type, month})
     setCellCtxPos({ x, y })
