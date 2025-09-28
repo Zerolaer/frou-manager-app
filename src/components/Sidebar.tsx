@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, Home, Wallet, ListTodo, StickyNote, Goal } from "lucide-react";
 import SidebarItem from "./SidebarItem";

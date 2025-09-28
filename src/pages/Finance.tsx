@@ -1,7 +1,6 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { MoreVertical } from "lucide-react";
 import { TableSkeleton } from '@/components/Skeleton'
-
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
@@ -317,7 +316,7 @@ export default function Finance(){
   const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)
 
   return (
-    <>
+    <React.Fragment>
       <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
         <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
 
@@ -529,6 +528,6 @@ export default function Finance(){
         incomeByMonth={totalIncomeByMonth}
         expenseByMonth={totalExpenseByMonth}
       />
-    </>
+    </React.Fragment>
   )
 }

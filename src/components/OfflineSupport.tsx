@@ -319,3 +319,5 @@ export function createOfflineApiCall<T>(
     }
   }
 }
+
+export default OfflineSupport

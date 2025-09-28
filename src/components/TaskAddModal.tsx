@@ -1,7 +1,7 @@
+import React, { useEffect, useState } from 'react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { ModalField, ModalInput, ModalTextarea, ModalSelect, ModalGrid, ModalContent } from '@/components/ui/ModalForm'
 import CheckFinance from '@/components/CheckFinance'
-import { useEffect, useState } from 'react'
 import { X, Plus } from 'lucide-react'
 
 type Todo = { id: string; text: string; done: boolean }

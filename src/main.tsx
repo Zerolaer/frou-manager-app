@@ -38,7 +38,7 @@ const Protected = ({children}: {children: React.ReactNode}) => {
     return () => { sub.subscription.unsubscribe() }
   }, []);
   if (loading) return <div className="p-8 text-gray-300">Загрузка...</div>;
-  return authed ? <>{children}</> : <Navigate to="/login" replace />;
+  return authed ? <React.Fragment>{children}</React.Fragment> : <Navigate to="/login" replace />;
 }
 
 const router = createBrowserRouter([

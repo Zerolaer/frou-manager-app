@@ -6,7 +6,7 @@ interface KeyboardShortcutsProps {
   onToggle?: () => void
 }
 
-export const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
+const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
   show = false,
   onToggle
 }) => {
@@ -197,3 +197,5 @@ export function useKeyboardShortcuts() {
     KeyboardShortcutsComponent
   }
 }
+
+export default KeyboardShortcuts
