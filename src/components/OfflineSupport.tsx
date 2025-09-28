@@ -319,3 +319,13 @@ export function createOfflineApiCall<T>(
     }
   }
 }
+
+// Main OfflineSupport component
+export default function OfflineSupport() {
+  return (
+    <>
+      <OfflineIndicator />
+      <OfflineQueueIndicator />
+    </>
+  )
+}
