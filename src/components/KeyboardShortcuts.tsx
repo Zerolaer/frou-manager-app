@@ -197,3 +197,6 @@ export function useKeyboardShortcuts() {
     KeyboardShortcutsComponent
   }
 }
+
+// Default export for App.tsx
+export default KeyboardShortcuts
