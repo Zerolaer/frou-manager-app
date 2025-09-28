@@ -259,7 +259,7 @@ const projectColorById = useMemo(() => {
   }
 
   return (
-    <div className="tasks-page">
+    <div className="tasks-page tasks-page-only">
       {/* Левая область: панель проектов */}
       <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
 
