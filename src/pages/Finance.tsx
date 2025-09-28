@@ -206,11 +206,16 @@ export default function Finance(){
     
     console.log('CATEGORY CONTEXT MENU OPENED!', { cat });
     
-    // Простое позиционирование - прямо рядом с курсором
-    const x = e.clientX + 10;
-    const y = e.clientY + 10;
+    // Получаем координаты элемента, на который кликнули
+    const rect = e.currentTarget.getBoundingClientRect();
+    console.log('Category element rect:', rect);
+    console.log('Category click position:', { clientX: e.clientX, clientY: e.clientY });
     
-    console.log('Category menu position:', { x, y, clientX: e.clientX, clientY: e.clientY });
+    // Позиция меню - прямо рядом с элементом
+    const x = rect.right + 5; // Справа от элемента
+    const y = rect.top;       // На уровне верха элемента
+    
+    console.log('Category menu position:', { x, y });
     
     setCtxPos({ x, y })
     setCtxCat(cat)
@@ -263,14 +268,18 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    alert('CELL CONTEXT MENU OPENED!'); // ВРЕМЕННО - чтобы точно увидеть
     console.log('CELL CONTEXT MENU OPENED!', { catId, type, month });
     
-    // Простое позиционирование - прямо рядом с курсором
-    const x = e.clientX + 10;
-    const y = e.clientY + 10;
+    // Получаем координаты элемента, на который кликнули
+    const rect = e.currentTarget.getBoundingClientRect();
+    console.log('Element rect:', rect);
+    console.log('Click position:', { clientX: e.clientX, clientY: e.clientY });
     
-    console.log('Menu position:', { x, y, clientX: e.clientX, clientY: e.clientY });
+    // Позиция меню - прямо рядом с элементом
+    const x = rect.right + 5; // Справа от элемента
+    const y = rect.top;       // На уровне верха элемента
+    
+    console.log('Menu position:', { x, y });
     
     setCellCtx({catId, type, month})
     setCellCtxPos({ x, y })
