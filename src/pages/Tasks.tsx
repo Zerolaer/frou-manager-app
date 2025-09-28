@@ -370,6 +370,9 @@ const projectColorById = useMemo(() => {
           })()}
         </div>
       </div>
+    </div>
+  ))}
+</div>
               </div>
             )
           })}
