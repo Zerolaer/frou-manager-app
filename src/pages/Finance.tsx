@@ -3,7 +3,6 @@ import { TableSkeleton } from '@/components/Skeleton'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import '@/ui.css'
 import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'

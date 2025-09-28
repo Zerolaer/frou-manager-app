@@ -287,5 +287,16 @@ export const FeatureErrorBoundary: React.FC<FeatureErrorBoundaryProps> = ({
   return <>{children}</>
 }
 
-// Import React
-import React from 'react'
+// App-level error boundary
+export const AppErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => {
+  return (
+    <PageErrorBoundary
+      pageName="Приложение"
+      onError={(error, errorInfo) => {
+        console.error('App error:', error, errorInfo)
+      }}
+    >
+      {children}
+    </PageErrorBoundary>
+  )
+}

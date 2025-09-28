@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
-import '@/ui.css'
 import GoalsToolbar from '@/components/goals/GoalsToolbar'
 import GoalCard from '@/components/goals/GoalCard'
 import GoalModal from '@/components/goals/GoalModal'

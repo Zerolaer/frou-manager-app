@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import '@/ui.css'
 
 export default function YearDropdown({
   value, years, onChange,

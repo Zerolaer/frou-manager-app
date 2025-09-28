@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import React, { Suspense, lazy } from 'react'
-import AppErrorBoundary from './components/ErrorBoundary'
+import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { ToastProvider } from './lib/toast'
 import { SkipLinks } from './components/AccessibleComponents'
 
@@ -8,8 +8,8 @@ import { SkipLinks } from './components/AccessibleComponents'
 const Header = lazy(() => import('./components/Header'))
 const Sidebar = lazy(() => import('./components/Sidebar'))
 const Toaster = lazy(() => import('./components/Toaster'))
-const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcutsWrapper'))
-const OfflineSupport = lazy(() => import('./components/OfflineSupportWrapper'))
+const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
+const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 const PerformanceMonitor = lazy(() => import('./components/PerformanceMonitor'))
 
 // Loading component

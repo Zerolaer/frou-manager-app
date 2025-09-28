@@ -1,0 +1,1 @@
+import"./index-DEjx_rPC.js";import{r as t}from"./vendor-CqGws4Uo.js";import"./supabase-BmeMSZYH.js";function o(){const[l,r]=t.useState({fcp:null,lcp:null,fid:null,cls:null,ttfb:null,bundleSize:null});return t.useEffect(()=>{},[]),null}export{o as PerformanceMonitor,o as default};
