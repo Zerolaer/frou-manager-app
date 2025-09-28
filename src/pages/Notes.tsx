@@ -1,5 +1,7 @@
 /* src/pages/Notes.tsx */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import SubHeader from '@/components/SubHeader'
+import PageContainer from '@/components/PageContainer'
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
 import type { Note } from '@/features/notes/types';
@@ -116,8 +118,8 @@ function NotesPageContent() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <>
+      <SubHeader title="Заметки">
         <div className="flex items-center gap-2">
           <AccessibleButton
             variant="primary"
@@ -126,8 +128,14 @@ function NotesPageContent() {
             ariaLabel={ARIA_LABELS.ADD + ' заметку'}
             announceOnClick="Открыто окно создания заметки"
           >
-            + Добавить заметку
+            + Создать заметку
           </AccessibleButton>
+        </div>
+      </SubHeader>
+      
+      <PageContainer>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
           
           <AccessibleInput
             label="Поиск заметок"
@@ -204,7 +212,9 @@ function NotesPageContent() {
         onSave={handleSave}
         onDelete={handleDelete}
       />
-    </div>
+        </div>
+      </PageContainer>
+    </>
   );
 }
 

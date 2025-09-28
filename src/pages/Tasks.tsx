@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import ru from 'date-fns/locale/ru'
+import SubHeader from '@/components/SubHeader'
+import PageContainer from '@/components/PageContainer'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
 import TaskViewModal from '@/components/TaskViewModal'
@@ -259,20 +261,23 @@ const projectColorById = useMemo(() => {
   }
 
   return (
-    <div className="tasks-page tasks-page-only">
-      {/* Левая область: панель проектов */}
-      <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
+    <>
+      <SubHeader title="Задачи">
+        <WeekTimeline 
+          anchor={start} 
+          onPrev={() => setStart(prev => subWeeks(prev, 1))} 
+          onNext={() => setStart(prev => addWeeks(prev, 1))} 
+        />
+      </SubHeader>
+      
+      <PageContainer>
+        <div className="tasks-page tasks-page-only">
+          {/* Левая область: панель проектов */}
+          <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
 
-      {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}
-      <section className="tasks-board">
+          {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}
+          <section className="tasks-board">
         <div className="week-grid">
-          <div className="week-head">
-            <WeekTimeline
-              anchor={start}
-              onPrev={()=>setStart(prev=>subWeeks(prev,1))}
-              onNext={()=>setStart(prev=>addWeeks(prev,1))}
-            />
-          </div>
 
           {days.map(d => {
             const key = format(d, 'yyyy-MM-dd')
@@ -365,14 +370,13 @@ const projectColorById = useMemo(() => {
           })()}
         </div>
       </div>
-    </div>
-  ))}
-</div>
               </div>
             )
           })}
         </div>
       </section>
+        </div>
+      </PageContainer>
 
       {/* Модалка: новый проект */}
       <TaskAddModal open={openNewTask} projects={projects} activeProject={activeProject} onClose={()=>setOpenNewTask(false)} dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE", { locale: ru }) : ""} onSubmit={async (title, desc, prio, tag, todos, projId)=>{ await createTask(title, desc, prio, tag, todos, projId) }} />
@@ -403,6 +407,6 @@ const projectColorById = useMemo(() => {
       </>) : null}
 
 
-    </div>
+    </>
   )
 }

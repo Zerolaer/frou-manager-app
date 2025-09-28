@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import SubHeader from '@/components/SubHeader'
+import PageContainer from '@/components/PageContainer'
 // CSS imports removed - styles now in styles.css
 import GoalsToolbar from '@/components/goals/GoalsToolbar'
 import GoalCard from '@/components/goals/GoalCard'
@@ -109,11 +111,16 @@ function GoalsPageContent(){
   }
 
   return (
-    <div className="space-y-6">
-      <GoalsToolbar onCreate={onCreate} onOpenStats={() => setStatsOpen(true)} />
-      <div className="flex items-center gap-2">
-        <input className="input w-full max-w-md" placeholder="Поиск по целям…" value={query} onChange={e => setQuery(e.target.value)} />
-      </div>
+    <>
+      <SubHeader title="Цели">
+        <GoalsToolbar onCreate={onCreate} onOpenStats={() => setStatsOpen(true)} />
+      </SubHeader>
+      
+      <PageContainer>
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <input className="input w-full max-w-md" placeholder="Поиск по целям…" value={query} onChange={e => setQuery(e.target.value)} />
+          </div>
 
       {loading ? (
         <ListSkeleton count={6} />
@@ -130,9 +137,11 @@ function GoalsPageContent(){
         </div>
       )}
 
-      <GoalModal open={modalOpen} initial={editing} onClose={() => setModalOpen(false)} onSave={onSave} />
-      <GoalsStats open={statsOpen} onClose={() => setStatsOpen(false)} goals={items} />
-    </div>
+        <GoalModal open={modalOpen} initial={editing} onClose={() => setModalOpen(false)} onSave={onSave} />
+        <GoalsStats open={statsOpen} onClose={() => setStatsOpen(false)} goals={items} />
+        </div>
+      </PageContainer>
+    </>
   )
 }
 

@@ -1,5 +1,7 @@
 import { MoreVertical } from "lucide-react";
 import { SkeletonTable } from '@/components/LoadingStates'
+import SubHeader from '@/components/SubHeader'
+import PageContainer from '@/components/PageContainer'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
@@ -318,8 +320,20 @@ export default function Finance(){
 
   return (
     <>
-      <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
-        <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
+      <SubHeader 
+        title="Финансы" 
+      >
+        <YearToolbar 
+          year={year} 
+          years={yearOptions} 
+          onYearChange={setYear} 
+          onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} 
+          onShowStats={()=>setShowStats(true)} 
+        />
+      </SubHeader>
+      
+      <PageContainer>
+        <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
 
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Категория</div></div>
@@ -412,7 +426,8 @@ export default function Finance(){
           ))}
         </div>
         </div>
-      </div>
+        </div>
+      </PageContainer>
 
       {ctxOpen && ctxCat && (
         <CategoryMenu
