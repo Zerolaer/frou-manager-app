@@ -206,23 +206,26 @@ export default function Finance(){
     
     const menuWidth = 200;
     const menuHeight = 120;
-    const offset = 4; // Минимальный отступ от курсора
+    const offset = 8;
     const pad = 8;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    // Используем точные координаты клика мыши
-    let x = e.clientX + offset;
-    let y = e.clientY + offset;
+    // Получаем точные координаты элемента, на который кликнули
+    const rect = e.currentTarget.getBoundingClientRect();
+    
+    // Позиция меню - правее и ниже элемента
+    let x = rect.right + offset; // Справа от элемента
+    let y = rect.top + offset;   // На уровне верха элемента
     
     // Проверяем, не выходит ли меню за правый край
     if (x + menuWidth > vw - pad) {
-      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
+      x = rect.left - menuWidth - offset; // Показываем слева от элемента
     }
     
     // Проверяем, не выходит ли меню за нижний край
     if (y + menuHeight > vh - pad) {
-      y = e.clientY - menuHeight - offset; // Показываем выше курсора
+      y = rect.bottom - menuHeight - offset; // Показываем выше элемента
     }
     
     // Проверяем, не выходит ли меню за левый край
@@ -288,23 +291,26 @@ export default function Finance(){
     // Open menu immediately at cursor; copy option may appear after async check
     const menuWidth = 200;
     const menuHeight = 100;
-    const offset = 4; // Минимальный отступ от курсора
+    const offset = 8;
     const pad = 8;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     
-    // Используем точные координаты клика мыши
-    let x = e.clientX + offset;
-    let y = e.clientY + offset;
+    // Получаем точные координаты элемента, на который кликнули
+    const rect = e.currentTarget.getBoundingClientRect();
+    
+    // Позиция меню - правее и ниже элемента
+    let x = rect.right + offset; // Справа от элемента
+    let y = rect.top + offset;   // На уровне верха элемента
     
     // Проверяем, не выходит ли меню за правый край
     if (x + menuWidth > vw - pad) {
-      x = e.clientX - menuWidth - offset; // Показываем слева от курсора
+      x = rect.left - menuWidth - offset; // Показываем слева от элемента
     }
     
     // Проверяем, не выходит ли меню за нижний край
     if (y + menuHeight > vh - pad) {
-      y = e.clientY - menuHeight - offset; // Показываем выше курсора
+      y = rect.bottom - menuHeight - offset; // Показываем выше элемента
     }
     
     // Проверяем, не выходит ли меню за левый край
