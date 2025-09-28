@@ -16,7 +16,7 @@ import CategoryMenu from '@/components/finance/CategoryMenu'
 import CellMenu from '@/components/finance/CellMenu'
 import type { Cat, CtxCat, CellCtx, EntryLite } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
-import { clampToViewport, CTX_MENU_W, CTX_MENU_H_CAT, CTX_MENU_H_CELL, computeDescendantSums } from '@/features/finance/utils'
+import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
 import { useErrorHandler } from '@/lib/errorHandler'

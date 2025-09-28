@@ -8,10 +8,27 @@ export function clampToViewport(x: number, y: number, w: number, h: number) {
   const pad = 8
   const vw = window.innerWidth, vh = window.innerHeight
   let nx = x, ny = y
-  if (nx + w + pad > vw) nx = Math.max(pad, vw - w - pad)
-  if (ny + h + pad > vh) ny = Math.max(pad, vh - h - pad)
-  if (nx < pad) nx = pad
-  if (ny < pad) ny = pad
+  
+  // Check if menu would go off the right edge
+  if (nx + w > vw - pad) {
+    nx = vw - w - pad
+  }
+  
+  // Check if menu would go off the bottom edge
+  if (ny + h > vh - pad) {
+    ny = vh - h - pad
+  }
+  
+  // Ensure menu doesn't go off the left edge
+  if (nx < pad) {
+    nx = pad
+  }
+  
+  // Ensure menu doesn't go off the top edge
+  if (ny < pad) {
+    ny = pad
+  }
+  
   return { x: nx, y: ny }
 }
 
