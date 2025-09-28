@@ -203,8 +203,37 @@ export default function Finance(){
     if (cellCtxOpen) setCellCtxOpen(false)
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
-    const cl = clampToViewport(e.clientX, e.clientY, CONTEXT_MENU_WIDTH, CONTEXT_MENU_HEIGHT_CATEGORY)
-    setCtxPos({ x: cl.x, y: cl.y })
+    
+    const menuWidth = CONTEXT_MENU_WIDTH;
+    const menuHeight = CONTEXT_MENU_HEIGHT_CATEGORY;
+    const pad = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    
+    let x = e.clientX;
+    let y = e.clientY;
+    
+    // Check if menu would go off the right edge
+    if (x + menuWidth > vw - pad) {
+      x = vw - menuWidth - pad;
+    }
+    
+    // Check if menu would go off the bottom edge
+    if (y + menuHeight > vh - pad) {
+      y = vh - menuHeight - pad;
+    }
+    
+    // Ensure menu doesn't go off the left edge
+    if (x < pad) {
+      x = pad;
+    }
+    
+    // Ensure menu doesn't go off the top edge
+    if (y < pad) {
+      y = pad;
+    }
+    
+    setCtxPos({ x, y })
     setCtxCat(cat)
     setCtxOpen(true)
   }
@@ -255,9 +284,37 @@ export default function Finance(){
     if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
 
     // Open menu immediately at cursor; copy option may appear after async check
-    const cl = clampToViewport(e.clientX, e.clientY, CONTEXT_MENU_WIDTH, CONTEXT_MENU_HEIGHT_CELL)
+    const menuWidth = CONTEXT_MENU_WIDTH;
+    const menuHeight = CONTEXT_MENU_HEIGHT_CELL;
+    const pad = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    
+    let x = e.clientX;
+    let y = e.clientY;
+    
+    // Check if menu would go off the right edge
+    if (x + menuWidth > vw - pad) {
+      x = vw - menuWidth - pad;
+    }
+    
+    // Check if menu would go off the bottom edge
+    if (y + menuHeight > vh - pad) {
+      y = vh - menuHeight - pad;
+    }
+    
+    // Ensure menu doesn't go off the left edge
+    if (x < pad) {
+      x = pad;
+    }
+    
+    // Ensure menu doesn't go off the top edge
+    if (y < pad) {
+      y = pad;
+    }
+    
     setCellCtx({catId, type, month})
-    setCellCtxPos({ x: cl.x, y: cl.y })
+    setCellCtxPos({ x, y })
     setCellCanCopy(false)
     setCellCtxOpen(true)
 
