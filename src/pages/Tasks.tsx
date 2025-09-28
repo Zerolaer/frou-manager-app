@@ -3,13 +3,12 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import ru from 'date-fns/locale/ru'
-import SubHeader from '@/components/SubHeader'
-import PageContainer from '@/components/PageContainer'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
 import TaskViewModal from '@/components/TaskViewModal'
 import TaskAddModal from '@/components/TaskAddModal'
-// CSS imports removed - styles now in styles.css
+import '@/ui.css'
+import '@/tasks.css'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
@@ -261,23 +260,20 @@ const projectColorById = useMemo(() => {
   }
 
   return (
-    <>
-      <SubHeader title="Задачи">
-        <WeekTimeline 
-          anchor={start} 
-          onPrev={() => setStart(prev => subWeeks(prev, 1))} 
-          onNext={() => setStart(prev => addWeeks(prev, 1))} 
-        />
-      </SubHeader>
-      
-      <PageContainer>
-        <div className="tasks-page tasks-page-only">
-          {/* Левая область: панель проектов */}
-          <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
+    <div className="tasks-page">
+      {/* Левая область: панель проектов */}
+      <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
 
-          {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}
-          <section className="tasks-board">
+      {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}
+      <section className="tasks-board">
         <div className="week-grid">
+          <div className="week-head">
+            <WeekTimeline
+              anchor={start}
+              onPrev={()=>setStart(prev=>subWeeks(prev,1))}
+              onNext={()=>setStart(prev=>addWeeks(prev,1))}
+            />
+          </div>
 
           {days.map(d => {
             const key = format(d, 'yyyy-MM-dd')
@@ -378,8 +374,6 @@ const projectColorById = useMemo(() => {
           })}
         </div>
       </section>
-        </div>
-      </PageContainer>
 
       {/* Модалка: новый проект */}
       <TaskAddModal open={openNewTask} projects={projects} activeProject={activeProject} onClose={()=>setOpenNewTask(false)} dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE", { locale: ru }) : ""} onSubmit={async (title, desc, prio, tag, todos, projId)=>{ await createTask(title, desc, prio, tag, todos, projId) }} />
@@ -400,16 +394,16 @@ const projectColorById = useMemo(() => {
         }}
       />
 
-      {ctx.open ? (<>
+      {ctx.open && (<>
         <div className="ctx-backdrop" onClick={()=>setCtx(c=>({...c, open:false}))} />
         <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }}>
           <div className="ctx-item" onClick={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}>Дублировать</div>
           <div className="ctx-item" onClick={async()=>{ if(ctx.task && ctx.dayKey){ await supabase.from('tasks_items').update({status:TASK_STATUSES.CLOSED}).eq('id', ctx.task.id); setTasks(prev=>{ const copy={...prev}; const arr=[...(copy[ctx.dayKey]||[])]; const i=arr.findIndex(x=>x.id===ctx.task!.id); if(i>=0){ arr[i]={...arr[i], status:TASK_STATUSES.CLOSED}; } copy[ctx.dayKey]=arr; return copy; }); setCtx(c=>({...c, open:false})) }}}>Выполнить</div>
           <div className="ctx-item text-red-600" onClick={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}>Удалить</div>
         </div>
-      </>) : null}
+      </>)}
 
 
-    </>
+    </div>
   )
 }

@@ -1,30 +1,43 @@
 import React, { Suspense, lazy } from 'react';
 
 // Lazy load widgets
-const TasksToday = lazy(() => import('./widgets/TasksToday'));
-const RecentNotes = lazy(() => import('./widgets/RecentNotes'));
-const FinanceMonth = lazy(() => import('./widgets/FinanceMonth'));
-const DebugBanner = lazy(() => import('./widgets/DebugBanner'));
+const TasksToday = lazy(() => import('./widgets/TasksToday').then(m => ({ default: m.TasksToday })));
+const RecentNotes = lazy(() => import('./widgets/RecentNotes').then(m => ({ default: m.RecentNotes })));
+const FinanceMonth = lazy(() => import('./widgets/FinanceMonth').then(m => ({ default: m.FinanceMonth })));
+const DebugBanner = lazy(() => import('./widgets/DebugBanner').then(m => ({ default: m.DebugBanner })));
 
-// Loading skeleton for widgets - Jira style
+// Loading skeleton for widgets
 const WidgetSkeleton = () => (
-  <div className="card animate-pulse">
-    <div className="h-5 bg-neutral-200 rounded mb-3"></div>
-    <div className="space-y-2">
-      <div className="h-3 bg-neutral-200 rounded"></div>
-      <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
-      <div className="h-3 bg-neutral-200 rounded w-1/2"></div>
+  <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm animate-pulse">
+    <div className="h-6 bg-gray-200 rounded mb-4"></div>
+    <div className="space-y-3">
+      <div className="h-4 bg-gray-200 rounded"></div>
+      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
     </div>
   </div>
 );
 
 export default function HomeDashboard() {
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Главная страница</h1>
-      <div className="card">
-        <p>Простая версия для отладки React ошибок #306</p>
-        <p>Если эта страница работает без ошибок, проблема в виджетах.</p>
+    <div className="p-0 md:p-8">
+      <Suspense fallback={<div className="h-8 bg-gray-200 rounded mb-4 animate-pulse" />}>
+        <DebugBanner />
+      </Suspense>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-0">
+        <div className="xl:col-span-2 space-y-6">
+          <Suspense fallback={<WidgetSkeleton />}>
+            <TasksToday />
+          </Suspense>
+          <Suspense fallback={<WidgetSkeleton />}>
+            <FinanceMonth />
+          </Suspense>
+        </div>
+        <div className="xl:col-span-1 space-y-6">
+          <Suspense fallback={<WidgetSkeleton />}>
+            <RecentNotes />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

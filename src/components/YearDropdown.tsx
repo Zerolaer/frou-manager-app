@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-// CSS imports removed - styles now in styles.css
+import '@/ui.css'
 
 export default function YearDropdown({
   value, years, onChange,
@@ -23,8 +23,8 @@ export default function YearDropdown({
   return (
     <div className="dd-wrap">
       <button ref={btnRef} className="btn btn-outline dd-btn" onClick={()=>setOpen(v=>!v)}>{value}</button>
-      {open ? <div className="dd-backdrop" onClick={()=>setOpen(false)} /> : null}
-      {open ? (
+      {open && <div className="dd-backdrop" onClick={()=>setOpen(false)} />}
+      {open && (
         <div className="dd-menu">
           {years.map(y => (
             <div
@@ -36,7 +36,7 @@ export default function YearDropdown({
             </div>
           ))}
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

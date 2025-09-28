@@ -1,11 +1,10 @@
 import { MoreVertical } from "lucide-react";
-import { SkeletonTable } from '@/components/LoadingStates'
-import SubHeader from '@/components/SubHeader'
-import PageContainer from '@/components/PageContainer'
+import { TableSkeleton } from '@/components/Skeleton'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-// CSS imports removed - styles now in styles.css
+import '@/ui.css'
+import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import YearDropdown from '@/components/YearDropdown'
@@ -313,27 +312,15 @@ export default function Finance(){
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel) }
   }, [])
 
-  if (loading) return <div className="p-4"><SkeletonTable rows={10} columns={13} /></div>
+  if (loading) return <div className="p-4"><TableSkeleton rows={10} /></div>
 
   const isCurrentYear = year === currentYear
   const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)
 
   return (
     <>
-      <SubHeader 
-        title="Финансы" 
-      >
-        <YearToolbar 
-          year={year} 
-          years={yearOptions} 
-          onYearChange={setYear} 
-          onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} 
-          onShowStats={()=>setShowStats(true)} 
-        />
-      </SubHeader>
-      
-      <PageContainer>
-        <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
+      <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
+        <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
 
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Категория</div></div>
@@ -426,8 +413,7 @@ export default function Finance(){
           ))}
         </div>
         </div>
-        </div>
-      </PageContainer>
+      </div>
 
       {ctxOpen && ctxCat && (
         <CategoryMenu

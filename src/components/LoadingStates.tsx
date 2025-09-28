@@ -97,29 +97,3 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
     </div>
   )
 }
-
-export function SkeletonTable({ rows = 5, columns = 3 }: { rows?: number; columns?: number }) {
-  return (
-    <div className="table">
-      {/* Header */}
-      <div className="table-header">
-        {Array.from({ length: columns }).map((_, i) => (
-          <div key={i} className="table-cell header">
-            <Skeleton className="h-4 w-20" />
-          </div>
-        ))}
-      </div>
-      
-      {/* Rows */}
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="table-row">
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <div key={colIndex} className="table-cell">
-              <Skeleton className="h-3 w-16" />
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}

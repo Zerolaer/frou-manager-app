@@ -1,4 +1,4 @@
-import React, { lazy, ComponentType } from 'react'
+import { lazy, ComponentType } from 'react'
 
 // Lazy load components with error boundaries
 export function createLazyComponent<T extends ComponentType<any>>(
@@ -130,3 +130,5 @@ export function analyzeBundleSize() {
   return () => observer.disconnect()
 }
 
+// Import React for hooks
+import React from 'react'

@@ -1,1 +1,0 @@
-import{j as t}from"./index-C9CAK8j2.js";import"./vendor-5APVzNZg.js";import"./supabase-7cNBIxai.js";function a(){return t.jsxs("div",{className:"card",children:[t.jsx("h2",{className:"text-lg font-semibold mb-4",children:"Последние заметки"}),t.jsx("div",{className:"text-sm text-neutral-500",children:"Минимальная версия для отладки"})]})}export{a as default};

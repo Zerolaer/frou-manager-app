@@ -1,6 +1,6 @@
 
 /* ===== Tasks layout (no page vertical scroll) ===== */
-/* This will be applied via JavaScript when on tasks page */
+html, body, #root { height: 100%; overflow: hidden; }
 
 .tasks-page {
   height: 100%;

@@ -1,5 +1,5 @@
 import React from 'react'
-// CSS imports removed - styles now in styles.css
+import '@/cell-editor.css'
 
 export default function CheckFinance({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabaseClient'
 import AuthCard from '@/components/AuthCard'
-// CSS imports removed - styles now in styles.css
+import '@/ui.css'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -79,7 +79,7 @@ if (!authChecked) {
               </div>
             }
           >
-            {error ? <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div> : null}
+            {error && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
 
             <form onSubmit={onSubmit} className="space-y-3">
               {/* Email */}

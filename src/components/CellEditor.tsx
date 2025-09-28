@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-// CSS imports removed - styles now in styles.css
+import '@/cell-editor.css'
+import '@/ui.css'
 import Modal from '@/components/ui/Modal'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 
@@ -142,7 +143,7 @@ export default function CellEditor({
   size="md"
 >
   <div className="editor-body">
-          {loading ? <div className="loading-overlay">Загрузка…</div> : null}
+          {loading && <div className="loading-overlay">Загрузка…</div>}
           <div className="editor-add">
             <input type="number" placeholder="Сумма (€)" value={amount} onChange={e=>setAmount(e.target.value)} className="editor-input number" />
             <input placeholder="Описание (необязательно)" value={note} onChange={e=>setNote(e.target.value)} className="editor-input text" />
@@ -170,7 +171,7 @@ export default function CellEditor({
                 </button>
               </div>
             ))}
-            {!loading && items.length === 0 ? (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>) : null}
+            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>)}
           </div>
         </div>
 
