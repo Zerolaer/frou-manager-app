@@ -38,8 +38,8 @@ export function ModalButton({
   
   const sizeClasses = {
     sm: 'h-8 px-3 text-sm',
-    md: 'h-9 px-4 text-sm',
-    lg: 'h-10 px-6 text-base'
+    md: 'h-8 px-3 text-sm',
+    lg: 'h-9 px-4 text-sm'
   }
   
   const disabledClasses = 'opacity-50 cursor-not-allowed'

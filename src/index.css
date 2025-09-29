@@ -6,7 +6,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 html, body { margin: 0; padding: 0; }
-body { @apply bg-white text-black font-[Inter]; font-size:14px; line-height:1.4; overflow: hidden; }
+body { @apply bg-white text-black font-[Inter]; font-size:14px; line-height:1.4; }
 
 :root{ --brand-blue:#1E66FF; --brand-blue-rgb:30,102,255; }
 

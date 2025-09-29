@@ -5,6 +5,7 @@ export type Note = {
   title: string;
   content: string;
   pinned: boolean;
+  folder_id?: string | null;
   created_at: string;
   updated_at: string;
 };

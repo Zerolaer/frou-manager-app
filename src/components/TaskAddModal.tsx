@@ -9,13 +9,14 @@ type Todo = { id: string; text: string; done: boolean }
 type Props = {
   open: boolean
   onClose: () => void
-  onSubmit: (title: string, description: string, priority: string, tag: string, todos: Todo[], projectId?: string) => Promise<void> | void
+  onSubmit: (title: string, description: string, priority: string, tag: string, todos: Todo[], projectId?: string, date?: Date) => Promise<void> | void
   dateLabel: string
   projects?: { id: string; name: string }[]
   activeProject?: string | null
+  initialDate?: Date
 }
 
-export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject }: Props){
+export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'low'|'normal'|'high'>('normal')
@@ -23,6 +24,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   const [todos, setTodos] = useState<Todo[]>([])
   const [todoText, setTodoText] = useState('')
   const [loading, setLoading] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate || new Date())
   const { createStandardFooter } = useModalActions()
 
   // --- Project selection ---
@@ -33,9 +35,13 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
     if (open) {
       // When opening, sync selection from activeProject.
       setProjectId((activeProject && activeProject !== 'ALL') ? (activeProject as string) : '')
+      // Initialize date
+      if (initialDate) {
+        setSelectedDate(initialDate)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, activeProject])
+  }, [open, activeProject, initialDate])
 
   function addTodo(){
     const t = todoText.trim()
@@ -53,7 +59,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
     
     setLoading(true)
     try {
-      await onSubmit(t, description, String(priority), tag.trim(), todos, projectId)
+      await onSubmit(t, description, String(priority), tag.trim(), todos, projectId, selectedDate)
       setTitle(''); setDescription(''); setPriority('normal'); setTag(''); setTodos([]); setTodoText('')
       onClose()
     } finally {
@@ -79,17 +85,27 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       )}
     >
       <ModalContent>
-        <ModalField label="Проект" required>
-          <ModalSelect
-            value={projectId}
-            onChange={e => setProjectId(e.target.value)}
-          >
-            <option value="">{activeProject === 'ALL' ? 'Выберите проект' : 'Текущий проект выбран'}</option>
-            {(projects || []).map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </ModalSelect>
-        </ModalField>
+        <ModalGrid cols={2}>
+          <ModalField label="Проект" required>
+            <ModalSelect
+              value={projectId}
+              onChange={e => setProjectId(e.target.value)}
+            >
+              <option value="">{activeProject === 'ALL' ? 'Выберите проект' : 'Текущий проект выбран'}</option>
+              {(projects || []).map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </ModalSelect>
+          </ModalField>
+
+          <ModalField label="Дата" required>
+            <ModalInput
+              type="date"
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={e => setSelectedDate(new Date(e.target.value))}
+            />
+          </ModalField>
+        </ModalGrid>
 
         <ModalField label="Название задачи" required>
           <ModalInput

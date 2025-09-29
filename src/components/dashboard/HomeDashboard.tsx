@@ -20,7 +20,7 @@ const WidgetSkeleton = () => (
 
 export default function HomeDashboard() {
   return (
-    <div className="p-0 md:p-8">
+    <div className="p-4">
       <Suspense fallback={<div className="h-8 bg-gray-200 rounded mb-4 animate-pulse" />}>
         <DebugBanner />
       </Suspense>

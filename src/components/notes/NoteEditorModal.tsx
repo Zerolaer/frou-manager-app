@@ -1,8 +1,15 @@
 /* src/components/notes/NoteEditorModal.tsx */
 import React, { useEffect, useState } from 'react';
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
-import { ModalField, ModalInput, ModalTextarea, ModalContent } from '@/components/ui/ModalForm'
+import { ModalField, ModalInput, ModalTextarea, ModalContent, ModalSelect } from '@/components/ui/ModalForm'
+import { supabase } from '@/lib/supabaseClient'
 import type { Note } from '@/features/notes/types';
+
+type Folder = {
+  id: string
+  name: string
+  color?: string
+}
 
 type Props = {
   open: boolean;
@@ -15,19 +22,49 @@ type Props = {
 export default function NoteEditorModal({ open, note, onClose, onSave, onDelete }: Props) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
+  const [folderId, setFolderId] = useState<string>('');
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { createStandardFooter, createDangerFooter } = useModalActions();
 
+  // Load folders
+  useEffect(() => {
+    if (!open) return;
+    
+    const loadFolders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('notes_folders')
+          .select('id, name, color')
+          .order('position', { ascending: true })
+          .order('created_at', { ascending: true });
+        
+        if (!error && data) {
+          setFolders(data);
+        }
+      } catch (error) {
+        console.error('Error loading folders:', error);
+      }
+    };
+    
+    loadFolders();
+  }, [open]);
+
   useEffect(() => {
     setTitle(note?.title ?? '');
     setContent(note?.content ?? '');
+    setFolderId(note?.folder_id ?? '');
   }, [note]);
 
   async function handleSave() {
     setLoading(true);
     try {
-      await onSave({ title, content }, note?.id);
+      await onSave({ 
+        title, 
+        content, 
+        folder_id: folderId || null 
+      }, note?.id);
       onClose();
     } finally {
       setLoading(false);
@@ -87,6 +124,20 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
             placeholder="Заголовок заметки"
             autoFocus
           />
+        </ModalField>
+
+        <ModalField label="Папка">
+          <ModalSelect
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+          >
+            <option value="">Без папки</option>
+            {folders.map((folder) => (
+              <option key={folder.id} value={folder.id}>
+                {folder.name}
+              </option>
+            ))}
+          </ModalSelect>
         </ModalField>
         
         <ModalField label="Содержимое">

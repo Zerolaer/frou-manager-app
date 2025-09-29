@@ -15,6 +15,7 @@ type Props = {
 
 export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub = true }: Props){
   const itemsRef = useRef<Array<HTMLDivElement | null>>([])
+  const menuRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
 
   useEffect(()=>{
@@ -39,6 +40,7 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
     <>
       <div className="ctx-backdrop" onClick={onClose} onContextMenu={(e)=>e.preventDefault()} aria-hidden />
       <div
+        ref={menuRef}
         className="ctx-menu"
         style={{ 
           left: pos.x, 

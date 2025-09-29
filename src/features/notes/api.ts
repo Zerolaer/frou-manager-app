@@ -8,7 +8,7 @@ import type { Note } from './types';
  */
 export type SortKey = 'updated_at' | 'created_at' | 'title';
 
-export async function listNotes(query: string, sort: SortKey = 'updated_at') {
+export async function listNotes(query: string, sort: SortKey = 'updated_at', folderId?: string | null) {
   let req = supabase
     .from('notes')
     .select('*')
@@ -18,6 +18,18 @@ export async function listNotes(query: string, sort: SortKey = 'updated_at') {
   if (query?.trim()) {
     // Simple title search; for full-text, consider pg tsvector
     req = req.ilike('title', `%${query.trim()}%`);
+  }
+
+  // Filter by folder
+  if (folderId) {
+    if (folderId === 'ALL') {
+      // Show all notes (no additional filter)
+    } else {
+      req = req.eq('folder_id', folderId);
+    }
+  } else {
+    // Show notes without folder (folder_id is null)
+    req = req.is('folder_id', null);
   }
 
   const { data, error } = await req;
@@ -32,6 +44,7 @@ export async function createNote(payload: Partial<Note>) {
       title: payload.title ?? '',
       content: payload.content ?? '',
       pinned: payload.pinned ?? false,
+      folder_id: payload.folder_id ?? null,
     })
     .select()
     .single();

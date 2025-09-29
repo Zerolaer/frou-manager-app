@@ -67,6 +67,10 @@ export function ModalSelect({ error, className = '', children, ...props }: Modal
   return (
     <select
       className={`${baseClasses} ${errorClasses} focus:ring-2 focus:border-transparent ${className}`}
+      style={{
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
       {...props}
     >
       {children}

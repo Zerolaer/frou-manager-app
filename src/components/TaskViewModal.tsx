@@ -70,7 +70,6 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
 
   // Load projects for the Project select (use same columns as Tasks.tsx)
   useEffect(() => {
-    if (!open) return
     ;(async () => {
       const { data } = await supabase
         .from('tasks_projects')
@@ -78,7 +77,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         .order('created_at', { ascending: true })
       setProjects((data as Project[]) || [])
     })()
-  }, [open])
+  }, []) // Load only once on component mount
 
   function addTodo() {
     const id = Math.random().toString(36).slice(2)
@@ -191,18 +190,19 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       open={open}
       onClose={onClose}
       title="Задача"
+      subtitle={task?.date ? `Создана: ${new Date(task.date).toLocaleDateString()}` : undefined}
       size="xl"
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
-            className="h-8 w-8 grid place-items-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+            className="h-8 w-8 grid place-items-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Меню"
           >
-            <MoreVertical className="w-4 h-4" />
+            <MoreVertical className="w-4 h-4 text-gray-600" />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+            <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl z-10">
               <div className="dd-item" onClick={duplicateTask}>Дублировать</div>
               <div className="dd-item text-red-600" onClick={deleteTask}>Удалить</div>
             </div>
@@ -283,13 +283,29 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         {/* RIGHT inspector */}
         <aside className="space-y-4">
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
+            <div className="text-sm font-medium text-gray-700">Проект</div>
+            <select
+              value={projectId}
+              onChange={(e) => moveToProject(e.target.value || null)}
+              className="h-9 w-full rounded-xl border border-gray-200 px-3 bg-white"
+            >
+              <option value="">Без проекта</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name || 'Без названия'}
+                </option>
+              ))}
+            </select>
+          </section>
+
+          <section className="space-y-2 rounded-xl border border-gray-200 p-3">
             <div className="text-sm font-medium text-gray-700">Статус</div>
             <StatusSwitcher value={status} onChange={setStatusRemote} fullWidth />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
             <div className="text-sm font-medium text-gray-700">Приоритет</div>
-            <PriorityChips value={priority} onChange={setPriority} />
+            <PriorityChipsFullWidth value={priority} onChange={setPriority} />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
@@ -307,21 +323,6 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
             <DateQuick value={date || ''} onChange={setDate} />
           </section>
 
-          <section className="space-y-2 rounded-xl border border-gray-200 p-3">
-            <div className="text-sm font-medium text-gray-700">Проект</div>
-            <select
-              value={projectId}
-              onChange={(e) => moveToProject(e.target.value || null)}
-              className="h-9 w-full rounded-xl border border-gray-200 px-3 bg-white"
-            >
-              <option value="">Без проекта</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name || 'Без названия'}
-                </option>
-              ))}
-            </select>
-          </section>
         </aside>
       </div>
     </UnifiedModal>
@@ -395,6 +396,41 @@ function PriorityChips({
         title="Без приоритета"
       >
         Нет
+      </button>
+    </div>
+  )
+}
+
+function PriorityChipsFullWidth({
+  value,
+  onChange,
+}: {
+  value: '' | 'low' | 'medium' | 'high'
+  onChange: (v: '' | 'low' | 'medium' | 'high') => void
+}) {
+  const base = 'flex-1 px-3 py-2 rounded-lg border text-sm inline-flex items-center justify-center transition'
+  return (
+    <div className="flex gap-1">
+      <button
+        type="button"
+        className={`${base} ${value === 'low' ? 'border-green-300 bg-green-100 text-green-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+        onClick={() => onChange('low')}
+      >
+        Низкий
+      </button>
+      <button
+        type="button"
+        className={`${base} ${value === 'medium' ? 'border-yellow-300 bg-yellow-100 text-yellow-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+        onClick={() => onChange('medium')}
+      >
+        Средний
+      </button>
+      <button
+        type="button"
+        className={`${base} ${value === 'high' ? 'border-red-300 bg-red-100 text-red-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+        onClick={() => onChange('high')}
+      >
+        Высокий
       </button>
     </div>
   )

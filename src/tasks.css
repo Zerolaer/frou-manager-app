@@ -1,26 +1,58 @@
 
 /* ===== Tasks layout (no page vertical scroll) ===== */
-html, body, #root { height: 100%; overflow: hidden; }
-
 .tasks-page {
-  height: 100%;
+  height: calc(100vh - 56px); /* 100vh - header(24px) - subheader(32px) */
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: 24px;
-  padding: 0;
+  gap: 16px;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Disable page scroll when on tasks page */
+body.tasks-mode {
+  overflow: hidden;
+  height: calc(100vh - 16px);
+  padding-bottom: 16px;
 }
 
 .tasks-page.is-collapsed {
   grid-template-columns: 72px 1fr;
 }
 
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .tasks-page {
+    height: calc(100vh - 56px);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+  }
+  
+  .projects-panel {
+    height: auto;
+    max-height: 200px;
+  }
+  
+  .tasks-main {
+    height: 100%;
+  }
+  
+  .week-grid {
+    min-width: 0;
+    overflow-x: auto;
+  }
+  
+  .day-col {
+    min-width: 120px;
+  }
+}
+
 /* Sidebar (projects) */
 .projects-panel {
-  height: calc(100vh - 24px - 24px); /* full height minus page padding (top+bottom) */
+  height: 100%;
   background: #fff;
-  
-  
+  border-radius: 8px;
   box-shadow: 0 8px 30px rgba(0,0,0,.05);
   display: flex;
   flex-direction: column;
@@ -84,22 +116,38 @@ html, body, #root { height: 100%; overflow: hidden; }
 }
 
 /* Context menu */
-.ctx-backdrop { position: fixed; inset: 0; z-index: 50; background: transparent; }
+.ctx-backdrop { 
+  position: fixed; 
+  inset: 0; 
+  z-index: 50; 
+  background: transparent; 
+}
 .ctx-menu {
-  position: fixed; z-index: 51;
+  position: fixed; 
+  z-index: 51;
   background: #fff;  
   box-shadow: 0 12px 30px rgba(0,0,0,.12);
-  min-width: 180px; padding: 6px;
+  border-radius: 8px;
+  min-width: 150px; 
+  padding: 6px;
+  border: 1px solid #e5e7eb;
 }
-.ctx-item { padding: 8px 10px; font-size: 13px;  cursor: pointer; }
-.ctx-item:hover { background:#f3f4f6; }
+.ctx-item { 
+  padding: 8px 12px; 
+  font-size: 13px;  
+  cursor: pointer; 
+  border-radius: 4px;
+  transition: background-color 120ms ease;
+}
+.ctx-item:hover { 
+  background: #f3f4f6; 
+}
 
 /* Main column */
 .tasks-main {
-  height: calc(100vh - 24px - 24px);
+  height: 100%;
   background: #fff;
-  
-  
+  border-radius: 8px;
   box-shadow: 0 8px 30px rgba(0,0,0,.05);
   display: flex;
   flex-direction: column;
@@ -142,7 +190,15 @@ html, body, #root { height: 100%; overflow: hidden; }
 .day-head{ padding:8px 10px; background:#f8fafc; font-size:13px; font-weight:600; color:#0f172a; display:flex; justify-content:space-between; align-items:center; }
 .day-head .name { font-size: 13px; color:#334155; }
 .day-head .date { font-size: 12px; color:#64748b; }
-.day-body { padding: 10px; display: grid; gap: 8px; align-content: start; }
+.day-body { 
+  padding: 10px; 
+  display: grid; 
+  gap: 8px; 
+  align-content: start; 
+  overflow-y: auto;
+  max-height: calc(100vh - 200px); /* Adjust based on header height */
+  position: relative; /* Ensure proper stacking context for absolute positioned indicators */
+}
 .day-add {
   margin: 10px; display:none; 
 }
@@ -205,7 +261,108 @@ html, body, #root { height: 100%; overflow: hidden; }
 
 /* 8px vertical spacing between tasks */
 .tasks-list{ display:flex; flex-direction:column; gap:8px; }
-.task-card{ margin:0; }
+.task-card{ 
+  margin:0; 
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: box-shadow 120ms ease, transform 120ms ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  will-change: transform;
+}
+
+.task-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+.task-card:active {
+  transform: translateY(0);
+}
+
+/* Drag & Drop styles - now handled inline */
+
+/* Ghost card (placeholder) */
+.task-card-ghost {
+  opacity: 0.3;
+  background-color: #f3f4f6;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 4px 0;
+  transition: none;
+  pointer-events: none;
+  z-index: 1; /* Ниже чем перетаскиваемая карточка */
+}
+
+/* Drop zones */
+.drop-zone {
+  height: 4px;
+  margin: 2px 0;
+  border-radius: 2px;
+  transition: all 120ms ease;
+  opacity: 0;
+  background-color: transparent;
+}
+
+.drop-zone.active {
+  background-color: #3b82f6;
+  opacity: 1;
+  height: 6px;
+  margin: 4px 0;
+}
+
+.drop-zone:hover {
+  background-color: #e0f2fe;
+  opacity: 0.7;
+  height: 4px;
+}
+
+.drop-indicator {
+  height: 2px;
+  background: #3b82f6;
+  border-radius: 1px;
+  margin: 0; /* Убираем margin чтобы не создавать отступ */
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+  transition: none; /* No transitions for indicators */
+}
+
+.day-col.drag-over {
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
+}
+
+/* Improve drag cursor */
+.task-card[draggable="true"] {
+  cursor: grab;
+  user-select: none; /* Prevent text selection during drag */
+}
+
+.task-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.task-card[draggable="true"]:hover {
+  cursor: grab;
+}
+
+/* Better visual feedback during drag */
+.day-body.drag-over {
+  background-color: #f8fafc;
+  border-radius: 4px;
+}
+
+/* Dragged element styles are now handled inline */
+
+/* Prevent layout shifts during drag */
+.day-body {
+  min-height: 0; /* Prevent expansion */
+}
+
 
 
 /* --- helpers for task title wrapping --- */

@@ -113,7 +113,7 @@ export default function Modal({
                 {subTitle && <div className="mt-1 text-xs opacity-70">{subTitle}</div>}
               </div>
               <div className="flex items-center gap-3">
-                {headerRight && <div className="ml-4">{headerRight}</div>}
+                {headerRight && <div>{headerRight}</div>}
                 <button
                   onClick={onClose}
                   className="px-2 py-1 rounded-lg hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -129,7 +129,7 @@ export default function Modal({
               {children}
             </div>
           </div>
-          {footer && <div className="px-5 py-4 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
+          {footer && <div className="px-5 py-3 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
         </div>
       </div>
     </div>

@@ -71,7 +71,11 @@ export default function CategoryRow({
           }
           onContextMenu={(e) => onCellContext(e, type, row.id, mi, v)}
         >
-          <button className="cell-btn" onClick={() => onCellEdit(type, row.id, mi)}>
+          <button 
+            className="cell-btn" 
+            onClick={() => onCellEdit(type, row.id, mi)}
+            onContextMenu={(e) => onCellContext(e, type, row.id, mi, v)}
+          >
             {fmt(v)}
           </button>
         </div>

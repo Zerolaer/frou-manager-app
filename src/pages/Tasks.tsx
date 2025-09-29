@@ -5,7 +5,7 @@ import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import ru from 'date-fns/locale/ru'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
-import TaskViewModal from '@/components/TaskViewModal'
+import ModernTaskModal from '@/components/ModernTaskModal'
 import TaskAddModal from '@/components/TaskAddModal'
 import '@/tasks.css'
 import { useErrorHandler } from '@/lib/errorHandler'
@@ -28,30 +28,228 @@ export default function Tasks(){
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const [viewTask, setViewTask] = useState<TaskItem|null>(null)
 
-  // DnD handlers
-  const dragRef = useRef<{ id:string; from:string }|null>(null)
-  function onDragStart(t:TaskItem){
-    dragRef.current = { id: t.id, from: t.date }
-  }
-  async function onDropDay(dayKey:string){
-    const drag = dragRef.current; dragRef.current = null
-    if (!drag) return
-    if (!uid) return
-    // If dropped into the same day, put item to the end
-    const map = { ...tasks }
-    const fromList = map[drag.from] || []
-    // Capture the item BEFORE removing it, otherwise we lose the data reference
-    const movingItem = fromList.find(x=>x.id===drag.id)
-    const idx = fromList.findIndex(x=>x.id===drag.id)
-    if (idx>=0){ fromList.splice(idx,1) }
-    const toList = (map[dayKey] ||= [])
-    const newPos = toList.length
-    if (movingItem){
-      toList.push({ ...movingItem, date: dayKey, position: newPos })
+  // SubHeader actions handler
+  function handleSubHeaderAction(action: string) {
+    switch (action) {
+      case 'add-task':
+        setOpenNewTask(true)
+        break
+      case 'filter':
+        // TODO: Implement filter functionality
+        handleSuccess('Фильтр будет реализован в следующей версии')
+        break
+      case 'calendar':
+        // TODO: Implement calendar view
+        handleSuccess('Календарный вид будет реализован в следующей версии')
+        break
+      case 'search':
+        // TODO: Implement search functionality
+        handleSuccess('Поиск будет реализован в следующей версии')
+        break
+      default:
+        console.log('Unknown action:', action)
     }
-    setTasks(map)
-    // persist
-    await supabase.from('tasks_items').update({ date: dayKey, position: newPos }).eq('id', drag.id)
+  }
+
+  // New DnD system with mouse events
+  const [draggedTask, setDraggedTask] = useState<TaskItem | null>(null)
+  const [dragSource, setDragSource] = useState<{dayKey: string, index: number} | null>(null)
+  const [dropTarget, setDropTarget] = useState<{dayKey: string, index: number} | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
+  const [dragStartTimer, setDragStartTimer] = useState<NodeJS.Timeout | null>(null)
+  const [mouseDownPos, setMouseDownPos] = useState({ x: 0, y: 0 })
+  const [hasMoved, setHasMoved] = useState(false)
+
+  // Простое разделение: клик = открытие, зажатие = перетаскивание
+  function handleMouseDown(e: React.MouseEvent, task: TaskItem, dayKey: string, index: number) {
+    console.log('Mouse down on task:', task.title)
+    // НЕ preventDefault - чтобы onClick работал
+    
+    // Сохраняем позицию клика
+    setMouseDownPos({ x: e.clientX, y: e.clientY })
+    setHasMoved(false)
+  }
+
+  function handleMouseMove(e: React.MouseEvent) {
+    // Проверяем, двинулась ли мышь достаточно далеко для начала перетаскивания
+    if (!isDragging && !dragStartTimer) {
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - mouseDownPos.x, 2) + 
+        Math.pow(e.clientY - mouseDownPos.y, 2)
+      )
+      
+      if (distance > 5) { // Если мышь сдвинулась больше чем на 5px
+        console.log('Mouse movement detected - starting drag')
+        setHasMoved(true)
+        
+        // Находим задачу по позиции мыши
+        const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
+        if (elementBelow) {
+          const taskCard = elementBelow.closest('.task-card')
+          if (taskCard) {
+            const dayCol = taskCard.closest('.day-col')
+            if (dayCol) {
+              const dayKey = dayCol.getAttribute('data-day-key')
+              if (dayKey && tasks[dayKey]) {
+                const taskIndex = Array.from(dayCol.querySelectorAll('.task-card')).indexOf(taskCard as Element)
+                if (taskIndex >= 0 && tasks[dayKey][taskIndex]) {
+                  const task = tasks[dayKey][taskIndex]
+                  console.log('Starting drag for task:', task.title)
+                  setDraggedTask(task)
+                  setDragSource({ dayKey, index: taskIndex })
+                  setIsDragging(true)
+                  
+                  setDragOffset({
+                    x: 0,
+                    y: 0
+                  })
+                  setDragPosition({
+                    x: e.clientX,
+                    y: e.clientY
+                  })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    if (!isDragging) return
+    
+    e.preventDefault()
+    setDragPosition({
+      x: e.clientX,
+      y: e.clientY
+    })
+    
+    // Find drop target
+    const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
+    if (elementBelow) {
+      const dayCol = elementBelow.closest('.day-col')
+      if (dayCol) {
+        const dayKey = dayCol.getAttribute('data-day-key')
+        if (dayKey) {
+          // Find position within the day
+          const taskCards = dayCol.querySelectorAll('.task-card:not(.is-dragging)')
+          let targetIndex = taskCards.length
+          
+          for (let i = 0; i < taskCards.length; i++) {
+            const card = taskCards[i]
+            const rect = card.getBoundingClientRect()
+            if (e.clientY < rect.top + rect.height / 2) {
+              targetIndex = i
+              break
+            }
+          }
+          
+          setDropTarget({ dayKey, index: targetIndex })
+        }
+      }
+    }
+  }
+
+  function handleMouseUp(e: React.MouseEvent) {
+    if (!isDragging || !draggedTask || !dragSource) return
+    
+    console.log('Mouse up - dropping task')
+    
+    // Find final drop target
+    const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
+    if (elementBelow) {
+      const dayCol = elementBelow.closest('.day-col')
+      if (dayCol) {
+        const dayKey = dayCol.getAttribute('data-day-key')
+        if (dayKey) {
+          const taskCards = dayCol.querySelectorAll('.task-card:not(.is-dragging)')
+          let targetIndex = taskCards.length
+          
+          for (let i = 0; i < taskCards.length; i++) {
+            const card = taskCards[i]
+            const rect = card.getBoundingClientRect()
+            if (e.clientY < rect.top + rect.height / 2) {
+              targetIndex = i
+              break
+            }
+          }
+          
+          // Perform the drop
+          handleDrop(dayKey, targetIndex)
+        }
+      }
+    }
+    
+    // Clean up
+    setDraggedTask(null)
+    setDragSource(null)
+    setDropTarget(null)
+    setIsDragging(false)
+    setHasMoved(false)
+  }
+
+  async function handleDrop(dayKey: string, index: number) {
+    if (!draggedTask || !dragSource || !uid) return
+
+    const fromDayKey = dragSource.dayKey
+    const fromIndex = dragSource.index
+    const toIndex = index
+
+    // Don't do anything if dropped in the same position
+    if (fromDayKey === dayKey && fromIndex === toIndex) return
+
+    const map = { ...tasks }
+    const fromList = [...(map[fromDayKey] || [])]
+    const toList = dayKey === fromDayKey ? fromList : [...(map[dayKey] || [])]
+    
+    // Remove from source
+    const [movedItem] = fromList.splice(fromIndex, 1)
+    
+    // Insert at target position
+    if (dayKey === fromDayKey) {
+      // Moving within the same day
+      const adjustedIndex = toIndex > fromIndex ? toIndex - 1 : toIndex
+      toList.splice(adjustedIndex, 0, { ...movedItem, date: dayKey })
+    } else {
+      // Moving to different day
+      toList.splice(toIndex, 0, { ...movedItem, date: dayKey })
+    }
+
+    // Update positions
+    fromList.forEach((item, idx) => {
+      item.position = idx
+    })
+    toList.forEach((item, idx) => {
+      item.position = idx
+    })
+
+    // Update state
+    setTasks(prev => ({
+      ...prev,
+      [fromDayKey]: fromList,
+      [dayKey]: toList
+    }))
+
+    // Persist to database
+    try {
+      await supabase
+        .from('tasks_items')
+        .update({ date: dayKey, position: toList.findIndex(item => item.id === movedItem.id) })
+        .eq('id', movedItem.id)
+
+      // Update all affected items
+      const allItems = [...fromList, ...toList]
+      for (const item of allItems) {
+        await supabase
+          .from('tasks_items')
+          .update({ position: item.position })
+          .eq('id', item.id)
+      }
+    } catch (error) {
+      console.error('Error updating task positions:', error)
+      handleError('Ошибка при перемещении задачи')
+    }
   }
 
   // Auth handled by useSupabaseAuth hook
@@ -63,6 +261,39 @@ export default function Tasks(){
   useEffect(()=>{
     setEnd(endOfWeek(start, { weekStartsOn:1 }))
   }, [start])
+
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      handleSubHeaderAction(event.detail)
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    }
+  }, [])
+
+  // Global mouse event handlers for drag and drop
+  useEffect(() => {
+    if (isDragging) {
+      const handleGlobalMouseMove = (e: MouseEvent) => {
+        handleMouseMove(e as any)
+      }
+      
+      const handleGlobalMouseUp = (e: MouseEvent) => {
+        handleMouseUp(e as any)
+      }
+      
+      document.addEventListener('mousemove', handleGlobalMouseMove)
+      document.addEventListener('mouseup', handleGlobalMouseUp)
+      
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove)
+        document.removeEventListener('mouseup', handleGlobalMouseUp)
+      }
+    }
+  }, [isDragging])
 
   // projects
   const [projects, setProjects] = useState<Project[]>([])
@@ -156,7 +387,8 @@ const projectColorById = useMemo(() => {
           position: newPos,
           priority: task.priority || null,
           tag: task.tag || null,
-          todos: Array.isArray(task.todos) ? task.todos : []
+          todos: Array.isArray(task.todos) ? task.todos : [],
+          status: task.status || TASK_STATUSES.OPEN
         })
         .select('id,project_id,title,description,date,position,priority,tag,todos,status').single()
       if (!error && data){
@@ -168,7 +400,8 @@ const projectColorById = useMemo(() => {
           position: data.position as number,
           priority: data.priority || undefined,
           tag: data.tag || undefined,
-          todos: (data.todos||[]) as Todo[]
+          todos: (data.todos||[]) as Todo[],
+          status: (data.status as any) || TASK_STATUSES.OPEN
         }
         const map = { ...tasks }
         ;(map[dayKey] ||= []).push(t)
@@ -187,6 +420,23 @@ const projectColorById = useMemo(() => {
       const idx = list.findIndex(x => x.id === task.id)
       if (idx >= 0){ list.splice(idx,1); map[dayKey] = list }
       setTasks(map)
+    } finally {
+      setCtx(c => ({ ...c, open: false }))
+    }
+  }
+
+  async function toggleTaskStatus(task: TaskItem, dayKey: string){
+    try{
+      const newStatus = task.status === TASK_STATUSES.CLOSED ? TASK_STATUSES.OPEN : TASK_STATUSES.CLOSED
+      await supabase.from('tasks_items').update({status: newStatus}).eq('id', task.id)
+      const map = { ...tasks }
+      const list = map[dayKey] || []
+      const idx = list.findIndex(x => x.id === task.id)
+      if (idx >= 0){ 
+        list[idx] = { ...list[idx], status: newStatus }
+        map[dayKey] = list
+        setTasks(map)
+      }
     } finally {
       setCtx(c => ({ ...c, open: false }))
     }
@@ -230,8 +480,8 @@ const projectColorById = useMemo(() => {
   const [taskDate, setTaskDate] = useState<Date|null>(null)
   const [taskTitle, setTaskTitle] = useState('')
   const [taskDesc, setTaskDesc] = useState('')
-  async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string){
-    if (!uid || !taskDate) return
+  async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date){
+    if (!uid) return
     const resolvedProject = projectIdFromModal || (activeProject && activeProject!==TASK_PROJECT_ALL ? activeProject : null)
     if (!resolvedProject) return
     const title = (titleFromModal ?? taskTitle).trim()
@@ -240,7 +490,10 @@ const projectColorById = useMemo(() => {
     const tag = (tagFromModal ?? '')
     const todos = (Array.isArray(todosFromModal) ? todosFromModal! : [])
     if (!title) return
-    const key = format(taskDate, 'yyyy-MM-dd')
+    
+    // Use date from modal or fallback to taskDate
+    const targetDate = dateFromModal || taskDate || new Date()
+    const key = format(targetDate, 'yyyy-MM-dd')
     const nextPos = (tasks[key]?.length || 0)
     const { data, error } = await supabase.from('tasks_items')
       .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, todos })
@@ -262,6 +515,7 @@ const projectColorById = useMemo(() => {
     <div className="tasks-page">
       {/* Левая область: панель проектов */}
       <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
+      
 
       {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}
       <section className="tasks-board">
@@ -277,7 +531,11 @@ const projectColorById = useMemo(() => {
           {days.map(d => {
             const key = format(d, 'yyyy-MM-dd')
             return (
-              <div onDragOver={(e)=>e.preventDefault()} onDrop={()=>onDropDay(key)} className={`day-col ${([0,6].includes(new Date(d).getDay()) ? "is-weekend" : "")} ${key===todayKey ? "is-today" : ""}`} key={key}>
+              <div 
+                data-day-key={key}
+                className={`day-col ${([0,6].includes(new Date(d).getDay()) ? "is-weekend" : "")} ${key===todayKey ? "is-today" : ""}`} 
+                key={key}
+              >
                 <div className="day-head">
                   <span>{format(d,'EEE, d MMM', { locale: ru })}</span>
                   <button
@@ -286,70 +544,126 @@ const projectColorById = useMemo(() => {
                   >+ Задача</button>
                 </div>
                 <div className="day-body">
-  {(tasks[key] || []).map((t) => (
-    <div
-      key={t.id}
-      className={`task-card ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''}`}
-      style={{
-        backgroundColor: projectColorById[t.project_id]
-          ? hexToRgba(projectColorById[t.project_id], 0.1)
-          : undefined,
-        border: projectColorById[t.project_id]
-          ? `1px solid ${hexToRgba(projectColorById[t.project_id], 0.5)}`
-          : "1px solid #e5e7eb"
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Calculate menu position with viewport clamping
-        const menuWidth = 150;
-        const menuHeight = 120;
-        const pad = 8;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        
-        let x = e.clientX;
-        let y = e.clientY;
-        
-        // Check if menu would go off the right edge
-        if (x + menuWidth > vw - pad) {
-          x = vw - menuWidth - pad;
-        }
-        
-        // Check if menu would go off the bottom edge
-        if (y + menuHeight > vh - pad) {
-          y = vh - menuHeight - pad;
-        }
-        
-        // Ensure menu doesn't go off the left edge
-        if (x < pad) {
-          x = pad;
-        }
-        
-        // Ensure menu doesn't go off the top edge
-        if (y < pad) {
-          y = pad;
-        }
-        
-        setCtx({
-          open: true,
-          x,
-          y,
-          task: t,
-          dayKey: key,
-        });
-      }}
-      onMouseDownCapture={(e) => {
-        if (e.button === 2) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }}
-      onDragStart={() => onDragStart(t)}
-      onClick={(e) => { if (ctx.open) return; setViewTask(t) }}
-      draggable
-    >
+                  
+                  {(tasks[key] || []).map((t, index) => {
+                    const isDragged = isDragging && draggedTask?.id === t.id
+                    const isDropTarget = dropTarget?.dayKey === key && dropTarget?.index === index
+                    const isGhost = isDragging && dragSource?.dayKey === key && dragSource?.index === index
+                    
+                    return (
+                      <React.Fragment key={t.id}>
+                        {/* Drop indicator */}
+                        {isDropTarget && (
+                          <div className="drop-indicator" />
+                        )}
+                        
+                        {/* Drop indicator at the end */}
+                        {dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0) && index === (tasks[key]?.length || 0) - 1 && (
+                          <div className="drop-indicator" />
+                        )}
+                        
+                        {/* Ghost card (placeholder) */}
+                        {isGhost && (
+                          <div className="task-card-ghost">
+                            <div className="text-sm">
+                              <div className="flex items-center gap-2 mb-2">
+                                {t.priority && (
+                                  <span className={`inline-block rounded-full w-2.5 h-2.5 ${
+                                    t.priority === TASK_PRIORITIES.HIGH ? "bg-red-500" :
+                                    t.priority === TASK_PRIORITIES.LOW ? "bg-green-500" :
+                                    t.priority === TASK_PRIORITIES.MEDIUM ? "bg-yellow-500" : "bg-gray-300"
+                                  }`} />
+                                )}
+                                {t.tag && (
+                                  <span className="px-2 py-0.5 text-xs rounded-full leading-none uppercase bg-gray-200 text-gray-600">
+                                    {t.tag}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="leading-tight clamp-2 break-words mb-2">
+                                <span className="font-medium text-gray-400">{t.title}</span>
+                              </div>
+                              <div className="text-xs text-gray-400 mt-0">
+                                {(() => {
+                                  const total = Array.isArray(t.todos) ? t.todos.length : 0;
+                                  const done = Array.isArray(t.todos) ? t.todos.filter((x: Todo) => x.done).length : 0;
+                                  return `${done}/${total}`;
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Actual task card */}
+                        <div
+                          className={`task-card ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''}`}
+                          style={{
+                            backgroundColor: projectColorById[t.project_id]
+                              ? hexToRgba(projectColorById[t.project_id], 0.1)
+                              : undefined,
+                            border: projectColorById[t.project_id]
+                              ? `1px solid ${hexToRgba(projectColorById[t.project_id], 0.5)}`
+                              : "1px solid #e5e7eb",
+                            ...(isDragged ? {
+                              position: 'fixed',
+                              left: dragPosition.x, // ТОЧНО в позиции курсора
+                              top: dragPosition.y,  // ТОЧНО в позиции курсора
+                              zIndex: 10001,
+                              pointerEvents: 'none',
+                              transform: 'none',
+                              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                              opacity: 1,
+                              width: '200px',
+                              maxWidth: '200px',
+                              margin: 0, // Убираем все отступы
+                              padding: 0 // Убираем padding
+                            } : {})
+                          }}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const menuWidth = 150;
+                            const menuHeight = 120;
+                            const pad = 8;
+                            const vw = window.innerWidth;
+                            const vh = window.innerHeight;
+                            
+                            let x = e.clientX;
+                            let y = e.clientY;
+                            
+                            if (x + menuWidth > vw - pad) x = vw - menuWidth - pad;
+                            if (y + menuHeight > vh - pad) y = vh - menuHeight - pad;
+                            if (x < pad) x = pad;
+                            if (y < pad) y = pad;
+                            
+                            setCtx({
+                              open: true,
+                              x,
+                              y,
+                              task: t,
+                              dayKey: key,
+                            });
+                          }}
+                          onMouseDown={(e) => {
+                            console.log('Mouse down on task card:', t.title, 'button:', e.button)
+                            // Only prevent right click
+                            if (e.button === 2) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              return;
+                            }
+                            // Start drag on left click
+                            if (e.button === 0) {
+                              handleMouseDown(e, t, key, index)
+                            }
+                          }}
+                          onClick={(e) => {
+                            // Простой клик - открываем карточку
+                            console.log('Direct click - opening task modal')
+                            setViewTask(t)
+                          }}
+                        >
       <div className="text-sm">
         {/* Row 1: Priority dot + Tag */}
         <div className="flex items-center gap-2 mb-2">
@@ -396,9 +710,11 @@ const projectColorById = useMemo(() => {
           })()}
         </div>
       </div>
-    </div>
-  ))}
-</div>
+                        </div>
+                      </React.Fragment>
+                    )
+                  })}
+                </div>
               </div>
             )
           })}
@@ -406,9 +722,18 @@ const projectColorById = useMemo(() => {
       </section>
 
       {/* Модалка: новый проект */}
-      <TaskAddModal open={openNewTask} projects={projects} activeProject={activeProject} onClose={()=>setOpenNewTask(false)} dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE", { locale: ru }) : ""} onSubmit={async (title, desc, prio, tag, todos, projId)=>{ await createTask(title, desc, prio, tag, todos, projId) }} />
+      <TaskAddModal 
+        open={openNewTask} 
+        projects={projects} 
+        activeProject={activeProject} 
+        onClose={()=>setOpenNewTask(false)} 
+        dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE", { locale: ru }) : ""} 
+        initialDate={taskDate || new Date()}
+        onSubmit={async (title, desc, prio, tag, todos, projId, date)=>{ await createTask(title, desc, prio, tag, todos, projId, date) }} 
+      />
 
-      <TaskViewModal
+      {/* Модальные окна задач */}
+      <ModernTaskModal
         open={!!viewTask}
         onClose={()=>setViewTask(null)}
         task={viewTask}
@@ -428,7 +753,9 @@ const projectColorById = useMemo(() => {
         <div className="ctx-backdrop" onClick={()=>setCtx(c=>({...c, open:false}))} />
         <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }}>
           <div className="ctx-item" onClick={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}>Дублировать</div>
-          <div className="ctx-item" onClick={async()=>{ if(ctx.task && ctx.dayKey){ await supabase.from('tasks_items').update({status:TASK_STATUSES.CLOSED}).eq('id', ctx.task.id); setTasks(prev=>{ const copy={...prev}; const arr=[...(copy[ctx.dayKey]||[])]; const i=arr.findIndex(x=>x.id===ctx.task!.id); if(i>=0){ arr[i]={...arr[i], status:TASK_STATUSES.CLOSED}; } copy[ctx.dayKey]=arr; return copy; }); setCtx(c=>({...c, open:false})) }}}>Выполнить</div>
+          <div className="ctx-item" onClick={()=> ctx.task && ctx.dayKey && toggleTaskStatus(ctx.task, ctx.dayKey)}>
+            {ctx.task?.status === TASK_STATUSES.CLOSED ? 'Открыть' : 'Выполнить'}
+          </div>
           <div className="ctx-item text-red-600" onClick={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}>Удалить</div>
         </div>
       </React.Fragment>)}

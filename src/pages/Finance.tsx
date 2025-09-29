@@ -8,12 +8,11 @@ import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import YearDropdown from '@/components/YearDropdown'
 import TypeDropdown from '@/components/TypeDropdown'
 import AnnualStatsModal from '@/components/AnnualStatsModal'
-import YearToolbar from '@/components/finance/YearToolbar'
 import SectionHeader from '@/components/finance/SectionHeader'
 import CategoryRow from '@/components/finance/CategoryRow'
 import SummaryRow from '@/components/finance/SummaryRow'
-import CategoryMenu from '@/components/finance/CategoryMenu'
-import CellMenu from '@/components/finance/CellMenu'
+import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
+import NewCellMenu from '@/components/finance/NewCellMenu'
 import type { Cat, CtxCat, CellCtx, EntryLite } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
@@ -85,11 +84,13 @@ export default function Finance(){
   const [editorMonth, setEditorMonth] = useState<number>(0)
 
   const [ctxOpen, setCtxOpen] = useState(false)
-  const [ctxPos, setCtxPos] = useState<{x:number,y:number}>({x:0,y:0})
+  const [ctxMouseX, setCtxMouseX] = useState(0)
+  const [ctxMouseY, setCtxMouseY] = useState(0)
   const [ctxCat, setCtxCat] = useState<CtxCat|null>(null)
 
   const [cellCtxOpen, setCellCtxOpen] = useState(false)
-  const [cellCtxPos, setCellCtxPos] = useState<{x:number,y:number}>({x:0,y:0})
+  const [cellCtxMouseX, setCellCtxMouseX] = useState(0)
+  const [cellCtxMouseY, setCellCtxMouseY] = useState(0)
   const [cellCtx, setCellCtx] = useState<CellCtx|null>(null)
   const [cellClipboard, setCellClipboard] = useState<EntryLite[]|null>(null)
   const [cellCanCopy, setCellCanCopy] = useState(false)
@@ -104,7 +105,54 @@ export default function Finance(){
   const [ctxCatHighlight, setCtxCatHighlight] = useState<string|null>(null)
   const [ctxCellHighlight, setCtxCellHighlight] = useState<CellCtx|null>(null)
 
+  // SubHeader actions handler
+  function handleSubHeaderAction(action: string) {
+    switch (action) {
+      case 'add-category':
+        setNewType(FINANCE_TYPES.INCOME)
+        setNewParent(null)
+        setShowAdd(true)
+        break
+      case 'annual-stats':
+        setShowStats(true)
+        break
+      case 'export':
+        // TODO: Implement export functionality
+        handleSuccess('Экспорт будет реализован в следующей версии')
+        break
+      case 'import':
+        // TODO: Implement import functionality
+        handleSuccess('Импорт будет реализован в следующей версии')
+        break
+      default:
+        console.log('Unknown action:', action)
+    }
+  }
+
   // Auth loading handled by useSupabaseAuth hook
+
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      handleSubHeaderAction(event.detail)
+    }
+    
+    const handleYearChangeEvent = (event: CustomEvent) => {
+      setYear(event.detail)
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    window.addEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+      window.removeEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
+    }
+  }, [])
+
+  // Notify App.tsx about current year
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('finance-year-changed', { detail: year }))
+  }, [year])
 
   useEffect(() => {
     if (!userId) return
@@ -199,15 +247,15 @@ export default function Finance(){
   }
 
   function onContextCategory(e: React.MouseEvent, cat: {id:string,name:string,type:'income'|'expense'}) {
-    e.preventDefault(); e.stopPropagation()
+    e.preventDefault(); 
+    e.stopPropagation()
     if (cellCtxOpen) setCellCtxOpen(false)
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
     
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    setCtxPos({ x, y })
+    // ПОЛНАЯ НЕЗАВИСИМОСТЬ ОТ СКРОЛЛА - только координаты мыши
+    setCtxMouseX(e.clientX + 10) // Right of cursor
+    setCtxMouseY(e.clientY - 10) // Above cursor
     setCtxCat(cat)
     setCtxOpen(true)
   }
@@ -243,47 +291,56 @@ export default function Finance(){
   }
 
   async function onCellContext(e: React.MouseEvent, type:'income'|'expense', catId:string, month:number, displayed:number){
-
-    e.preventDefault(); e.stopPropagation()
+    e.preventDefault(); 
+    e.stopPropagation()
+    
     // Close any other menu instantly
     if (ctxOpen) setCtxOpen(false)
     if (cellCtxOpen) setCellCtxOpen(false)
     setCtxCatHighlight(null)
     setCtxCellHighlight({ type, catId, month })
 
-    const where = { category_id: catId, year, month: month+1 }
     const canPaste = !!cellClipboard && cellClipboard.length > 0
+    const hasValue = !!(displayed && displayed !== 0)
 
-    // If cell visually empty and nothing to paste -> do nothing (no menu)
-    if (!canPaste && (!displayed || displayed === 0)) { setCtxCellHighlight(null); return }
-
-    // Open menu immediately at cursor; copy option may appear after async check
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    setCellCtx({catId, type, month})
-    setCellCtxPos({ x, y })
-    setCellCanCopy(false)
-    setCellCtxOpen(true)
-
-    // Fetch entries async; if none and cannot paste -> close menu quickly
-    const { data } = await supabase.from('finance_entries')
-      .select('amount, note, included, position')
-      .match(where)
-      .order('position', { ascending: true }).order('created_at', { ascending: true })
-    const entries: EntryLite[] = (data || []).map((d: { amount: number; note: string | null; included: boolean; position: number | null })=>({ 
-      amount: Number(d.amount) || 0, 
-      note: d.note, 
-      included: !!d.included, 
-      position: d.position ?? 0 
-    }))
-    setCellEntries(entries)
-    if (!entries.length && !canPaste) {
-      setCellCtxOpen(false); setCtxCellHighlight(null)
-      return
+    // Load entries for this cell if it has value
+    if (hasValue && userId) {
+      try {
+        const { data } = await supabase
+          .from('finance_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('category_id', catId)
+          .eq('year', year)
+          .eq('month', month + 1)
+          .order('position')
+        
+        if (data) {
+          setCellEntries(data.map(e => ({
+            amount: e.amount,
+            note: e.note,
+            included: e.included
+          })))
+        }
+      } catch (error) {
+        console.error('Error loading cell entries:', error)
+      }
     }
-    setCellCanCopy(entries.length > 0)
-  
+
+    // Show menu if there's something to copy OR something to paste
+    if (!hasValue && !canPaste) { 
+      setCtxCellHighlight(null); 
+      return 
+    }
+
+    // ПОЛНАЯ НЕЗАВИСИМОСТЬ ОТ СКРОЛЛА - только координаты мыши
+    setCellCtxMouseX(e.clientX - 90) // Center menu (menu width ~180px)
+    setCellCtxMouseY(e.clientY + 10) // Below cursor
+    setCellCtx({catId, type, month})
+    setCellCtxOpen(true)
+    
+    // Set canCopy based on whether cell has value
+    setCellCanCopy(hasValue)
   }
 
   async function copyCell(){
@@ -298,12 +355,50 @@ export default function Finance(){
     if (!cellCtx || !cellClipboard || !cellClipboard.length || !userId) return
     const { catId, type, month } = cellCtx
     const where = { category_id: catId, year, month: month+1 }
-    await supabase.from('finance_entries').delete().match(where)
-    const rows = cellClipboard.map((e, idx) => ({ where, user_id: userId, amount: e.amount, note: e.note, included: e.included, position: idx }))
-    await supabase.from('finance_entries').insert(rows)
-    const sum = rows.filter(r=>r.included).reduce((s,r)=>s + (r.amount||0), 0)
-    const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { ...c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
-    if (type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
+    
+    try {
+      // Delete existing entries
+      await supabase.from('finance_entries').delete().match(where)
+      
+      // Insert new entries
+      const rows = cellClipboard.map((e, idx) => ({ 
+        category_id: catId, 
+        year, 
+        month: month+1, 
+        user_id: userId, 
+        amount: e.amount, 
+        note: e.note, 
+        included: e.included, 
+        position: idx 
+      }))
+      
+      const { error } = await supabase.from('finance_entries').insert(rows)
+      if (error) throw error
+      
+      // Update local state
+      const sum = rows.filter(r=>r.included).reduce((s,r)=>s + (r.amount||0), 0)
+      const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { ...c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
+      
+      if (type === 'income') {
+        setIncomeRaw(updateRaw(incomeRaw))
+        writeCache(userId, year, { 
+          income: updateRaw(incomeRaw).map(({id,name,values,parent_id})=>({id,name,values,parent_id})), 
+          expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) 
+        })
+      } else {
+        setExpenseRaw(updateRaw(expenseRaw))
+        writeCache(userId, year, { 
+          income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), 
+          expense: updateRaw(expenseRaw).map(({id,name,values,parent_id})=>({id,name,values,parent_id})) 
+        })
+      }
+      
+      handleSuccess('Данные вставлены')
+    } catch (error) {
+      handleError('Ошибка при вставке данных')
+      console.error('Paste error:', error)
+    }
+    
     setCellCtxOpen(false); setCtxCellHighlight(null)
   }
 
@@ -322,9 +417,7 @@ export default function Finance(){
 
   return (
     <React.Fragment>
-      <div className="space-y-6 finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
-        <YearToolbar year={year} years={yearOptions} onYearChange={setYear} onAddCategory={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} onShowStats={()=>setShowStats(true)} />
-
+      <div className="finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Категория</div></div>
         {FINANCE_MONTHS.map((m,idx) => (
@@ -384,7 +477,8 @@ export default function Finance(){
         })}
       </div>
 
-      <div className="finance-grid">
+      <div className="mt-4">
+        <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">Показатель</div></div>
         {FINANCE_MONTHS.map((m,idx) => (
           <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
@@ -419,8 +513,9 @@ export default function Finance(){
       </div>
 
       {ctxOpen && ctxCat && (
-        <CategoryMenu
-          pos={ctxPos}
+        <NewCategoryMenu
+          x={ctxMouseX}
+          y={ctxMouseY}
           canAddSub={!Boolean((findCatById(ctxCat.id, incomeRaw) || findCatById(ctxCat.id, expenseRaw))?.parent_id)}
           onClose={closeCtx}
           onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
@@ -428,8 +523,9 @@ export default function Finance(){
           onDelete={()=>{ setDeleteOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
         />
       )}{cellCtxOpen && cellCtx && (
-        <CellMenu
-          pos={cellCtxPos}
+        <NewCellMenu
+          x={cellCtxMouseX}
+          y={cellCtxMouseY}
           onClose={()=>{ setCellCtxOpen(false); setCtxCellHighlight(null) }}
           canCopy={cellCanCopy}
           hasClipboard={!!(cellClipboard && cellClipboard.length > 0)}
@@ -454,16 +550,16 @@ export default function Finance(){
         )}
       >
         <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600 w-28">Тип</label>
+          <label className="text-label text-gray-600 w-28">Тип</label>
           <div className="flex-1"><TypeDropdown value={newType} onChange={setNewType} fullWidth /></div>
         </div>
         <div className="flex items-center gap-3 mt-3">
-          <label className="text-sm text-gray-600 w-28">Название</label>
+          <label className="text-label text-gray-600 w-28">Название</label>
           <input
             value={newName}
             onChange={e=>setNewName(e.target.value)}
             placeholder={newParent ? 'Напр. Коммунальные' : 'Напр. Жильё'}
-            className="border rounded-lg px-3 py-2 text-sm flex-1"
+            className="border rounded-lg px-3 py-2 text-base flex-1"
           />
         </div>
       </UnifiedModal>
@@ -533,6 +629,7 @@ export default function Finance(){
         incomeByMonth={totalIncomeByMonth}
         expenseByMonth={totalExpenseByMonth}
       />
+      </div>
     </React.Fragment>
   )
 }

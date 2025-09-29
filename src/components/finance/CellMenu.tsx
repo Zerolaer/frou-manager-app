@@ -1,5 +1,4 @@
-
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Copy, Clipboard } from 'lucide-react'
 
 type Pos = { x: number; y: number }
@@ -13,72 +12,63 @@ type Props = {
   onPaste: () => void
 }
 
-export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, onPaste }: Props){
-  console.log('CellMenu rendered with pos:', pos);
-  
-  const visibleItems = useMemo(() => {
-    const items: Array<{ label: string; onClick: () => void; aria: string; icon: React.ReactNode }> = []
-    if (canCopy) items.push({ 
-      label: 'Копировать записи', 
-      onClick: onCopy, 
-      aria: 'Копировать записи',
-      icon: <Copy className="w-4 h-4" />
-    })
-    if (hasClipboard) items.push({ 
-      label: 'Вставить записи (заменить)', 
-      onClick: onPaste, 
-      aria: 'Вставить записи (заменить)',
-      icon: <Clipboard className="w-4 h-4" />
-    })
-    return items
-  }, [canCopy, hasClipboard, onCopy, onPaste])
+export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, onPaste }: Props) {
+  const menuRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
 
-  const itemsRef = useRef<Array<HTMLDivElement | null>>([])
-  const [active, setActive] = useState(0)
-
-  useEffect(()=>{
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose() }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(p => Math.min(p + 1, visibleItems.length - 1)) }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(p => Math.max(p - 1, 0)) }
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        itemsRef.current[active]?.click()
+  // Закрытие по Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
       }
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [active, onClose, visibleItems.length])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
-  useEffect(()=>{
-    itemsRef.current[0]?.focus()
-  }, [visibleItems.length])
+  const handleItemClick = (action: () => void) => {
+    action()
+    onClose()
+  }
 
   return (
     <>
-      <div className="ctx-backdrop" onClick={onClose} onContextMenu={(e)=>e.preventDefault()} aria-hidden />
+      <div 
+        ref={backdropRef}
+        className="ctx-backdrop" 
+        onClick={onClose}
+        onContextMenu={(e) => e.preventDefault()}
+      />
       <div
+        ref={menuRef}
         className="ctx-menu"
-        style={{ left: pos.x, top: pos.y }}
-        role="menu"
-        aria-label="Действия с ячейкой"
-        onContextMenu={(e)=>e.preventDefault()}
+        style={{
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y,
+          zIndex: 1000
+        }}
+        onContextMenu={(e) => e.preventDefault()}
       >
-        {visibleItems.map((it, idx) => (
+        {canCopy && (
           <div
-            key={idx}
-            ref={el => itemsRef.current[idx] = el}
             className="ctx-item"
-            role="menuitem"
-            tabIndex={0}
-            onClick={it.onClick}
-            aria-label={it.aria}
-            data-active={active===idx}
+            onClick={() => handleItemClick(onCopy)}
           >
-            {it.icon}
-            {it.label}
+            <Copy className="w-4 h-4" />
+            Копировать записи
           </div>
-        ))}
+        )}
+        {hasClipboard && (
+          <div
+            className="ctx-item"
+            onClick={() => handleItemClick(onPaste)}
+          >
+            <Clipboard className="w-4 h-4" />
+            Вставить записи (заменить)
+          </div>
+        )}
       </div>
     </>
   )

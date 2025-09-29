@@ -2,33 +2,68 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
+import FolderSidebar from '@/components/FolderSidebar';
 import type { Note } from '@/features/notes/types';
-import { createNote, deleteNote, listNotes, togglePin, updateNote, type SortKey } from '@/features/notes/api';
-import { useDebounce } from '@/features/notes/useDebounce';
+import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
 import { useErrorHandler } from '@/lib/errorHandler';
 import { LoadingState, ListSkeleton } from '@/components/LoadingStates';
 import { VirtualizedGrid } from '@/components/VirtualizedList';
-import { AccessibleInput, AccessibleButton } from '@/components/AccessibleComponents';
-import { ARIA_LABELS } from '@/lib/accessibility';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import '@/notes.css';
 
 function NotesPageContent() {
   const { handleError, handleSuccess } = useErrorHandler();
   const { executeApiCall, isLoading, retryCount } = useApiWithRetry();
+  const { userId } = useSupabaseAuth();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortKey>('updated_at');
+  const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
+
+  // SubHeader actions handler
+  function handleSubHeaderAction(action: string) {
+    switch (action) {
+      case 'add-note':
+        setEditingNote(null);
+        setModalOpen(true);
+        break
+      case 'search':
+        // Focus search input
+        const searchInput = document.querySelector('input[placeholder*="Поиск"]') as HTMLInputElement;
+        if (searchInput) searchInput.focus();
+        break
+      case 'filter':
+        // TODO: Implement filter functionality
+        handleSuccess('Фильтр будет реализован в следующей версии')
+        break
+      case 'export':
+        // TODO: Implement export functionality
+        handleSuccess('Экспорт будет реализован в следующей версии')
+        break
+      default:
+        console.log('Unknown action:', action)
+    }
+  }
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
 
-  const debouncedSearch = useDebounce(search, 250);
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      handleSubHeaderAction(event.detail)
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    }
+  }, [])
 
   async function reload(signal?: AbortSignal) {
     setLoading(true);
     try {
-      const data = await executeApiCall(() => listNotes(debouncedSearch, sort));
+      const data = await executeApiCall(() => listNotes('', 'updated_at', activeFolder));
       if (signal?.aborted) return;
       if (data) {
         setNotes(data);
@@ -46,11 +81,20 @@ function NotesPageContent() {
     const ctl = new AbortController();
     reload(ctl.signal);
     return () => ctl.abort();
-  }, [sort, debouncedSearch]);
+  }, [activeFolder]);
+
+  // Add body class for notes layout
+  useEffect(() => {
+    document.body.classList.add('notes-mode');
+    return () => {
+      document.body.classList.remove('notes-mode');
+    };
+  }, []);
 
   const handleSave = useCallback(async (draft: Partial<Note>, id?: string) => {
     try {
       if (!id) {
+        // При создании используем folder_id из draft (выбранный в модальном окне)
         const created = await createNote(draft);
         setNotes((prev) => [created, ...prev]);
         handleSuccess('Заметка создана');
@@ -84,21 +128,7 @@ function NotesPageContent() {
     }
   }, [handleError, handleSuccess]);
 
-  const empty = !loading && notes.length === 0 && !search;
-
-  // Memoized event handlers
-  const handleCreateNote = useCallback(() => {
-    setEditing(null);
-    setModalOpen(true);
-  }, []);
-
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-  }, []);
-
-  const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSort(e.target.value as SortKey);
-  }, []);
+  const empty = !loading && notes.length === 0;
 
   const handleEditNote = useCallback((note: Note) => {
     setEditing(note);
@@ -116,86 +146,57 @@ function NotesPageContent() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <AccessibleButton
-            variant="primary"
-            size="sm"
-            onClick={handleCreateNote}
-            ariaLabel={ARIA_LABELS.ADD + ' заметку'}
-            announceOnClick="Открыто окно создания заметки"
-          >
-            + Добавить заметку
-          </AccessibleButton>
-          
-          <AccessibleInput
-            label="Поиск заметок"
-            placeholder="Поиск по заголовку…"
-            value={search}
-            onChange={handleSearchChange}
-            className="w-64"
-            ariaLabel={ARIA_LABELS.SEARCH + ' заметок'}
-          />
-          
-          <div className="flex flex-col">
-            <label htmlFor="sort-select" className="text-sm font-medium text-gray-700 mb-1">
-              Сортировка
-            </label>
-            <select
-              id="sort-select"
-              className="border rounded-lg px-3 py-2 text-sm"
-              value={sort}
-              onChange={handleSortChange}
-              aria-label="Выберите способ сортировки заметок"
-            >
-              <option value="updated_at">По обновлению</option>
-              <option value="created_at">По созданию</option>
-              <option value="title">По алфавиту</option>
-            </select>
-          </div>
-        </div>
-      </div>
+    <div className="notes-page">
+      {/* Левая область: панель папок */}
+      {userId && (
+        <FolderSidebar 
+          userId={userId} 
+          activeId={activeFolder} 
+          onChange={setActiveFolder} 
+        />
+      )}
+      
+      {/* Правая область: заметки */}
+      <div className="notes-content">
 
-      <LoadingState
-        loading={loading}
-        empty={empty}
-        emptyMessage="Пока нет заметок"
-        loadingComponent={<ListSkeleton count={6} />}
-      >
-        {notes.length > 50 ? (
-          <VirtualizedGrid
-            items={notes}
-            columns={gridColumns}
-            itemHeight={200}
-            containerHeight={600}
-            renderItem={(note, index) => (
+        <LoadingState
+          loading={loading}
+          empty={empty}
+          emptyMessage="Пока нет заметок"
+          loadingComponent={<ListSkeleton count={6} />}
+        >
+          {notes.length > 50 ? (
+            <VirtualizedGrid
+              items={notes}
+              columns={gridColumns}
+              itemHeight={200}
+              containerHeight={600}
+              renderItem={(note, index) => (
               <NoteCard
                 key={note.id}
                 note={note}
                 onEdit={handleEditNote}
-                onDelete={handleDelete}
                 onTogglePin={handleTogglePin}
               />
-            )}
-            keyExtractor={(note) => note.id}
-            gap={16}
-            className="p-4"
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-            {notes.map((n) => (
-              <NoteCard
-                key={n.id}
-                note={n}
-                onEdit={handleEditNote}
-                onDelete={handleDelete}
-                onTogglePin={handleTogglePin}
-              />
-            ))}
-          </div>
-        )}
-      </LoadingState>
+              )}
+              keyExtractor={(note) => note.id}
+              gap={16}
+              className="p-4"
+            />
+          ) : (
+            <div className="notes-grid">
+              {notes.map((n) => (
+                <NoteCard
+                  key={n.id}
+                  note={n}
+                  onEdit={handleEditNote}
+                  onTogglePin={handleTogglePin}
+                />
+              ))}
+            </div>
+          )}
+        </LoadingState>
+      </div>
 
       <NoteEditorModal
         open={modalOpen}

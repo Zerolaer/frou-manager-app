@@ -100,7 +100,11 @@ const router = createBrowserRouter([
       },
     ]
   },
-])
+], {
+  future: {
+    v7_startTransition: true
+  }
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

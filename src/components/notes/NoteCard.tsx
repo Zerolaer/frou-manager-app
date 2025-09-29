@@ -5,11 +5,10 @@ import type { Note } from '@/features/notes/types';
 type Props = {
   note: Note;
   onEdit: (note: Note) => void;
-  onDelete: (note: Note) => void;
   onTogglePin: (note: Note) => void;
 };
 
-const NoteCard = memo<Props>(({ note, onEdit, onDelete, onTogglePin }: Props) => {
+const NoteCard = memo<Props>(({ note, onEdit, onTogglePin }: Props) => {
   const preview = useMemo(() => note.content?.slice(0, 160) ?? '', [note.content]);
   
   const handleEdit = useCallback(() => {
@@ -20,11 +19,6 @@ const NoteCard = memo<Props>(({ note, onEdit, onDelete, onTogglePin }: Props) =>
     e.stopPropagation();
     onTogglePin(note);
   }, [note, onTogglePin]);
-  
-  const handleDelete = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete(note);
-  }, [note, onDelete]);
 
   return (
     <div
@@ -45,12 +39,6 @@ const NoteCard = memo<Props>(({ note, onEdit, onDelete, onTogglePin }: Props) =>
       <p className="text-xs text-gray-600 line-clamp-4 whitespace-pre-wrap">{preview}</p>
       <div className="flex justify-between items-center pt-2 border-t text-[11px] text-gray-500">
         <span>{new Date(note.updated_at).toLocaleString()}</span>
-        <button
-          className="text-red-600 hover:underline"
-          onClick={handleDelete}
-        >
-          Удалить
-        </button>
       </div>
     </div>
   );

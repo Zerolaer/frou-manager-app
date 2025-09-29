@@ -18,6 +18,37 @@ function GoalsPageContent(){
   const [editing, setEditing] = useState<Goal | null>(null)
   const [query, setQuery] = useState('')
 
+  // SubHeader actions handler
+  function handleSubHeaderAction(action: string) {
+    switch (action) {
+      case 'add-goal':
+        setEditing(null)
+        setModalOpen(true)
+        break
+      case 'filter':
+        // TODO: Implement filter functionality
+        handleSuccess('Фильтр будет реализован в следующей версии')
+        break
+      case 'progress':
+        setStatsOpen(true)
+        break
+      default:
+        console.log('Unknown action:', action)
+    }
+  }
+
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      handleSubHeaderAction(event.detail)
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    }
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -108,7 +139,7 @@ function GoalsPageContent(){
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <GoalsToolbar onCreate={onCreate} onOpenStats={() => setStatsOpen(true)} />
       <div className="flex items-center gap-2">
         <input className="input w-full max-w-md" placeholder="Поиск по целям…" value={query} onChange={e => setQuery(e.target.value)} />
