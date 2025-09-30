@@ -53,3 +53,5 @@ CREATE TRIGGER update_notes_folders_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_notes_folders_updated_at();
 
+
+

@@ -307,119 +307,119 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           </div>
 
           {/* Right Column - Sidebar */}
-          <div className="w-80 border-l border-gray-200 p-6 bg-gray-50 overflow-y-auto flex-shrink-0">
-            <div className="space-y-6">
-              {/* Project */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Проект</label>
-                <select
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          <div className="w-80 border-l border-gray-200 bg-gray-50 overflow-y-auto flex-shrink-0">
+            {/* Project */}
+            <div className="p-6 pb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Проект</label>
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">Без проекта</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="border-t border-gray-200"></div>
+
+            {/* Status */}
+            <div className="p-6 py-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Статус</label>
+              <div className="flex rounded-lg border border-gray-200 bg-white p-1">
+                <button
+                  onClick={() => setStatus('open')}
+                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                    status === 'open' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  <option value="">Без проекта</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  Открыта
+                </button>
+                <button
+                  onClick={() => setStatus('closed')}
+                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                    status === 'closed' 
+                      ? 'bg-green-500 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Закрыта
+                </button>
               </div>
+            </div>
 
-              <div className="border-t border-gray-200"></div>
+            <div className="border-t border-gray-200"></div>
 
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Статус</label>
-                <div className="flex rounded-lg border border-gray-200 bg-white p-1">
+            {/* Due Date */}
+            <div className="p-6 py-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Срок выполнения</label>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={date || ''}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200"></div>
+
+            {/* Priority */}
+            <div className="p-6 py-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Приоритет</label>
+              <div className="flex gap-1">
+                {[
+                  { value: 'low', label: 'Низкий', color: 'bg-green-100 text-green-700 border-green-200' },
+                  { value: 'medium', label: 'Средний', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+                  { value: 'high', label: 'Высокий', color: 'bg-red-100 text-red-700 border-red-200' },
+                ].map((p) => (
                   <button
-                    onClick={() => setStatus('open')}
-                    className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
-                      status === 'open' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
+                    key={p.value}
+                    onClick={() => setPriority(p.value as any)}
+                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                      priority === p.value 
+                        ? p.color 
+                        : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
                     }`}
                   >
-                    Открыта
+                    {p.label}
                   </button>
-                  <button
-                    onClick={() => setStatus('closed')}
-                    className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
-                      status === 'closed' 
-                        ? 'bg-green-500 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    Закрыта
-                  </button>
-                </div>
+                ))}
               </div>
+            </div>
 
-              <div className="border-t border-gray-200"></div>
+            <div className="border-t border-gray-200"></div>
 
-              {/* Due Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Срок выполнения</label>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="date"
-                    value={date || ''}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            {/* Tags */}
+            <div className="p-6 py-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Теги</label>
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={tag || ''}
+                  onChange={(e) => setTag(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Добавить тег"
+                />
               </div>
+            </div>
 
-              <div className="border-t border-gray-200"></div>
+            <div className="border-t border-gray-200"></div>
 
-              {/* Priority */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Приоритет</label>
-                <div className="flex gap-1">
-                  {[
-                    { value: 'low', label: 'Низкий', color: 'bg-green-100 text-green-700 border-green-200' },
-                    { value: 'medium', label: 'Средний', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-                    { value: 'high', label: 'Высокий', color: 'bg-red-100 text-red-700 border-red-200' },
-                  ].map((p) => (
-                    <button
-                      key={p.value}
-                      onClick={() => setPriority(p.value as any)}
-                      className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                        priority === p.value 
-                          ? p.color 
-                          : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200"></div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Теги</label>
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={tag || ''}
-                    onChange={(e) => setTag(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Добавить тег"
-                  />
-                </div>
-              </div>
-
-              {/* Timestamps */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="space-y-2 text-sm text-gray-500">
-                  <div>Создано: {new Date().toLocaleDateString()}</div>
-                  <div>Обновлено: {new Date().toLocaleDateString()}</div>
-                </div>
+            {/* Timestamps */}
+            <div className="p-6 pt-4">
+              <div className="space-y-2 text-sm text-gray-500">
+                <div>Создано: {new Date().toLocaleDateString()}</div>
+                <div>Обновлено: {new Date().toLocaleDateString()}</div>
               </div>
             </div>
           </div>

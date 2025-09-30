@@ -5,6 +5,7 @@ const TasksToday = lazy(() => import('./widgets/TasksToday').then(m => ({ defaul
 const RecentNotes = lazy(() => import('./widgets/RecentNotes').then(m => ({ default: m.RecentNotes })));
 const FinanceMonth = lazy(() => import('./widgets/FinanceMonth').then(m => ({ default: m.FinanceMonth })));
 const DebugBanner = lazy(() => import('./widgets/DebugBanner').then(m => ({ default: m.DebugBanner })));
+const QuickLinks = lazy(() => import('./widgets/QuickLinks').then(m => ({ default: m.QuickLinks })));
 
 // Loading skeleton for widgets
 const WidgetSkeleton = () => (
@@ -20,11 +21,11 @@ const WidgetSkeleton = () => (
 
 export default function HomeDashboard() {
   return (
-    <div className="p-4">
-      <Suspense fallback={<div className="h-8 bg-gray-200 rounded mb-4 animate-pulse" />}>
+    <div className="p-6">
+      <Suspense fallback={<div className="h-8 bg-gray-200 rounded mb-6 animate-pulse" />}>
         <DebugBanner />
       </Suspense>
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-0">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
           <Suspense fallback={<WidgetSkeleton />}>
             <TasksToday />
@@ -34,6 +35,9 @@ export default function HomeDashboard() {
           </Suspense>
         </div>
         <div className="xl:col-span-1 space-y-6">
+          <Suspense fallback={<WidgetSkeleton />}>
+            <QuickLinks />
+          </Suspense>
           <Suspense fallback={<WidgetSkeleton />}>
             <RecentNotes />
           </Suspense>

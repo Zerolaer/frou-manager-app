@@ -24,7 +24,7 @@ function NotesPageContent() {
   function handleSubHeaderAction(action: string) {
     switch (action) {
       case 'add-note':
-        setEditingNote(null);
+        setEditing(null);
         setModalOpen(true);
         break
       case 'search':
