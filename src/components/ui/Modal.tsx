@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 
 type ModalProps = {
   open: boolean
@@ -107,20 +108,13 @@ export default function Modal({
           onMouseDown={(e) => e.stopPropagation()}
         >
           {(title || subTitle || onClose) && (
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <div>
-                <div className="text-base font-medium leading-none" id="modal-title">{title}</div>
-                {subTitle && <div className="mt-1 text-xs opacity-70">{subTitle}</div>}
+            <div className="flex items-center justify-between px-5 py-3 border-b">
+              <div className="flex items-center">
+                <div className="text-sm text-gray-600 font-normal leading-tight" id="modal-title">{title}</div>
+                {subTitle && <div className="ml-2 text-xs opacity-70">{subTitle}</div>}
               </div>
-              <div className="flex items-center gap-3">
-                {headerRight && <div>{headerRight}</div>}
-                <button
-                  onClick={onClose}
-                  className="px-2 py-1 rounded-lg hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-blue-500"
-                  aria-label="Close"
-                >
-                  ×
-                </button>
+              <div className="flex items-center gap-2">
+                {headerRight && <div className="flex items-center">{headerRight}</div>}
               </div>
             </div>
           )}

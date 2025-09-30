@@ -1,7 +1,8 @@
 
 // v1.0.6: square menu button, full-width status switcher, custom checkbox for subtasks
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { useModalActions } from '@/components/ui/ModalSystem'
+import Modal from '@/components/ui/Modal'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
 import { Plus, Trash2, MoreVertical } from 'lucide-react'
@@ -186,11 +187,11 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   const totalCount = todos.length
 
   return (
-    <UnifiedModal
+    <Modal
       open={open}
       onClose={onClose}
       title="Задача"
-      subtitle={task?.date ? `Создана: ${new Date(task.date).toLocaleDateString()}` : undefined}
+      subTitle={task?.date ? `Создана: ${new Date(task.date).toLocaleDateString()}` : undefined}
       size="xl"
       headerRight={
         <div className="relative" ref={menuRef}>
@@ -325,7 +326,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
 
         </aside>
       </div>
-    </UnifiedModal>
+    </Modal>
   )
 }
 

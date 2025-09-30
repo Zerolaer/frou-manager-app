@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { Plus, Trash2, Calendar, Tag, Paperclip, MoreVertical } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { useModalActions } from '@/components/ui/ModalSystem'
+import Modal from '@/components/ui/Modal'
 import type { Todo, Project } from '@/types/shared'
 
 type Task = {
@@ -38,6 +39,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   const [newTodo, setNewTodo] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const { createDangerFooter } = useModalActions()
 
   // Close menu on outside click
   useEffect(() => {
@@ -132,79 +134,101 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   const doneCount = todos.filter(t => t.done).length
   const totalCount = todos.length
 
-  if (!open) return null
+  // Get project name for header
+  const currentProject = projects.find(p => p.id === projectId)
+  const projectName = currentProject?.name || 'Без проекта'
+  const statusText = status === 'open' ? 'Открыта' : 'Закрыта'
+  
+  // Dynamic header - "Задача \ Проект \ Статус" format
+  const headerTitle = `Задача \\ ${projectName} \\ ${statusText}`
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-center p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Задача</h2>
-          </div>
-          <div className="absolute right-6">
-            <div className="relative" ref={menuRef}>
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={headerTitle}
+      size="xl"
+      headerRight={
+        <div className="relative" ref={menuRef}>
+          <button
+            className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Меню"
+          >
+            <MoreVertical className="w-4 h-4 text-gray-600" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl z-10">
               <button
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                onClick={() => setMenuOpen(!menuOpen)}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                onClick={() => {
+                  // Duplicate logic here
+                  setMenuOpen(false)
+                }}
               >
-                <MoreVertical className="w-5 h-5 text-gray-500" />
+                Дублировать
               </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-gray-200 shadow-lg py-2">
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                    onClick={() => {
-                      // Duplicate logic here
-                      setMenuOpen(false)
-                    }}
-                  >
-                    Дублировать
-                  </button>
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                    onClick={() => {
-                      deleteTask()
-                      setMenuOpen(false)
-                    }}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              )}
+              <button
+                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                onClick={() => {
+                  deleteTask()
+                  setMenuOpen(false)
+                }}
+              >
+                Удалить
+              </button>
             </div>
-          </div>
+          )}
         </div>
+      }
+      footer={createDangerFooter(
+        { 
+          label: 'Удалить', 
+          onClick: deleteTask
+        },
+        { 
+          label: saving ? 'Сохранение...' : 'Сохранить', 
+          onClick: save,
+          loading: saving,
+          disabled: !title.trim()
+        },
+        { 
+          label: 'Закрыть', 
+          onClick: onClose
+        }
+      )}
+      bodyClassName="p-0"
+    >
 
         {/* Content */}
-        <div className="flex max-h-[calc(90vh-80px)]">
+        <div className="flex flex-1 min-h-0">
           {/* Left Column - Main Content */}
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="space-y-6">
-              {/* Title */}
-              <div>
+              {/* Title and Description Block */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                {/* Title */}
+                <div className="mb-4">
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full text-2xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400"
+                  onBlur={save}
+                  className="w-full text-lg font-semibold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400"
                   placeholder="Название задачи"
                 />
-              </div>
+                </div>
 
-              {/* Description */}
-              <div>
+                {/* Description */}
+                <div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full min-h-[120px] text-gray-700 bg-transparent border-none outline-none resize-none placeholder-gray-400"
+                  onBlur={save}
+                  className="w-full min-h-[100px] text-gray-700 bg-transparent border-none outline-none resize-none placeholder-gray-400"
                   placeholder="Добавьте описание задачи..."
                 />
+                </div>
               </div>
 
               {/* Subtasks */}
@@ -283,7 +307,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           </div>
 
           {/* Right Column - Sidebar */}
-          <div className="w-80 border-l border-gray-200 p-6 bg-gray-50 overflow-y-auto">
+          <div className="w-80 border-l border-gray-200 p-6 bg-gray-50 overflow-y-auto flex-shrink-0">
             <div className="space-y-6">
               {/* Project */}
               <div>
@@ -301,6 +325,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                   ))}
                 </select>
               </div>
+
+              <div className="border-t border-gray-200"></div>
 
               {/* Status */}
               <div>
@@ -329,6 +355,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                 </div>
               </div>
 
+              <div className="border-t border-gray-200"></div>
+
               {/* Due Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Срок выполнения</label>
@@ -342,6 +370,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                   />
                 </div>
               </div>
+
+              <div className="border-t border-gray-200"></div>
 
               {/* Priority */}
               <div>
@@ -366,6 +396,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                   ))}
                 </div>
               </div>
+
+              <div className="border-t border-gray-200"></div>
 
               {/* Tags */}
               <div>
@@ -392,33 +424,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-          <button
-            onClick={deleteTask}
-            className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            Удалить
-          </button>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={save}
-              disabled={saving || !title.trim()}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   )
 }
