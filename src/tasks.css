@@ -1,19 +1,23 @@
 
 /* ===== Tasks layout (no page vertical scroll) ===== */
 .tasks-page {
-  height: calc(100vh - 56px); /* 100vh - header(24px) - subheader(32px) */
+  height: calc(100vh - 144px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) */
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 16px;
   box-sizing: border-box;
   overflow: hidden;
+  /* Отключаем выделение текста в области календаря */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Disable page scroll when on tasks page */
 body.tasks-mode {
   overflow: hidden;
-  height: calc(100vh - 16px);
-  padding-bottom: 16px;
+  height: 100vh;
 }
 
 .tasks-page.is-collapsed {
@@ -23,7 +27,7 @@ body.tasks-mode {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .tasks-page {
-    height: calc(100vh - 56px);
+    height: calc(100vh - 144px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) */
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     gap: 12px;
@@ -186,7 +190,17 @@ body.tasks-mode {
   gap: 16px;
   min-width: 980px; /* Ã‘â€¡Ã‘â€šÃÂ¾ÃÂ±Ã‘â€¹ 7 ÃÂºÃÂ¾ÃÂ»ÃÂ¾ÃÂ½ÃÂ¾ÃÂº ÃÂ½ÃÂµ Ã‘ÂÃ‘â€¦ÃÂ»ÃÂ¾ÃÂ¿Ã‘â€¹ÃÂ²ÃÂ°ÃÂ»ÃÂ¸Ã‘ÂÃ‘Å’ ÃÂ½ÃÂ° Ã‘Æ’ÃÂ·ÃÂºÃÂ¸Ã‘â€¦ Ã‘ÂÃÂºÃ‘â‚¬ÃÂ°ÃÂ½ÃÂ°Ã‘â€¦ */
 }
-.day-col{ display:grid; grid-template-rows:auto 1fr; min-width:0; border-left:1px solid #e5e7eb; }
+.day-col{ 
+  display:grid; 
+  grid-template-rows:auto 1fr; 
+  min-width:0; 
+  border-left:1px solid #e5e7eb; 
+  /* Отключаем выделение текста */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 .day-head{ padding:8px 10px; background:#f8fafc; font-size:13px; font-weight:600; color:#0f172a; display:flex; justify-content:space-between; align-items:center; }
 .day-head .name { font-size: 13px; color:#334155; }
 .day-head .date { font-size: 12px; color:#64748b; }
@@ -196,6 +210,11 @@ body.tasks-mode {
   gap: 8px; 
   align-content: start; 
   overflow-y: auto;
+  /* Отключаем выделение текста */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
   max-height: calc(100vh - 200px); /* Adjust based on header height */
   position: relative; /* Ensure proper stacking context for absolute positioned indicators */
 }
@@ -247,7 +266,17 @@ body.tasks-mode {
 .week-head .timeline .range{ text-align:center; font-weight:600; }
 .week-head .timeline .nav button{ padding:6px 10px; border:1px solid #d1d5db;  background:#fff; cursor:pointer; }
 
-.day-col{ display:grid; grid-template-rows:auto 1fr; min-width:0; border-left:1px solid #e5e7eb; }
+.day-col{ 
+  display:grid; 
+  grid-template-rows:auto 1fr; 
+  min-width:0; 
+  border-left:1px solid #e5e7eb; 
+  /* Отключаем выделение текста */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 .day-col:first-child{ border-left:0; }
 
 .day-head{ padding:8px 10px; background:#f8fafc; font-size:13px; font-weight:600; color:#0f172a; display:flex; justify-content:space-between; align-items:center; }
@@ -271,6 +300,11 @@ body.tasks-mode {
   transition: box-shadow 120ms ease, transform 120ms ease;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   max-height: 200px;
+  /* Отключаем выделение текста */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
   overflow-y: auto;
   will-change: transform;
 }

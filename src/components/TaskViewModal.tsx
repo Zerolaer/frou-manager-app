@@ -196,7 +196,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
-            className="h-8 w-8 grid place-items-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+            className="h-10 w-10 grid place-items-center rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Меню"
           >
@@ -267,14 +267,14 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
                     }
                     className="flex-1 bg-transparent outline-none"
                   />
-                  <button className="h-8 rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50 flex items-center gap-1" onClick={() => removeTodo(item.id)}>
+                  <button className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50 flex items-center gap-1" onClick={() => removeTodo(item.id)}>
                     <Trash2 className="w-4 h-4" />
                     Удалить
                   </button>
                 </li>
               ))}
             </ul>
-            <button className="h-9 px-4 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 mt-3 flex items-center gap-2" onClick={addTodo}>
+            <button className="h-10 px-6 py-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 mt-3 flex items-center gap-2" onClick={addTodo}>
               <Plus className="w-4 h-4" />
               Подзадача
             </button>
@@ -458,11 +458,11 @@ function DateQuick({
         className="h-9 w-full rounded-xl border border-gray-200 px-3"
       />
       <div className="flex gap-2">
-        <button type="button" className="h-8 rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50"
+        <button type="button" className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50"
           onClick={() => onChange(toISO(today))}>
           Сегодня
         </button>
-        <button type="button" className="h-8 rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50"
+        <button type="button" className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50"
           onClick={() => onChange(toISO(tomorrow))}>
           Завтра
         </button>

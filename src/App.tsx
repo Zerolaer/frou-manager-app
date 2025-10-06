@@ -7,12 +7,11 @@ import { SkipLinks } from './components/AccessibleComponents'
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
 // Lazy load heavy components
-const Header = lazy(() => import('./components/Header'))
+const FloatingNavBar = lazy(() => import('./components/FloatingNavBar'))
 const SubHeader = lazy(() => import('./components/SubHeader'))
 const Toaster = lazy(() => import('./components/Toaster'))
 const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
 const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
-const PerformanceMonitor = lazy(() => import('./components/PerformanceMonitor'))
 
 // Loading component
 const AppLoading = () => (
@@ -61,10 +60,7 @@ export default function App(){
     <ToastProvider>
       <AppErrorBoundary>
         <SkipLinks />
-        <div className={`app-shell flex flex-col min-h-screen ${isFinance ? 'finance-mode' : ''} ${isTasks ? 'tasks-mode' : ''}`}>
-          <Suspense fallback={<div className="h-16 bg-white border-b border-gray-200 animate-pulse" />}>
-            <Header />
-          </Suspense>
+        <div className={`app-shell flex flex-col h-screen ${isFinance ? 'finance-mode' : ''} ${isTasks ? 'tasks-mode' : ''}`}>
           <Suspense fallback={<div className="h-20 bg-white border-b border-gray-200 animate-pulse" />}>
             <SubHeader 
               currentYear={currentYear}
@@ -100,7 +96,7 @@ export default function App(){
           <OfflineSupport />
         </Suspense>
         <Suspense fallback={null}>
-          <PerformanceMonitor />
+          <FloatingNavBar />
         </Suspense>
       </AppErrorBoundary>
     </ToastProvider>

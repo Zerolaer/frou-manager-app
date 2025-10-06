@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabaseClient'
 import { AccessibleButton } from './AccessibleComponents'
-import { Home, Wallet, ListTodo, StickyNote, Goal, Menu, X, ChevronDown, LogOut } from 'lucide-react'
+import { Home, Wallet, ListTodo, StickyNote, Goal, ChevronDown, LogOut } from 'lucide-react'
 import { APP_NAME } from '@/lib/constants'
 
 function clearFinanceCache(){
@@ -23,7 +23,6 @@ const NAV_ITEMS = [
 export default function Header(){
   const location = useLocation()
   const [email, setEmail] = useState<string | null>(null)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -55,52 +54,46 @@ export default function Header(){
 
   return (
     <header 
-      className="bg-white border-b border-gray-200 sticky top-0 z-50"
+      className="bg-white sticky top-0 z-50"
       role="banner"
       aria-label="Навигация и заголовок"
     >
-      {/* Desktop Header */}
-      <div className="hidden lg:flex items-center justify-between px-4 py-3">
-        {/* Logo - уменьшенный */}
-        <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-          <div className="w-6 h-6 bg-blue-600 text-white rounded-md flex items-center justify-center font-bold text-sm">
-            F
-          </div>
-          {APP_NAME}
-        </Link>
+      {/* Desktop Header - Tab Style */}
+      <div className="hidden lg:flex items-center justify-between px-6 py-0 bg-gray-100 h-12">
+        {/* Left side - Tabs */}
+        <div className="flex items-center">
+          <nav className="flex items-center" role="navigation" aria-label="Основное меню">
+            {NAV_ITEMS.map((item, index) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.to
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all duration-200 relative ${
+                    isActive 
+                      ? 'text-gray-800 bg-white border-t border-l border-r border-gray-300 tab-skewed-active' 
+                      : 'text-gray-600 hover:text-gray-900 bg-gray-100 tab-skewed'
+                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
 
-        {/* Navigation - фиксированная ширина для предотвращения скачков */}
-        <nav className="flex items-center gap-1" role="navigation" aria-label="Основное меню">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.to
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-w-[120px] justify-center ${
-                  isActive 
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <Icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        {/* User Menu - dropdown с иконкой */}
+        {/* Right side - Profile */}
         <div className="relative user-menu">
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center gap-3 px-4 py-3 rounded-t-lg hover:bg-gray-50 transition-colors"
             aria-label="Меню пользователя"
           >
-            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-              {email?.charAt(0).toUpperCase() || 'U'}
+            <div className="text-center">
+              <p className="text-xs text-gray-500 truncate max-w-[120px]">{email ?? '—'}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-500" />
           </button>
@@ -123,38 +116,13 @@ export default function Header(){
           )}
         </div>
       </div>
+      
 
-      {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-2">
-        <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-blue-600">
-          <div className="w-6 h-6 bg-blue-600 text-white rounded-md flex items-center justify-center font-bold text-sm">
-            F
-          </div>
-          {APP_NAME}
-        </Link>
-        
-        <div className="flex items-center gap-2">
-          <button
-            onClick={signOut}
-            className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            aria-label="Выйти из системы"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            aria-label={mobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-200 bg-white">
-          <nav className="px-4 py-2" role="navigation" aria-label="Мобильное меню">
+      {/* Mobile Header - Tab Style */}
+      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-gray-100 h-10">
+        {/* Mobile Tabs */}
+        <div className="flex items-center overflow-x-auto scrollbar-hide">
+          <nav className="flex items-center gap-1" role="navigation" aria-label="Основное меню">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.to
@@ -162,22 +130,34 @@ export default function Header(){
                 <Link
                   key={item.to}
                   to={item.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-button transition-colors ${
+                  className={`flex items-center gap-1 px-3 py-2 text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                     isActive 
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-gray-800 bg-white border-t border-l border-r border-gray-300 tab-skewed-active' 
+                      : 'text-gray-600 hover:text-gray-900 bg-gray-100 tab-skewed'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-5 h-5" />
-                  {item.label}
+                  <Icon className="w-3 h-3" />
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               )
             })}
           </nav>
         </div>
-      )}
+        
+        {/* Mobile Profile */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={signOut}
+            className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            aria-label="Выйти из системы"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      
+
     </header>
   )
 }

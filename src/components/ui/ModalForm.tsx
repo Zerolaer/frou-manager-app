@@ -29,7 +29,7 @@ interface ModalInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function ModalInput({ error, className = '', ...props }: ModalInputProps) {
-  const baseClasses = 'w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors'
+  const baseClasses = 'w-full px-4 py-3 border rounded-xl text-sm outline-none transition-colors'
   const errorClasses = error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
   
   return (
@@ -45,7 +45,7 @@ interface ModalTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaEl
 }
 
 export function ModalTextarea({ error, className = '', ...props }: ModalTextareaProps) {
-  const baseClasses = 'w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors resize-none'
+  const baseClasses = 'w-full px-4 py-3 border rounded-xl text-sm outline-none transition-colors resize-none'
   const errorClasses = error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
   
   return (
@@ -61,7 +61,7 @@ interface ModalSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement>
 }
 
 export function ModalSelect({ error, className = '', children, ...props }: ModalSelectProps) {
-  const baseClasses = 'w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors bg-white'
+  const baseClasses = 'w-full px-4 py-3 border rounded-xl text-sm outline-none transition-colors bg-white'
   const errorClasses = error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
   
   return (

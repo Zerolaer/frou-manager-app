@@ -13,6 +13,8 @@ import CategoryRow from '@/components/finance/CategoryRow'
 import SummaryRow from '@/components/finance/SummaryRow'
 import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
 import NewCellMenu from '@/components/finance/NewCellMenu'
+import MobileDayNavigator from '@/components/MobileDayNavigator'
+import MobileFinanceDay from '@/components/finance/MobileFinanceDay'
 import type { Cat, CtxCat, CellCtx, EntryLite } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
@@ -21,6 +23,7 @@ import { formatCurrencyEUR } from '@/lib/format'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
+import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { 
   CACHE_VERSION, 
   MONTHS_IN_YEAR, 
@@ -59,11 +62,13 @@ export default function Finance(){
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
   const { createSimpleFooter, createDangerFooter } = useModalActions()
+  const { isMobile } = useMobileDetection()
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
 
   const [year, setYear] = useState(currentYear)
+  const [mobileDate, setMobileDate] = useState(new Date())
 
   const [incomeRaw, setIncomeRaw] = useState<Cat[]>([])
   const [expenseRaw, setExpenseRaw] = useState<Cat[]>([])
@@ -141,42 +146,53 @@ export default function Finance(){
       setYear(event.detail)
     }
     
+    const handleFinanceDataUpdated = () => {
+      // Перезагружаем данные при обновлении через ИИ-ассистента
+      console.log('Finance data updated, reloading...')
+      if (userId) {
+        reloadFinanceData()
+      }
+    }
+    
     window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
     window.addEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
+    window.addEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
     return () => {
       window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
       window.removeEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
+      window.removeEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
     }
-  }, [])
+  }, [userId])
 
   // Notify App.tsx about current year
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('finance-year-changed', { detail: year }))
   }, [year])
 
-  useEffect(() => {
+  // Функция для загрузки финансовых данных
+  const reloadFinanceData = async (signal?: AbortSignal) => {
     if (!userId) return
-    const cached = readCache(userId, year)
-    if (cached) {
-      setIncomeRaw(cached.income ?? [])
-      setExpenseRaw(cached.expense ?? [])
-      setLoading(false)
-    } else {
-      setLoading(true)
-    }
-    ;(async () => {
+    
+    setLoading(true)
+    
+    try {
       const [catsRes, entriesRes] = await Promise.all([
         supabase.from('finance_categories').select('id,name,type,parent_id').order('created_at', { ascending: true }),
         supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', year),
       ])
+      
+      if (signal?.aborted) return
+      
       if (catsRes.error || entriesRes.error) { 
         handleError(catsRes.error || entriesRes.error, 'Загрузка финансовых данных'); 
         setLoading(false); 
         return 
       }
+      
       const cats = catsRes.data || []
       const entries = entriesRes.data || []
       const byId: Record<string, number[]> = {}
+      
       for (const c of cats) byId[c.id] = Array(MONTHS_IN_YEAR).fill(0)
       for (const e of entries) {
         if (!e.included) continue
@@ -185,14 +201,41 @@ export default function Finance(){
         if (!byId[id]) byId[id] = Array(MONTHS_IN_YEAR).fill(0)
         byId[id][i] += Number(e.amount) || 0
       }
+      
       const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
       const expense = cats.filter((c)=>c.type===FINANCE_TYPES.EXPENSE).map((c)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
-      setIncomeRaw(income); setExpenseRaw(expense); setLoading(false)
-      writeCache(userId, year, {
-        income: income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
-        expense: expense.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
-      })
-    })()
+      
+      if (!signal?.aborted) {
+        setIncomeRaw(income)
+        setExpenseRaw(expense)
+        setLoading(false)
+        
+        // Обновляем кеш
+        writeCache(userId, year, {
+          income: income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
+          expense: expense.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
+        })
+      }
+    } catch (error) {
+      if (!signal?.aborted) {
+        handleError(error, 'Загрузка финансовых данных')
+        setLoading(false)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!userId) return
+    const cached = readCache(userId, year)
+    if (cached) {
+      setIncomeRaw(cached.income ?? [])
+      setExpenseRaw(cached.expense ?? [])
+      setLoading(false)
+    }
+    
+    const ctl = new AbortController()
+    reloadFinanceData(ctl.signal)
+    return () => ctl.abort()
   }, [userId, year])
 
   const totalIncomeByMonth = useMemo(() => months.map((_, i) => incomeRaw.reduce((s, c) => s + (c.values?.[i] ?? 0), 0)), [incomeRaw])
@@ -415,6 +458,167 @@ export default function Finance(){
   const isCurrentYear = year === currentYear
   const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)
 
+  // Mobile view - single day display
+  if (isMobile) {
+    return (
+      <div className="mobile-finance-page">
+        <MobileDayNavigator
+          currentDate={mobileDate}
+          onDateChange={setMobileDate}
+          className="sticky top-0 z-10"
+        />
+        
+        <div className="overflow-y-auto flex-1">
+          <MobileFinanceDay
+            date={mobileDate}
+            incomeCategories={incomeCategories}
+            expenseCategories={expenseCategories}
+            onAddCategory={(type) => {
+              setNewType(type)
+              setNewParent(null)
+              setShowAdd(true)
+            }}
+            onEditCategory={(category, monthIndex) => {
+              setEditorCat({ id: category.id, name: category.name, type: category.type } as CtxCat)
+              setEditorMonth(monthIndex)
+              setEditorOpen(true)
+            }}
+            onContextCategory={onContextCategory}
+            onCellContext={onCellContext}
+            ctxCatHighlight={ctxCatHighlight}
+            ctxCellHighlight={ctxCellHighlight}
+            fmt={fmtEUR}
+          />
+        </div>
+
+        {/* Mobile modals */}
+        <UnifiedModal
+          open={showAdd}
+          onClose={()=>{ setShowAdd(false); setNewParent(null) }}
+          title={newParent ? 'Новая подкатегория' : 'Новая категория'}
+          subtitle={newParent ? `Родитель: ${newParent.name}` : undefined}
+          footer={createSimpleFooter(
+            { 
+              label: newParent ? 'Добавить подкатегорию' : 'Добавить категорию', 
+              onClick: addCategory,
+              disabled: !newName.trim()
+            },
+            { 
+              label: 'Отмена', 
+              onClick: () => { setShowAdd(false); setNewParent(null) }
+            }
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <label className="text-label text-gray-600 w-28">Тип</label>
+            <div className="flex-1"><TypeDropdown value={newType} onChange={setNewType} fullWidth /></div>
+          </div>
+          <div className="flex items-center gap-3 mt-3">
+            <label className="text-label text-gray-600 w-28">Название</label>
+            <input
+              value={newName}
+              onChange={e=>setNewName(e.target.value)}
+              placeholder={newParent ? 'Напр. Коммунальные' : 'Напр. Жильё'}
+              className="border rounded-lg px-3 py-2 text-base flex-1"
+            />
+          </div>
+        </UnifiedModal>
+
+        <UnifiedModal
+          open={renameOpen}
+          onClose={()=>setRenameOpen(false)}
+          title="Переименовать категорию"
+          footer={createSimpleFooter(
+            { 
+              label: 'Сохранить', 
+              onClick: submitRename,
+              disabled: !renameValue.trim()
+            },
+            { 
+              label: 'Отмена', 
+              onClick: () => setRenameOpen(false)
+            }
+          )}
+        >
+          <input
+            value={renameValue}
+            onChange={e=>setRenameValue(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm w-full"
+            autoFocus
+          />
+        </UnifiedModal>
+
+        <UnifiedModal
+          open={deleteOpen}
+          onClose={()=>setDeleteOpen(false)}
+          title="Удалить категорию?"
+          footer={createDangerFooter(
+            { 
+              label: 'Удалить', 
+              onClick: confirmDelete
+            },
+            { 
+              label: 'Отмена', 
+              onClick: () => setDeleteOpen(false)
+            }
+          )}
+        >
+          <div className="text-sm text-gray-600">Все записи в этой категории будут удалены без возможности восстановления.</div>
+        </UnifiedModal>
+
+        {editorOpen && editorCat && (
+          <CellEditor
+            open={editorOpen}
+            onClose={()=>setEditorOpen(false)}
+            userId={userId!}
+            categoryId={editorCat.id}
+            categoryName={editorCat.name}
+            monthIndex={editorMonth}
+            year={year}
+            onApply={(sum)=>{
+              const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
+              if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
+            }}
+          />
+        )}
+
+        <AnnualStatsModal
+          open={showStats}
+          onClose={()=>setShowStats(false)}
+          year={year}
+          incomeByMonth={totalIncomeByMonth}
+          expenseByMonth={totalExpenseByMonth}
+        />
+
+        {/* Context menus */}
+        {ctxOpen && ctxCat && (
+          <NewCategoryMenu
+            x={ctxMouseX}
+            y={ctxMouseY}
+            canAddSub={!Boolean((findCatById(ctxCat.id, incomeRaw) || findCatById(ctxCat.id, expenseRaw))?.parent_id)}
+            onClose={closeCtx}
+            onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
+            onAddSub={()=>{ setNewType(ctxCat.type as 'income' | 'expense'); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}
+            onDelete={()=>{ setDeleteOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
+          />
+        )}
+
+        {cellCtxOpen && cellCtx && (
+          <NewCellMenu
+            x={cellCtxMouseX}
+            y={cellCtxMouseY}
+            onClose={()=>{ setCellCtxOpen(false); setCtxCellHighlight(null) }}
+            canCopy={cellCanCopy}
+            hasClipboard={!!(cellClipboard && cellClipboard.length > 0)}
+            onCopy={copyCell}
+            onPaste={pasteCell}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // Desktop view - original grid layout
   return (
     <React.Fragment>
       <div className="finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>

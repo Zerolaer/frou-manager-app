@@ -83,7 +83,7 @@ export default function SubHeader({ onAction, currentYear, onYearChange }: SubHe
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-4">
+    <div className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-h2 text-gray-900 leading-none !mb-0">{content.title}</h2>
         
@@ -101,9 +101,9 @@ export default function SubHeader({ onAction, currentYear, onYearChange }: SubHe
               <button
                 key={action.id}
                 onClick={() => handleAction(action.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-button transition-colors ${
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-button transition-all duration-200 ${
                   isPrimary
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                    ? 'bg-gradient-to-br from-gray-800 to-gray-600 text-white hover:from-gray-900 hover:to-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
                 }`}
                 aria-label={action.label}

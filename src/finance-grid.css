@@ -17,6 +17,7 @@
   max-width: 100%;
   box-sizing: border-box;
   position: relative;
+  min-height: calc(100vh - 144px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) */
 }
 
 .finance-page * {

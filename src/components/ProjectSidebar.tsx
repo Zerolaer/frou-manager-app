@@ -174,7 +174,7 @@ export default function ProjectSidebar({ userId, activeId, onChange }: Props){
               title={p.name}
             >
               <span className="mr-2 inline-flex items-center" style={{ color: p.color || '#94a3b8' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
               </span>
               <span className="truncate">{p.name}</span>
             </button>

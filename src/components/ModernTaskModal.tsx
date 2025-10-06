@@ -151,7 +151,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
       headerRight={
         <div className="relative" ref={menuRef}>
           <button
-            className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+            className="h-10 w-10 flex items-center justify-center rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Меню"
           >
@@ -160,7 +160,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           {menuOpen && (
             <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl z-10">
               <button
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
                 onClick={() => {
                   // Duplicate logic here
                   setMenuOpen(false)
@@ -282,7 +282,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     <button
                       onClick={addTodo}
                       disabled={!newTodo.trim()}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-3 bg-gradient-to-br from-gray-800 to-gray-600 text-white rounded-xl hover:from-gray-900 hover:to-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 shadow-md"
                     >
                       <Plus className="w-4 h-4" />
                       Добавить

@@ -1,0 +1,417 @@
+/* Mobile-specific styles */
+
+/* Mobile Finance Page */
+.mobile-finance-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f9fafb;
+  padding-bottom: 80px; /* Space for floating navigation bar */
+}
+
+.mobile-tasks-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f9fafb;
+  padding-bottom: 80px; /* Space for floating navigation bar */
+}
+
+/* Mobile day navigator */
+.mobile-day-navigator {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile finance day */
+.mobile-finance-day {
+  padding: 1rem;
+  padding-bottom: 2rem;
+}
+
+.mobile-finance-day .summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mobile-finance-day .summary-card {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 1px solid;
+}
+
+.mobile-finance-day .summary-card.income {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.mobile-finance-day .summary-card.expense {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.mobile-finance-day .summary-card.balance {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.mobile-finance-day .category-section {
+  margin-bottom: 1.5rem;
+}
+
+.mobile-finance-day .category-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.mobile-finance-day .category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-finance-day .category-row.highlighted {
+  border-color: #93c5fd;
+  background-color: #eff6ff;
+}
+
+.mobile-finance-day .category-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-finance-day .category-name .title {
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-finance-day .category-name .subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.mobile-finance-day .category-amount {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-right: 0.75rem;
+}
+
+.mobile-finance-day .category-amount.income {
+  color: #16a34a;
+}
+
+.mobile-finance-day .category-amount.expense {
+  color: #dc2626;
+}
+
+.mobile-finance-day .category-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mobile-finance-day .action-button {
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobile-finance-day .action-button:hover {
+  background-color: #f3f4f6;
+}
+
+.mobile-finance-day .action-button .dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: #d1d5db;
+}
+
+/* Mobile tasks day */
+.mobile-tasks-day {
+  padding: 1rem;
+  padding-bottom: 2rem;
+}
+
+.mobile-tasks-day .summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mobile-tasks-day .summary-card {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 1px solid;
+}
+
+.mobile-tasks-day .summary-card.total {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.mobile-tasks-day .summary-card.completed {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.mobile-tasks-day .summary-card.active {
+  background-color: #fffbeb;
+  border-color: #fed7aa;
+}
+
+.mobile-tasks-day .add-task-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #404040 100%);
+  color: white;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-tasks-day .add-task-button:hover {
+  background: linear-gradient(135deg, #0d0d0d 0%, #2d2d2d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-tasks-day .task-section {
+  margin-bottom: 1.5rem;
+}
+
+.mobile-tasks-day .task-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.mobile-tasks-day .task-card {
+  background: white;
+  border-radius: 0.5rem;
+  border-left: 4px solid;
+  padding: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-tasks-day .task-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-tasks-day .task-card.completed {
+  opacity: 0.6;
+}
+
+.mobile-tasks-day .task-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.mobile-tasks-day .task-checkbox {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.mobile-tasks-day .task-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-tasks-day .task-title {
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-tasks-day .task-title.completed {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+
+.mobile-tasks-day .task-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-tasks-day .task-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobile-tasks-day .task-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.mobile-tasks-day .task-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.mobile-tasks-day .task-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mobile-tasks-day .priority-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.mobile-tasks-day .context-button {
+  padding: 0.25rem;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobile-tasks-day .context-button:hover {
+  background-color: #f3f4f6;
+}
+
+.mobile-tasks-day .context-button .dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: #d1d5db;
+}
+
+/* Empty states */
+.mobile-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.mobile-empty-state .icon {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 1rem;
+  color: #d1d5db;
+}
+
+.mobile-empty-state .title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-empty-state .description {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.mobile-empty-state .action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #404040 100%);
+  color: white;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-empty-state .action-button:hover {
+  background: linear-gradient(135deg, #0d0d0d 0%, #2d2d2d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .mobile-finance-day,
+  .mobile-tasks-day {
+    padding: 0.75rem;
+  }
+  
+  .mobile-finance-day .summary-cards,
+  .mobile-tasks-day .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .mobile-finance-day .category-row,
+  .mobile-tasks-day .task-card {
+    padding: 0.5rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .mobile-finance-page,
+  .mobile-tasks-page {
+    background-color: #111827;
+  }
+  
+  .mobile-day-navigator {
+    background: #1f2937;
+    border-bottom-color: #374151;
+  }
+  
+  .mobile-finance-day .category-row,
+  .mobile-tasks-day .task-card {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .mobile-finance-day .category-name .title,
+  .mobile-tasks-day .task-title {
+    color: #f9fafb;
+  }
+  
+  .mobile-finance-day .category-name .subtitle,
+  .mobile-tasks-day .task-description {
+    color: #9ca3af;
+  }
+}
+

@@ -4,6 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        primary: {
+          DEFAULT: '#1a1a1a',
+          foreground: '#ffffff',
+        },
         base: {
           bg: '#0B0F14',
           card: 'rgba(255,255,255,0.06)'
