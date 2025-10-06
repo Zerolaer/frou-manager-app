@@ -12,7 +12,7 @@ type Props = {
   canAddSub?: boolean
 }
 
-export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onDelete, canAddSub = true }: Props) {
+export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onDelete, canAddSub }: Props) {
   const handleItemClick = (action: () => void) => {
     action()
     onClose()
@@ -44,7 +44,7 @@ export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onD
         Переименовать
       </div>
       
-      {canAddSub && (
+      {(canAddSub ?? true) && (
         <div
           className="ctx-item"
           onClick={() => handleItemClick(onAddSub)}

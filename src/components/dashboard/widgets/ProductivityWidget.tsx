@@ -207,10 +207,14 @@ export default function ProductivityWidget() {
                     <div className="w-full flex flex-col items-center justify-end h-full mb-2">
                       {/* Основной столбик - всегда показываем */}
                       <div
-                        className="w-full rounded-t-md transition-all duration-300 relative overflow-hidden bg-gray-200"
+                        className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
                         style={{ 
                           height: `${Math.max(totalHeight, minHeight)}%`,
-                          minHeight: '8px'
+                          minHeight: '8px',
+                          animation: 'growColumn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                          animationDelay: `${index * 0.12}s`,
+                          transformOrigin: 'bottom',
+                          transform: 'scaleY(0)'
                         }}
                       >
                         {/* Оранжевая часть - выполненные задачи */}

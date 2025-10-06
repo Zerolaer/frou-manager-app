@@ -1,4 +1,4 @@
-import { lazy, ComponentType } from 'react'
+import React, { lazy, ComponentType } from 'react'
 import { isDevelopment } from '@/lib/env'
 
 // Lazy load components with error boundaries
@@ -131,5 +131,3 @@ export function analyzeBundleSize() {
   return () => observer.disconnect()
 }
 
-// Import React for hooks
-import React from 'react'

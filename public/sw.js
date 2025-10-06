@@ -1,14 +1,21 @@
 // Service Worker for caching static assets
-const CACHE_NAME = 'frou-manager-v1'
-const STATIC_CACHE = 'static-v1'
-const DYNAMIC_CACHE = 'dynamic-v1'
+const CACHE_VERSION = 'v2'
+const CACHE_NAME = `frou-manager-${CACHE_VERSION}`
+const STATIC_CACHE = `static-${CACHE_VERSION}`
+const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`
+const IMAGE_CACHE = `images-${CACHE_VERSION}`
+const API_CACHE = `api-${CACHE_VERSION}`
 
 // Critical resources to cache immediately
 const CRITICAL_RESOURCES = [
   '/',
-  '/src/styles.css',
-  '/src/main.tsx',
-  '/src/App.tsx'
+  '/index.html',
+  '/favicon.ico'
+]
+
+// Static assets to cache on install
+const STATIC_ASSETS = [
+  // Will be populated with built assets
 ]
 
 // Install event - cache critical resources
@@ -26,16 +33,22 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE, IMAGE_CACHE, API_CACHE]
+  
   event.waitUntil(
     caches.keys()
       .then(cacheNames => {
         return Promise.all(
           cacheNames
-            .filter(cacheName => cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE)
-            .map(cacheName => caches.delete(cacheName))
+            .filter(cacheName => !currentCaches.includes(cacheName))
+            .map(cacheName => {
+              console.log('Deleting old cache:', cacheName)
+              return caches.delete(cacheName)
+            })
         )
       })
       .then(() => {
+        console.log('Service Worker activated')
         return self.clients.claim()
       })
   )
@@ -49,46 +62,122 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return
 
-  // Skip external requests
+  // Handle Supabase API requests with network-first + cache
+  if (url.hostname.includes('supabase.co')) {
+    event.respondWith(networkFirstWithCache(request, API_CACHE, 5 * 60 * 1000))
+    return
+  }
+
+  // Skip cross-origin requests (except Supabase)
   if (url.origin !== location.origin) return
 
-  event.respondWith(
-    caches.match(request)
-      .then(response => {
-        if (response) {
-          return response
-        }
+  // Images - cache first
+  if (request.destination === 'image') {
+    event.respondWith(cacheFirstWithRefresh(request, IMAGE_CACHE))
+    return
+  }
 
-        // Clone the request
-        const fetchRequest = request.clone()
+  // JS/CSS - stale-while-revalidate
+  if (request.destination === 'script' || request.destination === 'style') {
+    event.respondWith(staleWhileRevalidate(request, STATIC_CACHE))
+    return
+  }
 
-        return fetch(fetchRequest)
-          .then(response => {
-            // Check if valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response
-            }
-
-            // Clone the response
-            const responseToCache = response.clone()
-
-            // Cache the response
-            caches.open(DYNAMIC_CACHE)
-              .then(cache => {
-                cache.put(request, responseToCache)
-              })
-
-            return response
-          })
-          .catch(() => {
-            // Return offline page for navigation requests
-            if (request.mode === 'navigate') {
-              return caches.match('/')
-            }
-          })
-      })
-  )
+  // Everything else - cache first
+  event.respondWith(cacheFirstWithRefresh(request, DYNAMIC_CACHE))
 })
+
+// Cache strategies
+async function cacheFirstWithRefresh(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+  
+  if (cached) {
+    // Return cached, but fetch fresh in background
+    fetchAndCache(request, cacheName)
+    return cached
+  }
+  
+  // Not in cache, fetch and cache
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      cache.put(request, response.clone())
+    }
+    return response
+  } catch (error) {
+    // Network failed, return offline fallback
+    if (request.mode === 'navigate') {
+      return caches.match('/')
+    }
+    throw error
+  }
+}
+
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+  
+  const fetchPromise = fetch(request).then(response => {
+    if (response.ok) {
+      cache.put(request, response.clone())
+    }
+    return response
+  })
+  
+  // Return cached immediately if available, otherwise wait for network
+  return cached || fetchPromise
+}
+
+async function networkFirstWithCache(request, cacheName, maxAge = 5 * 60 * 1000) {
+  const cache = await caches.open(cacheName)
+  
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      // Add timestamp header
+      const clonedResponse = response.clone()
+      const blob = await clonedResponse.blob()
+      const headers = new Headers(clonedResponse.headers)
+      headers.set('sw-cache-time', Date.now().toString())
+      
+      const cachedResponse = new Response(blob, {
+        status: clonedResponse.status,
+        statusText: clonedResponse.statusText,
+        headers: headers
+      })
+      
+      cache.put(request, cachedResponse)
+    }
+    return response
+  } catch (error) {
+    // Network failed, try cache
+    const cached = await cache.match(request)
+    if (cached) {
+      const cacheTime = cached.headers.get('sw-cache-time')
+      const age = cacheTime ? Date.now() - parseInt(cacheTime) : Infinity
+      
+      // Return cached if not too old
+      if (age < maxAge) {
+        console.log('Serving stale API cache:', request.url)
+        return cached
+      }
+    }
+    throw error
+  }
+}
+
+async function fetchAndCache(request, cacheName) {
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      const cache = await caches.open(cacheName)
+      cache.put(request, response.clone())
+    }
+  } catch (error) {
+    // Ignore background fetch errors
+  }
+}
 
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {

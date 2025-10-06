@@ -13,7 +13,7 @@ type Props = {
   onDelete: () => void
 }
 
-export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub = true }: Props){
+export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub }: Props){
   const itemsRef = useRef<Array<HTMLDivElement | null>>([])
   const menuRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
@@ -64,7 +64,7 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
           <Edit className="w-4 h-4" />
           Переименовать
         </div>
-        {canAddSub && (<div
+        {(canAddSub ?? true) && (<div
           ref={el => itemsRef.current[1] = el}
           className="ctx-item"
           role="menuitem"

@@ -197,7 +197,12 @@ export default function PrioritiesWidget() {
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 30}`}
-                strokeDashoffset={`${2 * Math.PI * 30 * (1 - getPercentage(priorities.low) / 100)}`}
+                strokeDashoffset={`${2 * Math.PI * 30}`}
+                style={{
+                  '--target-offset': `${2 * Math.PI * 30 * (1 - getPercentage(priorities.low) / 100)}`,
+                  animation: 'drawCircle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                  animationDelay: '0.2s'
+                } as React.CSSProperties}
               />
             </svg>
             
@@ -220,7 +225,12 @@ export default function PrioritiesWidget() {
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 38}`}
-                strokeDashoffset={`${2 * Math.PI * 38 * (1 - getPercentage(priorities.medium) / 100)}`}
+                strokeDashoffset={`${2 * Math.PI * 38}`}
+                style={{
+                  '--target-offset': `${2 * Math.PI * 38 * (1 - getPercentage(priorities.medium) / 100)}`,
+                  animation: 'drawCircle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                  animationDelay: '0.4s'
+                } as React.CSSProperties}
               />
             </svg>
             
@@ -243,7 +253,12 @@ export default function PrioritiesWidget() {
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 46}`}
-                strokeDashoffset={`${2 * Math.PI * 46 * (1 - getPercentage(priorities.high) / 100)}`}
+                strokeDashoffset={`${2 * Math.PI * 46}`}
+                style={{
+                  '--target-offset': `${2 * Math.PI * 46 * (1 - getPercentage(priorities.high) / 100)}`,
+                  animation: 'drawCircle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                  animationDelay: '0.6s'
+                } as React.CSSProperties}
               />
             </svg>
           </div>

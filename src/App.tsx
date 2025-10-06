@@ -3,6 +3,7 @@ import React, { Suspense, lazy, useState } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { ToastProvider } from './lib/toast'
 import { SkipLinks } from './components/AccessibleComponents'
+import AppPreloader from './components/AppPreloader'
 
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
@@ -29,6 +30,8 @@ export default function App(){
   const isTasks = location.pathname.toLowerCase().includes('tasks')
   const isNotes = location.pathname.toLowerCase().includes('notes')
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Supabase is now hardcoded, no need to check
 
@@ -97,11 +100,56 @@ export default function App(){
     }
   }, [location.pathname])
 
+  // Handle preloader completion
+  const handlePreloaderComplete = () => {
+    setIsLoading(false)
+    setIsInitialLoad(false)
+  }
+
+  // Show preloader only on initial load and page refresh
+  React.useEffect(() => {
+    if (isInitialLoad) {
+      // Первая загрузка - полный прелоудер
+      setIsLoading(true)
+      const timer = setTimeout(() => {
+        setIsLoading(false)
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [isInitialLoad])
+
+  // Reset loading state on page refresh (F5)
+  React.useEffect(() => {
+    const handleBeforeUnload = () => {
+      // При обновлении страницы показываем прелоудер
+      setIsInitialLoad(true)
+      setIsLoading(true)
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    // Проверяем, была ли страница обновлена
+    if (performance.navigation.type === 1) {
+      // Страница была обновлена
+      setIsInitialLoad(true)
+      setIsLoading(true)
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
+
+  // Show preloader while loading
+  if (isLoading) {
+    return <AppPreloader onComplete={handlePreloaderComplete} />
+  }
+
   return (
     <ToastProvider>
       <AppErrorBoundary>
         <SkipLinks />
-        <div className={`app-shell flex flex-col h-screen ${isFinance ? 'finance-mode' : ''} ${isTasks ? 'tasks-mode' : ''}`}>
+        <div className={`app-shell app-content flex flex-col h-screen ${isFinance ? 'finance-mode' : ''} ${isTasks ? 'tasks-mode' : ''}`}>
           <Suspense fallback={<div className="h-20 bg-white border-b border-gray-200 animate-pulse" />}>
             <SubHeader 
               currentYear={currentYear}

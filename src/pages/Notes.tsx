@@ -6,7 +6,9 @@ import FolderSidebar from '@/components/FolderSidebar';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
 import { useErrorHandler } from '@/lib/errorHandler';
-import { LoadingState, ListSkeleton } from '@/components/LoadingStates';
+import { ContentLoader, StaggeredChildren } from '@/components/ContentLoader';
+import { NotesGridSkeleton } from '@/components/skeletons/PageSkeletons';
+import { useContentTransition } from '@/hooks/useContentTransition';
 import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
@@ -15,10 +17,14 @@ import '@/notes.css';
 
 function NotesPageContent() {
   const { handleError, handleSuccess } = useErrorHandler();
-  const { executeApiCall, isLoading, retryCount } = useApiWithRetry();
+  const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
+  const { isLoading, startLoading, completeLoading, setError: setTransitionError } = useContentTransition({
+    minLoadingTime: 300
+  });
+  const [error, setError] = useState<Error | null>(null);
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -44,7 +50,6 @@ function NotesPageContent() {
         console.log('Unknown action:', action)
     }
   }
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
 
@@ -61,19 +66,22 @@ function NotesPageContent() {
   }, [])
 
   async function reload(signal?: AbortSignal) {
-    setLoading(true);
     try {
+      startLoading();
       const data = await executeApiCall(() => listNotes('', 'updated_at', activeFolder));
       if (signal?.aborted) return;
       if (data) {
         setNotes(data);
+        completeLoading(data.length > 0);
+        setError(null);
       }
-    } catch (error) {
+    } catch (err) {
       if (!signal?.aborted) {
-        handleError(error, 'Загрузка заметок');
+        const error = err instanceof Error ? err : new Error('Ошибка загрузки заметок');
+        setError(error);
+        setTransitionError(error);
+        handleError(err, 'Загрузка заметок');
       }
-    } finally {
-      if (!signal?.aborted) setLoading(false);
     }
   }
 
@@ -122,7 +130,6 @@ function NotesPageContent() {
     }
   }, [handleError, handleSuccess]);
 
-  const empty = !loading && notes.length === 0;
 
   const handleEditNote = useCallback((note: Note) => {
     setEditing(note);
@@ -133,9 +140,8 @@ function NotesPageContent() {
     setModalOpen(false);
   }, []);
 
-  // Memoized grid columns based on screen size
+  // Memoized grid columns based on screen size  
   const gridColumns = useMemo(() => {
-    // This could be enhanced with a hook to detect screen size
     return 4; // Default for 2xl screens
   }, []);
 
@@ -152,12 +158,14 @@ function NotesPageContent() {
       
       {/* Правая область: заметки */}
       <div className="notes-content">
-
-        <LoadingState
-          loading={loading}
-          empty={empty}
-          emptyMessage="Пока нет заметок"
-          loadingComponent={<ListSkeleton count={6} />}
+        <ContentLoader
+          loading={isLoading}
+          error={error}
+          empty={notes.length === 0}
+          emptyMessage="Пока нет заметок. Создайте первую заметку!"
+          skeleton={<NotesGridSkeleton />}
+          minHeight="calc(100vh - 200px)"
+          fadeIn={true}
         >
           {notes.length > 50 ? (
             <VirtualizedGrid
@@ -167,29 +175,31 @@ function NotesPageContent() {
               containerHeight={600}
               renderItem={(note, index) => (
               <NoteCard
-                key={note.id}
-                note={note}
+                key={(note as Note).id}
+                note={note as Note}
                 onEdit={handleEditNote}
                 onTogglePin={handleTogglePin}
               />
               )}
-              keyExtractor={(note) => note.id}
+              keyExtractor={(note) => (note as Note).id}
               gap={16}
               className="p-4"
             />
           ) : (
             <div className="notes-grid">
-              {notes.map((n) => (
-                <NoteCard
-                  key={n.id}
-                  note={n}
-                  onEdit={handleEditNote}
-                  onTogglePin={handleTogglePin}
-                />
-              ))}
+              <StaggeredChildren stagger={30}>
+                {notes.map((n) => (
+                  <NoteCard
+                    key={n.id}
+                    note={n}
+                    onEdit={handleEditNote}
+                    onTogglePin={handleTogglePin}
+                  />
+                ))}
+              </StaggeredChildren>
             </div>
           )}
-        </LoadingState>
+        </ContentLoader>
       </div>
 
       <NoteEditorModal

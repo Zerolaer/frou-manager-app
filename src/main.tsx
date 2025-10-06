@@ -2,12 +2,19 @@ import React, { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './styles.css'
+import './preloader.css'
 import App from './App'
 import { LazyPages } from './utils/codeSplitting'
 import { supabase } from './lib/supabaseClient'
 
-import { preloadCriticalResources, analyzeBundleSize } from './utils/performance'
+import { preloadCriticalResources, analyzeBundleSize, registerServiceWorker } from './utils/performance'
 import { isDevelopment } from './lib/env'
+import { clearQueryCache } from './hooks/useSupabaseQuery'
+import { indexedDBCache } from './lib/indexedDbCache'
+import { cacheMonitor } from './lib/cacheMonitor'
+
+// Register service worker for caching
+registerServiceWorker()
 
 // Preload critical resources
 preloadCriticalResources()
@@ -15,6 +22,45 @@ preloadCriticalResources()
 // Analyze bundle size in development
 if (isDevelopment()) {
   setTimeout(analyzeBundleSize, 2000)
+}
+
+// Expose cache utilities globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).__cache = {
+    // Clear all caches
+    clearAll: async () => {
+      clearQueryCache()
+      const cacheNames = await caches.keys()
+      await Promise.all(cacheNames.map(name => caches.delete(name)))
+      console.log('✅ All caches cleared')
+    },
+    // Clear query cache only
+    clearQueries: () => {
+      clearQueryCache()
+      console.log('✅ Query cache cleared')
+    },
+    // Clear IndexedDB only
+    clearDB: async () => {
+      await indexedDBCache.clear()
+      console.log('✅ IndexedDB cleared')
+    },
+    // Show cache stats
+    stats: () => {
+      cacheMonitor.logReport()
+    },
+    // Show all cache keys
+    keys: async () => {
+      const cacheNames = await caches.keys()
+      console.log('Cache Names:', cacheNames)
+      for (const name of cacheNames) {
+        const cache = await caches.open(name)
+        const keys = await cache.keys()
+        console.log(`${name}:`, keys.map(k => k.url))
+      }
+    }
+  }
+  
+  console.log('💡 Cache utilities available: __cache.clearAll(), __cache.stats(), __cache.keys()')
 }
 
 // Loading component for lazy routes
@@ -101,11 +147,7 @@ const router = createBrowserRouter([
       },
     ]
   },
-], {
-  future: {
-    v7_startTransition: true
-  }
-})
+])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

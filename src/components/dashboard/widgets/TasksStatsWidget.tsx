@@ -368,8 +368,14 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-1.5">
                     <div
-                      className={`h-1.5 rounded-full ${color} transition-all duration-300`}
-                      style={{ width: `${Math.max(project.percentage, 2)}%` }}
+                      className={`h-1.5 rounded-full ${color}`}
+                      style={{ 
+                        width: `${Math.max(project.percentage, 2)}%`,
+                        animation: 'growBar 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                        animationDelay: `${index * 0.15}s`,
+                        transformOrigin: 'left',
+                        transform: 'scaleX(0)'
+                      }}
                     ></div>
                   </div>
                 </div>

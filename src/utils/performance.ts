@@ -1,4 +1,5 @@
 // Performance utilities
+import React from 'react'
 import { isDevelopment } from '@/lib/env'
 
 // Debounce function for search and other frequent operations
@@ -138,27 +139,54 @@ export function analyzeBundleSize() {
 export function preloadCriticalResources() {
   if (typeof window === 'undefined') return
 
-  // Preload critical routes
+  // Preconnect to Supabase for faster API calls
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  if (supabaseUrl) {
+    const preconnect = document.createElement('link')
+    preconnect.rel = 'preconnect'
+    preconnect.href = new URL(supabaseUrl).origin
+    preconnect.crossOrigin = 'anonymous'
+    document.head.appendChild(preconnect)
+
+    const dnsPrefetch = document.createElement('link')
+    dnsPrefetch.rel = 'dns-prefetch'
+    dnsPrefetch.href = new URL(supabaseUrl).origin
+    document.head.appendChild(dnsPrefetch)
+  }
+
+  // Prefetch critical routes on idle
   const criticalRoutes = ['/finance', '/tasks', '/goals', '/notes']
   
-  criticalRoutes.forEach(route => {
-    const link = document.createElement('link')
-    link.rel = 'prefetch'
-    link.href = route
-    document.head.appendChild(link)
-  })
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      criticalRoutes.forEach(route => {
+        const link = document.createElement('link')
+        link.rel = 'prefetch'
+        link.href = route
+        document.head.appendChild(link)
+      })
+    })
+  } else {
+    setTimeout(() => {
+      criticalRoutes.forEach(route => {
+        const link = document.createElement('link')
+        link.rel = 'prefetch'
+        link.href = route
+        document.head.appendChild(link)
+      })
+    }, 1000)
+  }
 
-  // Preload critical images
-  const criticalImages = [
-    // Add critical image paths here
-  ]
-  
-  criticalImages.forEach(src => {
-    const link = document.createElement('link')
-    link.rel = 'preload'
-    link.href = src
-    link.as = 'image'
-    document.head.appendChild(link)
+  // Preload fonts if any
+  const fonts = document.querySelectorAll('link[rel="stylesheet"]')
+  fonts.forEach((font) => {
+    if (font.getAttribute('href')?.includes('fonts')) {
+      const preload = document.createElement('link')
+      preload.rel = 'preload'
+      preload.href = font.getAttribute('href')!
+      preload.as = 'style'
+      document.head.appendChild(preload)
+    }
   })
 }
 
@@ -177,6 +205,4 @@ export function registerServiceWorker() {
   })
 }
 
-// Import React for hooks
-import React from 'react'
 

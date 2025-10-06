@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { indexedDBCache } from '@/lib/indexedDbCache'
+import { cacheMonitor } from '@/lib/cacheMonitor'
 
 interface QueryOptions {
   enabled?: boolean
   refetchOnMount?: boolean
   staleTime?: number
   cacheTime?: number
+  persist?: boolean // Enable IndexedDB persistence
 }
 
 interface QueryResult<T> {
@@ -16,8 +19,9 @@ interface QueryResult<T> {
   invalidate: () => void
 }
 
-// Simple in-memory cache
+// Simple in-memory cache (L1)
 const queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>()
+// IndexedDB cache (L2) - handled by indexedDBCache
 
 export function useSupabaseQuery<T>(
   queryKey: string,
@@ -28,7 +32,8 @@ export function useSupabaseQuery<T>(
     enabled = true,
     refetchOnMount = true,
     staleTime = 5 * 60 * 1000, // 5 minutes
-    cacheTime = 10 * 60 * 1000 // 10 minutes
+    cacheTime = 30 * 60 * 1000, // 30 minutes (increased)
+    persist = true // Enable persistence by default
   } = options
 
   const [data, setData] = useState<T | null>(null)
@@ -46,15 +51,39 @@ export function useSupabaseQuery<T>(
     try {
       setError(null)
 
-      // Check cache first
-      const cached = queryCache.get(queryKey)
+      // L1 cache: Check in-memory first
+      let cached = queryCache.get(queryKey)
+      
+      if (cached) {
+        cacheMonitor.recordHit('memory')
+      } else {
+        cacheMonitor.recordMiss('memory')
+      }
+      
+      // L2 cache: Check IndexedDB if not in memory and persist enabled
+      if (!cached && persist) {
+        const dbEntry = await indexedDBCache.get(queryKey)
+        if (dbEntry) {
+          cacheMonitor.recordHit('indexeddb')
+          cached = {
+            data: dbEntry.data,
+            timestamp: dbEntry.timestamp,
+            ttl: dbEntry.ttl
+          }
+          // Restore to memory cache
+          queryCache.set(queryKey, cached)
+        } else {
+          cacheMonitor.recordMiss('indexeddb')
+        }
+      }
+
       if (cached && !isStale(cached.timestamp) && !force) {
         setData(cached.data)
         setLoading(false)
         return
       }
 
-      // If we have stale data, show it while fetching
+      // If we have stale data, show it while fetching (stale-while-revalidate)
       if (cached && isStale(cached.timestamp) && !force) {
         setData(cached.data)
         setLoading(false)
@@ -71,12 +100,18 @@ export function useSupabaseQuery<T>(
         throw new Error(result.error.message || 'Query failed')
       }
 
-      // Update cache
-      queryCache.set(queryKey, {
+      // Update both caches
+      const cacheEntry = {
         data: result.data,
         timestamp: Date.now(),
         ttl: cacheTime
-      })
+      }
+      
+      queryCache.set(queryKey, cacheEntry)
+      
+      if (persist) {
+        indexedDBCache.set(queryKey, result.data, cacheTime).catch(console.error)
+      }
 
       setData(result.data)
       setLoading(false)
@@ -87,7 +122,7 @@ export function useSupabaseQuery<T>(
       setError(error)
       setLoading(false)
     }
-  }, [queryKey, queryFn, enabled, isStale, cacheTime])
+  }, [queryKey, queryFn, enabled, isStale, cacheTime, persist])
 
   const refetch = useCallback(() => {
     return executeQuery(true)
@@ -95,6 +130,7 @@ export function useSupabaseQuery<T>(
 
   const invalidate = useCallback(() => {
     queryCache.delete(queryKey)
+    indexedDBCache.delete(queryKey).catch(console.error)
   }, [queryKey])
 
   useEffect(() => {
@@ -145,6 +181,7 @@ export function useSupabaseMutation<T, V = any>(
       if (options.invalidateQueries) {
         options.invalidateQueries.forEach(key => {
           queryCache.delete(key)
+          indexedDBCache.delete(key).catch(console.error)
         })
       }
 
@@ -177,6 +214,7 @@ export function useSupabaseMutation<T, V = any>(
 // Utility to clear all cache
 export function clearQueryCache() {
   queryCache.clear()
+  indexedDBCache.clear().catch(console.error)
 }
 
 // Utility to get cache stats

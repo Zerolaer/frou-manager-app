@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { MoreVertical } from "lucide-react";
-import { TableSkeleton } from '@/components/Skeleton'
+import { FinanceTableSkeleton } from '@/components/skeletons/PageSkeletons'
+import { FadeIn } from '@/components/ContentLoader'
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
@@ -453,7 +454,13 @@ export default function Finance(){
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel) }
   }, [])
 
-  if (loading) return <div className="p-4"><TableSkeleton rows={10} /></div>
+  if (loading) return (
+    <div className="p-4">
+      <FadeIn duration={200}>
+        <FinanceTableSkeleton />
+      </FadeIn>
+    </div>
+  )
 
   const isCurrentYear = year === currentYear
   const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)

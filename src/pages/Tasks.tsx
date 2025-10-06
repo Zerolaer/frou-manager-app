@@ -9,6 +9,7 @@ import ModernTaskModal from '@/components/ModernTaskModal'
 import TaskAddModal from '@/components/TaskAddModal'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
+import { FadeIn } from '@/components/ContentLoader'
 import '@/tasks.css'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
@@ -632,38 +633,88 @@ const projectColorById = useMemo(() => {
 
   // tasks for the week of active project
   const [tasks, setTasks] = useState<Record<string, TaskItem[]>>({})
-  useEffect(() => {
-    if (!uid || !activeProject) { setTasks({});
+  // Track last active project to clear cache on project switch
+  const lastActiveProject = useRef(activeProject)
   
-
-
- return; }
-    const q = supabase.from('tasks_items')
-      .select('id,project_id,title,description,date,position,priority,tag,todos,status')
-      .gte('date', format(start, 'yyyy-MM-dd'))
-      .lte('date', format(end,   'yyyy-MM-dd'))
-      .order('date',     { ascending:true })
-      .order('position', { ascending:true });
-      const query = (activeProject===TASK_PROJECT_ALL) ? q : q.eq('project_id', activeProject);
-      query.then(({ data }) => {
-        const map: Record<string, TaskItem[]> = {}
-        ;(data || []).forEach((t: { id: string; project_id: string; title: string; description?: string; date: string; position: number; priority?: string; tag?: string; todos?: Todo[]; status?: string }) => {
-          const key = t.date as string
-          ;(map[key] ||= []).push({ 
-            id: t.id, 
-            project_id: t.project_id, 
-            title: t.title, 
-            description: t.description, 
-            date: t.date, 
-            position: t.position, 
-            priority: t.priority, 
-            tag: t.tag, 
-            todos: (t.todos||[]), 
-            status: (t as { status?: string }).status || TASK_STATUSES.OPEN 
-          })
+  useEffect(() => {
+    if (!uid || !activeProject) { 
+      setTasks({})
+      return
+    }
+    
+    // Clear all tasks when switching projects
+    if (lastActiveProject.current !== activeProject) {
+      setTasks({})
+      lastActiveProject.current = activeProject
+    }
+    
+    let cancelled = false
+    
+    const fetchTasks = async () => {
+      const startDate = format(start, 'yyyy-MM-dd')
+      const endDate = format(end, 'yyyy-MM-dd')
+      
+      const q = supabase.from('tasks_items')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date',     { ascending:true })
+        .order('position', { ascending:true })
+      
+      const query = (activeProject===TASK_PROJECT_ALL) ? q : q.eq('project_id', activeProject)
+      const { data, error } = await query
+      
+      if (cancelled) return
+      
+      if (error) {
+        console.error('Error fetching tasks:', error)
+        return
+      }
+      
+      const map: Record<string, TaskItem[]> = {}
+      ;(data || []).forEach((t: { id: string; project_id: string; title: string; description?: string; date: string; position: number; priority?: string; tag?: string; todos?: Todo[]; status?: string }) => {
+        const key = t.date as string
+        ;(map[key] ||= []).push({ 
+          id: t.id, 
+          project_id: t.project_id, 
+          title: t.title, 
+          description: t.description, 
+          date: t.date, 
+          position: t.position, 
+          priority: t.priority, 
+          tag: t.tag, 
+          todos: (t.todos||[]), 
+          status: (t as { status?: string }).status || TASK_STATUSES.OPEN 
         })
-        setTasks(map)
       })
+      
+      // Update state with new data for this week's date range
+      setTasks(prev => {
+        const next = { ...prev }
+        
+        // First, clear all dates in the current week range (to remove stale data)
+        const currentWeekDates: string[] = []
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start)
+          d.setDate(d.getDate() + i)
+          const dateKey = format(d, 'yyyy-MM-dd')
+          currentWeekDates.push(dateKey)
+        }
+        
+        // Set all current week dates to what we got from DB (or empty array if not in map)
+        currentWeekDates.forEach(dateKey => {
+          next[dateKey] = map[dateKey] || []
+        })
+        
+        return next
+      })
+    }
+    
+    fetchTasks()
+    
+    return () => {
+      cancelled = true
+    }
   }, [uid, activeProject, start, end])
 
 // context menu state for task cards
@@ -942,13 +993,13 @@ const projectColorById = useMemo(() => {
             />
           </div>
 
-          {days.map(d => {
+          {days.map((d, dayIndex) => {
             const key = format(d, 'yyyy-MM-dd')
             return (
               <div 
-                data-day-key={key}
-                className={`day-col ${([0,6].includes(new Date(d).getDay()) ? "is-weekend" : "")} ${key===todayKey ? "is-today" : ""}`} 
                 key={key}
+                data-day-key={key}
+                className={`day-col ${([0,6].includes(new Date(d).getDay()) ? "is-weekend" : "")} ${key===todayKey ? "is-today" : ""}`}
               >
                 <div className="day-head">
                   <span>{format(d,'EEE, d MMM', { locale: ru })}</span>

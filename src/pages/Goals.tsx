@@ -5,18 +5,22 @@ import GoalModal from '@/components/goals/GoalModal'
 import GoalsStats from '@/components/goals/GoalsStats'
 import { listGoals, createGoal, updateGoal, deleteGoal, completeGoal, type Goal, type GoalUpsert } from '@/features/goals/api'
 import { useErrorHandler } from '@/lib/errorHandler'
-import { LoadingState, ListSkeleton } from '@/components/LoadingStates'
-import { VirtualizedList } from '@/components/VirtualizedList'
+import { ContentLoader, StaggeredChildren } from '@/components/ContentLoader'
+import { GoalsListSkeleton } from '@/components/skeletons/PageSkeletons'
+import { useContentTransition } from '@/hooks/useContentTransition'
 import { PageErrorBoundary } from '@/components/ErrorBoundaries'
 
 function GoalsPageContent(){
   const { handleError, handleSuccess } = useErrorHandler()
   const [items, setItems] = useState<Goal[]>([])
-  const [loading, setLoading] = useState(true)
+  const { isLoading, startLoading, completeLoading, setError: setTransitionError } = useContentTransition({
+    minLoadingTime: 300
+  })
   const [modalOpen, setModalOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
   const [query, setQuery] = useState('')
+  const [error, setError] = useState<Error | null>(null)
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -51,30 +55,34 @@ function GoalsPageContent(){
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    
+    const loadGoals = async () => {
       try {
-        setLoading(true)
+        startLoading()
         const data = await listGoals()
         
         if (!cancelled) {
           setItems(data || [])
+          completeLoading(data && data.length > 0)
+          setError(null)
         }
-      } catch (error) {
+      } catch (err) {
         if (!cancelled) {
-          handleError(error, 'Загрузка целей')
+          const error = err instanceof Error ? err : new Error('Ошибка загрузки целей')
+          setError(error)
+          setTransitionError(error)
+          handleError(err, 'Загрузка целей')
           setItems([])
         }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
       }
-    })()
+    }
+    
+    loadGoals()
     
     return () => { 
       cancelled = true 
     }
-  }, []) // Пустой массив зависимостей - выполняется только один раз
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -145,20 +153,29 @@ function GoalsPageContent(){
         <input className="input w-full max-w-md" placeholder="Поиск по целям…" value={query} onChange={e => setQuery(e.target.value)} />
       </div>
 
-      {loading ? (
-        <ListSkeleton count={6} />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(g => (
-            <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
-          ))}
-          {filtered.length === 0 && !loading && (
-            <div className="col-span-full text-center text-gray-500 py-8">
-              {query ? 'Ничего не найдено' : 'Цели не найдены. Создайте первую цель!'}
-            </div>
-          )}
-        </div>
-      )}
+      <ContentLoader
+        loading={isLoading}
+        error={error}
+        empty={filtered.length === 0 && !query}
+        emptyMessage="Цели не найдены. Создайте первую цель!"
+        skeleton={<GoalsListSkeleton />}
+        minHeight="600px"
+        fadeIn={true}
+      >
+        {filtered.length === 0 && query ? (
+          <div className="text-center text-gray-500 py-8">
+            Ничего не найдено
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StaggeredChildren stagger={40}>
+              {filtered.map(g => (
+                <GoalCard key={g.id} goal={g} onEdit={onEdit} onDelete={onDelete} onComplete={onComplete} />
+              ))}
+            </StaggeredChildren>
+          </div>
+        )}
+      </ContentLoader>
 
       <GoalModal open={modalOpen} initial={editing} onClose={() => setModalOpen(false)} onSave={onSave} />
       <GoalsStats open={statsOpen} onClose={() => setStatsOpen(false)} goals={items} />
