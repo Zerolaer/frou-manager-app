@@ -24,5 +24,15 @@ export function useSupabaseAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  return { user, loading, userId: user?.id ?? null }
+  const signOut = async () => {
+    await supabase.auth.signOut()
+  }
+
+  return { 
+    user, 
+    loading, 
+    userId: user?.id ?? null,
+    email: user?.email ?? null,
+    signOut
+  }
 }

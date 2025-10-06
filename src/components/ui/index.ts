@@ -2,4 +2,4 @@
 export { default as Modal } from './Modal'
 export * from './ModalSystem'
 export * from './ModalForm'
-export { default as Button } from './Button'
+export { Button, buttonVariants } from './button'

@@ -1,3 +1,5 @@
+import React from 'react'
+
 // Theme system and dark mode utilities
 
 export interface Theme {
@@ -294,9 +296,6 @@ class ThemeManager {
     return this.currentTheme.dark
   }
 
-  getSystemPreference(): 'light' | 'dark' {
-    return this.systemPreference
-  }
 }
 
 // Global theme manager instance
@@ -460,6 +459,4 @@ export const DarkModeToggle: React.FC<{
   )
 }
 
-// Import React
-import React from 'react'
 

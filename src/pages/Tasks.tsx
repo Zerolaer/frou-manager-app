@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format, addDays, subDays } from 'date-fns'
-import ru from 'date-fns/locale/ru'
+import { ru } from 'date-fns/locale/ru'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
 import ModernTaskModal from '@/components/ModernTaskModal'
