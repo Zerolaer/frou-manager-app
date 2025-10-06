@@ -43,16 +43,19 @@ export function TasksToday() {
       {loading ? <div className="text-sm text-gray-500">Загрузка…</div> :
        err ? <div className="text-sm text-red-600">Ошибка: {err}</div> :
        tasks.length === 0 ? <div className="text-sm text-gray-500">На сегодня нет задач.</div> :
-       <ul className="space-y-2">{tasks.map(t => (
-         <li key={t.id} className="flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50">
-           <div className="w-5 h-5 shrink-0 rounded border border-gray-300 bg-white" />
-           <div className="flex-1">
-             <div className="text-sm">{t.title}</div>
-             <div className="text-xs text-gray-500">{t.due ? `Срок: ${new Date(t.due).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}` : ''}</div>
-           </div>
-           <a className="btn" href={`/tasks`}>Открыть</a>
-         </li>
-       ))}</ul>}
+       <ul className="space-y-2">{tasks.map(t => {
+         const isCompleted = t.status === 'closed'
+         return (
+           <li key={t.id} className={`flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50 ${isCompleted ? 'opacity-30' : ''}`}>
+             <div className="w-5 h-5 shrink-0 rounded border border-gray-300 bg-white" />
+             <div className="flex-1">
+               <div className="text-sm text-black">{t.title}</div>
+               <div className="text-xs text-gray-500">{t.due ? `Срок: ${new Date(t.due).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}` : ''}</div>
+             </div>
+             <a className="btn" href={`/tasks`}>Открыть</a>
+           </li>
+         )
+       })}</ul>}
     </div>
   );
 }

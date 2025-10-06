@@ -43,16 +43,29 @@ export default function MobileTasksDay({
     return project?.color || '#e5e7eb'
   }
 
-  const getPriorityIcon = (priority?: string) => {
+  const getPriorityText = (priority?: string) => {
     switch (priority) {
       case TASK_PRIORITIES.HIGH:
-        return <Flag className="w-3 h-3 text-red-500" />
+        return "High"
       case TASK_PRIORITIES.MEDIUM:
-        return <Flag className="w-3 h-3 text-yellow-500" />
+        return "Medium"
       case TASK_PRIORITIES.LOW:
-        return <Flag className="w-3 h-3 text-green-500" />
+        return "Low"
       default:
         return null
+    }
+  }
+
+  const getPriorityColor = (priority: string): { background: string, text: string } => {
+    switch (priority) {
+      case TASK_PRIORITIES.HIGH:
+        return { background: '#fee2e2', text: '#dc2626' } // красный
+      case TASK_PRIORITIES.MEDIUM:
+        return { background: '#fed7aa', text: '#ea580c' } // оранжевый
+      case TASK_PRIORITIES.LOW:
+        return { background: '#dcfce7', text: '#16a34a' } // зеленый
+      default:
+        return { background: '#f3f4f6', text: '#6b7280' } // серый по умолчанию
     }
   }
 
@@ -65,7 +78,7 @@ export default function MobileTasksDay({
     return (
       <div
         key={task.id}
-        className={`bg-white rounded-lg border-l-4 p-4 shadow-sm ${
+        className={`bg-white rounded-lg border-l-4 p-4 shadow-sm group ${
           isCompleted ? 'opacity-60' : ''
         }`}
         style={{ borderLeftColor: projectColor }}
@@ -90,23 +103,37 @@ export default function MobileTasksDay({
           {/* Task content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                {task.title}
-              </h3>
-              
-              {/* Priority and context menu */}
-              <div className="flex items-center gap-1">
-                {getPriorityIcon(task.priority)}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onContextMenu(e, task)
-                  }}
-                  className="p-1 rounded hover:bg-gray-100"
-                >
-                  <div className="w-4 h-4 rounded-full bg-gray-300" />
-                </button>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {getPriorityText(task.priority) && (
+                  <span 
+                    className="text-xs font-medium px-2 py-1 rounded-full flex-shrink-0"
+                    style={{
+                      backgroundColor: getPriorityColor(task.priority).background,
+                      color: getPriorityColor(task.priority).text
+                    }}
+                  >
+                    {getPriorityText(task.priority)}
+                  </span>
+                )}
+                <h3 className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} flex-1 min-w-0`}>
+                  {task.title}
+                </h3>
               </div>
+              
+              {/* Context menu button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onContextMenu(e, task)
+                }}
+                className="p-1 rounded hover:bg-gray-100 flex-shrink-0 opacity-0 group-hover:opacity-100"
+              >
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
+                </div>
+              </button>
             </div>
 
             {/* Description */}
@@ -120,7 +147,13 @@ export default function MobileTasksDay({
             <div className="flex items-center gap-3 mt-2">
               {/* Tag */}
               {task.tag && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span 
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor: `${task.projectColor || '#6b7280'}20`,
+                    color: task.projectColor || '#6b7280'
+                  }}
+                >
                   {task.tag}
                 </span>
               )}

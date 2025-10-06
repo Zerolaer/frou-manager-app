@@ -7,12 +7,13 @@ import { LazyPages } from './utils/codeSplitting'
 import { supabase } from './lib/supabaseClient'
 
 import { preloadCriticalResources, analyzeBundleSize } from './utils/performance'
+import { isDevelopment } from './lib/env'
 
 // Preload critical resources
 preloadCriticalResources()
 
 // Analyze bundle size in development
-if (process.env.NODE_ENV === 'development') {
+if (isDevelopment()) {
   setTimeout(analyzeBundleSize, 2000)
 }
 

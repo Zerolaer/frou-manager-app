@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { isDevelopment } from '@/lib/env'
 
 interface PerformanceMetrics {
   renderTime: number
@@ -17,7 +18,7 @@ export function usePerformanceMonitor(
   componentName: string,
   options: PerformanceOptions = {}
 ) {
-  const { enabled = process.env.NODE_ENV === 'development', logThreshold = 16, maxEntries = 100 } = options
+  const { enabled = isDevelopment(), logThreshold = 16, maxEntries = 100 } = options
   const renderStartRef = useRef<number>()
   const metricsRef = useRef<PerformanceMetrics[]>([])
 
@@ -125,7 +126,7 @@ export function useAsyncPerformance() {
 // Hook for monitoring bundle size and loading performance
 export function useBundleAnalyzer() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return
+    if (!isDevelopment()) return
 
     // Monitor resource loading
     const observer = new PerformanceObserver((list) => {
@@ -169,7 +170,7 @@ export function useMemoryLeakDetector(componentName: string) {
   const refsRef = useRef<Set<WeakRef<any>>>(new Set())
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return
+    if (!isDevelopment()) return
 
     const interval = setInterval(() => {
       const refs = refsRef.current
@@ -199,7 +200,7 @@ export function useMemoryLeakDetector(componentName: string) {
   }, [componentName])
 
   const trackRef = useCallback((obj: any) => {
-    if (process.env.NODE_ENV !== 'development') return
+    if (!isDevelopment()) return
     refsRef.current.add(new WeakRef(obj))
   }, [])
 

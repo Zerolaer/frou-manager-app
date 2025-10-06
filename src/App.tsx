@@ -27,6 +27,7 @@ export default function App(){
   const location = useLocation()
   const isFinance = location.pathname.toLowerCase().includes('finance')
   const isTasks = location.pathname.toLowerCase().includes('tasks')
+  const isNotes = location.pathname.toLowerCase().includes('notes')
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
 
   // Supabase is now hardcoded, no need to check
@@ -56,6 +57,46 @@ export default function App(){
     }
   }, [isTasks])
 
+  // Apply finance-mode class to body
+  React.useEffect(() => {
+    if (isFinance) {
+      document.body.classList.add('finance-mode')
+    } else {
+      document.body.classList.remove('finance-mode')
+    }
+    
+    return () => {
+      document.body.classList.remove('finance-mode')
+    }
+  }, [isFinance])
+
+  // Apply notes-mode class to body
+  React.useEffect(() => {
+    if (isNotes) {
+      document.body.classList.add('notes-mode')
+    } else {
+      document.body.classList.remove('notes-mode')
+    }
+    
+    return () => {
+      document.body.classList.remove('notes-mode')
+    }
+  }, [isNotes])
+
+  // Apply home-mode class to body
+  React.useEffect(() => {
+    const isHome = location.pathname === '/'
+    if (isHome) {
+      document.body.classList.add('home-mode')
+    } else {
+      document.body.classList.remove('home-mode')
+    }
+    
+    return () => {
+      document.body.classList.remove('home-mode')
+    }
+  }, [location.pathname])
+
   return (
     <ToastProvider>
       <AppErrorBoundary>
@@ -77,7 +118,7 @@ export default function App(){
           </Suspense>
           <main 
             id="main-content"
-            className={`flex-1 content-scroll p-4 bg-gray-100`}
+            className={`flex-1 content-scroll ${location.pathname === '/' ? 'p-0' : 'p-4'} bg-gray-100`}
             role="main"
             aria-label="Основное содержимое"
           >

@@ -41,6 +41,41 @@ function darkenColor(hex: string, factor: number = 0.3): string {
   return `#${toHex(darkenedR)}${toHex(darkenedG)}${toHex(darkenedB)}`
 }
 
+// Пастельная палитра цветов как на картинке
+const PASTEL_COLORS = [
+  { light: '#e8eaf6', dark: '#3f51b5' }, // светло-фиолетовый
+  { light: '#fff3e0', dark: '#ff9800' }, // светло-оранжевый  
+  { light: '#e8f5e8', dark: '#4caf50' }, // светло-зеленый
+  { light: '#e3f2fd', dark: '#2196f3' }, // светло-голубой
+  { light: '#fce4ec', dark: '#e91e63' }, // светло-розовый
+  { light: '#f3e5f5', dark: '#9c27b0' }, // светло-фиолетовый
+  { light: '#e0f2f1', dark: '#009688' }, // светло-бирюзовый
+  { light: '#fff8e1', dark: '#ffc107' }, // светло-желтый
+]
+
+// Функция для получения пастельного цвета на основе ID задачи
+function getPastelColor(taskId: string): { light: string, dark: string } {
+  const hash = taskId.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0)
+    return a & a
+  }, 0)
+  return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length]
+}
+
+// Функция для получения цвета приоритета
+function getPriorityColor(priority: string): { background: string, text: string } {
+  switch (priority) {
+    case TASK_PRIORITIES.HIGH:
+      return { background: '#fee2e2', text: '#dc2626' } // красный
+    case TASK_PRIORITIES.MEDIUM:
+      return { background: '#fed7aa', text: '#ea580c' } // оранжевый
+    case TASK_PRIORITIES.LOW:
+      return { background: '#dcfce7', text: '#16a34a' } // зеленый
+    default:
+      return { background: '#f3f4f6', text: '#6b7280' } // серый по умолчанию
+  }
+}
+
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
   x, y, task, dayKey, onClose, onDuplicate, onToggleStatus, onDelete 
@@ -954,14 +989,11 @@ const projectColorById = useMemo(() => {
                         
                         {/* Оригинальная карточка задачи */}
                         <div
-                          className={`task-card ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
+                          className={`task-card group ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
                           style={{
-                            backgroundColor: projectColorById[t.project_id]
-                              ? hexToRgba(projectColorById[t.project_id], 0.1)
-                              : undefined,
-                            border: projectColorById[t.project_id]
-                              ? `1px solid ${hexToRgba(projectColorById[t.project_id], 0.5)}`
-                              : "1px solid #e5e7eb",
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
                             ...(isDragged ? {
                               position: 'fixed',
                               left: dragPosition.x - 10, // Небольшое смещение от курсора
@@ -1017,35 +1049,66 @@ const projectColorById = useMemo(() => {
                           }}
                         >
                           <div className="text-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              {t.priority && (
-                                <span className={`inline-block rounded-full w-2.5 h-2.5 ${
-                                  t.priority === TASK_PRIORITIES.HIGH ? "bg-red-500" :
-                                  t.priority === TASK_PRIORITIES.LOW ? "bg-green-500" :
-                                  t.priority === TASK_PRIORITIES.MEDIUM ? "bg-yellow-500" : "bg-gray-300"
-                                }`} />
-                              )}
-                              {t.tag && (
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {t.priority && (
                                   <span 
-                                    className="px-2 py-0.5 text-xs rounded-full leading-none uppercase text-white"
+                                    className={`text-xs font-medium px-2 py-1 rounded-full ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
-                                      backgroundColor: (t as any).project_id && projectColorById[(t as any).project_id] 
-                                        ? darkenColor(projectColorById[(t as any).project_id], 0.4) 
-                                        : '#6b7280'
+                                      backgroundColor: getPriorityColor(t.priority).background,
+                                      color: getPriorityColor(t.priority).text
                                     }}
                                   >
-                                    {t.tag}
+                                    {t.priority === TASK_PRIORITIES.HIGH ? "High" :
+                                     t.priority === TASK_PRIORITIES.LOW ? "Low" :
+                                     t.priority === TASK_PRIORITIES.MEDIUM ? "Medium" : ""}
                                   </span>
                                 )}
                               </div>
+                              <button
+                                className="p-1 rounded hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const menuWidth = 160
+                                  const menuHeight = 120
+                                  const { x, y } = clampToViewport(
+                                    e.clientX + 10, // Right of cursor
+                                    e.clientY - 10, // Above cursor
+                                    menuWidth,
+                                    menuHeight
+                                  );
+                                  setCtx({
+                                    open: true,
+                                    x: e.clientX + 10, // Right of cursor
+                                    y: e.clientY - 10, // Above cursor
+                                    task: t,
+                                    dayKey: key,
+                                  });
+                                }}
+                              >
+                                <div className="w-4 h-4 flex items-center justify-center">
+                                  <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                  </svg>
+                                </div>
+                              </button>
+                            </div>
                               <div className="leading-tight clamp-2 break-words mb-2">
-                                <span className="font-medium text-gray-400">{t.title}</span>
+                                <span 
+                                  className="font-medium text-black text-sm"
+                                >
+                                  {t.title}
+                                </span>
                               </div>
-                              <div className="text-xs text-gray-400 mt-0">
+                              
+                              {/* Саб-задачи - убраны */}
+                              
+                              <div className="text-xs text-gray-500 mt-1">
                                 {(() => {
                                   const total = Array.isArray(t.todos) ? t.todos.length : 0;
                                   const done = Array.isArray(t.todos) ? t.todos.filter((x: Todo) => x.done).length : 0;
-                                  return `${done}/${total}`;
+                                  return total > 0 ? `${done}/${total}` : '';
                                 })()}
                               </div>
                             </div>

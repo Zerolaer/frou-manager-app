@@ -1,4 +1,5 @@
 // Monitoring and logging utilities
+import { isDevelopment, isProduction } from './env'
 
 export interface LogEntry {
   timestamp: number
@@ -86,7 +87,7 @@ class Logger {
     }
 
     // Send to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevelopment()) {
       const consoleMethod = level.toLowerCase() as keyof Console
       if (typeof console[consoleMethod] === 'function') {
         (console[consoleMethod] as Function)(`[${level}] ${message}`, context)
@@ -94,7 +95,7 @@ class Logger {
     }
 
     // Send to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction()) {
       this.sendToExternalService(logEntry)
     }
   }
@@ -326,7 +327,7 @@ class ErrorReporter {
     logger.error('Error reported', report)
 
     // Send to external service
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction()) {
       this.sendToExternalService(report)
     }
   }
@@ -376,7 +377,7 @@ class UserAnalytics {
     logger.info(`Analytics event: ${event}`, properties)
 
     // Send to external service
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction()) {
       this.sendToExternalService(eventData)
     }
   }

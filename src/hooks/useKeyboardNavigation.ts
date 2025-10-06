@@ -223,9 +223,9 @@ export function useSkipLinks() {
 
 // Hook for accessible announcements
 export function useAnnouncements() {
-  const announce = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
+  const announce = useCallback(async (message: string, priority: 'polite' | 'assertive' = 'polite') => {
     // Use the announcement function from accessibility utils
-    const { announceToScreenReader } = require('@/lib/accessibility')
+    const { announceToScreenReader } = await import('@/lib/accessibility')
     announceToScreenReader(message, priority)
   }, [])
 

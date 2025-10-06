@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { AccessibleButton } from './AccessibleComponents'
 import { announceToScreenReader } from '@/lib/accessibility'
+import { isProduction } from '../lib/env'
 
 // Hook for detecting online/offline status
 export function useOnlineStatus() {
@@ -252,7 +253,7 @@ export const OfflineQueueIndicator: React.FC = () => {
 
 // Service Worker registration
 export function registerServiceWorker() {
-  if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  if ('serviceWorker' in navigator && isProduction()) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {

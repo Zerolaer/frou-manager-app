@@ -21,7 +21,6 @@
 .mobile-day-navigator {
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 /* Mobile finance day */
@@ -193,13 +192,11 @@
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-tasks-day .add-task-button:hover {
   background: linear-gradient(135deg, #0d0d0d 0%, #2d2d2d 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .mobile-tasks-day .task-section {
@@ -216,16 +213,14 @@
 .mobile-tasks-day .task-card {
   background: white;
   border-radius: 0.5rem;
-  border-left: 4px solid;
+  border: 1px solid #e5e7eb;
   padding: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   margin-bottom: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .mobile-tasks-day .task-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-tasks-day .task-card.completed {
@@ -358,13 +353,30 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-empty-state .action-button:hover {
   background: linear-gradient(135deg, #0d0d0d 0%, #2d2d2d 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Mobile task card styles */
+.mobile-task-card {
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  color: #000000; /* Черный текст для всех задач */
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.mobile-task-card:hover {
+}
+
+/* Completed/closed mobile task styles - только 30% opacity */
+.mobile-task-card.is-closed {
+  opacity: 0.3;
 }
 
 /* Responsive adjustments */

@@ -22,6 +22,8 @@ export type TaskItem = {
   priority?: string;
   tag?: string;
   todos?: Todo[];
+  status?: 'open' | 'closed';
+  project_id?: string | null;
 }
 
 export type MoneyType = 'income' | 'expense';

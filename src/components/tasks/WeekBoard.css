@@ -14,9 +14,9 @@
   --week-board-card-min-height: 6rem; /* 96px */
   --week-board-gap: 1rem; /* 16px */
   --week-board-border-radius: 0.5rem; /* 8px */
-  --week-board-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --week-board-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --week-board-shadow-drag: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --week-board-shadow: none;
+  --week-board-shadow-hover: none;
+  --week-board-shadow-drag: none;
   
   /* Colors */
   --week-board-bg: #ffffff;

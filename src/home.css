@@ -1,0 +1,78 @@
+/* ===== Home layout (no page vertical scroll) ===== */
+.home-page {
+  height: calc(100vh - 172px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) - Bottom padding (24px) - Extra margin (4px) */
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Disable page scroll when on home page */
+body.home-mode {
+  overflow: hidden !important;
+  height: 100vh;
+}
+
+/* Force reset any inherited overflow styles */
+body.home-mode #main-content {
+  overflow: visible !important;
+}
+
+body.home-mode html {
+  overflow: visible !important;
+}
+
+/* Home grid container - directly in home-page like tasks */
+.home-grid {
+  height: 100%;
+  padding: 16px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.home-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.home-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.home-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.home-grid::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .home-page {
+    height: calc(100vh - 172px);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+  }
+  
+  .home-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+/* BentoCard styling for home page */
+.home-grid .bento-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+

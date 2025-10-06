@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { isDevelopment } from '@/lib/env'
 
 interface PerformanceMetrics {
   fcp: number | null // First Contentful Paint
@@ -21,7 +22,7 @@ export function PerformanceMonitor() {
 
   useEffect(() => {
     // Only run in development
-    if (process.env.NODE_ENV !== 'development') return
+    if (!isDevelopment()) return
 
     const measurePerformance = () => {
       const newMetrics: PerformanceMetrics = {

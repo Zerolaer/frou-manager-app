@@ -1,6 +1,6 @@
 /* ===== Notes layout (no page vertical scroll) ===== */
 .notes-page {
-  height: calc(100vh - 144px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) */
+  height: calc(100vh - 172px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) - Bottom padding (24px) - Extra margin (4px) */
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 16px;
@@ -10,8 +10,17 @@
 
 /* Disable page scroll when on notes page */
 body.notes-mode {
-  overflow: hidden;
+  overflow: hidden !important;
   height: 100vh;
+}
+
+/* Force reset any inherited overflow styles */
+body.notes-mode #main-content {
+  overflow: visible !important;
+}
+
+body.notes-mode html {
+  overflow: visible !important;
 }
 
 .notes-page.is-collapsed {
@@ -21,7 +30,7 @@ body.notes-mode {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .notes-page {
-    height: calc(100vh - 144px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) */
+    height: calc(100vh - 172px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) - Bottom padding (24px) - Extra margin (4px) */
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     gap: 12px;

@@ -47,9 +47,18 @@ body {
   line-height: 1.5; /* 21px для 14px текста */
 }
 
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Shell & content */
 .app-shell { min-height: 100vh; width: 100vw; }
-.content-scroll { flex: 1; overflow-y: auto; }
+.content-scroll { flex: 1; }
 .card { @apply bg-white rounded-xl p-4 shadow border border-gray-200; }
 
 /* --- Sidebar --- */
@@ -122,20 +131,20 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* --- Finance scroll fix (final) --- */
 /* Скроллим ВНЕШНИЙ контейнер контента только на странице Финансы */
-.content-scroll.finance-page{
-  height: calc(100vh - 144px); /* Header (64px) + SubHeader (80px) = 144px */
-  overflow: auto !important;
+.finance-mode .content-scroll{
+  height: calc(100vh - 172px); /* Header (64px) + SubHeader (80px) + Bottom padding (24px) + Extra margin (4px) = 172px */
+  overflow-y: auto !important;
 }
 
 /* Никаких overflow:visible для Finance — иначе скролл прячется */
 
 /* Скрыть скроллбар на странице Финансов, но оставить прокрутку */
-.content-scroll.finance-page {
+.finance-mode .content-scroll {
   scrollbar-width: none;      /* Firefox */
   -ms-overflow-style: none;   /* IE/Edge */
 }
 
-.content-scroll.finance-page::-webkit-scrollbar {
+.finance-mode .content-scroll::-webkit-scrollbar {
   display: none;              /* Chrome, Safari, Opera */
 }
 
@@ -191,7 +200,7 @@ html, body, #root {
 .modal-body{ padding:16px 20px; }
 
 /* Tasks page */
-.tasks-wrap{ display:grid; grid-template-columns: 280px 1fr; gap:24px; height:calc(100vh - 84px); overflow:hidden; }
+.tasks-wrap{ display:grid; grid-template-columns: 280px 1fr; gap:24px; height:calc(100vh - 108px); overflow:hidden; }
 .tasks-projects{ height:100%; overflow:auto; }
 .tasks-board{ height:100%; display:flex; flex-direction:column; overflow:hidden; }
 .tasks-header{ display:flex; align-items:center; justify-content:center; gap:12px; padding:0 8px 12px; }

@@ -83,13 +83,7 @@ function NotesPageContent() {
     return () => ctl.abort();
   }, [activeFolder]);
 
-  // Add body class for notes layout
-  useEffect(() => {
-    document.body.classList.add('notes-mode');
-    return () => {
-      document.body.classList.remove('notes-mode');
-    };
-  }, []);
+  // Body class is now managed in App.tsx
 
   const handleSave = useCallback(async (draft: Partial<Note>, id?: string) => {
     try {

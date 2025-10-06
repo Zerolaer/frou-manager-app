@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { AccessibleButton } from './AccessibleComponents'
 import { ARIA_LABELS } from '@/lib/accessibility'
+import { isDevelopment } from '../lib/env'
 
 interface PageErrorBoundaryState {
   hasError: boolean
@@ -101,7 +102,7 @@ export class PageErrorBoundary extends Component<PageErrorBoundaryProps, PageErr
               </div>
             </div>
 
-            {process.env.NODE_ENV === 'development' && error && (
+            {isDevelopment() && error && (
               <details className="mb-4">
                 <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
                   Детали ошибки (только в режиме разработки)

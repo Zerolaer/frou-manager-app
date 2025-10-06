@@ -1,4 +1,5 @@
 import { lazy, ComponentType } from 'react'
+import { isDevelopment } from '@/lib/env'
 
 // Lazy load components with error boundaries
 export function createLazyComponent<T extends ComponentType<any>>(
@@ -110,7 +111,7 @@ export function useLazyLoadingState() {
 
 // Bundle analyzer utility
 export function analyzeBundleSize() {
-  if (process.env.NODE_ENV !== 'development') return
+  if (!isDevelopment()) return
 
   // Monitor bundle size
   const observer = new PerformanceObserver((list) => {

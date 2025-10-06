@@ -11,7 +11,11 @@ export function FinanceMonth() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [modeUsed, setModeUsed] = useState<string>('');
-  const monthLabel = useMemo(() => new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(new Date()), []);
+  const monthLabel = useMemo(() => new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(start), [start]);
+  
+  // Получаем правильные год и месяц из start даты
+  const currentYear = start.getFullYear();
+  const currentMonth = start.getMonth() + 1; // getMonth() возвращает 0-11, нам нужно 1-12
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -23,7 +27,7 @@ export function FinanceMonth() {
         let catsQuery = supabase.from('finance_categories').select('id,type');
         if (f.userId && uid) catsQuery = catsQuery.eq(f.userId, uid);
         
-        let entriesQuery = supabase.from(f.table).select(`${f.amount},category_id`).eq('year', new Date().getFullYear()).eq('month', new Date().getMonth() + 1).eq('included', true);
+        let entriesQuery = supabase.from(f.table).select(`${f.amount},category_id`).eq('year', currentYear).eq('month', currentMonth).eq('included', true);
         if (f.userId && uid) entriesQuery = entriesQuery.eq(f.userId, uid);
         
         const [catsRes, entriesRes] = await Promise.all([
@@ -46,7 +50,7 @@ export function FinanceMonth() {
         const fields = [f.amount, f.boolField!].filter(Boolean).join(',');
         let q = supabase.from(f.table).select(fields);
         if (f.userId && uid) q = q.eq(f.userId, uid);
-        q = q.eq('year', new Date().getFullYear()).eq('month', new Date().getMonth() + 1).eq('included', true);
+        q = q.eq('year', currentYear).eq('month', currentMonth).eq('included', true);
         const { data, error } = await q.limit(2000);
         if (error) throw error;
         return (data as any[]).map(r => ({ amount: Number(r[f.amount] ?? 0), flag: Boolean(r[f.boolField!]) }));
@@ -54,7 +58,7 @@ export function FinanceMonth() {
       async function runSignMode() {
         let q = supabase.from(f.table).select(f.amount);
         if (f.userId && uid) q = q.eq(f.userId, uid);
-        q = q.eq('year', new Date().getFullYear()).eq('month', new Date().getMonth() + 1).eq('included', true);
+        q = q.eq('year', currentYear).eq('month', currentMonth).eq('included', true);
         const { data, error } = await q.limit(2000);
         if (error) throw error;
         return (data as any[]).map(r => ({ amount: Number(r[f.amount] ?? 0) }));

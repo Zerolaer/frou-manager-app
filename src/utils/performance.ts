@@ -1,4 +1,5 @@
 // Performance utilities
+import { isDevelopment } from '@/lib/env'
 
 // Debounce function for search and other frequent operations
 export function debounce<T extends (...args: any[]) => any>(
@@ -101,7 +102,7 @@ export function useMemoryMonitor() {
 
 // Bundle size analyzer
 export function analyzeBundleSize() {
-  if (process.env.NODE_ENV !== 'development') return
+  if (!isDevelopment()) return
 
   const resources = performance.getEntriesByType('resource')
   const jsFiles = resources.filter((resource: any) => 

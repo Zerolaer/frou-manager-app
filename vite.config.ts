@@ -11,6 +11,8 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env': JSON.stringify(process.env)
   },
   build: {
     target: 'esnext',
@@ -29,5 +31,10 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js', 'lucide-react', 'date-fns']
+  },
+  server: {
+    fs: {
+      strict: false
+    }
   }
 })
