@@ -88,13 +88,14 @@ body.finance-mode,
   min-height: 28px;
   min-width: 0;
   overflow: hidden;
+  cursor: default;
 }
 .finance-row:last-child .finance-cell { border-bottom: 0; }
 .finance-cell:last-child { border-right: 0; }
 
-.cell-head { padding: 6px; font-size: 13px; color: #334155; }
+.cell-head { padding: 6px; font-size: 13px; color: #334155; cursor: default; }
 .finance-head { background: #f8fafc; }
-.head-current { background: #e8f2ff !important; color: #1e40af; }
+.head-current { background: #f3f4f6 !important; color: #111827; font-weight: 600; }
 
 .finance-section {
   grid-column: 1 / -1;
@@ -116,7 +117,11 @@ body.finance-mode,
   padding: 6px;
   font-size: 13px;
   font-weight: 600;
-  cursor: default;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.cell-name:hover {
+  background: #f3f4f6;
 }
 
 /* Collapse button styles */
@@ -171,11 +176,12 @@ body.finance-mode,
   background: transparent;
   font-size: 13px;
   transition: background 120ms, border-color 120ms, box-shadow 120ms;
+  cursor: pointer;
 }
 .cell-btn:hover { background: #f3f4f6; border-color: #e5e7eb; }
 .cell-btn:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 
-.col-current { background: #f0f7ff; }
+.col-current { background: #f3f4f6; }
 
 /* Align right helper for summary */
 .cell-right { text-align: right; }
@@ -193,23 +199,59 @@ body.finance-mode,
 }
 
 
-/* === APPEND: hover for clickable data cells only === */
-.finance-grid .finance-row .finance-cell:not(.cell-name):hover .cell-btn{
+/* === APPEND: hover for clickable data cells === */
+.finance-grid .finance-row .finance-cell:hover .cell-btn{
   background:#f8fafc;
   border-color:#e5e7eb;
 }
 
 
 /* Disable hover for non-clickable header/cat cells */
-.finance-grid > .finance-cell:hover .cell-head { background: transparent; }
-.finance-grid .cell-name:hover { background: transparent; }
+.finance-grid > .finance-cell .cell-head { 
+  cursor: default;
+  pointer-events: none;
+}
+.finance-grid > .finance-cell:hover .cell-head { 
+  background: transparent !important; 
+}
+.finance-grid > .finance-cell.finance-head,
+.finance-grid > .finance-cell.head-current {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+.finance-grid > .finance-cell.finance-head:hover,
+.finance-grid > .finance-cell.head-current:hover {
+  background: #f8fafc !important;
+}
+.finance-grid > .finance-cell.head-current:hover {
+  background: #f3f4f6 !important;
+}
+.finance-grid > .finance-cell.finance-head *,
+.finance-grid > .finance-cell.head-current * {
+  cursor: default !important;
+  pointer-events: none !important;
+}
 
+/* Disable hover ONLY for header row cells (direct children of .finance-grid, not in .finance-row) */
+/* These are: "Категория", "Показатель", month headers, "Доходы", "Расходы", "Баланс" labels */
+.finance-grid > .finance-cell:not(.finance-row) .cell-head {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+.finance-grid > .finance-row.contents .finance-cell:first-child .cell-head {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+.finance-grid > .finance-row.contents .finance-cell:has(.cell-head) {
+  cursor: default !important;
+  pointer-events: none !important;
+}
 
 /* Show "three dots" menu only on hover over category name cell */
 .finance-grid .cell-name .menu-btn {
   opacity: 0;
-  pointer-events: none;
   transition: opacity 120ms ease;
+  cursor: pointer;
 }
 .finance-grid .cell-name:hover .menu-btn,
 .finance-grid .cell-name:focus-within .menu-btn {
@@ -229,28 +271,31 @@ body.finance-mode,
   position: fixed; 
   z-index: 51;
   background: #fff;  
-  box-shadow: 0 12px 30px rgba(0,0,0,.12);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   min-width: 180px; 
-  padding: 6px;
-  border-radius: 8px;
+  padding: 8px;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
 }
 
 .ctx-item { 
-  padding: 8px 10px; 
-  font-size: 13px;  
+  padding: 12px 8px !important; 
+  font-size: 15px !important;
+  font-weight: 500;
   cursor: pointer; 
-  border-radius: 4px;
-  transition: background-color 120ms ease;
+  transition: background-color 200ms ease, color 200ms ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  border-radius: 0 !important;
 }
 
 .ctx-item:hover { 
   background: #f3f4f6; 
 }
 
-.ctx-item:active { 
-  background: #e5e7eb; 
+.ctx-item:active,
+.ctx-item[data-active="true"] { 
+  background: #000000 !important;
+  color: #ffffff !important;
 }

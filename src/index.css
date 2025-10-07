@@ -1,4 +1,6 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,23 +67,17 @@
   transition: min-height 0.3s ease;
 }
 
-/* Respect user motion preferences */
+/* Temporarily disabled to test animations
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  
-  .animate-shimmer,
   .animate-spin,
+  .animate-bounce,
+  .animate-ping,
+  .animate-shimmer,
   .animate-pulse {
     animation: none !important;
   }
 }
+*/
 
 /* Smooth transitions for theme changes */
 .theme-transition {

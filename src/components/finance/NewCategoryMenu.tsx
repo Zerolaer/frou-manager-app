@@ -19,80 +19,54 @@ export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onD
   }
 
   return (
-    <ContextMenu x={x} y={y} onClose={onClose}>
+    <>
+      <div className="fixed inset-0 z-10" onClick={onClose} />
       <div
-        className="ctx-item"
+      className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto p-2 w-60"
+      style={{ 
+        left: x, 
+        top: y,
+        position: 'fixed',
+        zIndex: 1000
+      }}
+      role="menu"
+      aria-label="Действия с категорией"
+    >
+      <button
+        className="w-full px-2 py-3 text-left transition-colors text-gray-700 hover:bg-gray-100"
+        style={{ fontSize: '15px' }}
         onClick={() => handleItemClick(onRename)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 12px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#374151',
-          transition: 'background-color 0.15s'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#f3f4f6'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent'
-        }}
       >
-        <Edit className="w-4 h-4" />
-        Переименовать
-      </div>
+        <div className="flex items-center gap-2">
+          <Edit className="w-4 h-4" />
+          Переименовать
+        </div>
+      </button>
       
       {(canAddSub ?? true) && (
-        <div
-          className="ctx-item"
+        <button
+          className="w-full px-2 py-3 text-left transition-colors text-gray-700 hover:bg-gray-100"
+          style={{ fontSize: '15px' }}
           onClick={() => handleItemClick(onAddSub)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 12px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#374151',
-            transition: 'background-color 0.15s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
         >
-          <Plus className="w-4 h-4" />
-          Подкатегория
-        </div>
+          <div className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Подкатегория
+          </div>
+        </button>
       )}
       
-      <div
-        className="ctx-item"
+      <button
+        className="w-full px-2 py-3 text-left transition-colors text-gray-700 hover:bg-gray-100"
+        style={{ fontSize: '15px', color: '#dc2626' }}
         onClick={() => handleItemClick(onDelete)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 12px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#dc2626',
-          transition: 'background-color 0.15s'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#fef2f2'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent'
-        }}
       >
-        <Trash2 className="w-4 h-4" />
-        Удалить
+        <div className="flex items-center gap-2">
+          <Trash2 className="w-4 h-4" />
+          Удалить
+        </div>
+      </button>
       </div>
-    </ContextMenu>
+    </>
   )
 }

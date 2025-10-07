@@ -23,6 +23,7 @@ export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, e
       onClose={onClose} 
       title={`Годовая статистика — ${year}`} 
       size="lg"
+      variant="side"
       footer={
         <ModalFooter
           right={

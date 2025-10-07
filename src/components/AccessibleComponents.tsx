@@ -176,13 +176,13 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onClick={handleOverlayClick}
       role="presentation"
     >
       <div 
         ref={modalRef}
-        className={`bg-white rounded-xl shadow-xl w-full ${sizeClasses}`}
+        className={`bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-gray-200 w-full ${sizeClasses}`}
         role={ARIA_ROLES.DIALOG}
         aria-modal="true"
         aria-label={ariaLabel || title}

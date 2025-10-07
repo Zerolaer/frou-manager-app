@@ -38,10 +38,10 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
 
   return (
     <>
-      <div className="ctx-backdrop" onClick={onClose} onContextMenu={(e)=>e.preventDefault()} aria-hidden />
+      <div className="fixed inset-0 z-10" onClick={onClose} />
       <div
         ref={menuRef}
-        className="ctx-menu"
+        className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto p-2 w-60"
         style={{ 
           left: pos.x, 
           top: pos.y,
@@ -50,45 +50,63 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
         }}
         role="menu"
         aria-label="Действия с категорией"
-        onContextMenu={(e)=>e.preventDefault()}
       >
-        <div
+        <button
           ref={el => itemsRef.current[0] = el}
-          className="ctx-item"
+          className={`w-full px-2 py-3 text-left transition-colors ${
+            active === 0 
+              ? 'bg-black text-white font-medium' 
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+          style={{ fontSize: '15px' }}
           role="menuitem"
           tabIndex={0}
           onClick={onRename}
           aria-label="Переименовать категорию"
-          data-active={active===0}
         >
-          <Edit className="w-4 h-4" />
-          Переименовать
-        </div>
-        {(canAddSub ?? true) && (<div
-          ref={el => itemsRef.current[1] = el}
-          className="ctx-item"
-          role="menuitem"
-          tabIndex={0}
-          onClick={onAddSub}
-          aria-label="Добавить подкатегорию"
-          data-active={active===1}
-        >
-          <Plus className="w-4 h-4" />
-          Подкатегория
-        </div>)}
-        <div
+          <div className="flex items-center gap-2">
+            <Edit className="w-4 h-4" />
+            Переименовать
+          </div>
+        </button>
+        {(canAddSub ?? true) && (
+          <button
+            ref={el => itemsRef.current[1] = el}
+            className={`w-full px-2 py-3 text-left transition-colors ${
+              active === 1 
+                ? 'bg-black text-white font-medium' 
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            style={{ fontSize: '15px' }}
+            role="menuitem"
+            tabIndex={0}
+            onClick={onAddSub}
+            aria-label="Добавить подкатегорию"
+          >
+            <div className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Подкатегория
+            </div>
+          </button>
+        )}
+        <button
           ref={el => itemsRef.current[2] = el}
-          className="ctx-item"
+          className={`w-full px-2 py-3 text-left transition-colors ${
+            active === 2 
+              ? 'bg-black text-white font-medium' 
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+          style={{ fontSize: '15px', color: '#dc2626' }}
           role="menuitem"
           tabIndex={0}
           onClick={onDelete}
           aria-label="Удалить категорию"
-          data-active={active===2}
-          style={{color:'#dc2626'}}
         >
-          <Trash2 className="w-4 h-4" />
-          Удалить
-        </div>
+          <div className="flex items-center gap-2">
+            <Trash2 className="w-4 h-4" />
+            Удалить
+          </div>
+        </button>
       </div>
     </>
   )

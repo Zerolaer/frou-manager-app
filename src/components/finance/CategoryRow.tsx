@@ -41,7 +41,7 @@ export default function CategoryRow({
   return (
     <div className="finance-row contents">
       <div className={'finance-cell ' + (ctxCatHighlight === row.id ? 'ctx-active' : '')}>
-        <div className="cell-head cell-name flex items-center gap-2">
+        <div className="cell-name flex items-center gap-2">
           <button
             className="shrink-0 rounded-md hover:bg-gray-100 w-6 h-6 flex items-center justify-center"
             onClick={() => onToggleCollapse(row.id)}

@@ -5,6 +5,7 @@ import './styles.css'
 import App from './App'
 import { LazyPages } from './utils/codeSplitting'
 import { supabase } from './lib/supabaseClient'
+import AppLoader from './components/AppLoader'
 
 import { preloadCriticalResources, analyzeBundleSize, registerServiceWorker } from './utils/performance'
 import { isDevelopment } from './lib/env'
@@ -76,7 +77,7 @@ const Protected = ({children}: {children: React.ReactNode}) => {
     });
     return () => { sub.subscription.unsubscribe() }
   }, []);
-  if (loading) return <div className="p-8 text-gray-300">Загрузка...</div>;
+  if (loading) return <AppLoader />;
   return authed ? <React.Fragment>{children}</React.Fragment> : <Navigate to="/login" replace />;
 }
 

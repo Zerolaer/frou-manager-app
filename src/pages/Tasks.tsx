@@ -602,6 +602,10 @@ export default function Tasks(){
   // projects
   const [projects, setProjects] = useState<Project[]>([])
   const [activeProject, setActiveProject] = useState<string|null>(TASK_PROJECT_ALL)
+  const [projectsCollapsed, setProjectsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('frovo_projects_collapsed')
+    return saved === 'true'
+  })
 const projectColorById = useMemo(() => {
     const m: Record<string, string|undefined> = {}
     for (const p of projects) m[p.id] = p.color || undefined
@@ -976,9 +980,19 @@ const projectColorById = useMemo(() => {
 
   // Desktop view - original week grid layout
   return (
-    <div className="tasks-page">
+    <div className={`tasks-page ${projectsCollapsed ? 'is-collapsed' : ''}`}>
       {/* Левая область: панель проектов */}
-      <ProjectSidebar userId={uid!} activeId={activeProject} onChange={setActiveProject} />
+      <ProjectSidebar 
+        userId={uid!} 
+        activeId={activeProject} 
+        onChange={setActiveProject}
+        collapsed={projectsCollapsed}
+        onToggleCollapse={() => {
+          const newState = !projectsCollapsed
+          setProjectsCollapsed(newState)
+          localStorage.setItem('frovo_projects_collapsed', String(newState))
+        }}
+      />
       
 
       {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}

@@ -103,14 +103,14 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onClick={() => setIsVisible(false)}
       role="dialog"
       aria-modal="true"
       aria-labelledby="shortcuts-title"
     >
       <div 
-        className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden ring-1 ring-black/10 border border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b">

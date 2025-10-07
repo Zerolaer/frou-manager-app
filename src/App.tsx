@@ -1,8 +1,9 @@
-import { Outlet, useLocation } from 'react-router-dom'
-import React, { Suspense, lazy, useState } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { ToastProvider } from './lib/toast'
 import { SkipLinks } from './components/AccessibleComponents'
+import AppLoader from './components/AppLoader'
 
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
@@ -12,22 +13,52 @@ const Toaster = lazy(() => import('./components/Toaster'))
 const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
 const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 
-// Loading component
-const AppLoading = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
-    <span className="ml-3 text-gray-600">Загрузка приложения...</span>
-  </div>
-)
+// Loading component (unused, replaced by AppLoader)
+// const AppLoading = () => (
+//   <div className="flex items-center justify-center min-h-screen">
+//     <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+//     <span className="ml-3 text-gray-600">Загрузка приложения...</span>
+//   </div>
+// )
 
 // Configuration is now hardcoded
 
 export default function App(){
   const location = useLocation()
+  const navigate = useNavigate()
   const isFinance = location.pathname.toLowerCase().includes('finance')
   const isTasks = location.pathname.toLowerCase().includes('tasks')
   const isNotes = location.pathname.toLowerCase().includes('notes')
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
+
+  // Redirect to last visited page on app load (only once)
+  useEffect(() => {
+    const hasRedirected = sessionStorage.getItem('frovo_redirected')
+    
+    if (!hasRedirected && location.pathname === '/') {
+      const isFirstVisit = !localStorage.getItem('frovo_has_visited')
+      const lastPage = localStorage.getItem('frovo_last_page')
+      
+      if (isFirstVisit) {
+        // First visit - stay on home and mark as visited
+        localStorage.setItem('frovo_has_visited', 'true')
+        localStorage.setItem('frovo_last_page', '/')
+      } else if (lastPage && lastPage !== '/') {
+        // Returning user - redirect to last page (only once per session)
+        navigate(lastPage, { replace: true })
+      }
+      
+      // Mark that we've done the initial redirect check
+      sessionStorage.setItem('frovo_redirected', 'true')
+    }
+  }, []) // Run only once on mount
+
+  // Save current page to localStorage when navigating
+  useEffect(() => {
+    if (location.pathname !== '/login') {
+      localStorage.setItem('frovo_last_page', location.pathname)
+    }
+  }, [location.pathname])
 
   // Supabase is now hardcoded, no need to check
 
@@ -102,7 +133,7 @@ export default function App(){
       <AppErrorBoundary>
         <SkipLinks />
         <div className={`app-shell app-content flex flex-col h-screen overflow-x-hidden ${isFinance ? 'finance-mode' : ''} ${isTasks ? 'tasks-mode' : ''}`}>
-          <Suspense fallback={null}>
+          <Suspense fallback={<AppLoader />}>
             <Header 
               currentYear={currentYear}
               onAction={(action) => {
@@ -119,11 +150,11 @@ export default function App(){
           <main 
             id="main-content"
             className="flex-1 p-4 overflow-x-hidden flex flex-col"
-            style={{ backgroundColor: '#F2F2F2' }}
+            style={{ backgroundColor: '#F2F7FA' }}
             role="main"
             aria-label="Основное содержимое"
           >
-            <Suspense fallback={null}>
+            <Suspense fallback={<AppLoader />}>
               <Outlet />
             </Suspense>
           </main>

@@ -1,6 +1,6 @@
 /* ===== Notes layout (no page vertical scroll) ===== */
 .notes-page {
-  height: calc(100vh - 172px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) - Bottom padding (24px) - Extra margin (4px) */
+  height: calc(100vh - 96px); /* 100vh - Header (80px) - padding (16px) */
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 16px;
@@ -8,19 +8,18 @@
   overflow: hidden;
 }
 
+.notes-page.is-collapsed {
+  grid-template-columns: 72px 1fr;
+}
+
 /* Disable page scroll when on notes page */
 body.notes-mode {
   overflow: hidden !important;
-  height: 100vh;
 }
 
-/* Force reset any inherited overflow styles */
 body.notes-mode #main-content {
-  overflow: visible !important;
-}
-
-body.notes-mode html {
-  overflow: visible !important;
+  overflow: hidden !important;
+  padding-bottom: 16px !important;
 }
 
 .notes-page.is-collapsed {
@@ -49,11 +48,18 @@ body.notes-mode html {
 /* Notes sidebar styling */
 .notes-folders {
   background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid #E9F2F6;
+  padding: 12px;
   overflow-y: auto;
+  overflow: visible;
   height: 100%;
+}
+
+.notes-page.is-collapsed .notes-folders .space-y-1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .notes-folders::-webkit-scrollbar {
@@ -77,8 +83,8 @@ body.notes-mode html {
 /* Notes content area */
 .notes-content {
   background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  border: 1px solid #E9F2F6;
   padding: 16px;
   overflow-y: auto;
   height: 100%;

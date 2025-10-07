@@ -74,6 +74,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       onClose={onClose}
       title="Новая задача"
       subtitle={dateLabel}
+      variant="side"
       footer={createStandardFooter(
         { 
           label: 'Добавить', 
@@ -151,7 +152,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                 placeholder="Добавить пункт" 
               />
               <button 
-                className="px-6 py-3 bg-gradient-to-br from-gray-800 to-gray-600 text-white rounded-xl hover:from-gray-900 hover:to-gray-700 disabled:opacity-50 flex items-center gap-2 transition-all duration-200 shadow-md" 
+                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2 transition-all duration-200 shadow-md" 
                 onClick={addTodo} 
                 disabled={!todoText.trim()}
               >

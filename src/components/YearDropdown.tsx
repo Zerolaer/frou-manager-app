@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import Dropdown from './ui/Dropdown'
 
 export default function YearDropdown({
   value, years, onChange,
@@ -7,35 +7,15 @@ export default function YearDropdown({
   years: number[]
   onChange: (v:number)=>void
 }){
-  const [open, setOpen] = useState(false)
-  const btnRef = useRef<HTMLButtonElement|null>(null)
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent){
-      if (!open) return
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  const options = years.map(y => ({ value: y.toString(), label: y.toString() }))
 
   return (
-    <div className="dd-wrap">
-      <button ref={btnRef} className="btn btn-outline dd-btn" onClick={()=>setOpen(v=>!v)}>{value}</button>
-      {open && <div className="dd-backdrop" onClick={()=>setOpen(false)} />}
-      {open && (
-        <div className="dd-menu">
-          {years.map(y => (
-            <div
-              key={y}
-              className={"dd-item " + (y===value ? "dd-active" : "")}
-              onClick={()=>{ onChange(y); setOpen(false) }}
-            >
-              {y}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <Dropdown
+      options={options}
+      value={value.toString()}
+      onChange={(newValue) => onChange(parseInt(newValue))}
+      placeholder="Год"
+      ariaLabel="Выбор года"
+    />
   )
 }

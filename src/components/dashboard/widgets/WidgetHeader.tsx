@@ -13,13 +13,15 @@ export default function WidgetHeader({ icon, title, subtitle, onMenuClick }: Wid
     <div className="px-6 py-4 border-b border-gray-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded-lg">
-            {icon}
+          <div className="p-2 rounded-lg" style={{ backgroundColor: '#F2F7FA' }}>
+            <div style={{ color: '#000000' }}>
+              {icon}
+            </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-0">{title}</h3>
+            <h3 className="font-semibold text-gray-900 mb-0" style={{ fontSize: '16px' }}>{title}</h3>
             {subtitle && (
-              <p className="text-sm text-gray-500">{subtitle}</p>
+              <p className="text-sm text-gray-500 mt-0 mb-0">{subtitle}</p>
             )}
           </div>
         </div>

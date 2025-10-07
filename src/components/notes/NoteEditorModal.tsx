@@ -112,8 +112,9 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
     <UnifiedModal
       open={open}
       onClose={onClose}
-      title={note ? 'Редактировать заметку' : 'Новая заметка'}
+      title={note ? 'Редактировать заметку' : 'Новая заметку'}
       size="lg"
+      variant="side"
       footer={footer}
     >
       <ModalContent>

@@ -11,9 +11,9 @@ interface PriorityData {
 }
 
 const PRIORITY_COLORS = {
-  high: '#ef4444', // red
-  medium: '#f59e0b', // yellow
-  low: '#22c55e' // green
+  high: '#000000', // black
+  medium: '#4B5563', // dark gray
+  low: '#9CA3AF' // light gray
 };
 
 const PRIORITY_LABELS = {
@@ -94,7 +94,7 @@ export default function PrioritiesWidget() {
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
-        icon={<Target className="w-5 h-5 text-purple-600" />}
+        icon={<Target className="w-5 h-5" />}
         title="Приоритеты"
         subtitle="Показывает распределение задач"
       />
@@ -102,73 +102,73 @@ export default function PrioritiesWidget() {
       <div className="flex-1 p-6 flex flex-col justify-center">
         {/* Круги в стиле Apple Watch */}
         <div className="flex items-center justify-center mb-6">
-          <div className="relative w-32 h-32">
+          <div className="relative w-40 h-40">
             {/* Низкий приоритет - внутренний круг */}
-            <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100" style={{ margin: '2px' }}>
+            <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
                 cy="50"
-                r="30"
+                r="25"
                 fill="none"
                 stroke="#e5e7eb"
-                strokeWidth="8"
+                strokeWidth="6"
               />
               <circle
                 cx="50"
                 cy="50"
-                r="30"
+                r="25"
                 fill="none"
                 stroke={PRIORITY_COLORS.low}
-                strokeWidth="8"
+                strokeWidth="6"
                 strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 30}`}
-                strokeDashoffset={`${2 * Math.PI * 30 * (1 - getPercentage(priorities.low) / 100)}`}
+                strokeDasharray={`${2 * Math.PI * 25}`}
+                strokeDashoffset={`${2 * Math.PI * 25 * (1 - getPercentage(priorities.low) / 100)}`}
               />
             </svg>
             
             {/* Средний приоритет - средний круг */}
-            <svg className="absolute top-0 left-0 w-32 h-32 transform -rotate-90" viewBox="0 0 100 100" style={{ margin: '2px' }}>
+            <svg className="absolute top-0 left-0 w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
                 cy="50"
-                r="38"
+                r="35"
                 fill="none"
                 stroke="#e5e7eb"
-                strokeWidth="8"
+                strokeWidth="6"
               />
               <circle
                 cx="50"
                 cy="50"
-                r="38"
+                r="35"
                 fill="none"
                 stroke={PRIORITY_COLORS.medium}
-                strokeWidth="8"
+                strokeWidth="6"
                 strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 38}`}
-                strokeDashoffset={`${2 * Math.PI * 38 * (1 - getPercentage(priorities.medium) / 100)}`}
+                strokeDasharray={`${2 * Math.PI * 35}`}
+                strokeDashoffset={`${2 * Math.PI * 35 * (1 - getPercentage(priorities.medium) / 100)}`}
               />
             </svg>
             
             {/* Высокий приоритет - внешний круг */}
-            <svg className="absolute top-0 left-0 w-32 h-32 transform -rotate-90" viewBox="0 0 100 100" style={{ margin: '2px' }}>
+            <svg className="absolute top-0 left-0 w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
                 cy="50"
-                r="46"
+                r="45"
                 fill="none"
                 stroke="#e5e7eb"
-                strokeWidth="8"
+                strokeWidth="6"
               />
               <circle
                 cx="50"
                 cy="50"
-                r="46"
+                r="45"
                 fill="none"
                 stroke={PRIORITY_COLORS.high}
-                strokeWidth="8"
+                strokeWidth="6"
                 strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 46}`}
-                strokeDashoffset={`${2 * Math.PI * 46 * (1 - getPercentage(priorities.high) / 100)}`}
+                strokeDasharray={`${2 * Math.PI * 45}`}
+                strokeDashoffset={`${2 * Math.PI * 45 * (1 - getPercentage(priorities.high) / 100)}`}
               />
             </svg>
           </div>

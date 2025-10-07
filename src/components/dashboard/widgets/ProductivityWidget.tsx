@@ -140,97 +140,76 @@ export default function ProductivityWidget() {
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
-        icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
+        icon={<BarChart3 className="w-5 h-5" />}
         title="Продуктивность"
         subtitle="Показывает эффективность работы"
       />
 
 
       <div className="flex-1 p-6 flex flex-col">
-        {/* Main layout: percentages on left, bars on right */}
-        <div className="flex-1 flex gap-6">
-          {/* Left side - Percentages */}
-          <div className="flex flex-col justify-center min-w-0 flex-shrink-0 w-32">
-            <div className="mb-6">
-              <div className="text-3xl font-bold text-gray-900 mb-2">
-                {averageProductivity}%
-              </div>
-              <div className="flex items-center gap-1 text-green-600 mb-2">
-                <TrendingUp className="w-5 h-5" />
-                <span className="text-base font-medium">+{averageProductivity}%</span>
-              </div>
-              <p className="text-base text-gray-600">
-                {getTotalCompleted()}/{totalTasks} задач
-              </p>
-            </div>
-            
-            {/* Busiest day info */}
-            {busiestDay.completed > 0 && (
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <span className="text-sm font-medium text-purple-900">
-                    {busiestDay.day}: {busiestDay.completed} закрыто
-                  </span>
-                </div>
-              </div>
-            )}
+        {/* Main metrics */}
+        <div className="mb-6">
+          <div className="text-3xl font-bold text-gray-900 mb-2">
+            {averageProductivity}%
           </div>
+          <div className="flex items-center gap-1 text-gray-600 mb-2">
+            <TrendingUp className="w-5 h-5" />
+            <span className="text-base font-medium">+{averageProductivity}%</span>
+          </div>
+          <p className="text-base text-gray-600">
+            {getTotalCompleted()}/{totalTasks} задач
+          </p>
+        </div>
 
-          {/* Right side - Bar chart */}
-          <div className="flex-1 flex flex-col justify-end">
-            <div className="flex items-end justify-between gap-1 h-full min-h-24">
-              {weekData.map((day, index) => {
-                // Высота столбика = общее количество задач, но минимум 1/3 от высоты с одной задачей
-                const baseHeight = maxTasks > 0 ? (1 / maxTasks) * 100 : 100; // высота для 1 задачи
-                const minHeight = baseHeight / 3; // 1/3 от высоты с одной задачей
-                const totalHeight = day.tasks > 0 ? (day.tasks / maxTasks) * 100 : minHeight;
-                // Высота оранжевой части = выполненные задачи
-                const completedHeight = day.tasks > 0 ? (day.completed / day.tasks) * totalHeight : 0;
-                const isBusiest = day.completed === busiestDay.completed && day.completed > 0;
-                
-                return (
-                  <div key={day.day} className="flex flex-col items-center flex-1 h-full">
-                    <div className="w-full flex flex-col items-center justify-end h-full mb-2">
-                      {/* Основной столбик - всегда показываем */}
-                      <div
-                        className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
-                        style={{ 
-                          height: `${Math.max(totalHeight, minHeight)}%`,
-                          minHeight: '8px'
-                        }}
-                      >
-                        {/* Оранжевая часть - выполненные задачи */}
-                        {day.completed > 0 && (
-                          <div
-                            className={`absolute bottom-0 left-0 right-0 rounded-t-md ${
-                              isBusiest
-                                ? 'bg-gradient-to-t from-orange-500 to-orange-400'
-                                : 'bg-gradient-to-t from-orange-500 to-orange-400'
-                            }`}
-                            style={{ 
-                              height: `${completedHeight}%`,
-                              minHeight: completedHeight > 0 ? '4px' : '0px'
+        {/* Bar chart */}
+        <div className="flex-1 flex flex-col justify-end">
+          <div className="flex items-end justify-between gap-1 h-full min-h-24">
+            {weekData.map((day, index) => {
+              // Высота столбика = общее количество задач, но минимум 1/3 от высоты с одной задачей
+              const baseHeight = maxTasks > 0 ? (1 / maxTasks) * 100 : 100; // высота для 1 задачи
+              const minHeight = baseHeight / 3; // 1/3 от высоты с одной задачей
+              const totalHeight = day.tasks > 0 ? (day.tasks / maxTasks) * 100 : minHeight;
+              // Высота черной части = выполненные задачи
+              const completedHeight = day.tasks > 0 ? (day.completed / day.tasks) * totalHeight : 0;
+              const isBusiest = day.completed === busiestDay.completed && day.completed > 0;
+              
+              return (
+                <div key={day.day} className="flex flex-col items-center flex-1 h-full">
+                  <div className="w-full flex flex-col items-center justify-end h-full mb-2">
+                    {/* Основной столбик - всегда показываем */}
+                    <div
+                      className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
+                      style={{ 
+                        height: `${Math.max(totalHeight, minHeight)}%`,
+                        minHeight: '8px'
+                      }}
+                    >
+                      {/* Черная часть - выполненные задачи */}
+                      {day.completed > 0 && (
+                        <div
+                          className="absolute bottom-0 left-0 right-0 rounded-t-md bg-black"
+                          style={{ 
+                            height: `${completedHeight}%`,
+                            minHeight: completedHeight > 0 ? '4px' : '0px'
+                          }}
+                        >
+                          {/* Диагональные линии для паттерна */}
+                          <div 
+                            className="absolute inset-0 opacity-20"
+                            style={{
+                              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
                             }}
-                          >
-                            {/* Диагональные линии для оранжевой части */}
-                            <div 
-                              className="absolute inset-0 opacity-20"
-                              style={{
-                                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
-                              }}
-                            ></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-600 font-medium">
-                      {day.day}
+                          ></div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="text-xs text-gray-600 font-medium">
+                    {day.day}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

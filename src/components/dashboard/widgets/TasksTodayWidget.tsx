@@ -53,10 +53,10 @@ export default function TasksTodayWidget() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50';
-      case 'medium': return 'text-orange-600 bg-orange-50';
-      case 'low': return 'text-green-600 bg-green-50';
-      case 'normal': return 'text-blue-600 bg-blue-50';
+      case 'high': return 'text-gray-900 bg-gray-100';
+      case 'medium': return 'text-gray-700 bg-gray-50';
+      case 'low': return 'text-gray-600 bg-gray-50';
+      case 'normal': return 'text-gray-600 bg-gray-50';
       default: return 'text-gray-600 bg-gray-50';
     }
   };
@@ -68,7 +68,7 @@ export default function TasksTodayWidget() {
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
-        icon={<CalendarCheck className="w-5 h-5 text-indigo-600" />}
+        icon={<CalendarCheck className="w-5 h-5" />}
         title="Задачи на сегодня"
         subtitle="Показывает задачи на сегодня"
       />
@@ -86,7 +86,7 @@ export default function TasksTodayWidget() {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-black h-2 rounded-full transition-all duration-300"
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
@@ -104,7 +104,7 @@ export default function TasksTodayWidget() {
               <div key={task.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                 <div className="flex-shrink-0">
                   {task.status === 'closed' ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-gray-900" />
                   ) : (
                     <Circle className="w-5 h-5 text-gray-400" />
                   )}

@@ -20,6 +20,10 @@ function NotesPageContent() {
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [foldersCollapsed, setFoldersCollapsed] = useState(() => {
+    const saved = localStorage.getItem('frovo_folders_collapsed')
+    return saved === 'true'
+  });
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -141,13 +145,19 @@ function NotesPageContent() {
   }, []);
 
   return (
-    <div className="notes-page">
+    <div className={`notes-page ${foldersCollapsed ? 'is-collapsed' : ''}`}>
       {/* Левая область: панель папок */}
       {userId && (
         <FolderSidebar 
           userId={userId} 
           activeId={activeFolder} 
-          onChange={setActiveFolder} 
+          onChange={setActiveFolder}
+          collapsed={foldersCollapsed}
+          onToggleCollapse={() => {
+            const newState = !foldersCollapsed
+            setFoldersCollapsed(newState)
+            localStorage.setItem('frovo_folders_collapsed', String(newState))
+          }}
         />
       )}
       

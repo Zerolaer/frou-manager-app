@@ -123,7 +123,7 @@ export default function PlannedExpensesWidget() {
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
-        icon={<CreditCard className="w-5 h-5 text-red-600" />}
+        icon={<CreditCard className="w-5 h-5" />}
         title="Запланированные траты"
         subtitle={`Расходы за ${monthLabel}`}
       />
@@ -140,7 +140,7 @@ export default function PlannedExpensesWidget() {
             expenses.map((expense) => (
               <div key={expense.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                 <div className="flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  <AlertTriangle className="w-5 h-5 text-gray-900" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
@@ -151,7 +151,7 @@ export default function PlannedExpensesWidget() {
                   </p>
                 </div>
                 <div className="flex-shrink-0">
-                  <span className="text-sm font-semibold text-orange-600">
+                  <span className="text-sm font-semibold text-gray-900">
                     {formatCurrencyEUR(expense.amount)}
                   </span>
                 </div>

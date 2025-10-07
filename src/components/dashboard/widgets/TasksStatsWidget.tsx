@@ -304,7 +304,7 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
-        icon={<CheckSquare className="w-5 h-5 text-blue-600" />}
+        icon={<CheckSquare className="w-5 h-5" />}
         title={title}
         subtitle="Показывает статистику задач"
       />
@@ -320,11 +320,11 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
           {stats.change !== 0 && (
             <>
               {isPositive ? (
-                <TrendingUp className="w-5 h-5 text-green-500" />
+                <TrendingUp className="w-5 h-5 text-gray-900" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-red-500" />
+                <TrendingDown className="w-5 h-5 text-gray-900" />
               )}
-              <span className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+              <span className="font-medium text-gray-900">
                 +{Math.abs(stats.changePercent)}%
               </span>
             </>
@@ -338,7 +338,7 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
         <div className="space-y-2">
           {projectStats.length > 0 ? (
             projectStats.map((project, index) => {
-              const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
+              const colors = ['bg-black', 'bg-gray-800', 'bg-gray-600', 'bg-gray-500', 'bg-gray-400'];
               const color = colors[index] || 'bg-gray-500';
               
               return (

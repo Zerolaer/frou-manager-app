@@ -1,5 +1,6 @@
 import React from 'react'
 import Modal from './Modal'
+import SideModal from './SideModal'
 
 // Стандартные размеры модальных окон
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -30,16 +31,16 @@ export function ModalButton({
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2'
   
   const variantClasses = {
-    primary: 'bg-gradient-to-br from-gray-800 to-gray-600 text-white hover:from-gray-900 hover:to-gray-700 focus:ring-gray-500 shadow-md',
+    primary: 'bg-black text-white hover:bg-gray-800 focus:ring-gray-500 shadow-md',
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
     ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500'
   }
   
   const sizeClasses = {
-    sm: 'h-9 px-4 text-sm',
-    md: 'h-10 px-6 py-3 text-sm',
-    lg: 'h-12 px-8 text-sm'
+    sm: 'h-9 px-4 text-sm leading-none',
+    md: 'h-10 px-6 text-sm leading-none',
+    lg: 'h-12 px-8 text-sm leading-none'
   }
   
   const disabledClasses = 'opacity-50 cursor-not-allowed'
@@ -93,8 +94,8 @@ export function ModalHeader({ title, subtitle, right }: ModalHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+        <div className="text-lg font-semibold text-gray-900 leading-none m-0">{title}</div>
+        {subtitle && <p className="mt-1 text-sm text-gray-500 leading-none">{subtitle}</p>}
       </div>
       {right && <div>{right}</div>}
     </div>
@@ -113,6 +114,7 @@ interface UnifiedModalProps {
   headerRight?: React.ReactNode
   closeOnOverlay?: boolean
   bodyClassName?: string
+  variant?: 'center' | 'side' // Новый параметр для выбора типа модалки
 }
 
 export function UnifiedModal({
@@ -125,8 +127,28 @@ export function UnifiedModal({
   footer,
   headerRight,
   closeOnOverlay = true,
-  bodyClassName
+  bodyClassName,
+  variant = 'center'
 }: UnifiedModalProps) {
+  // Для side-модалок используем SideModal
+  if (variant === 'side') {
+    return (
+      <SideModal
+        open={open}
+        onClose={onClose}
+        title={subtitle ? (
+          <div>
+            <div className="text-lg font-semibold text-gray-900 leading-none m-0">{title}</div>
+            <div className="text-sm text-gray-500 mt-1 leading-none">{subtitle}</div>
+          </div>
+        ) : title}
+        footer={footer}
+      >
+        {children}
+      </SideModal>
+    )
+  }
+
   // Маппинг размеров на внутренние размеры Modal
   const sizeMap = {
     sm: 'default',

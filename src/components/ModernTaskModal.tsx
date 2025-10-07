@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { Plus, Trash2, Calendar, Tag, Paperclip, MoreVertical } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useModalActions } from '@/components/ui/ModalSystem'
-import Modal from '@/components/ui/Modal'
+import SideModal from '@/components/ui/SideModal'
 import type { Todo, Project } from '@/types/shared'
 
 type Task = {
@@ -143,42 +143,43 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   const headerTitle = `Задача \\ ${projectName} \\ ${statusText}`
 
   return (
-    <Modal
+    <SideModal
       open={open}
       onClose={onClose}
-      title={headerTitle}
-      size="xl"
-      headerRight={
-        <div className="relative" ref={menuRef}>
-          <button
-            className="h-10 w-10 flex items-center justify-center rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Меню"
-          >
-            <MoreVertical className="w-4 h-4 text-gray-600" />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl z-10">
-              <button
-                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
-                onClick={() => {
-                  // Duplicate logic here
-                  setMenuOpen(false)
-                }}
-              >
-                Дублировать
-              </button>
-              <button
-                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                onClick={() => {
-                  deleteTask()
-                  setMenuOpen(false)
-                }}
-              >
-                Удалить
-              </button>
-            </div>
-          )}
+      title={
+        <div className="flex items-center justify-between w-full">
+          <div className="text-lg font-semibold text-gray-900">{headerTitle}</div>
+          <div className="relative" ref={menuRef}>
+            <button
+              className="h-10 w-10 flex items-center justify-center rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Меню"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-600" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl z-10">
+                <button
+                  className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
+                  onClick={() => {
+                    // Duplicate logic here
+                    setMenuOpen(false)
+                  }}
+                >
+                  Дублировать
+                </button>
+                <button
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                  onClick={() => {
+                    deleteTask()
+                    setMenuOpen(false)
+                  }}
+                >
+                  Удалить
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       }
       footer={createDangerFooter(
@@ -282,7 +283,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     <button
                       onClick={addTodo}
                       disabled={!newTodo.trim()}
-                      className="px-6 py-3 bg-gradient-to-br from-gray-800 to-gray-600 text-white rounded-xl hover:from-gray-900 hover:to-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 shadow-md"
+                      className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 shadow-md"
                     >
                       <Plus className="w-4 h-4" />
                       Добавить
@@ -424,6 +425,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
             </div>
           </div>
         </div>
-    </Modal>
+    </SideModal>
   )
 }

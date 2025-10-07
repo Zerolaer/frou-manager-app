@@ -203,7 +203,7 @@ export default function MobileTasksDay({
       {/* Add task button */}
       <button
         onClick={onAddTask}
-        className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        className="w-full flex items-center justify-center gap-2 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
       >
         <Plus className="w-5 h-5" />
         Добавить задачу
@@ -237,7 +237,7 @@ export default function MobileTasksDay({
           <p className="text-gray-500 mb-4">Добавьте первую задачу или перейдите к другому дню</p>
           <button
             onClick={onAddTask}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Добавить задачу

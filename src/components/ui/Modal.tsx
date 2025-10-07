@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
+import ModalHeader from './ModalHeader'
+import ModalFooter from './ModalFooter'
 
 type ModalProps = {
   open: boolean
@@ -88,10 +89,12 @@ export default function Modal({
     'max-w-[95vw]',
     'rounded-2xl',
     'bg-white',
-    'shadow-xl',
+    'shadow-2xl',
     'outline-none',
     'ring-1',
-    'ring-black/5',
+    'ring-black/10',
+    'border',
+    'border-gray-200',
   ].join(' ')
 
   const content = (
@@ -107,23 +110,24 @@ export default function Modal({
           tabIndex={-1}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {(title || subTitle || onClose) && (
-            <div className="flex items-center justify-between px-5 py-3 border-b">
-              <div className="flex items-center">
-                <div className="text-sm text-gray-600 font-normal leading-tight" id="modal-title">{title}</div>
-                {subTitle && <div className="ml-2 text-xs opacity-70">{subTitle}</div>}
-              </div>
-              <div className="flex items-center gap-2">
-                {headerRight && <div className="flex items-center">{headerRight}</div>}
-              </div>
-            </div>
+          {title && (
+            <ModalHeader 
+              title={
+                <div className="flex items-center">
+                  <span id="modal-title">{title}</span>
+                  {subTitle && <span className="ml-2 text-sm opacity-70">{subTitle}</span>}
+                </div>
+              } 
+              onClose={onClose}
+              rightContent={headerRight}
+            />
           )}
           <div className={bodyClassName ?? 'px-5 py-4'}>
             <div className={`w-auto ${contentClassName ?? ''} mx-auto`}>
               {children}
             </div>
           </div>
-          {footer && <div className="px-5 py-3 border-t bg-gray-50 rounded-b-2xl">{footer}</div>}
+          {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>
       </div>
     </div>

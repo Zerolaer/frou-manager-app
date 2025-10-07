@@ -34,10 +34,15 @@ export function BentoCard({ children, className = '', colSpan = 1, rowSpan = 1 }
   }[rowSpan];
 
   return (
-    <div className={`
-      bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden
-      ${colSpanClass} ${rowSpanClass} ${className}
-    `}>
+    <div 
+      className={`
+        bg-white rounded-3xl
+        ${colSpanClass} ${rowSpanClass} ${className}
+      `}
+      style={{
+        border: '1px solid #E9F2F6'
+      }}
+    >
       {children}
     </div>
   );

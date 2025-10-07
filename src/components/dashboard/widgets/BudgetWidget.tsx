@@ -164,7 +164,7 @@ export default function BudgetWidget() {
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
-        icon={<Euro className="w-5 h-5 text-blue-600" />}
+        icon={<Euro className="w-5 h-5" />}
         title="Бюджет месяца"
         subtitle="Показывает доходы и расходы"
       />
@@ -173,39 +173,39 @@ export default function BudgetWidget() {
         {/* Основные показатели */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           {/* Баланс */}
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">Баланс</div>
-            <div className={`text-lg font-bold ${budget.balance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+          <div className="bg-black rounded-lg p-3 text-center">
+            <div className="text-xs text-gray-300 mb-1">Баланс</div>
+            <div className="text-lg font-bold text-white">
               {formatCurrencyEUR(budget.balance)}
             </div>
             {budget.previousBalance !== 0 && (
-              <div className={`text-xs ${budget.balance > budget.previousBalance ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="text-xs text-gray-300">
                 {budget.balance > budget.previousBalance ? '↗' : '↘'} {Math.abs(((budget.balance - budget.previousBalance) / budget.previousBalance * 100)).toFixed(0)}%
               </div>
             )}
           </div>
 
           {/* Доходы */}
-          <div className="bg-green-50 rounded-lg p-3 text-center">
+          <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-1">Доходы</div>
-            <div className="text-lg font-bold text-green-600">
+            <div className="text-lg font-bold text-gray-900">
               {formatCurrencyEUR(budget.earned)}
             </div>
             {budget.previousEarned !== 0 && (
-              <div className={`text-xs ${budget.earned > budget.previousEarned ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="text-xs text-gray-600">
                 {budget.earned > budget.previousEarned ? '↗' : '↘'} {Math.abs(((budget.earned - budget.previousEarned) / budget.previousEarned * 100)).toFixed(0)}%
               </div>
             )}
           </div>
 
           {/* Расходы */}
-          <div className="bg-red-50 rounded-lg p-3 text-center">
+          <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-1">Расходы</div>
-            <div className="text-lg font-bold text-red-600">
+            <div className="text-lg font-bold text-gray-900">
               {formatCurrencyEUR(budget.spent)}
             </div>
             {budget.previousSpent !== 0 && (
-              <div className={`text-xs ${budget.spent < budget.previousSpent ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="text-xs text-gray-600">
                 {budget.spent < budget.previousSpent ? '↗' : '↘'} {Math.abs(((budget.spent - budget.previousSpent) / budget.previousSpent * 100)).toFixed(0)}%
               </div>
             )}
@@ -219,7 +219,7 @@ export default function BudgetWidget() {
             <div className="text-sm text-gray-600 mb-2">Соотношение доходов к расходам</div>
             <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
               <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                className="bg-black h-2 rounded-full transition-all duration-300"
                 style={{ width: `${budget.earned > 0 ? Math.min(100, (budget.spent / budget.earned) * 100) : 0}%` }}
               ></div>
             </div>
@@ -229,11 +229,11 @@ export default function BudgetWidget() {
           </div>
 
           {/* Сравнение с предыдущим месяцем */}
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="text-sm font-medium text-blue-900 mb-2">Изменение баланса</div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-sm font-medium text-gray-900 mb-2">Изменение баланса</div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-blue-600">К прошлому месяцу</span>
-              <span className={`text-sm font-bold ${budget.balance > budget.previousBalance ? 'text-green-600' : 'text-red-600'}`}>
+              <span className="text-xs text-gray-600">К прошлому месяцу</span>
+              <span className="text-sm font-bold text-gray-900">
                 {budget.balance > budget.previousBalance ? '+' : ''}{formatCurrencyEUR(budget.balance - budget.previousBalance)}
               </span>
             </div>
