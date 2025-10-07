@@ -187,16 +187,14 @@ function NotesPageContent() {
             />
           ) : (
             <div className="notes-grid">
-              <StaggeredChildren stagger={30}>
-                {notes.map((n) => (
-                  <NoteCard
-                    key={n.id}
-                    note={n}
-                    onEdit={handleEditNote}
-                    onTogglePin={handleTogglePin}
-                  />
-                ))}
-              </StaggeredChildren>
+              {notes.map((n) => (
+                <NoteCard
+                  key={n.id}
+                  note={n}
+                  onEdit={handleEditNote}
+                  onTogglePin={handleTogglePin}
+                />
+              ))}
             </div>
           )}
         </ContentLoader>
