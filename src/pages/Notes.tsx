@@ -6,9 +6,6 @@ import FolderSidebar from '@/components/FolderSidebar';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
 import { useErrorHandler } from '@/lib/errorHandler';
-import { ContentLoader, StaggeredChildren } from '@/components/ContentLoader';
-import { NotesGridSkeleton } from '@/components/skeletons/PageSkeletons';
-import { useContentTransition } from '@/hooks/useContentTransition';
 import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
@@ -21,9 +18,7 @@ function NotesPageContent() {
   const { userId } = useSupabaseAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
-  const { isLoading, startLoading, completeLoading, setError: setTransitionError } = useContentTransition({
-    minLoadingTime: 300
-  });
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   // SubHeader actions handler
@@ -67,19 +62,19 @@ function NotesPageContent() {
 
   async function reload(signal?: AbortSignal) {
     try {
-      startLoading();
+      setIsLoading(true);
       const data = await executeApiCall(() => listNotes('', 'updated_at', activeFolder));
       if (signal?.aborted) return;
       if (data) {
         setNotes(data);
-        completeLoading(data.length > 0);
+        setIsLoading(false);
         setError(null);
       }
     } catch (err) {
       if (!signal?.aborted) {
         const error = err instanceof Error ? err : new Error('Ошибка загрузки заметок');
         setError(error);
-        setTransitionError(error);
+        setIsLoading(false);
         handleError(err, 'Загрузка заметок');
       }
     }
@@ -158,46 +153,40 @@ function NotesPageContent() {
       
       {/* Правая область: заметки */}
       <div className="notes-content">
-        <ContentLoader
-          loading={isLoading}
-          error={error}
-          empty={notes.length === 0}
-          emptyMessage="Пока нет заметок. Создайте первую заметку!"
-          skeleton={<NotesGridSkeleton />}
-          minHeight="calc(100vh - 200px)"
-          fadeIn={true}
-        >
-          {notes.length > 50 ? (
-            <VirtualizedGrid
-              items={notes}
-              columns={gridColumns}
-              itemHeight={200}
-              containerHeight={600}
-              renderItem={(note, index) => (
+        {isLoading ? null : error ? (
+          <div className="p-4 text-red-600">Ошибка загрузки заметок</div>
+        ) : notes.length === 0 ? (
+          <div className="p-4 text-gray-500">Пока нет заметок. Создайте первую заметку!</div>
+        ) : notes.length > 50 ? (
+          <VirtualizedGrid
+            items={notes}
+            columns={gridColumns}
+            itemHeight={200}
+            containerHeight={600}
+            renderItem={(note, index) => (
+            <NoteCard
+              key={(note as Note).id}
+              note={note as Note}
+              onEdit={handleEditNote}
+              onTogglePin={handleTogglePin}
+            />
+            )}
+            keyExtractor={(note) => (note as Note).id}
+            gap={16}
+            className="p-4"
+          />
+        ) : (
+          <div className="notes-grid">
+            {notes.map((n) => (
               <NoteCard
-                key={(note as Note).id}
-                note={note as Note}
+                key={n.id}
+                note={n}
                 onEdit={handleEditNote}
                 onTogglePin={handleTogglePin}
               />
-              )}
-              keyExtractor={(note) => (note as Note).id}
-              gap={16}
-              className="p-4"
-            />
-          ) : (
-            <div className="notes-grid">
-              {notes.map((n) => (
-                <NoteCard
-                  key={n.id}
-                  note={n}
-                  onEdit={handleEditNote}
-                  onTogglePin={handleTogglePin}
-                />
-              ))}
-            </div>
-          )}
-        </ContentLoader>
+            ))}
+          </div>
+        )}
       </div>
 
       <NoteEditorModal

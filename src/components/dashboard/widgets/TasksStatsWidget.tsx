@@ -297,16 +297,6 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-        <div className="h-8 bg-gray-200 rounded mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-      </div>
-    );
-  }
-
   const isPositive = stats.change >= 0;
   const title = type === 'total' ? 'Созданные задачи' : 'Закрытые задачи';
   const icon = type === 'total' ? CheckSquare : CheckSquare;
@@ -370,11 +360,7 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
                     <div
                       className={`h-1.5 rounded-full ${color}`}
                       style={{ 
-                        width: `${Math.max(project.percentage, 2)}%`,
-                        animation: 'growBar 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                        animationDelay: `${index * 0.15}s`,
-                        transformOrigin: 'left',
-                        transform: 'scaleX(0)'
+                        width: `${Math.max(project.percentage, 2)}%`
                       }}
                     ></div>
                   </div>

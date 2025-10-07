@@ -2,7 +2,6 @@ import React, { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './styles.css'
-import './preloader.css'
 import App from './App'
 import { LazyPages } from './utils/codeSplitting'
 import { supabase } from './lib/supabaseClient'
@@ -63,13 +62,6 @@ if (typeof window !== 'undefined') {
   console.log('💡 Cache utilities available: __cache.clearAll(), __cache.stats(), __cache.keys()')
 }
 
-// Loading component for lazy routes
-const RouteLoading = () => (
-  <div className="flex items-center justify-center p-8">
-    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
-    <span className="ml-3 text-gray-600">Загрузка...</span>
-  </div>
-)
 
 const Protected = ({children}: {children: React.ReactNode}) => {
   const [loading, setLoading] = React.useState(true);
@@ -92,7 +84,7 @@ const router = createBrowserRouter([
   { 
     path: '/login', 
     element: (
-      <Suspense fallback={<RouteLoading />}>
+      <Suspense fallback={null}>
         <LazyPages.Login />
       </Suspense>
     )
@@ -108,7 +100,7 @@ const router = createBrowserRouter([
       { 
         index: true, 
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={null}>
             <LazyPages.Home />
           </Suspense>
         )
@@ -116,7 +108,7 @@ const router = createBrowserRouter([
       { 
         path: 'finance', 
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={null}>
             <LazyPages.Finance />
           </Suspense>
         )
@@ -124,23 +116,15 @@ const router = createBrowserRouter([
       { 
         path: 'tasks', 
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={null}>
             <LazyPages.Tasks />
-          </Suspense>
-        )
-      },
-      { 
-        path: 'goals', 
-        element: (
-          <Suspense fallback={<RouteLoading />}>
-            <LazyPages.Goals />
           </Suspense>
         )
       },
       { 
         path: 'notes', 
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={null}>
             <LazyPages.Notes />
           </Suspense>
         )

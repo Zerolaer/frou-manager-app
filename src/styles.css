@@ -41,10 +41,22 @@ body {
 html, body, #root { height: 100%; }
 html, body { margin: 0; padding: 0; }
 body { 
-  @apply bg-gray-100 text-gray-900 font-[Inter]; 
+  background-color: #F2F2F2;
+  @apply text-gray-900 font-[Inter]; 
   font-size: 14px; 
   font-weight: 400;
   line-height: 1.5; /* 21px для 14px текста */
+  overflow-x: hidden; /* Блокируем горизонтальный скролл */
+}
+
+/* Скрываем scrollbar везде */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Hide scrollbar */

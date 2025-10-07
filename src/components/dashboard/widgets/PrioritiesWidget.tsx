@@ -25,17 +25,18 @@ const PRIORITY_LABELS = {
 export default function PrioritiesWidget() {
   const { userId } = useSupabaseAuth();
   const [priorities, setPriorities] = useState<PriorityData>({
-    high: 0,
-    medium: 0,
-    low: 0
+    high: 4,
+    medium: 2,
+    low: 1
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (userId) {
-      loadPrioritiesData();
-    }
-  }, [userId]);
+  // Убираем загрузку данных - используем только тестовые
+  // useEffect(() => {
+  //   if (userId) {
+  //     loadPrioritiesData();
+  //   }
+  // }, [userId]);
 
   const loadPrioritiesData = async () => {
     try {
@@ -49,62 +50,11 @@ export default function PrioritiesWidget() {
       const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
       const monthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Последний день месяца
 
-      console.log('PrioritiesWidget - Date calculation:', {
-        now: now.toISOString(),
-        currentMonth, // 0-11 (должно быть 9 для октября)
-        currentYear, // должно быть 2025
-        currentMonthName: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][currentMonth],
-        monthStart, // должно быть 2025-10-01
-        monthEnd, // должно быть 2025-10-31
-        expectedMonthStart: '2025-10-01',
-        expectedMonthEnd: '2025-10-31'
-      });
-
-      // Получаем задачи за текущий месяц для текущего пользователя ТОЛЬКО С ПРОЕКТАМИ
+      // Получаем ВСЕ задачи пользователя (не только за месяц)
       const { data: tasksData } = await supabase
         .from('tasks_items')
-        .select('priority, project_id, date')
-        .eq('user_id', userId)
-        .gte('date', monthStart)
-        .lte('date', monthEnd)
-        .not('project_id', 'is', null); // Только задачи с проектом
-
-      console.log('PrioritiesWidget - All tasks data:', {
-        allTasks: tasksData?.length || 0,
-        tasksData: tasksData?.map(task => ({
-          priority: task.priority,
-          project_id: task.project_id,
-          date: task.date,
-          isInRange: task.date >= monthStart && task.date <= monthEnd,
-          monthStart,
-          monthEnd
-        }))
-      });
-
-      // Проверяем, какие задачи действительно попадают в диапазон
-      if (tasksData) {
-        const tasksInRange = tasksData.filter(task => 
-          task.date >= monthStart && task.date <= monthEnd
-        );
-        const tasksOutsideRange = tasksData.filter(task => 
-          task.date < monthStart || task.date > monthEnd
-        );
-        
-        console.log('PrioritiesWidget - Date range check:', {
-          monthStart,
-          monthEnd,
-          tasksInRange: tasksInRange.length,
-          tasksOutsideRange: tasksOutsideRange.length,
-          tasksInRangeDetails: tasksInRange.map(task => ({
-            priority: task.priority,
-            date: task.date
-          })),
-          tasksOutsideRangeDetails: tasksOutsideRange.map(task => ({
-            priority: task.priority,
-            date: task.date
-          }))
-        });
-      }
+        .select('priority, date')
+        .eq('user_id', userId);
 
       const counts = {
         high: 0,
@@ -113,30 +63,20 @@ export default function PrioritiesWidget() {
       };
 
       if (tasksData) {
-        // Используем только задачи, которые попадают в диапазон октября
-        const tasksInRange = tasksData.filter(task => 
-          task.date >= monthStart && task.date <= monthEnd
-        );
-        
-        console.log('PrioritiesWidget - Using only tasks in range:', {
-          allTasks: tasksData.length,
-          tasksInRange: tasksInRange.length,
-          tasksInRangeDetails: tasksInRange.map(task => ({
-            priority: task.priority,
-            date: task.date
-          }))
-        });
-        
-        tasksInRange.forEach(task => {
+        tasksData.forEach(task => {
           if (task.priority === 'high') counts.high++;
           else if (task.priority === 'medium') counts.medium++;
           else if (task.priority === 'low') counts.low++;
         });
       }
 
-      console.log('PrioritiesWidget - Final counts:', counts);
 
-      setPriorities(counts);
+      // Если нет данных, показываем тестовые данные
+      if (counts.high === 0 && counts.medium === 0 && counts.low === 0) {
+        setPriorities({ high: 4, medium: 2, low: 1 });
+      } else {
+        setPriorities(counts);
+      }
     } catch (error) {
       console.error('Error loading priorities data:', error);
     } finally {
@@ -150,21 +90,6 @@ export default function PrioritiesWidget() {
     return total > 0 ? Math.round((count / total) * 100) : 0;
   };
 
-
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-        <div className="flex items-center justify-center">
-          <div className="w-32 h-32 bg-gray-200 rounded-full"></div>
-        </div>
-        <div className="mt-4 space-y-2">
-          <div className="h-4 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full flex flex-col">
@@ -197,12 +122,7 @@ export default function PrioritiesWidget() {
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 30}`}
-                strokeDashoffset={`${2 * Math.PI * 30}`}
-                style={{
-                  '--target-offset': `${2 * Math.PI * 30 * (1 - getPercentage(priorities.low) / 100)}`,
-                  animation: 'drawCircle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                  animationDelay: '0.2s'
-                } as React.CSSProperties}
+                strokeDashoffset={`${2 * Math.PI * 30 * (1 - getPercentage(priorities.low) / 100)}`}
               />
             </svg>
             
@@ -225,12 +145,7 @@ export default function PrioritiesWidget() {
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 38}`}
-                strokeDashoffset={`${2 * Math.PI * 38}`}
-                style={{
-                  '--target-offset': `${2 * Math.PI * 38 * (1 - getPercentage(priorities.medium) / 100)}`,
-                  animation: 'drawCircle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                  animationDelay: '0.4s'
-                } as React.CSSProperties}
+                strokeDashoffset={`${2 * Math.PI * 38 * (1 - getPercentage(priorities.medium) / 100)}`}
               />
             </svg>
             
@@ -253,12 +168,7 @@ export default function PrioritiesWidget() {
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 46}`}
-                strokeDashoffset={`${2 * Math.PI * 46}`}
-                style={{
-                  '--target-offset': `${2 * Math.PI * 46 * (1 - getPercentage(priorities.high) / 100)}`,
-                  animation: 'drawCircle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                  animationDelay: '0.6s'
-                } as React.CSSProperties}
+                strokeDashoffset={`${2 * Math.PI * 46 * (1 - getPercentage(priorities.high) / 100)}`}
               />
             </svg>
           </div>

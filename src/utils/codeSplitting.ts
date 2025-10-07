@@ -53,7 +53,6 @@ export const LazyPages = {
   Home: lazy(() => import('@/pages/Home')),
   Finance: lazy(() => import('@/pages/Finance')),
   Tasks: lazy(() => import('@/pages/Tasks')),
-  Goals: lazy(() => import('@/pages/Goals')),
   Notes: lazy(() => import('@/pages/Notes')),
   Login: lazy(() => import('@/pages/Login'))
 }
@@ -61,7 +60,6 @@ export const LazyPages = {
 // Feature-based code splitting
 export const LazyFeatures = {
   TaskModal: lazy(() => import('@/components/TaskViewModal')),
-  GoalModal: lazy(() => import('@/components/goals/GoalModal')),
   NoteEditor: lazy(() => import('@/components/notes/NoteEditorModal'))
   // FinanceGrid: lazy(() => import('@/components/finance/FinanceGrid')), // Uncomment when component exists
 }

@@ -83,7 +83,7 @@ export default function SubHeader({ onAction, currentYear, onYearChange }: SubHe
   }
 
   return (
-    <div className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+    <div className="sticky top-16 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-4">
       <div className="flex items-center justify-between">
         <h2 className="text-h2 text-gray-900 leading-none !mb-0">{content.title}</h2>
         

@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, User } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, User, Clock } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { supabase } from '@/lib/supabaseClient'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale'
 import './FloatingNavBar.css'
 
 const NAV_ITEMS = [
@@ -15,9 +18,11 @@ const NAV_ITEMS = [
 
 export default function FloatingNavBar() {
   const location = useLocation()
-  const { email, signOut } = useSupabaseAuth()
+  const { email, signOut, user } = useSupabaseAuth()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [todayTasksCount, setTodayTasksCount] = useState(0)
   const navRef = useRef<HTMLDivElement>(null)
   const backgroundRef = useRef<HTMLDivElement>(null)
   const profileButtonRef = useRef<HTMLButtonElement>(null)
@@ -31,32 +36,46 @@ export default function FloatingNavBar() {
     }
   }, [location.pathname])
 
-  // Анимация фона к активному элементу
+  // Обновляем время каждую минуту
   useEffect(() => {
-    if (backgroundRef.current && navRef.current) {
-      const navItems = navRef.current.querySelectorAll('[data-nav-item]')
-      const activeItem = navItems[activeIndex] as HTMLElement
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    
+    return () => clearInterval(timer)
+  }, [])
+
+  // Загружаем количество задач на сегодня
+  useEffect(() => {
+    if (!user) return
+
+    const fetchTodayTasks = async () => {
+      const today = format(new Date(), 'yyyy-MM-dd')
+      const { count } = await supabase
+        .from('tasks_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('date', today)
       
-      if (activeItem) {
-        const navRect = navRef.current.getBoundingClientRect()
-        const itemRect = activeItem.getBoundingClientRect()
-        
-        const left = itemRect.left - navRect.left
-        const width = itemRect.width
-        
-        backgroundRef.current.style.transform = `translateX(${left}px)`
-        backgroundRef.current.style.width = `${width}px`
-      }
+      setTodayTasksCount(count || 0)
     }
-  }, [activeIndex])
+
+    fetchTodayTasks()
+  }, [user])
+
 
   // Update menu position when opening
   useEffect(() => {
     if (userMenuOpen && profileButtonRef.current) {
       const rect = profileButtonRef.current.getBoundingClientRect()
+      const menuWidth = 288 // w-72 = 288px
+      const rightPosition = Math.min(
+        window.innerWidth - rect.right,
+        window.innerWidth - 16 // 16px margin from edge
+      )
+      
       setMenuPosition({
-        bottom: window.innerHeight - rect.top + 8, // 8px gap
-        right: window.innerWidth - rect.right
+        top: rect.bottom + 8, // 8px gap below button
+        right: Math.max(16, rightPosition) // 16px minimum margin
       })
     }
   }, [userMenuOpen])
@@ -86,32 +105,23 @@ export default function FloatingNavBar() {
 
   return (
     <>
-      {/* Floating Navigation Bar */}
-      <nav 
-        className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
+      {/* Main Header */}
+      <header 
+        className="sticky top-0 left-0 right-0 z-50 bg-white block"
         role="navigation"
         aria-label="Основная навигация"
       >
-        <div className="floating-nav-container bg-white/90 floating-nav-backdrop border border-gray-200/50 rounded-full shadow-lg px-3 py-3 flex items-center justify-center gap-4 relative">
-          {/* Animated Background */}
-          <div
-            ref={backgroundRef}
-            style={{
-              position: 'absolute',
-              top: '12px',
-              bottom: '12px',
-              left: '12px',
-              background: 'linear-gradient(to bottom right, #1f2937 0%, #4b5563 100%)',
-              borderRadius: '9999px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              zIndex: 1,
-              transition: 'transform 0.6s ease-out, width 0.6s ease-out',
-              willChange: 'transform, width'
-            }}
-          />
-          
-          {/* Navigation Items */}
-          <div ref={navRef} className="flex items-center gap-1 relative z-10">
+        <div className="px-4 py-4 flex items-center justify-between">
+          {/* Logo - Left */}
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">F</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">FROU</span>
+          </div>
+
+          {/* Navigation Menu - Center */}
+          <div ref={navRef} className="flex items-center gap-2 relative z-10">
             {NAV_ITEMS.map((item, index) => {
               const isActive = location.pathname === item.to
               const Icon = item.icon
@@ -120,11 +130,11 @@ export default function FloatingNavBar() {
                   key={item.to}
                   to={item.to}
                   data-nav-item
-                  className={`floating-nav-item flex items-center gap-2 px-4 py-3 rounded-full group relative ${isActive ? 'active text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full group relative transition-colors ${isActive ? 'bg-gradient-to-br from-gray-800 to-gray-600 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium leading-none whitespace-nowrap">
+                  <Icon className="w-5 h-5" />
+                  <span className="text-sm font-medium">
                     {item.label}
                   </span>
                 </Link>
@@ -132,27 +142,26 @@ export default function FloatingNavBar() {
             })}
           </div>
 
-          {/* Separator */}
-          <div className="w-px h-4 bg-gray-200"></div>
-
-          {/* User Profile */}
-          <button
-            ref={profileButtonRef}
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className={`floating-nav-item flex items-center gap-2 px-4 py-3 rounded-full hover:bg-gray-100 group ${
-              userMenuOpen 
-                ? 'active text-blue-500' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-            aria-label="Меню пользователя"
-          >
-            <User className="w-4 h-4" />
-            <span className="text-sm font-medium leading-none whitespace-nowrap">
-              Профиль
-            </span>
-          </button>
+          {/* User Profile - Right */}
+          <div className="relative">
+            <button
+              ref={profileButtonRef}
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 group transition-colors ${
+                userMenuOpen 
+                  ? 'bg-gray-100 text-gray-900' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              aria-label="Меню пользователя"
+            >
+              <User className="w-5 h-5" />
+              <span className="text-sm font-medium">
+                Профиль
+              </span>
+            </button>
+          </div>
         </div>
-      </nav>
+      </header>
 
       {/* User Menu Portal - render outside footer */}
       {userMenuOpen && createPortal(
@@ -167,7 +176,7 @@ export default function FloatingNavBar() {
           <div 
             className="fixed z-[9999] w-72 bg-white rounded-2xl shadow-xl border border-gray-200 py-3"
             style={{
-              bottom: `${menuPosition.bottom}px`,
+              top: `${menuPosition.top}px`,
               right: `${menuPosition.right}px`
             }}
           >

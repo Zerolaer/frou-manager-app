@@ -132,19 +132,6 @@ export default function ProductivityWidget() {
 
   const getMaxTasks = () => Math.max(...weekData.map(day => day.tasks), 1);
 
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-        <div className="space-y-3">
-          <div className="h-4 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        </div>
-      </div>
-    );
-  }
-
   const totalTasks = getTotalTasks();
   const averageProductivity = getAverageProductivity();
   const busiestDay = getBusiestDay();
@@ -210,11 +197,7 @@ export default function ProductivityWidget() {
                         className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
                         style={{ 
                           height: `${Math.max(totalHeight, minHeight)}%`,
-                          minHeight: '8px',
-                          animation: 'growColumn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                          animationDelay: `${index * 0.12}s`,
-                          transformOrigin: 'bottom',
-                          transform: 'scaleY(0)'
+                          minHeight: '8px'
                         }}
                       >
                         {/* Оранжевая часть - выполненные задачи */}

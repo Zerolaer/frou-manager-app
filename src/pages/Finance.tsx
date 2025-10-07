@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { MoreVertical } from "lucide-react";
-import { FinanceTableSkeleton } from '@/components/skeletons/PageSkeletons'
-import { FadeIn } from '@/components/ContentLoader'
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
@@ -454,13 +452,7 @@ export default function Finance(){
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel) }
   }, [])
 
-  if (loading) return (
-    <div className="p-4">
-      <FadeIn duration={200}>
-        <FinanceTableSkeleton />
-      </FadeIn>
-    </div>
-  )
+  if (loading) return null;
 
   const isCurrentYear = year === currentYear
   const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)
@@ -475,7 +467,7 @@ export default function Finance(){
           className="sticky top-0 z-10"
         />
         
-        <div className="overflow-y-auto flex-1">
+        <div className="flex-1">
           <MobileFinanceDay
             date={mobileDate}
             incomeCategories={incomeCategories}

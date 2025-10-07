@@ -1101,7 +1101,7 @@ const projectColorById = useMemo(() => {
                         >
                           <div className="text-sm">
                             <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {t.priority && (
                                   <span 
                                     className={`text-xs font-medium px-2 py-1 rounded-full ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
@@ -1113,6 +1113,17 @@ const projectColorById = useMemo(() => {
                                     {t.priority === TASK_PRIORITIES.HIGH ? "High" :
                                      t.priority === TASK_PRIORITIES.LOW ? "Low" :
                                      t.priority === TASK_PRIORITIES.MEDIUM ? "Medium" : ""}
+                                  </span>
+                                )}
+                                {t.tag && (
+                                  <span 
+                                    className={`text-xs font-medium px-2 py-1 rounded-full ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                    style={{
+                                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                                      color: '#7c3aed'
+                                    }}
+                                  >
+                                    {t.tag}
                                   </span>
                                 )}
                               </div>
