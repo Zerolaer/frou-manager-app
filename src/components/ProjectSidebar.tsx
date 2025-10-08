@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
 import { UnifiedModal } from '@/components/ui/ModalSystem'
-import { ModalFooter } from '@/components/ui/ModalFooter'
+import ModalFooter from '@/components/ui/ModalFooter'
 import { ChevronLeft, Plus } from 'lucide-react'
 
 import type { Project } from '@/types/shared'
