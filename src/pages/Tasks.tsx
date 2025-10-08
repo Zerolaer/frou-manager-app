@@ -76,6 +76,19 @@ function getPriorityColor(priority: string): { background: string, text: string 
   }
 }
 
+function getPriorityText(priority?: string): string | null {
+  switch (priority) {
+    case TASK_PRIORITIES.HIGH:
+      return "High"
+    case TASK_PRIORITIES.MEDIUM:
+      return "Medium"
+    case TASK_PRIORITIES.LOW:
+      return "Low"
+    default:
+      return null
+  }
+}
+
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
   x, y, task, dayKey, onClose, onDuplicate, onToggleStatus, onDelete 
@@ -1053,11 +1066,11 @@ const projectColorById = useMemo(() => {
                         
                         {/* Оригинальная карточка задачи */}
                         <div
-                          className={`task-card group ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
+                          className={`task-card group transition-all duration-150 hover:border-black ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
                           style={{
                             backgroundColor: '#ffffff',
                             border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
+                            borderRadius: '12px',
                             ...(isDragged ? {
                               position: 'fixed',
                               left: dragPosition.x - 10, // Небольшое смещение от курсора
@@ -1115,7 +1128,7 @@ const projectColorById = useMemo(() => {
                           <div className="text-sm">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {t.priority && (
+                                {t.priority && getPriorityText(t.priority) ? (
                                   <span 
                                     className={`text-xs font-medium px-2 py-1 rounded-full ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
@@ -1123,17 +1136,17 @@ const projectColorById = useMemo(() => {
                                       color: getPriorityColor(t.priority).text
                                     }}
                                   >
-                                    {t.priority === TASK_PRIORITIES.HIGH ? "High" :
-                                     t.priority === TASK_PRIORITIES.LOW ? "Low" :
-                                     t.priority === TASK_PRIORITIES.MEDIUM ? "Medium" : ""}
+                                    {getPriorityText(t.priority)}
                                   </span>
+                                ) : (
+                                  <div></div>
                                 )}
                                 {t.tag && (
                                   <span 
-                                    className={`text-xs font-medium px-2 py-1 rounded-full ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                    className={`text-xs font-medium px-2 py-1 rounded-md ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
-                                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                                      color: '#7c3aed'
+                                      backgroundColor: '#e5e7eb',
+                                      color: '#4b5563'
                                     }}
                                   >
                                     {t.tag}
@@ -1141,7 +1154,7 @@ const projectColorById = useMemo(() => {
                                 )}
                               </div>
                               <button
-                                className="p-1 rounded hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -1177,15 +1190,36 @@ const projectColorById = useMemo(() => {
                                 </span>
                               </div>
                               
-                              {/* Саб-задачи - убраны */}
-                              
-                              <div className="text-xs text-gray-500 mt-1">
-                                {(() => {
-                                  const total = Array.isArray(t.todos) ? t.todos.length : 0;
-                                  const done = Array.isArray(t.todos) ? t.todos.filter((x: Todo) => x.done).length : 0;
-                                  return total > 0 ? `${done}/${total}` : '';
-                                })()}
-                              </div>
+                              {/* Прогресс бар для подзадач */}
+                              {(() => {
+                                const total = Array.isArray(t.todos) ? t.todos.length : 0;
+                                const done = Array.isArray(t.todos) ? t.todos.filter((x: Todo) => x.done).length : 0;
+                                if (total === 0) return null;
+                                return (
+                                  <div className="space-y-1 mt-2">
+                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                      <span>Прогресс</span>
+                                      <span>{done}/{total}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                      <div 
+                                        className="bg-gray-600 h-1.5 rounded-full transition-all duration-200"
+                                        style={{ 
+                                          width: `${(done / total) * 100}%`,
+                                          opacity: done === total ? 0.3 : 1
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Название проекта */}
+                              {t.project_name && (
+                                <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                                  {t.project_name}
+                                </div>
+                              )}
                             </div>
                         </div>
                         
