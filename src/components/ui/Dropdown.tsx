@@ -33,11 +33,41 @@ export default function Dropdown({
   'aria-label': ariaLabel
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
+  const [dropdownAlignment, setDropdownAlignment] = useState<'left' | 'right'>('left')
   const btnRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Find selected option
   const selectedOption = options.find(option => option.value === value)
+
+  // Smart positioning when dropdown opens
+  useEffect(() => {
+    if (!open || !btnRef.current || !dropdownRef.current) return
+
+    const button = btnRef.current
+    const dropdown = dropdownRef.current
+    const buttonRect = button.getBoundingClientRect()
+    const dropdownRect = dropdown.getBoundingClientRect()
+    
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    }
+
+    // Check if dropdown fits below button
+    const fitsBelow = buttonRect.bottom + dropdownRect.height + 8 <= viewport.height
+    // Check if dropdown fits above button
+    const fitsAbove = buttonRect.top - dropdownRect.height - 8 >= 0
+    
+    // Check horizontal alignment
+    const fitsRight = buttonRect.left + dropdownRect.width <= viewport.width
+    const fitsLeft = buttonRect.right - dropdownRect.width >= 0
+
+    // Determine position
+    setDropdownPosition(fitsBelow ? 'bottom' : fitsAbove ? 'top' : 'bottom')
+    setDropdownAlignment(fitsRight ? 'left' : fitsLeft ? 'right' : 'left')
+  }, [open])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,7 +126,15 @@ export default function Dropdown({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className={`absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto p-2 w-60 ${dropdownClassName}`}>
+          <div 
+            ref={dropdownRef}
+            className={`absolute bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto p-2 w-60 ${dropdownClassName}`}
+            style={{
+              [dropdownPosition === 'bottom' ? 'top' : 'bottom']: '100%',
+              [dropdownPosition === 'bottom' ? 'marginTop' : 'marginBottom']: '8px',
+              [dropdownAlignment === 'left' ? 'left' : 'right']: '0',
+            }}
+          >
             {options.map((option) => (
               <button
                 key={option.value}
