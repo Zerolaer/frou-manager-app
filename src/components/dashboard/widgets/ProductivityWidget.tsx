@@ -77,6 +77,9 @@ const ProductivityWidget = () => {
         const dayNames = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
         const dayName = dayNames[dayOfWeek];
         
+        // Логирование для отладки
+        console.log(`Task: date=${task.date}, day=${dayName}, status="${task.status}", project_id=${task.project_id}`);
+        
         dayStats[dayName].total++;
         if (task.status === 'closed') {
           dayStats[dayName].completed++;
@@ -99,6 +102,8 @@ const ProductivityWidget = () => {
         });
       });
 
+      console.log('Final dayStats:', dayStats);
+      console.log('WeekDataArray:', weekDataArray);
       setWeekData(weekDataArray);
     } catch (error) {
       console.error('Error loading productivity data:', error);
