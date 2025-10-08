@@ -72,7 +72,7 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
                   ? 'text-red-600 hover:bg-red-50'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
-              style={{ fontSize: '15px' }}
+              style={{ fontSize: '13px' }}
             >
               {option.icon}
               {option.label}

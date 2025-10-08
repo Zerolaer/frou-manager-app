@@ -252,7 +252,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               <button
                 onClick={()=>{ setRenameValue(ctxProject.name); setRenameOpen(true); setCtxOpen(false) }}
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
-                style={{ fontSize: '15px' }}
+                style={{ fontSize: '13px' }}
               >
                 Переименовать
               </button>
@@ -278,7 +278,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               <button
                 onClick={()=>{ setDelOpen(true); setCtxOpen(false) }}
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
-                style={{ fontSize: '15px' }}
+                style={{ fontSize: '13px' }}
               >
                 Удалить
               </button>

@@ -150,21 +150,21 @@ function TaskContextMenu({
           <button
             onClick={onDuplicate}
             className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
-            style={{ fontSize: '15px' }}
+            style={{ fontSize: '13px' }}
           >
             Дублировать
           </button>
           <button
             onClick={onToggleStatus}
             className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
-            style={{ fontSize: '15px' }}
+            style={{ fontSize: '13px' }}
           >
             {task?.status === TASK_STATUSES.CLOSED ? 'Открыть' : 'Выполнить'}
           </button>
           <button
             onClick={onDelete}
             className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
-            style={{ fontSize: '15px' }}
+            style={{ fontSize: '13px' }}
           >
             Удалить
           </button>

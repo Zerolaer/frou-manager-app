@@ -140,7 +140,7 @@ export default function Dropdown({
                 key={option.value}
                 onClick={() => !option.disabled && handleOptionSelect(option.value)}
                 disabled={option.disabled}
-                style={{ fontSize: '15px' }}
+                style={{ fontSize: '13px' }}
                 className={`w-full px-2 py-3 text-left transition-colors ${
                   option.value === value 
                     ? 'bg-black text-white font-medium' 

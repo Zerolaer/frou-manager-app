@@ -75,7 +75,7 @@ export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, 
                 onClose()
               }}
               className="w-full px-2 py-3 text-left transition-colors rounded-lg flex items-center gap-2 text-gray-700 hover:bg-gray-100"
-              style={{ fontSize: '15px' }}
+              style={{ fontSize: '13px' }}
             >
               {option.icon}
               {option.label}
