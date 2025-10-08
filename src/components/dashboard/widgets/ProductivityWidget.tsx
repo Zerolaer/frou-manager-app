@@ -163,9 +163,9 @@ const ProductivityWidget = () => {
               const baseHeight = maxTasks > 0 ? (1 / maxTasks) * 100 : 100; // высота для 1 задачи
               const minHeight = baseHeight / 3; // 1/3 от высоты с одной задачей
               const totalHeight = day.tasks > 0 ? (day.tasks / maxTasks) * 100 : minHeight;
-              // Высота черной части = процент выполнения от высоты столбика
+              // Высота черной части = процент выполнения от высоты столбика (в процентах)
               const completionPercentage = day.tasks > 0 ? day.completed / day.tasks : 0;
-              const completedHeight = completionPercentage * totalHeight;
+              const completedHeight = completionPercentage * 100; // Процент от высоты столбика
               const isBusiest = day.completed === busiestDay.completed && day.completed > 0;
               
               // Отладка для четверга
