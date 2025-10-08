@@ -167,6 +167,13 @@ const ProductivityWidget = () => {
               const completedHeight = day.tasks > 0 ? (day.completed / day.tasks) * totalHeight : 0;
               const isBusiest = day.completed === busiestDay.completed && day.completed > 0;
               
+              // Отладка для четверга
+              if (day.day === 'ЧТ') {
+                console.log(`Четверг: tasks=${day.tasks}, completed=${day.completed}, maxTasks=${maxTasks}`);
+                console.log(`Четверг: totalHeight=${totalHeight}%, completedHeight=${completedHeight}%`);
+                console.log(`Четверг: процент выполнения=${day.completed}/${day.tasks}=${Math.round((day.completed / day.tasks) * 100)}%`);
+              }
+              
               return (
                 <div key={day.day} className="flex flex-col items-center flex-1 h-full">
                   <div className="w-full flex flex-col items-center justify-end h-full mb-2">
