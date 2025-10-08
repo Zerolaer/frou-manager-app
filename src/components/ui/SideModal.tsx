@@ -9,6 +9,9 @@ type SideModalProps = {
   title?: React.ReactNode
   children: React.ReactNode
   footer?: React.ReactNode
+  showCloseButton?: boolean
+  rightContent?: React.ReactNode
+  noPadding?: boolean
 }
 
 export default function SideModal({
@@ -17,6 +20,9 @@ export default function SideModal({
   title,
   children,
   footer,
+  showCloseButton = true,
+  rightContent,
+  noPadding = false,
 }: SideModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -59,10 +65,10 @@ export default function SideModal({
           tabIndex={-1}
         >
           {/* Header */}
-          {title && <ModalHeader title={title} onClose={onClose} />}
+          {title && <ModalHeader title={title} onClose={onClose} showCloseButton={showCloseButton} rightContent={rightContent} />}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className={`flex-1 overflow-y-auto ${noPadding ? '' : 'px-6 py-4'}`}>
             {children}
           </div>
 
