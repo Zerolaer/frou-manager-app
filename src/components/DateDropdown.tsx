@@ -21,8 +21,7 @@ export default function DateDropdown({
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-10 rounded-xl px-4 text-sm border border-gray-200 outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ backgroundColor: '#F2F7FA' }}
+        className="w-full h-10 rounded-xl px-4 text-sm border border-gray-200 bg-white outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={disabled}
       />
     </div>

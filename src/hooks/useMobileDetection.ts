@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 
 export function useMobileDetection() {
+  // Add safety check for React context
+  if (!useState) {
+    return { isMobile: false, isTablet: false, isDesktop: true }
+  }
+  
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
 
@@ -26,6 +31,11 @@ export function useMobileDetection() {
 }
 
 export function useBreakpoint() {
+  // Add safety check for React context
+  if (!useState) {
+    return 'desktop'
+  }
+  
   const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
 
   useEffect(() => {

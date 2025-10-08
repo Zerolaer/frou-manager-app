@@ -3,13 +3,14 @@ import { Plus, Trash2, Calendar, Tag, Check } from 'lucide-react'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
 import CoreMenu from '@/components/ui/CoreMenu'
+import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
 import type { Todo, Project } from '@/types/shared'
 
-// CSS анимация для прожатия
-const pressStyle = `
-  @keyframes press {
+// CSS анимации для чекбоксов
+const checkboxAnimations = `
+  @keyframes checkboxPress {
     0% {
       transform: scale(1);
     }
@@ -20,13 +21,37 @@ const pressStyle = `
       transform: scale(1);
     }
   }
+  
+  @keyframes checkmarkBounce {
+    0% {
+      opacity: 0;
+      transform: scale(0);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes todoBackgroundFill {
+    0% {
+      width: 0%;
+    }
+    100% {
+      width: 100%;
+    }
+  }
 `;
 
 // Добавляем стили в head если их еще нет
-if (typeof document !== 'undefined' && !document.getElementById('press-animation')) {
+if (typeof document !== 'undefined' && !document.getElementById('checkbox-animations')) {
   const style = document.createElement('style');
-  style.id = 'press-animation';
-  style.textContent = pressStyle;
+  style.id = 'checkbox-animations';
+  style.textContent = checkboxAnimations;
   document.head.appendChild(style);
 }
 
@@ -50,6 +75,11 @@ type Props = {
 }
 
 export default function ModernTaskModal({ open, onClose, task, onUpdated }: Props) {
+  // Add safety check for React context
+  if (!React.useState) {
+    return null
+  }
+  
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('')
@@ -62,19 +92,33 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   const [projects, setProjects] = useState<Project[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [animatingTodos, setAnimatingTodos] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Load task data when modal opens
+  // Load task data when modal opens (with key prop, component is recreated on task change)
   useEffect(() => {
-    if (!open || !task) return
-    setTitle(task.title || '')
-    setDescription(task.description || '')
-    setPriority((task.priority as any) || '')
-    setTag(task.tag || '')
-    setDate(task.date || '')
-    setTodos(Array.isArray(task.todos) ? (task.todos as Todo[]) : [])
-    setStatus((task as any)?.status || 'open')
-    setProjectId(task.project_id || '')
-    setNewTodo('') // Очищаем инпут подзадачи
+    if (!open || !task) {
+      setIsLoading(true)
+      return
+    }
+    
+    // Start with loading state
+    setIsLoading(true)
+    
+    const timer = setTimeout(() => {
+      setTitle(task.title || '')
+      setDescription(task.description || '')
+      setPriority((task.priority as any) || 'normal')
+      setTag(task.tag || '')
+      setDate(task.date || '')
+      setTodos(Array.isArray(task.todos) ? (task.todos as Todo[]) : [])
+      setStatus((task as any)?.status || 'open')
+      setProjectId(task.project_id || '')
+      setNewTodo('')
+      setIsLoading(false)
+    }, 100)
+    
+    return () => clearTimeout(timer)
   }, [open, task])
 
   // Load projects
@@ -164,7 +208,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     const updates = {
       title: finalTitle,
       description: description.trim() || '',
-      priority: priority || '',
+      priority: priority || 'normal',
       tag: tag.trim() || '',
       date: date || null,
       todos,
@@ -218,6 +262,19 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   }
 
   function toggleTodo(id: string) {
+    // Trigger animation
+    setAnimatingTodos(prev => new Set(prev).add(id))
+    
+    // Remove animation class after it completes
+    setTimeout(() => {
+      setAnimatingTodos(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }, 400)
+    
+    // Toggle todo state
     setTodos(prev => prev.map(t => 
       t.id === id ? { ...t, done: !t.done } : t
     ))
@@ -276,41 +333,45 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         </div>
       }
       footer={
-        <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            Закрыть
-          </button>
-        </div>
+        <button
+          onClick={handleClose}
+          className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors leading-none h-10"
+          style={{ borderRadius: '12px', fontSize: '13px' }}
+        >
+          Закрыть
+        </button>
       }
     >
+      {isLoading ? (
+        /* Loading State */
+        <div className="flex h-full items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="inline-block w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+            <p className="text-sm text-gray-500">Загрузка задачи...</p>
+          </div>
+        </div>
+      ) : (
       <div className="flex h-full">
         {/* Left Column */}
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {/* Title */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Название задачи</label>
-            <input
+            <CoreInput
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none bg-white"
-              style={{ borderRadius: '12px' }}
             />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Описание</label>
-            <textarea
+            <CoreTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Подробности задачи"
               rows={6}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none resize-none bg-white"
-              style={{ borderRadius: '12px' }}
             />
           </div>
 
@@ -326,12 +387,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
             </div>
             
             <div className="flex gap-2">
-              <input
+              <CoreInput
                 type="text"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
                 placeholder="Добавить подзадачу"
-                className="flex-1 h-10 px-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none bg-white"
+                className="flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && addTodo()}
               />
               <button
@@ -345,8 +406,34 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
             </div>
             
             <div className="space-y-3">
-              {todos.map((todo) => (
-                <div key={todo.id} className="flex items-center gap-3 border border-gray-200 p-3 hover:border-gray-300 transition-colors" style={{ borderRadius: '12px' }}>
+              {todos.map((todo) => {
+                const isAnimating = animatingTodos.has(todo.id)
+                return (
+                <div 
+                  key={todo.id} 
+                  className="flex items-center gap-3 border border-gray-200 p-3 hover:border-gray-300 transition-colors" 
+                  style={{ 
+                    borderRadius: '12px',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {/* Animated background fill */}
+                  {todo.done && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        height: '100%',
+                        backgroundColor: '#f3f4f6',
+                        animation: isAnimating ? 'todoBackgroundFill 0.25s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        width: '100%',
+                        zIndex: 0
+                      }}
+                    />
+                  )}
+                  
                   <div
                     onClick={() => toggleTodo(todo.id)}
                     style={{ 
@@ -360,7 +447,10 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                       justifyContent: 'center',
                       cursor: 'pointer',
                       flexShrink: 0,
-                      transition: 'background-color 0.2s ease'
+                      transition: 'background-color 0.2s ease',
+                      animation: isAnimating ? 'checkboxPress 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      position: 'relative',
+                      zIndex: 1
                     }}
                   >
                     {todo.done && (
@@ -373,6 +463,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        style={{
+                          animation: isAnimating ? 'checkmarkBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
+                        }}
                       >
                         <polyline points="20,6 9,17 4,12"></polyline>
                       </svg>
@@ -385,16 +478,25 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                       t.id === todo.id ? { ...t, text: e.target.value } : t
                     ))}
                     className="flex-1 bg-transparent border-none outline-none text-sm"
-                    style={{ textDecoration: todo.done ? 'line-through' : 'none', opacity: todo.done ? 0.6 : 1 }}
+                    style={{ 
+                      textDecoration: todo.done ? 'line-through' : 'none', 
+                      opacity: todo.done ? 0.6 : 1,
+                      position: 'relative',
+                      zIndex: 1
+                    }}
                   />
                   <button
                     onClick={() => removeTodo(todo.id)}
                     className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    style={{
+                      position: 'relative',
+                      zIndex: 1
+                    }}
                   >
                     <Trash2 className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </div>
@@ -449,7 +551,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
             <div className="flex gap-2">
               <button
                 onClick={() => setPriority('low')}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   priority === 'low'
                     ? 'bg-black text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -459,7 +561,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
               </button>
               <button
                 onClick={() => setPriority('normal')}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   priority === 'normal'
                     ? 'bg-black text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -469,7 +571,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
               </button>
               <button
                 onClick={() => setPriority('high')}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   priority === 'high'
                     ? 'bg-black text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -492,12 +594,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           {/* Tag */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
             <div className="text-sm font-medium text-gray-700">Тег</div>
-            <input
+            <CoreInput
               type="text"
               value={tag}
               onChange={(e) => setTag(e.target.value)}
               placeholder="Напр. Work"
-              className="w-full h-10 px-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none bg-white"
             />
           </section>
 
@@ -512,6 +613,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           </div>
         </aside>
       </div>
+      )}
     </SideModal>
   )
 }

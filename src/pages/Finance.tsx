@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
 import CellEditor from '@/components/CellEditor'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { CoreInput } from '@/components/ui/CoreInput'
 import YearDropdown from '@/components/YearDropdown'
 import TypeDropdown from '@/components/TypeDropdown'
 import AnnualStatsModal from '@/components/AnnualStatsModal'
@@ -513,11 +514,11 @@ export default function Finance(){
           </div>
           <div className="flex items-center gap-3 mt-3">
             <label className="text-label text-gray-600 w-28">Название</label>
-            <input
+            <CoreInput
               value={newName}
               onChange={e=>setNewName(e.target.value)}
               placeholder={newParent ? 'Напр. Коммунальные' : 'Напр. Жильё'}
-              className="border rounded-lg px-3 py-2 text-base flex-1"
+              className="flex-1"
             />
           </div>
         </UnifiedModal>
@@ -538,10 +539,9 @@ export default function Finance(){
             }
           )}
         >
-          <input
+          <CoreInput
             value={renameValue}
             onChange={e=>setRenameValue(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm w-full"
             autoFocus
           />
         </UnifiedModal>
@@ -757,11 +757,11 @@ export default function Finance(){
         </div>
         <div className="flex items-center gap-3 mt-3">
           <label className="text-label text-gray-600 w-28">Название</label>
-          <input
+          <CoreInput
             value={newName}
             onChange={e=>setNewName(e.target.value)}
             placeholder={newParent ? 'Напр. Коммунальные' : 'Напр. Жильё'}
-            className="border rounded-lg px-3 py-2 text-base flex-1"
+            className="flex-1"
           />
         </div>
       </UnifiedModal>
@@ -782,10 +782,9 @@ export default function Finance(){
           }
         )}
       >
-        <input
+        <CoreInput
           value={renameValue}
           onChange={e=>setRenameValue(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm w-full"
           autoFocus
         />
       </UnifiedModal>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Modal from '@/components/ui/Modal'
+import { CoreInput } from '@/components/ui/CoreInput'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 
 type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
@@ -156,15 +157,21 @@ export default function CellEditor({
   return (
   
 <Modal   open={open}   onClose={onClose}   title={<span bodyClassName="p-0"><b>{categoryName}</b> · {monthLabel} {year}</span>}
-  footer={<div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
-    <button className="btn btn-outline" onClick={onClose}>Закрыть</button>
-  </div>}
+  footer={
+    <button 
+      className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors leading-none h-10" 
+      style={{ borderRadius: '12px', fontSize: '13px' }}
+      onClick={onClose}
+    >
+      Закрыть
+    </button>
+  }
   size="md"
 >
   <div className="editor-body">
           {loading && <div className="loading-overlay">Загрузка…</div>}
           <div className="editor-add">
-            <input 
+            <CoreInput 
               ref={amountInputRef}
               type="number" 
               placeholder="Сумма (€)" 
@@ -173,7 +180,7 @@ export default function CellEditor({
               onKeyPress={handleKeyPress}
               className="editor-input number" 
             />
-            <input 
+            <CoreInput 
               placeholder="Описание (необязательно)" 
               value={note} 
               onChange={e=>setNote(e.target.value)} 
@@ -196,8 +203,8 @@ export default function CellEditor({
                   <input type="checkbox" checked={i.included} onChange={e=>toggleIncluded(i.id, e.target.checked)} />
                   <span className="box"><svg className="icon" viewBox="0 0 20 20"><path fill="currentColor" d="M8.143 13.314 4.829 10l-1.18 1.18 4.494 4.494 8-8-1.18-1.18z"/></svg></span>
                 </label>
-                <input type="number" className="editor-input entry-amount" value={String(i.amount)} onChange={e=>changeAmount(i.id, e.target.value)} />
-                <input className="editor-input entry-note" value={i.note || ""} onChange={e=>changeNote(i.id, e.target.value)} />
+                <CoreInput type="number" className="editor-input entry-amount" value={String(i.amount)} onChange={e=>changeAmount(i.id, e.target.value)} />
+                <CoreInput className="editor-input entry-note" value={i.note || ""} onChange={e=>changeNote(i.id, e.target.value)} />
                 <button className="btn btn-danger btn-sm flex items-center gap-1" onClick={()=>removeItem(i.id)}>
                   <Trash2 className="w-4 h-4" />
                   Удалить

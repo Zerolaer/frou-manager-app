@@ -22,7 +22,6 @@ export default function ProjectDropdown({
       ariaLabel="Выбор проекта"
       className="w-full"
       buttonClassName="w-full justify-between"
-      buttonStyle={{ backgroundColor: '#F2F7FA' }}
     />
   )
 }

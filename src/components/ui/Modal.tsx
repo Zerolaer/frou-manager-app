@@ -68,6 +68,11 @@ const Modal = ({
   contentClassName,
   bodyClassName,
 }: ModalProps) => {
+  // Add safety check for React context
+  if (!React.useRef) {
+    return null
+  }
+  
   const panelRef = useRef<HTMLDivElement>(null)
   useFocusTrap(open, panelRef)
 

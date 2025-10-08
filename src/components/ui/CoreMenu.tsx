@@ -11,6 +11,7 @@ type CoreMenuProps = {
   onSelect: (value: string | number) => void
   className?: string
   buttonClassName?: string
+  buttonStyle?: React.CSSProperties
   dropdownClassName?: string
   ariaLabel?: string
 }
@@ -20,6 +21,7 @@ const CoreMenu: React.FC<CoreMenuProps> = ({
   onSelect,
   className,
   buttonClassName,
+  buttonStyle,
   dropdownClassName,
   ariaLabel = 'Меню'
 }) => {
@@ -42,10 +44,12 @@ const CoreMenu: React.FC<CoreMenuProps> = ({
       aria-label={ariaLabel}
       className={className}
       buttonClassName={
-        `h-8 px-2 rounded-lg hover:bg-gray-100 transition-colors ${buttonClassName || ''}`
+        `h-[34px] w-[34px] px-0 justify-center items-center hover:bg-gray-100 transition-colors !gap-0 ${buttonClassName || ''}`
       }
+      buttonStyle={{ borderRadius: '12px', backgroundColor: 'transparent', border: '1px solid #e5e7eb', color: '#000000', ...buttonStyle }}
       dropdownClassName={`min-w-48 ${dropdownClassName || ''}`}
-      icon={<MoreVertical className="w-4 h-4 text-gray-500" />}
+      icon={<MoreVertical className="w-[18px] h-[18px]" style={{ color: '#000000', width: '18px', height: '18px', minWidth: '18px', minHeight: '18px' }} />}
+      hideChevron={true}
     />
   )
 }

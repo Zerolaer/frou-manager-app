@@ -24,6 +24,11 @@ const SideModal = ({
   rightContent,
   noPadding = false,
 }: SideModalProps) => {
+  // Add safety check for React context
+  if (!React.useRef) {
+    return null
+  }
+  
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

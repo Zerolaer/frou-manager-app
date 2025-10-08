@@ -106,15 +106,15 @@ body {
 
 /* Tables */
 table { @apply w-full text-left border-collapse; }
-th { @apply text-xs md:text-sm font-semibold text-gray-600 border-b border-gray-200 px-3 md:px-4 py-2; white-space: nowrap; }
-td { @apply text-xs md:text-sm text-gray-800 border-b border-gray-100 px-3 md:px-4 py-2; white-space: nowrap; }
+th { @apply text-xs md:text-sm font-semibold text-gray-600 border-b px-3 md:px-4 py-2; white-space: nowrap; border-color: #E5E7EB; }
+td { @apply text-xs md:text-sm text-gray-800 border-b px-3 md:px-4 py-2; white-space: nowrap; border-color: #E5E7EB; }
 tr:hover td { @apply bg-gray-50; }
 
 /* Buttons */
 button { @apply rounded-lg px-3 py-1.5 transition font-medium; }
 .btn-accent { @apply bg-blue-600 text-white; }
 .btn-accent:hover { @apply bg-blue-700; }
-.btn-outline { @apply border border-gray-300 text-gray-700 bg-white; }
+.btn-outline { @apply border text-gray-700 bg-white; border-color: #E5E7EB; }
 .btn-outline:hover { @apply bg-gray-50; }
 
 /* Inputs */
@@ -181,17 +181,21 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* --- Force light background (defensive override) --- */
 html, body, #root {
-  background-color: #ffffff !important;
+  background-color: #F2F7FA !important;
   background-image: none !important;
 }
 
 /* UI Components from ui.css */
 :root{
-  --primary:#2563eb;
-  --primary-hover:#1d4ed8;
+  --primary:#171717;
+  --primary-hover:#0d0d0d;
+  --secondary:#F2F7FA;
+  --outline:#E5E7EB;
+  --background:#F2F7FA;
+  --white:#FFFFFF;
   --danger:#dc2626;
   --danger-hover:#b91c1c;
-  --ring:rgba(37,99,235,.15);
+  --ring:rgba(23,23,23,.15);
 }
 
 /* Buttons */
@@ -203,8 +207,8 @@ html, body, #root {
 }
 :root button.btn:not(.btn-outline):not(.btn-danger):hover, :root .btn:not(.btn-outline):not(.btn-danger):hover{ background-color:var(--primary-hover) !important; }
 :root button.btn:focus, :root .btn:focus { outline:none; box-shadow:0 0 0 3px var(--ring); }
-:root button.btn.btn-outline, :root .btn.btn-outline{ background-color:#fff !important; color:#111827 !important; border-color:#d1d5db !important; }
-:root button.btn.btn-outline:hover, :root .btn.btn-outline:hover{ background-color:#f3f4f6 !important; }
+:root button.btn.btn-outline, :root .btn.btn-outline{ background-color:var(--white) !important; color:#111827 !important; border-color:var(--outline) !important; }
+:root button.btn.btn-outline:hover, :root .btn.btn-outline:hover{ background-color:var(--secondary) !important; }
 :root button.btn.btn-danger, :root .btn.btn-danger{ background-color:var(--danger) !important; border-color:var(--danger) !important; color:#fff !important; }
 :root button.btn.btn-danger:hover, :root .btn.btn-danger:hover{ background-color:var(--danger-hover) !important; }
 
@@ -343,8 +347,6 @@ select::-webkit-scrollbar,
 
 /* add form */
 .editor-add { display:flex; gap:8px; margin-bottom:12px; }
-.editor-input { border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; font-size:13px; }
-.editor-input:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
 .editor-input.number { width:140px; }
 .editor-input.text { flex:1; }
 
@@ -377,17 +379,17 @@ select::-webkit-scrollbar,
   font-size: 14px; 
   font-weight: 500;
   line-height: 1.4;
-  border: 1px solid #e5e7eb; 
+  border: 1px solid #E5E7EB; 
   background: #fff; 
 }
 .btn:hover { background: #f8fafc; }
 .btn-primary { 
-  background: #111827; 
+  background: #171717; 
   color: #fff; 
-  border-color: #111827; 
+  border-color: #171717; 
   font-weight: 500;
 }
-.btn-primary:hover { background: #0f172a; }
+.btn-primary:hover { background: #0d0d0d; }
 
 /* Remove number spinners */
 input[type='number']::-webkit-outer-spin-button,

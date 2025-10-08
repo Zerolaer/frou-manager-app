@@ -6,6 +6,7 @@
   gap: 16px;
   box-sizing: border-box;
   overflow: hidden;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .notes-page.is-collapsed {
@@ -20,10 +21,6 @@ body.notes-mode {
 body.notes-mode #main-content {
   overflow: hidden !important;
   padding-bottom: 16px !important;
-}
-
-.notes-page.is-collapsed {
-  grid-template-columns: 72px 1fr;
 }
 
 /* Mobile responsiveness */
@@ -54,12 +51,7 @@ body.notes-mode #main-content {
   overflow-y: auto;
   overflow: visible;
   height: 100%;
-}
-
-.notes-page.is-collapsed .notes-folders .space-y-1 {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .notes-folders::-webkit-scrollbar {
@@ -90,6 +82,7 @@ body.notes-mode #main-content {
   height: 100%;
   display: flex;
   flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .notes-content::-webkit-scrollbar {

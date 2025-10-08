@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { CoreInput } from '@/components/ui/CoreInput'
 import { ChevronLeft, Plus } from 'lucide-react'
 
 type Folder = {
@@ -181,28 +182,64 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
   }
 
   return (
-    <aside className="notes-folders rounded-3xl bg-white" style={{ width: collapsed ? 72 : 280, border: '1px solid #E9F2F6' }}>
-      <div className="flex items-center justify-between mb-3">
-        {!collapsed && (
-          <>
-            <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" onClick={onToggleCollapse} aria-label="Свернуть">
-              <ChevronLeft size={16} />
-            </button>
-            <div className="text-sm font-semibold text-gray-700">Папки</div>
-            <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" onClick={()=>setShowCreate(true)} aria-label="Добавить папку">
-              <Plus size={16} />
-            </button>
-          </>
-        )}
-        {collapsed && (
-          <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav mx-auto" onClick={onToggleCollapse} aria-label="Развернуть">
-            <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
-          </button>
-        )}
+    <aside className="notes-folders rounded-3xl bg-white" style={{ width: collapsed ? 72 : 280, border: '1px solid #E9F2F6', transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+      <div className="flex items-center mb-3" style={{ 
+        position: 'relative',
+        height: '34px'
+      }}>
+        <button 
+          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          onClick={onToggleCollapse} 
+          aria-label={collapsed ? "Развернуть" : "Свернуть"}
+          style={{ 
+            position: 'absolute',
+            left: '0',
+            flexShrink: 0
+          }}
+        >
+          <ChevronLeft 
+            size={16} 
+            style={{ 
+              transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', 
+              transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
+            }} 
+          />
+        </button>
+        
+        <div 
+          className="text-sm font-semibold text-gray-700" 
+          style={{ 
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            transition: 'opacity 0.2s ease', 
+            opacity: collapsed ? 0 : 1,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none'
+          }}
+        >
+          Папки
+        </div>
+        
+        <button 
+          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          onClick={()=>setShowCreate(true)} 
+          aria-label="Добавить папку" 
+          style={{ 
+            position: 'absolute',
+            right: '0',
+            flexShrink: 0,
+            transition: 'opacity 0.2s ease',
+            opacity: collapsed ? 0 : 1,
+            pointerEvents: collapsed ? 'none' : 'auto'
+          }}
+        >
+          <Plus size={16} />
+        </button>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         {items.map((p)=> (
-          <div key={p.id} className="relative">
+          <div key={p.id} className="relative" style={{ width: '100%' }}>
             <button
               draggable={p.id!=='ALL'}
               onDragStart={()=>onDragStart(p.id)}
@@ -212,13 +249,40 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
               onContextMenu={(e)=>openCtx(e,p)}
               onMouseEnter={()=>collapsed && setHoveredFolder(p.id)}
               onMouseLeave={()=>setHoveredFolder(null)}
-              className={`border h-[42px] ${collapsed ? '!w-[42px] p-0 flex items-center justify-center' : 'w-full px-3 flex items-center gap-2'} text-left ${activeId===p.id ? 'border-black bg-black text-white' : 'border-gray-200 hover:bg-gray-50'}`}
-              style={{ borderRadius: '12px' }}
+              className={`border h-[42px] flex items-center text-left ${activeId===p.id ? 'border-black bg-black text-white' : 'border-gray-200 hover:bg-gray-50'}`}
+              style={{ 
+                borderRadius: '12px', 
+                width: collapsed ? '42px' : '100%',
+                position: 'relative',
+                transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                overflow: 'hidden'
+              }}
             >
-              <span className={collapsed ? '' : 'mr-2'} style={{ color: activeId===p.id ? '#ffffff' : (p.color || '#94a3b8'), display: 'inline-flex', alignItems: 'center' }}>
+              <span style={{ 
+                color: activeId===p.id ? '#ffffff' : (p.color || '#94a3b8'), 
+                display: 'inline-flex', 
+                alignItems: 'center',
+                flexShrink: 0,
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)'
+              }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
               </span>
-              {!collapsed && <span className="truncate">{p.name}</span>}
+              <span 
+                className="truncate" 
+                style={{ 
+                  transition: 'opacity 0.2s ease', 
+                  opacity: collapsed ? 0 : 1,
+                  whiteSpace: 'nowrap',
+                  marginLeft: '28px',
+                  display: 'block',
+                  fontSize: '14px'
+                }}
+              >
+                {p.name}
+              </span>
             </button>
             {collapsed && hoveredFolder === p.id && (
               <>
@@ -330,8 +394,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Название папки</label>
-            <input 
-              className="border rounded-lg px-3 py-2 text-sm w-full" 
+            <CoreInput 
               value={createName} 
               onChange={(e)=>setCreateName(e.target.value)}
               placeholder="Введите название папки"
@@ -375,7 +438,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
           }
         )}
       >
-        <input className="border rounded-lg px-3 py-2 text-sm w-full" value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
+        <CoreInput value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
       </UnifiedModal>
 
       <UnifiedModal

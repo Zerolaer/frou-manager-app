@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
-import { UnifiedModal } from '@/components/ui/ModalSystem'
-import ModalFooter from '@/components/ui/ModalFooter'
+import Modal from '@/components/ui/Modal'
+import { CoreInput } from '@/components/ui/CoreInput'
 import { ChevronLeft, Plus } from 'lucide-react'
 
 import type { Project } from '@/types/shared'
@@ -32,12 +32,44 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
       const ext = await supabase.from('tasks_projects').select('id,name,color,position').order('position', { ascending:true }).order('created_at', { ascending:true })
       if (!ext.error){
         setHasColor(true); setHasPosition(true)
-        setItems(([{ id: 'ALL', name: 'Все проекты', color: null } as any, ...((ext.data||[]) as Project[])]))
+        const projectsList = (ext.data||[]) as Project[]
+        
+        // If user has no projects, create default "Без категории" project
+        if (projectsList.length === 0) {
+          const { data: newProject } = await supabase
+            .from('tasks_projects')
+            .insert({ user_id: userId, name: 'Без категории', position: 0 })
+            .select('id,name,color,position')
+            .single()
+          
+          if (newProject) {
+            projectsList.push(newProject as Project)
+          }
+        }
+        
+        setItems(([{ id: 'ALL', name: 'Все проекты', color: null } as any, ...projectsList]))
         return
       }
       // fallback to id,name only
       const basic = await supabase.from('tasks_projects').select('id,name').order('created_at', { ascending:true })
-      if (!basic.error) setItems(([{ id: 'ALL', name: 'Все проекты', color: null } as any, ...((basic.data||[]) as Project[])]))
+      if (!basic.error) {
+        const projectsList = (basic.data||[]) as Project[]
+        
+        // If user has no projects, create default "Без категории" project
+        if (projectsList.length === 0) {
+          const { data: newProject } = await supabase
+            .from('tasks_projects')
+            .insert({ user_id: userId, name: 'Без категории' })
+            .select('id,name')
+            .single()
+          
+          if (newProject) {
+            projectsList.push(newProject as Project)
+          }
+        }
+        
+        setItems(([{ id: 'ALL', name: 'Все проекты', color: null } as any, ...projectsList]))
+      }
     })()
   },[userId])
 
@@ -158,28 +190,64 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
   }
 
   return (
-    <aside className="tasks-projects rounded-3xl bg-white" style={{ width: collapsed ? 72 : 260, border: '1px solid #E9F2F6' }}>
-      <div className="flex items-center justify-between mb-3">
-        {!collapsed && (
-          <>
-            <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" onClick={onToggleCollapse} aria-label="Свернуть">
-              <ChevronLeft size={16} />
-            </button>
-            <div className="text-sm font-semibold text-gray-700">Проекты</div>
-            <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" onClick={()=>setShowCreate(true)} aria-label="Добавить проект">
-              <Plus size={16} />
-            </button>
-          </>
-        )}
-        {collapsed && (
-          <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav mx-auto" onClick={onToggleCollapse} aria-label="Развернуть">
-            <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
-          </button>
-        )}
+    <aside className="tasks-projects rounded-3xl bg-white" style={{ width: collapsed ? 72 : 260, border: '1px solid #E9F2F6', transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+      <div className="flex items-center mb-3" style={{ 
+        position: 'relative',
+        height: '34px'
+      }}>
+        <button 
+          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          onClick={onToggleCollapse} 
+          aria-label={collapsed ? "Развернуть" : "Свернуть"}
+          style={{ 
+            position: 'absolute',
+            left: '0',
+            flexShrink: 0
+          }}
+        >
+          <ChevronLeft 
+            size={16} 
+            style={{ 
+              transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', 
+              transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
+            }} 
+          />
+        </button>
+        
+        <div 
+          className="text-sm font-semibold text-gray-700" 
+          style={{ 
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            transition: 'opacity 0.2s ease', 
+            opacity: collapsed ? 0 : 1,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none'
+          }}
+        >
+          Проекты
+        </div>
+        
+        <button 
+          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          onClick={()=>setShowCreate(true)} 
+          aria-label="Добавить проект" 
+          style={{ 
+            position: 'absolute',
+            right: '0',
+            flexShrink: 0,
+            transition: 'opacity 0.2s ease',
+            opacity: collapsed ? 0 : 1,
+            pointerEvents: collapsed ? 'none' : 'auto'
+          }}
+        >
+          <Plus size={16} />
+        </button>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         {items.map((p)=> (
-          <div key={p.id} className="relative">
+          <div key={p.id} className="relative" style={{ width: '100%' }}>
             <button
               draggable={p.id!=='ALL'}
               onDragStart={()=>onDragStart(p.id)}
@@ -189,13 +257,40 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               onContextMenu={(e)=>openCtx(e,p)}
               onMouseEnter={()=>collapsed && setHoveredProject(p.id)}
               onMouseLeave={()=>setHoveredProject(null)}
-              className={`border h-[42px] ${collapsed ? '!w-[42px] p-0 flex items-center justify-center' : 'w-full px-3 flex items-center gap-2'} text-left ${activeId===p.id ? 'border-black bg-black text-white' : 'border-gray-200 hover:bg-gray-50'}`}
-              style={{ borderRadius: '12px' }}
+              className={`border h-[42px] flex items-center text-left ${activeId===p.id ? 'border-black bg-black text-white' : 'border-gray-200 hover:bg-gray-50'}`}
+              style={{ 
+                borderRadius: '12px', 
+                width: collapsed ? '42px' : '100%',
+                position: 'relative',
+                transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                overflow: 'hidden'
+              }}
             >
-              <span className={collapsed ? '' : 'mr-2'} style={{ color: activeId===p.id ? '#ffffff' : (p.color || '#94a3b8'), display: 'inline-flex', alignItems: 'center' }}>
+              <span style={{ 
+                color: activeId===p.id ? '#ffffff' : (p.color || '#94a3b8'), 
+                display: 'inline-flex', 
+                alignItems: 'center',
+                flexShrink: 0,
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)'
+              }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
               </span>
-              {!collapsed && <span className="truncate">{p.name}</span>}
+              <span 
+                className="truncate" 
+                style={{ 
+                  transition: 'opacity 0.2s ease', 
+                  opacity: collapsed ? 0 : 1,
+                  whiteSpace: 'nowrap',
+                  marginLeft: '28px',
+                  display: 'block',
+                  fontSize: '14px'
+                }}
+              >
+                {p.name}
+              </span>
             </button>
             {collapsed && hoveredProject === p.id && (
               <>
@@ -289,54 +384,60 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
 
       <ProjectCreateModal open={showCreate} onClose={()=>setShowCreate(false)} userId={userId} onCreated={createOk} />
 
-      <UnifiedModal
+      <Modal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
         title="Переименовать проект"
         footer={
-          <ModalFooter>
+          <>
             <button
               onClick={() => setRenameOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
+              style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
             >
               Отмена
             </button>
             <button
               onClick={renameOk}
               disabled={!renameValue.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center px-4 font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed leading-none h-10"
+              style={{ borderRadius: '12px', fontSize: '13px', backgroundColor: '#171717' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0d0d0d'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#171717'}
             >
               Сохранить
             </button>
-          </ModalFooter>
+          </>
         }
       >
-        <input className="border rounded-lg px-3 py-2 text-sm w-full" value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
-      </UnifiedModal>
+        <CoreInput value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
+      </Modal>
 
-      <UnifiedModal
+      <Modal
         open={delOpen}
         onClose={()=>setDelOpen(false)}
         title="Удалить проект?"
         footer={
-          <ModalFooter>
+          <>
             <button
               onClick={() => setDelOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
+              style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
             >
               Отмена
             </button>
             <button
               onClick={deleteOk}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center px-4 font-medium text-white bg-red-600 hover:bg-red-700 transition-colors leading-none h-10"
+              style={{ borderRadius: '12px', fontSize: '13px' }}
             >
               Удалить
             </button>
-          </ModalFooter>
+          </>
         }
       >
         <div className="text-sm text-gray-600">Проект и связанные задачи будут удалены.</div>
-      </UnifiedModal>
+      </Modal>
     </aside>
   )
 }

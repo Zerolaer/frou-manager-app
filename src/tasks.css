@@ -12,6 +12,7 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Disable page scroll when on tasks page */
@@ -26,12 +27,6 @@ body.tasks-mode #main-content {
 
 .tasks-page.is-collapsed {
   grid-template-columns: 72px 1fr;
-}
-
-.tasks-page.is-collapsed .tasks-projects .space-y-1 {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 /* Mobile responsiveness */
@@ -172,7 +167,7 @@ body.tasks-mode #main-content {
 .tasks-board {
   height: 100%;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 24px; /* Same as widgets */
   box-shadow: 0 8px 30px rgba(0,0,0,.05);
   display: flex;
   flex-direction: column;
@@ -207,6 +202,37 @@ body.tasks-mode #main-content {
   display: flex;
   flex-direction: column; /* Ãâ€™ÃÂ½Ã‘Æ’Ã‘â€šÃ‘â‚¬ÃÂµÃÂ½ÃÂ½ÃÂ¸ÃÂ¹ Ã‘ÂÃÂºÃ‘â‚¬ÃÂ¾ÃÂ»ÃÂ» ÃÂ´ÃÂ¾ÃÂ¿Ã‘Æ’Ã‘ÂÃ‘â€šÃÂ¸ÃÂ¼, Ã‘ÂÃ‘â€šÃ‘â‚¬ÃÂ°ÃÂ½ÃÂ¸Ã‘â€ ÃÂ° ÃÂ±ÃÂµÃÂ· ÃÂ²ÃÂµÃ‘â‚¬Ã‘â€šÃÂ¸ÃÂºÃÂ°ÃÂ»Ã‘Å’ÃÂ½ÃÂ¾ÃÂ³ÃÂ¾ */
 }
+
+/* Add border radius to week board */
+.week-board {
+  border-radius: 24px !important;
+}
+
+/* Add border radius to board grid and day columns */
+.board-grid {
+  border-radius: 24px !important;
+  overflow: hidden;
+}
+
+.day-col {
+  border-radius: 0 !important; /* Remove individual day rounding */
+}
+
+.day-col:first-child {
+  border-top-left-radius: 24px !important;
+  border-bottom-left-radius: 24px !important;
+}
+
+.day-col:last-child {
+  border-top-right-radius: 24px !important;
+  border-bottom-right-radius: 24px !important;
+}
+
+/* Force rounded corners for task priority and tags */
+.task-card .text-xs {
+  border-radius: 999px !important;
+}
+
 .board-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -264,6 +290,10 @@ body.tasks-mode #main-content {
 .day-add .btn:hover { background:#f3f4f6; }
 
 /* Task card base styles */
+.task-card:hover {
+  border-color: #000000 !important;
+}
+
 .task-card.is-dragging {
   opacity: 0.5;
   transform: rotate(5deg);
@@ -291,6 +321,7 @@ body.tasks-mode #main-content {
   display:flex;
   flex-direction:column;
   overflow: visible;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tasks-projects .space-y-1 {
@@ -342,6 +373,22 @@ body.tasks-mode #main-content {
 .week-head .timeline .nav button{ padding:6px 10px; border:1px solid #d1d5db;  background:#fff; cursor:pointer; }
 
 .day-col.is-weekend .day-head{ padding:8px 10px; background:#ffffff; font-size:13px; font-weight:600; color:#0f172a; display:flex; justify-content:space-between; align-items:center; }
+
+/* All day headers - Medium weight */
+.day-head {
+  font-weight: 500; /* Medium weight for all days */
+}
+
+/* Current day highlighting */
+.day-col.is-today .day-head {
+  border-bottom: 2px solid #000000; /* Black bottom border for clear indication */
+  font-weight: 700; /* Bold weight for current day */
+}
+
+/* Weekend days - 60% opacity */
+.day-col.is-weekend .day-head {
+  opacity: 0.6; /* 60% visibility for weekends */
+}
 
 .week-nav{ width:32px; height:32px; padding:0 !important; display:inline-flex; align-items:center; justify-content:center; border-radius: 12px; }
  

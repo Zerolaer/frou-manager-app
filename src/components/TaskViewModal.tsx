@@ -7,6 +7,7 @@ import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
 import { Plus, Trash2 } from 'lucide-react'
 import CoreMenu from '@/components/ui/CoreMenu'
+import Dropdown from '@/components/ui/Dropdown'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -325,18 +326,18 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         <aside className="space-y-4">
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
             <div className="text-sm font-medium text-gray-700">Проект</div>
-            <select
-              value={projectId}
-              onChange={(e) => moveToProject(e.target.value || null)}
-              className="h-9 w-full rounded-xl border border-gray-200 px-3 bg-white"
-            >
-              <option value="">Без проекта</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name || 'Без названия'}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              options={[
+                { value: '', label: 'Без проекта' },
+                ...projects.map(p => ({ value: p.id, label: p.name || 'Без названия' }))
+              ]}
+              value={projectId || ''}
+              onChange={(newValue) => moveToProject(newValue ? newValue.toString() : null)}
+              placeholder="Выберите проект"
+              ariaLabel="Выбор проекта"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">

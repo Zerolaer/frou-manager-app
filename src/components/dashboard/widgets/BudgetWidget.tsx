@@ -211,7 +211,7 @@ const BudgetWidget = () => {
             <div className="text-sm text-gray-600 mb-2">Соотношение доходов к расходам</div>
             <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
               <div 
-                className="bg-black h-2 rounded-full transition-all duration-300"
+                className="bg-black h-2 rounded-full"
                 style={{ width: `${budget.earned > 0 ? Math.min(100, (budget.spent / budget.earned) * 100) : 0}%` }}
               ></div>
             </div>

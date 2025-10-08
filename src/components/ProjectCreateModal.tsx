@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { UnifiedModal } from '@/components/ui/ModalSystem'
-import { ModalField, ModalInput, ModalContent } from '@/components/ui/ModalForm'
-import ModalFooter from '@/components/ui/ModalFooter'
+import Modal from '@/components/ui/Modal'
+import { ModalField, ModalContent } from '@/components/ui/ModalForm'
+import { CoreInput } from '@/components/ui/CoreInput'
 import { supabase } from '@/lib/supabaseClient'
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
@@ -48,31 +48,35 @@ const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
   }
 
   return (
-    <UnifiedModal
+    <Modal
       open={open}
       onClose={onClose}
       title="Новый проект"
       footer={
-        <ModalFooter>
+        <>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
+            style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
           >
             Отмена
           </button>
           <button
             onClick={submit}
             disabled={!name.trim() || loading}
-            className="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center px-4 font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed leading-none h-10"
+            style={{ borderRadius: '12px', fontSize: '13px', backgroundColor: '#171717' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0d0d0d'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#171717'}
           >
             {loading ? 'Создание...' : 'Создать'}
           </button>
-        </ModalFooter>
+        </>
       }
     >
       <ModalContent>
         <ModalField label="Название" required>
-          <ModalInput
+          <CoreInput
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Например, Website Redesign"
@@ -96,7 +100,7 @@ const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
           </div>
         </ModalField>
       </ModalContent>
-    </UnifiedModal>
+    </Modal>
   )
 }
 

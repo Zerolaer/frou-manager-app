@@ -39,6 +39,8 @@ function getPriorityText(priority?: string): string | null {
       return "Medium"
     case TASK_PRIORITIES.LOW:
       return "Low"
+    case TASK_PRIORITIES.NORMAL:
+      return "Normal"
     default:
       return null
   }
@@ -226,6 +228,10 @@ export default function Tasks(){
   const [dragStartTimer, setDragStartTimer] = useState<NodeJS.Timeout | null>(null)
   const [mouseDownPos, setMouseDownPos] = useState({ x: 0, y: 0 })
   const [hasMoved, setHasMoved] = useState(false)
+  
+  // Use ref to track dragging state for click handler
+  const hasMovedRef = useRef(false)
+  const isDraggingRef = useRef(false)
 
   // Сохраняем информацию о задаче для перетаскивания
   const [pendingDrag, setPendingDrag] = useState<{
@@ -241,9 +247,12 @@ export default function Tasks(){
       e.preventDefault()
     }
     
+    console.log('🖱️ Mouse down on task:', task.title)
+    
     // Сохраняем позицию клика и информацию о задаче
     setMouseDownPos({ x: e.clientX, y: e.clientY })
     setHasMoved(false)
+    hasMovedRef.current = false
     setPendingDrag({ task, dayKey, index })
   }
 
@@ -256,7 +265,9 @@ export default function Tasks(){
       )
       
       if (distance > 5 && pendingDrag) { // Если мышь сдвинулась больше чем на 5px и есть задача для перетаскивания
+        console.log('🚀 Starting drag, distance:', distance)
         setHasMoved(true)
+        hasMovedRef.current = true
         
         // Используем сохраненную информацию о задаче из handleMouseDown
         const { task, dayKey, index } = pendingDrag
@@ -264,6 +275,7 @@ export default function Tasks(){
         setDraggedTask(task)
         setDragSource({ dayKey, index })
         setIsDragging(true)
+        isDraggingRef.current = true
         
         setDragOffset({
           x: 0,
@@ -313,7 +325,11 @@ export default function Tasks(){
       if (dayKey) {
         // Find position within the day
         const taskCards = dayCol.querySelectorAll('.task-card:not(.is-dragging)')
-        let targetIndex = taskCards.length // Default to end
+        // If we're dragging within the same day, taskCards.length is reduced by 1
+        // So we need to add 1 to get the actual end position
+        const isSameDay = dragSource?.dayKey === dayKey
+        const actualTaskCount = tasks[dayKey]?.length || 0
+        let targetIndex = isSameDay ? actualTaskCount : taskCards.length // Default to end
         
         // Check if we're dragging over the day-body area
         const dayBody = dayCol.querySelector('.day-body')
@@ -322,49 +338,81 @@ export default function Tasks(){
           const relativeY = e.clientY - bodyRect.top
           const bodyHeight = bodyRect.height
           
+          console.log('📍 Day body rect:', { relativeY, bodyHeight, mouseY: e.clientY, bodyTop: bodyRect.top })
+          
           if (taskCards.length === 0) {
             // Empty column - place at beginning
             targetIndex = 0
           } else {
-            // Find position based on cards
+            // Find position based on cards - no bottom zone interference
             let foundPosition = false
             for (let i = 0; i < taskCards.length; i++) {
               const card = taskCards[i]
               const rect = card.getBoundingClientRect()
+              const cardCenter = rect.top + rect.height / 2
               
-              if (e.clientY < rect.top + rect.height / 2) {
-                targetIndex = i
+              console.log(`📍 Card ${i}: top=${rect.top}, center=${cardCenter}, mouseY=${e.clientY}, isAbove=${e.clientY < cardCenter}`)
+              
+              if (e.clientY < cardCenter) {
+                // If we're dragging from the same day, we need to adjust the index
+                // because the dragged task is hidden from taskCards
+                if (isSameDay && dragSource && dragSource.index <= i) {
+                  targetIndex = i + 1 // Place after the card we're hovering over
+                  console.log('📍 Same day drag: adjusting index from', i, 'to', targetIndex)
+                } else {
+                  targetIndex = i
+                }
                 foundPosition = true
+                console.log('📍 Found position above card', i, 'at Y:', rect.top, 'final targetIndex:', targetIndex)
                 break
               }
             }
             
             // If we didn't find a position above any card, place at end
             if (!foundPosition) {
-              targetIndex = taskCards.length
+              targetIndex = isSameDay ? actualTaskCount : taskCards.length
+              console.log('📍 No position found above cards, placing at end (isSameDay:', isSameDay, 'actualTaskCount:', actualTaskCount, ')')
             }
           }
         } else {
           // Fallback: if no day-body found, place at end
-          targetIndex = taskCards.length
+          targetIndex = isSameDay ? actualTaskCount : taskCards.length
         }
+        // console.log('🎯 Setting drop target:', { dayKey, targetIndex, taskCardsLength: taskCards.length, actualTaskCount, isSameDay })
         setDropTarget({ dayKey, index: targetIndex })
       }
     }
   }
 
   function handleMouseUp(e: MouseEvent | React.MouseEvent) {
+    console.log('🖱️ Mouse up, isDragging:', isDragging, 'hasMoved:', hasMoved, 'hasMovedRef:', hasMovedRef.current, 'isDraggingRef:', isDraggingRef.current)
+    
     // Очищаем pending drag при отпускании мыши
     if (pendingDrag) {
+      console.log('🔄 Clearing pending drag')
       setPendingDrag(null)
     }
     
-    // Сбрасываем флаг движения через небольшую задержку, чтобы onClick не сработал
-    setTimeout(() => {
-      setHasMoved(false)
-    }, 100)
+    // CRITICAL: Only handle drop if we were actually dragging AND moved
+    // Use refs for immediate check without state delay
+    if (!isDraggingRef.current || !hasMovedRef.current || !draggedTask || !dragSource) {
+      console.log('❌ NOT CALLING handleDrop - no real drag detected')
+      // Clean up drag state
+      setDraggedTask(null)
+      setDragSource(null)
+      setDropTarget(null)
+      setIsDragging(false)
+      isDraggingRef.current = false
+      
+      // Сбрасываем флаг движения через небольшую задержку, чтобы onClick не сработал
+      setTimeout(() => {
+        setHasMoved(false)
+        hasMovedRef.current = false
+      }, 100)
+      return
+    }
     
-    if (!isDragging || !draggedTask || !dragSource) return
+    console.log('✅✅✅ CALLING handleDrop - real drag detected ✅✅✅')
     
     // Find final drop target - use same improved logic
     const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
@@ -390,7 +438,10 @@ export default function Tasks(){
       const dayKey = dayCol.getAttribute('data-day-key')
       if (dayKey) {
         const taskCards = dayCol.querySelectorAll('.task-card:not(.is-dragging)')
-        let targetIndex = taskCards.length // Default to end
+        // If we're dragging within the same day, taskCards.length is reduced by 1
+        const isSameDay = dragSource?.dayKey === dayKey
+        const actualTaskCount = tasks[dayKey]?.length || 0
+        let targetIndex = isSameDay ? actualTaskCount : taskCards.length // Default to end
         
         // Check if we're in the bottom area of the day body
         const dayBody = dayCol.querySelector('.day-body')
@@ -399,32 +450,48 @@ export default function Tasks(){
           const relativeY = e.clientY - bodyRect.top
           const bodyHeight = bodyRect.height
           
+          console.log('📍 Final drop - Day body rect:', { relativeY, bodyHeight, mouseY: e.clientY, bodyTop: bodyRect.top })
+          
           if (taskCards.length === 0) {
             // Empty column - place at beginning
             targetIndex = 0
           } else {
-            // Find position based on cards
+            // Find position based on cards - no bottom zone interference
             let foundPosition = false
             for (let i = 0; i < taskCards.length; i++) {
               const card = taskCards[i]
               const rect = card.getBoundingClientRect()
-              if (e.clientY < rect.top + rect.height / 2) {
-                targetIndex = i
+              const cardCenter = rect.top + rect.height / 2
+              
+              console.log(`📍 Final drop - Card ${i}: top=${rect.top}, center=${cardCenter}, mouseY=${e.clientY}, isAbove=${e.clientY < cardCenter}`)
+              
+              if (e.clientY < cardCenter) {
+                // If we're dragging from the same day, we need to adjust the index
+                // because the dragged task is hidden from taskCards
+                if (isSameDay && dragSource && dragSource.index <= i) {
+                  targetIndex = i + 1 // Place after the card we're hovering over
+                  console.log('📍 Final drop - Same day drag: adjusting index from', i, 'to', targetIndex)
+                } else {
+                  targetIndex = i
+                }
                 foundPosition = true
+                console.log('📍 Final drop - Found position above card', i, 'at Y:', rect.top, 'final targetIndex:', targetIndex)
                 break
               }
             }
             
             // If we didn't find a position above any card, place at end
             if (!foundPosition) {
-              targetIndex = taskCards.length
+              targetIndex = isSameDay ? actualTaskCount : taskCards.length
+              console.log('📍 Final drop - No position found above cards, placing at end (isSameDay:', isSameDay, 'actualTaskCount:', actualTaskCount, ')')
             }
           }
         } else {
           // Fallback: if no day-body found, place at end
-          targetIndex = taskCards.length
+          targetIndex = isSameDay ? actualTaskCount : taskCards.length
         }
         
+        // console.log('🎯 Final drop at:', { dayKey, targetIndex, taskCardsLength: taskCards.length, actualTaskCount, isSameDay })
         // Perform the drop
         handleDrop(dayKey, targetIndex)
       }
@@ -435,18 +502,30 @@ export default function Tasks(){
     setDragSource(null)
     setDropTarget(null)
     setIsDragging(false)
+    isDraggingRef.current = false
     setHasMoved(false)
+    hasMovedRef.current = false
   }
 
   async function handleDrop(dayKey: string, index: number) {
-    if (!draggedTask || !dragSource || !uid) return
+    console.log('📦 handleDrop called:', { dayKey, index, draggedTask: draggedTask?.title, fromDayKey: dragSource?.dayKey, fromIndex: dragSource?.index })
+    
+    if (!draggedTask || !dragSource || !uid) {
+      console.log('❌ handleDrop early return - missing data')
+      return
+    }
 
     const fromDayKey = dragSource.dayKey
     const fromIndex = dragSource.index
     const toIndex = index
 
     // Don't do anything if dropped in the same position
-    if (fromDayKey === dayKey && fromIndex === toIndex) return
+    if (fromDayKey === dayKey && fromIndex === toIndex) {
+      console.log('❌ handleDrop early return - same position')
+      return
+    }
+    
+    console.log('✅ handleDrop proceeding with move')
 
     const map = { ...tasks }
     const fromList = [...(map[fromDayKey] || [])]
@@ -541,7 +620,7 @@ export default function Tasks(){
       document.removeEventListener('mousemove', handleGlobalMouseMove)
       document.removeEventListener('mouseup', handleGlobalMouseUp)
     }
-  }, [isDragging, pendingDrag])
+  }, [isDragging, pendingDrag, mouseDownPos, hasMoved, draggedTask, dragSource])
 
   // projects
   const [projects, setProjects] = useState<Project[]>([])
@@ -608,6 +687,7 @@ const projectColorById = useMemo(() => {
         .order('date',     { ascending:true })
         .order('position', { ascending:true })
       
+      // Filter: 'ALL' shows ALL tasks from all projects, specific project shows only that project's tasks
       const query = (activeProject===TASK_PROJECT_ALL) ? q : q.eq('project_id', activeProject)
       const { data, error } = await query
       
@@ -684,7 +764,7 @@ const projectColorById = useMemo(() => {
       const { data, error } = await supabase
         .from('tasks_items')
         .insert({
-          project_id: (task as { project_id?: string }).project_id || activeProject,
+          project_id: task.project_id || null,
           title: task.title,
           description: task.description || null,
           date: dayKey,
@@ -692,12 +772,14 @@ const projectColorById = useMemo(() => {
           priority: task.priority || null,
           tag: task.tag || null,
           todos: Array.isArray(task.todos) ? task.todos : [],
-          status: task.status || TASK_STATUSES.OPEN
+          status: task.status || TASK_STATUSES.OPEN,
+          user_id: uid
         })
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status').single()
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
       if (!error && data){
         const t: TaskItem = {
           id: data.id,
+          project_id: data.project_id || undefined,
           title: data.title,
           description: data.description || undefined,
           date: data.date as string,
@@ -705,7 +787,8 @@ const projectColorById = useMemo(() => {
           priority: data.priority || undefined,
           tag: data.tag || undefined,
           todos: (data.todos||[]) as Todo[],
-          status: (data.status as any) || TASK_STATUSES.OPEN
+          status: (data.status as any) || TASK_STATUSES.OPEN,
+          project_name: (data as any).tasks_projects?.name || null
         }
         const map = { ...tasks }
         ;(map[dayKey] ||= []).push(t)
@@ -786,8 +869,40 @@ const projectColorById = useMemo(() => {
   const [taskDesc, setTaskDesc] = useState('')
   async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date){
     if (!uid) return
-    const resolvedProject = projectIdFromModal || (activeProject && activeProject!==TASK_PROJECT_ALL ? activeProject : null)
-    if (!resolvedProject) return
+    
+    console.log('🔧 createTask called with:', {
+      projectIdFromModal,
+      projectIdType: typeof projectIdFromModal,
+      activeProject,
+      projectsLength: projects.length,
+      firstProjectId: projects[0]?.id
+    })
+    
+    // Determine project for the task
+    // NOTE: project_id is nullable - tasks can exist without a project
+    let resolvedProject: string | null = null
+    
+    if (projectIdFromModal !== undefined && projectIdFromModal !== '') {
+      // User explicitly selected a specific project in modal
+      resolvedProject = projectIdFromModal
+      console.log('✅ Project explicitly set from modal:', resolvedProject)
+    } else if (projectIdFromModal === '') {
+      // User selected "Без проекта" (empty string) - task without project
+      resolvedProject = null
+      console.log('✅ Task without project (null)')
+    } else if (activeProject && activeProject !== TASK_PROJECT_ALL) {
+      // Use active project if it's not "Все проекты"
+      resolvedProject = activeProject
+      console.log('✅ Using active project:', resolvedProject)
+    } else if (projects.length > 0) {
+      // Fallback to first project ("Без категории")
+      resolvedProject = projects[0].id
+      console.log('⚠️ Fallback to first project:', resolvedProject)
+    }
+    // If no projects exist and no project selected, resolvedProject stays null
+    
+    console.log('🎯 Final resolvedProject:', resolvedProject)
+    
     const title = (titleFromModal ?? taskTitle).trim()
     const desc  = (descFromModal ?? taskDesc)
     const priority = (priorityFromModal ?? TASK_PRIORITIES.NORMAL)
@@ -800,10 +915,22 @@ const projectColorById = useMemo(() => {
     const key = format(targetDate, 'yyyy-MM-dd')
     const nextPos = (tasks[key]?.length || 0)
     const { data, error } = await supabase.from('tasks_items')
-      .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, todos })
-      .select('id,project_id,title,description,date,position,priority,tag,todos,status').single()
+      .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, todos, user_id: uid })
+      .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
     if (!error && data){
-      const t: TaskItem = { id:data.id, project_id:data.project_id, title:data.title, description:data.description, date:data.date, position:data.position, priority:data.priority, tag:data.tag, todos: (data.todos||[]) }
+      const t: TaskItem = { 
+        id: data.id, 
+        project_id: data.project_id, 
+        title: data.title, 
+        description: data.description, 
+        date: data.date, 
+        position: data.position, 
+        priority: data.priority, 
+        tag: data.tag, 
+        todos: (data.todos||[]),
+        status: data.status || TASK_STATUSES.OPEN,
+        project_name: (data as any).tasks_projects?.name || null
+      }
       const map = { ...tasks }
       ;(map[key] ||= []).push(t)
       setTasks(map)
@@ -878,14 +1005,26 @@ const projectColorById = useMemo(() => {
         />
 
         <ModernTaskModal
+          key={viewTask?.id || 'new'}
           open={!!viewTask}
           onClose={()=>setViewTask(null)}
           task={viewTask}
           onUpdated={(t)=>{
             if(!t) return
+            console.log('🔄 onUpdated called for task:', t.title)
             const map={...tasks}
             const oldDate = viewTask?.date || ""
             const newDate = t.date || ""
+            
+            // Find original position of the task
+            let originalPosition = -1
+            if(oldDate && map[oldDate]) {
+              const originalIndex = map[oldDate].findIndex(x => x.id === t.id)
+              if(originalIndex >= 0) {
+                originalPosition = map[oldDate][originalIndex].position || originalIndex
+                console.log('📍 Original position:', originalPosition, 'at index:', originalIndex)
+              }
+            }
             
             // Remove from old date if it exists
             if(oldDate && map[oldDate]) {
@@ -898,13 +1037,26 @@ const projectColorById = useMemo(() => {
               const newList = map[newDate] || []
               const existingIndex = newList.findIndex(x => x.id === t.id)
               if(existingIndex >= 0) {
-                newList[existingIndex] = {...newList[existingIndex], ...t} as TaskItem
+                // Update existing task, preserve position
+                newList[existingIndex] = {...newList[existingIndex], ...t, position: newList[existingIndex].position} as TaskItem
+                console.log('✅ Updated existing task at position:', newList[existingIndex].position)
               } else {
-                newList.push(t as TaskItem)
+                // Add new task at original position or at end
+                const taskWithPosition = {...t, position: originalPosition >= 0 ? originalPosition : newList.length} as TaskItem
+                if(originalPosition >= 0 && originalPosition < newList.length) {
+                  // Insert at original position
+                  newList.splice(originalPosition, 0, taskWithPosition)
+                  console.log('📍 Inserted at original position:', originalPosition)
+                } else {
+                  // Add to end
+                  newList.push(taskWithPosition)
+                  console.log('📍 Added to end, position:', taskWithPosition.position)
+                }
               }
               map[newDate] = newList
             }
             
+            console.log('🔄 Setting new tasks state')
             setTasks(map)
           }}
         />
@@ -974,21 +1126,21 @@ const projectColorById = useMemo(() => {
                     const isDropTarget = dropTarget?.dayKey === key && dropTarget?.index === index
                     const isGhost = isDragging && dragSource?.dayKey === key && dragSource?.index === index
                     
+                    // Debug logging for drop target detection
+                    if (dropTarget?.dayKey === key) {
+                      console.log(`🔍 Card ${index}: dropTarget.index=${dropTarget?.index}, index=${index}, isDropTarget=${isDropTarget}`)
+                    }
+                    
                     return (
                       <React.Fragment key={t.id}>
                         {/* Drop indicator */}
                         {isDropTarget && (
-                          <div className="drop-indicator" style={{backgroundColor: 'blue', height: '2px', margin: '1px 0'}} />
-                        )}
-                        
-                        {/* Drop indicator at the end - show on last card when dropping at end */}
-                        {dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0) && index === (tasks[key]?.length || 0) - 1 && (
-                          <div className="drop-indicator" style={{backgroundColor: 'green', height: '2px', margin: '1px 0'}} />
-                        )}
-                        
-                        {/* Drop indicator for empty columns */}
-                        {dropTarget?.dayKey === key && dropTarget?.index === 0 && (tasks[key]?.length || 0) === 0 && index === 0 && (
-                          <div className="drop-indicator" style={{backgroundColor: 'purple', height: '2px', margin: '1px 0'}} />
+                          <div className="drop-indicator" style={{
+                            height: '2px',
+                            margin: '4px 0',
+                            borderTop: '2px dashed #000000',
+                            borderRadius: '1px'
+                          }} />
                         )}
                         
                         {/* Оригинальная карточка задачи */}
@@ -1036,17 +1188,20 @@ const projectColorById = useMemo(() => {
                               e.stopPropagation();
                               return;
                             }
-                            // Start drag on left click
-                            if (e.button === 0) {
-                              handleMouseDown(e, t, key, index)
-                            }
+                            // Start tracking for potential drag
+                            handleMouseDown(e, t, key, index)
                           }}
                           onClick={(e) => {
-                            // Простой клик - открываем карточку, но только если не было перетаскивания
-                            if (hasMoved) {
-                              return
+                            console.log('🖱️ Click on task, hasMovedRef:', hasMovedRef.current, 'isDraggingRef:', isDraggingRef.current)
+                            
+                            // Only open task modal if we haven't moved the mouse (not dragging)
+                            // Use ref to check current state immediately
+                            if (!hasMovedRef.current && !isDraggingRef.current) {
+                              console.log('✅ Opening task modal immediately')
+                              setViewTask(t)
+                            } else {
+                              console.log('❌ Not opening - was dragging')
                             }
-                            setViewTask(t)
                           }}
                         >
                           <div className="text-sm">
@@ -1054,10 +1209,11 @@ const projectColorById = useMemo(() => {
                               <div className="flex items-center gap-2 flex-wrap">
                                 {t.priority && getPriorityText(t.priority) ? (
                                   <span 
-                                    className={`text-xs font-medium px-2 py-1 rounded-full ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                    className={`text-xs font-medium px-2 py-1 ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
                                       backgroundColor: getPriorityColor(t.priority).background,
-                                      color: getPriorityColor(t.priority).text
+                                      color: getPriorityColor(t.priority).text,
+                                      borderRadius: '999px !important'
                                     }}
                                   >
                                     {getPriorityText(t.priority)}
@@ -1067,10 +1223,11 @@ const projectColorById = useMemo(() => {
                                 )}
                                 {t.tag && (
                                   <span 
-                                    className={`text-xs font-medium px-2 py-1 rounded-md ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                    className={`text-xs font-medium px-2 py-1 ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
-                                      backgroundColor: '#e5e7eb',
-                                      color: '#4b5563'
+                                      backgroundColor: '#f3f4f6',
+                                      color: '#6b7280',
+                                      borderRadius: '999px !important'
                                     }}
                                   >
                                     {t.tag}
@@ -1139,11 +1296,9 @@ const projectColorById = useMemo(() => {
                               })()}
 
                               {/* Название проекта */}
-                              {t.project_name && (
-                                <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
-                                  {t.project_name}
-                                </div>
-                              )}
+                              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                                {t.project_name || 'Без проекта'}
+                              </div>
                             </div>
                         </div>
                         
@@ -1154,7 +1309,12 @@ const projectColorById = useMemo(() => {
                   
                   {/* Drop indicator at the very end of the column */}
                   {dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0) && (
-                    <div className="drop-indicator" style={{backgroundColor: 'red', height: '2px', margin: '1px 0'}} />
+                    <div className="drop-indicator" style={{
+                      height: '2px',
+                      margin: '4px 0',
+                      borderTop: '2px dashed #000000',
+                      borderRadius: '1px'
+                    }} />
                   )}
                 </div>
               </div>
@@ -1176,14 +1336,26 @@ const projectColorById = useMemo(() => {
 
       {/* Модальные окна задач */}
       <ModernTaskModal
+        key={viewTask?.id || 'new'}
         open={!!viewTask}
         onClose={()=>setViewTask(null)}
         task={viewTask}
         onUpdated={(t)=>{
           if(!t) return
+          console.log('🔄 onUpdated (duplicate) called for task:', t.title)
           const map={...tasks}
           const oldDate = viewTask?.date || ""
           const newDate = t.date || ""
+          
+          // Find original position of the task
+          let originalPosition = -1
+          if(oldDate && map[oldDate]) {
+            const originalIndex = map[oldDate].findIndex(x => x.id === t.id)
+            if(originalIndex >= 0) {
+              originalPosition = map[oldDate][originalIndex].position || originalIndex
+              console.log('📍 Original position (duplicate):', originalPosition, 'at index:', originalIndex)
+            }
+          }
           
           // Remove from old date if it exists
           if(oldDate && map[oldDate]) {
@@ -1196,13 +1368,26 @@ const projectColorById = useMemo(() => {
             const newList = map[newDate] || []
             const existingIndex = newList.findIndex(x => x.id === t.id)
             if(existingIndex >= 0) {
-              newList[existingIndex] = {...newList[existingIndex], ...t} as TaskItem
+              // Update existing task, preserve position
+              newList[existingIndex] = {...newList[existingIndex], ...t, position: newList[existingIndex].position} as TaskItem
+              console.log('✅ Updated existing task (duplicate) at position:', newList[existingIndex].position)
             } else {
-              newList.push(t as TaskItem)
+              // Add new task at original position or at end
+              const taskWithPosition = {...t, position: originalPosition >= 0 ? originalPosition : newList.length} as TaskItem
+              if(originalPosition >= 0 && originalPosition < newList.length) {
+                // Insert at original position
+                newList.splice(originalPosition, 0, taskWithPosition)
+                console.log('📍 Inserted at original position (duplicate):', originalPosition)
+              } else {
+                // Add to end
+                newList.push(taskWithPosition)
+                console.log('📍 Added to end (duplicate), position:', taskWithPosition.position)
+              }
             }
             map[newDate] = newList
           }
           
+          console.log('🔄 Setting new tasks state (duplicate)')
           setTasks(map)
         }}
       />

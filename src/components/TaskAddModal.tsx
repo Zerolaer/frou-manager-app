@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
+import { CoreInput, CoreTextarea } from './ui/CoreInput'
 import { Plus, Trash2, Check } from 'lucide-react'
 
 type Todo = { id: string; text: string; done: boolean }
@@ -17,6 +18,11 @@ type Props = {
 }
 
 export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
+  // Add safety check for React context
+  if (!React.useState) {
+    return null
+  }
+  
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'low'|'normal'|'high'>('normal')
@@ -55,10 +61,13 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   async function save(){
     const t = title.trim()
     if (!t) return
-    if (!projectId) return // required in 'ALL' and generally required to create
+    // Allow creating tasks without project (projectId can be empty string)
+    
+    console.log('📝 TaskAddModal save with projectId:', projectId, 'type:', typeof projectId)
     
     setLoading(true)
     try {
+      // Pass projectId as-is (empty string means "Без проекта")
       await onSubmit(t, description, String(priority), tag.trim(), todos, projectId, selectedDate)
       setTitle(''); setDescription(''); setPriority('normal'); setTag(''); setTodos([]); setTodoText('')
       onClose()
@@ -80,7 +89,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           label: 'Добавить', 
           onClick: save, 
           loading, 
-          disabled: !projectId || !title.trim() 
+          disabled: !title.trim() 
         },
         { label: 'Отмена', onClick: onClose }
       )}
@@ -109,24 +118,22 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Название */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Название задачи *</label>
-          <input
+          <CoreInput
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Название задачи"
-            className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none bg-white"
           />
         </div>
 
         {/* Описание */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Описание</label>
-          <textarea
+          <CoreTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Подробности задачи"
             rows={4}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none resize-none bg-white"
           />
         </div>
 
@@ -170,12 +177,11 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Тег */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Тег</label>
-          <input
+          <CoreInput
             type="text"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
             placeholder="Напр. Work"
-            className="w-full h-10 px-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none bg-white"
           />
         </div>
 
@@ -191,12 +197,12 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           </div>
           
           <div className="flex gap-2">
-            <input
+            <CoreInput
               type="text"
               value={todoText}
               onChange={(e) => setTodoText(e.target.value)}
               placeholder="Добавить подзадачу"
-              className="flex-1 h-10 px-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all outline-none bg-white"
+              className="flex-1"
               onKeyPress={(e) => e.key === 'Enter' && addTodo()}
             />
             <button

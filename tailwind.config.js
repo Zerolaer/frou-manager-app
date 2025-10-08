@@ -4,16 +4,29 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Lato', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Основная палитра проекта
         primary: {
-          DEFAULT: '#1a1a1a',
+          DEFAULT: '#171717', // Черная кнопка
           foreground: '#ffffff',
         },
+        secondary: {
+          DEFAULT: '#F2F7FA', // Секондари кнопка
+          foreground: '#171717',
+        },
+        outline: {
+          DEFAULT: '#E5E7EB', // Все обводки, разделители
+        },
+        background: {
+          DEFAULT: '#F2F7FA', // Основной фон
+          card: '#FFFFFF', // Карточки и модалки
+        },
+        // Legacy поддержка
         base: {
-          bg: '#0B0F14',
-          card: 'rgba(255,255,255,0.06)'
+          bg: '#F2F7FA',
+          card: '#FFFFFF'
         }
       },
       backdropBlur: {
