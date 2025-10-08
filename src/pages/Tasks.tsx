@@ -671,7 +671,7 @@ const projectColorById = useMemo(() => {
       const endDate = format(end, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status,projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date',     { ascending:true })
@@ -688,7 +688,7 @@ const projectColorById = useMemo(() => {
       }
       
       const map: Record<string, TaskItem[]> = {}
-      ;(data || []).forEach((t: { id: string; project_id: string; title: string; description?: string; date: string; position: number; priority?: string; tag?: string; todos?: Todo[]; status?: string }) => {
+      ;(data || []).forEach((t: any) => {
         const key = t.date as string
         ;(map[key] ||= []).push({ 
           id: t.id, 
@@ -700,7 +700,8 @@ const projectColorById = useMemo(() => {
           priority: t.priority, 
           tag: t.tag, 
           todos: (t.todos||[]), 
-          status: (t as { status?: string }).status || TASK_STATUSES.OPEN 
+          status: t.status || TASK_STATUSES.OPEN,
+          project_name: t.projects?.name || null
         })
       })
       
@@ -1203,7 +1204,7 @@ const projectColorById = useMemo(() => {
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                                       <div 
-                                        className="bg-gray-600 h-1.5 rounded-full transition-all duration-200"
+                                        className="bg-black h-1.5 rounded-full transition-all duration-200"
                                         style={{ 
                                           width: `${(done / total) * 100}%`,
                                           opacity: done === total ? 0.3 : 1

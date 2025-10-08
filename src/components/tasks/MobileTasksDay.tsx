@@ -174,7 +174,7 @@ export default function MobileTasksDay({
               <div className="mt-2">
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div 
-                    className="bg-gray-600 h-1.5 rounded-full transition-all duration-200"
+                    className="bg-black h-1.5 rounded-full transition-all duration-200"
                     style={{ 
                       width: `${(todosDone / todosTotal) * 100}%`,
                       opacity: todosDone === todosTotal ? 0.3 : 1

@@ -172,7 +172,7 @@ export function TaskCard({
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div 
-                    className="bg-gray-600 h-1.5 rounded-full transition-all duration-200"
+                    className="bg-black h-1.5 rounded-full transition-all duration-200"
                     style={{ 
                       width: `${(task.todos.filter((todo: any) => todo.done).length / task.todos.length) * 100}%`,
                       opacity: task.todos.every((todo: any) => todo.done) ? 0.3 : 1

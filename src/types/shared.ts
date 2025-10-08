@@ -24,6 +24,7 @@ export type TaskItem = {
   todos?: Todo[];
   status?: 'open' | 'closed';
   project_id?: string | null;
+  project_name?: string | null;
 }
 
 export type MoneyType = 'income' | 'expense';
