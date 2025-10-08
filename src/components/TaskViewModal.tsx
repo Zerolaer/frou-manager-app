@@ -58,7 +58,6 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   // Load task into local state
   useEffect(() => {
     if (!open) return
-    console.log('TaskViewModal: Loading task data', task)
     setTitle(task?.title || '')
     setDescription(task?.description || '')
     setPriority((task?.priority as any) || '')
@@ -83,34 +82,32 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   function addTodo() {
     const id = Math.random().toString(36).slice(2)
     setTodos((prev) => [...prev, { id, text: 'Новая подзадача', done: false }])
+    // Auto-save when adding todos
+    setTimeout(() => save(), 100)
   }
   function toggleTodo(id: string) {
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))
+    // Auto-save when toggling todos
+    setTimeout(() => save(), 100)
   }
   function removeTodo(id: string) {
     setTodos((prev) => prev.filter((t) => t.id !== id))
+    // Auto-save when removing todos
+    setTimeout(() => save(), 100)
   }
 
   async function setStatusRemote(next: 'open' | 'closed') {
     if (!task) return
     setStatus(next)
-    const { data, error } = await supabase.from('tasks_items').update({ status: next }).eq('id', task.id)
-      .select('id,project_id,title,description,date,position,priority,tag,todos,status')
-      .single()
-    if (!error && data) {
-      onUpdated(data as unknown as Task)
-    }
+    // Auto-save status change
+    setTimeout(() => save(), 100)
   }
 
   async function moveToProject(nextProjectId: string | null) {
     if (!task) return
     setProjectId(nextProjectId || '')
-    const { data, error } = await supabase.from('tasks_items').update({ project_id: nextProjectId }).eq('id', task.id)
-      .select('id,project_id,title,description,date,position,priority,tag,todos,status')
-      .single()
-    if (!error && data) {
-      onUpdated(data as unknown as Task)
-    }
+    // Auto-save project change
+    setTimeout(() => save(), 100)
   }
 
   async function duplicateTask() {
@@ -149,8 +146,14 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   }
 
   const save = useCallback(async (): Promise<boolean> => {
-    if (!task) return false
+    if (!task) {
+      console.log('Save skipped: no task')
+      return false
+    }
+    
+    console.log('Saving task:', { id: task.id, title, description, priority, tag, date, projectId, status })
     setSaving(true)
+    
     const payload: any = {
       title,
       description,
@@ -161,19 +164,55 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       status,
       project_id: projectId || null,
     }
+    
     const { data, error } = await supabase
       .from('tasks_items')
       .update(payload)
       .eq('id', task.id)
       .select('id,project_id,title,description,date,position,priority,tag,todos,status')
       .single()
+      
     setSaving(false)
+    
     if (!error && data) {
+      console.log('Task saved successfully:', data)
       onUpdated(data as unknown as Task)
       return true
+    } else {
+      console.error('Error saving task:', error)
+      return false
     }
-    return false
   }, [task, title, description, priority, tag, date, todos, status, projectId, onUpdated])
+
+  // Auto-save on field changes
+  useEffect(() => {
+    if (!open || !task) return
+    console.log('Auto-saving task:', { id: task.id, title, description, priority, tag, date, projectId })
+    const timer = setTimeout(() => {
+      save()
+    }, 500) // 500ms debounce
+    return () => clearTimeout(timer)
+  }, [title, description, priority, tag, date, projectId, open, task, save])
+
+  // Auto-save todos when they change
+  useEffect(() => {
+    if (!open || !task) return
+    // Skip initial load
+    if (todos.length === 0 && (!task.todos || task.todos.length === 0)) return
+    console.log('Auto-saving todos:', { todos })
+    const timer = setTimeout(() => {
+      save()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [todos, open, task, save])
+
+  // Auto-save when modal closes
+  useEffect(() => {
+    if (!open && task) {
+      console.log('Auto-saving on close')
+      save()
+    }
+  }, [open, task, save])
 
   // Manual save only - no autosave
   const handleSave = async () => {

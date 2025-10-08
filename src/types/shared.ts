@@ -16,13 +16,13 @@ export type Todo = {
 export type TaskItem = {
   id: string;
   title: string;
-  description?: string;
-  date: string;
+  description?: string | null;
+  date: string | null;
   position: number;
-  priority?: string;
-  tag?: string;
+  priority?: string | null;
+  tag?: string | null;
   todos?: Todo[];
-  status?: 'open' | 'closed';
+  status?: string;
   project_id?: string | null;
   project_name?: string | null;
 }

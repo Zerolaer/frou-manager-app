@@ -17,7 +17,7 @@ interface PlannedExpense {
   year: number;
 }
 
-export default function PlannedExpensesWidget() {
+const PlannedExpensesWidget = () => {
   const { userId } = useSupabaseAuth();
   const [expenses, setExpenses] = useState<PlannedExpense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +35,6 @@ export default function PlannedExpensesWidget() {
   const loadPlannedExpenses = async () => {
     try {
       setLoading(true);
-      
-      console.log('PlannedExpensesWidget - Loading planned expenses for userId:', userId);
       
       if (!userId) {
         setExpenses([]);
@@ -100,8 +98,6 @@ export default function PlannedExpensesWidget() {
         year: currentYear
       }));
 
-      console.log('PlannedExpensesWidget - Loaded aggregated data:', plannedExpenses);
-      
       setExpenses(plannedExpenses);
       
     } catch (error) {
@@ -170,4 +166,6 @@ export default function PlannedExpensesWidget() {
       </div>
     </div>
   );
-}
+};
+
+export default PlannedExpensesWidget;

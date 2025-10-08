@@ -1,4 +1,3 @@
-import React from 'react';
 import { MoreVertical } from 'lucide-react';
 
 interface WidgetHeaderProps {
@@ -8,18 +7,18 @@ interface WidgetHeaderProps {
   onMenuClick?: () => void;
 }
 
-export default function WidgetHeader({ icon, title, subtitle, onMenuClick }: WidgetHeaderProps) {
+const WidgetHeader = ({ icon, title, subtitle, onMenuClick }: WidgetHeaderProps) => {
   return (
     <div className="px-6 py-4 border-b border-gray-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: '#F2F7FA' }}>
-            <div style={{ color: '#000000' }}>
+          <div className="p-2 rounded-lg bg-gray-50">
+            <div className="text-black">
               {icon}
             </div>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 mb-0" style={{ fontSize: '16px' }}>{title}</h3>
+            <h3 className="font-semibold text-gray-900 mb-0 text-base">{title}</h3>
             {subtitle && (
               <p className="text-sm text-gray-500 mt-0 mb-0">{subtitle}</p>
             )}
@@ -37,4 +36,6 @@ export default function WidgetHeader({ icon, title, subtitle, onMenuClick }: Wid
       </div>
     </div>
   );
-}
+};
+
+export default WidgetHeader;

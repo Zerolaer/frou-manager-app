@@ -129,7 +129,7 @@ export default function Finance(){
         handleSuccess('Импорт будет реализован в следующей версии')
         break
       default:
-        console.log('Unknown action:', action)
+        // Unknown action
     }
   }
 
@@ -147,7 +147,6 @@ export default function Finance(){
     
     const handleFinanceDataUpdated = () => {
       // Перезагружаем данные при обновлении через ИИ-ассистента
-      console.log('Finance data updated, reloading...')
       if (userId) {
         reloadFinanceData()
       }

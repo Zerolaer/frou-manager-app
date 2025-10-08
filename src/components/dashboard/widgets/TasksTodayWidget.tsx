@@ -12,7 +12,7 @@ interface Task {
   date: string;
 }
 
-export default function TasksTodayWidget() {
+const TasksTodayWidget = () => {
   const { userId } = useSupabaseAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +31,8 @@ export default function TasksTodayWidget() {
       const { data, error } = await supabase
         .from('tasks_items')
         .select('id, title, status, priority, date')
-        .eq('user_id', userId)
         .eq('date', today)
         .order('position', { ascending: true });
-
-      console.log('Today tasks data:', { data, error, today });
 
       if (error) {
         console.error('Error loading today tasks:', error);
@@ -134,4 +131,6 @@ export default function TasksTodayWidget() {
       </div>
     </div>
   );
-}
+};
+
+export default TasksTodayWidget;

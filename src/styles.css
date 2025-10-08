@@ -243,9 +243,6 @@ html, body, #root {
 .add-on-hover{ opacity:0; transition:opacity .12s ease; }
 .day-col:hover .add-on-hover{ opacity:1; }
 
-.task-card{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.25; margin-bottom:8px; cursor:grab; }
-.task-card:active{ cursor:grabbing; }
-
 /* Hover effects for grid cells */
 .finance-grid .finance-cell:hover .cell-btn{ background:#f8fafc; border-color:#e2e8f0; }
 .btn.btn-xs { padding: 6px 10px; font-size: 12px; border-radius: 8px; }

@@ -1,7 +1,7 @@
 // Tasks.tsx — Tag tint tweak (alpha 0.2) + UPPERCASE — 2025-08-27T11:57:52.457526Z
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { addWeeks, subWeeks, startOfWeek, endOfWeek, format, addDays, subDays } from 'date-fns'
+import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import { ru } from 'date-fns/locale/ru'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
@@ -16,51 +16,6 @@ import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
-
-// Функция для затемнения цвета (делает цвет темнее)
-function darkenColor(hex: string, factor: number = 0.3): string {
-  // Убираем # если есть
-  hex = hex.replace('#', '')
-  
-  // Конвертируем в RGB
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
-  
-  // Затемняем каждый канал
-  const darkenedR = Math.floor(r * (1 - factor))
-  const darkenedG = Math.floor(g * (1 - factor))
-  const darkenedB = Math.floor(b * (1 - factor))
-  
-  // Конвертируем обратно в hex
-  const toHex = (n: number) => {
-    const hex = n.toString(16)
-    return hex.length === 1 ? '0' + hex : hex
-  }
-  
-  return `#${toHex(darkenedR)}${toHex(darkenedG)}${toHex(darkenedB)}`
-}
-
-// Пастельная палитра цветов как на картинке
-const PASTEL_COLORS = [
-  { light: '#e8eaf6', dark: '#3f51b5' }, // светло-фиолетовый
-  { light: '#fff3e0', dark: '#ff9800' }, // светло-оранжевый  
-  { light: '#e8f5e8', dark: '#4caf50' }, // светло-зеленый
-  { light: '#e3f2fd', dark: '#2196f3' }, // светло-голубой
-  { light: '#fce4ec', dark: '#e91e63' }, // светло-розовый
-  { light: '#f3e5f5', dark: '#9c27b0' }, // светло-фиолетовый
-  { light: '#e0f2f1', dark: '#009688' }, // светло-бирюзовый
-  { light: '#fff8e1', dark: '#ffc107' }, // светло-желтый
-]
-
-// Функция для получения пастельного цвета на основе ID задачи
-function getPastelColor(taskId: string): { light: string, dark: string } {
-  const hash = taskId.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0)
-    return a & a
-  }, 0)
-  return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length]
-}
 
 // Функция для получения цвета приоритета
 function getPriorityColor(priority: string): { background: string, text: string } {
@@ -246,7 +201,7 @@ export default function Tasks(){
         handleSuccess('Поиск будет реализован в следующей версии')
         break
       default:
-        console.log('Unknown action:', action)
+        // Unknown action
     }
   }
 
@@ -270,8 +225,6 @@ export default function Tasks(){
 
   // Простое разделение: клик = открытие, зажатие = перетаскивание
   function handleMouseDown(e: React.MouseEvent, task: TaskItem, dayKey: string, index: number) {
-    console.log('Mouse down on task:', task.title, 'day:', dayKey, 'index:', index)
-    
     // Отключаем выделение текста при зажатии мыши, но только для левой кнопки
     if (e.button === 0) {
       e.preventDefault()
@@ -292,12 +245,10 @@ export default function Tasks(){
       )
       
       if (distance > 5 && pendingDrag) { // Если мышь сдвинулась больше чем на 5px и есть задача для перетаскивания
-        console.log('Mouse movement detected - starting drag, distance:', distance)
         setHasMoved(true)
         
         // Используем сохраненную информацию о задаче из handleMouseDown
         const { task, dayKey, index } = pendingDrag
-        console.log('Starting drag for task:', task.title, 'from day:', dayKey, 'index:', index)
         
         setDraggedTask(task)
         setDragSource({ dayKey, index })
@@ -327,7 +278,6 @@ export default function Tasks(){
     
     // Find drop target - improved logic
     const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
-    console.log('Element below mouse:', elementBelow?.className)
     
     // Try to find day column from element below
     let dayCol = elementBelow?.closest('.day-col')
@@ -335,14 +285,12 @@ export default function Tasks(){
     // If not found, try to find by checking all day columns
     if (!dayCol) {
       const allDayCols = document.querySelectorAll('.day-col')
-      console.log('Found day columns:', allDayCols.length)
       
       for (const col of allDayCols) {
         const rect = col.getBoundingClientRect()
-        if (e.clientX >= rect.left && e.clientX <= rect.right && 
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
             e.clientY >= rect.top && e.clientY <= rect.bottom) {
           dayCol = col
-          console.log('Found day column by bounds')
           break
         }
       }
@@ -350,14 +298,11 @@ export default function Tasks(){
     
     if (dayCol) {
       const dayKey = dayCol.getAttribute('data-day-key')
-      console.log('Day key:', dayKey)
       
       if (dayKey) {
         // Find position within the day
         const taskCards = dayCol.querySelectorAll('.task-card:not(.is-dragging)')
         let targetIndex = taskCards.length // Default to end
-        
-        console.log('Task cards found:', taskCards.length, 'default targetIndex:', targetIndex)
         
         // Check if we're dragging over the day-body area
         const dayBody = dayCol.querySelector('.day-body')
@@ -366,24 +311,19 @@ export default function Tasks(){
           const relativeY = e.clientY - bodyRect.top
           const bodyHeight = bodyRect.height
           
-          console.log('Day body height:', bodyHeight, 'relative Y:', relativeY, 'mouseY:', e.clientY, 'bodyTop:', bodyRect.top)
-          
           if (taskCards.length === 0) {
             // Empty column - place at beginning
             targetIndex = 0
-            console.log('Empty column - setting to 0')
           } else {
             // Find position based on cards
             let foundPosition = false
             for (let i = 0; i < taskCards.length; i++) {
               const card = taskCards[i]
               const rect = card.getBoundingClientRect()
-              console.log(`Card ${i}: top=${rect.top}, bottom=${rect.bottom}, height=${rect.height}, mouseY=${e.clientY}`)
               
               if (e.clientY < rect.top + rect.height / 2) {
                 targetIndex = i
                 foundPosition = true
-                console.log('Setting targetIndex to:', targetIndex)
                 break
               }
             }
@@ -391,16 +331,12 @@ export default function Tasks(){
             // If we didn't find a position above any card, place at end
             if (!foundPosition) {
               targetIndex = taskCards.length
-              console.log('No position found above cards - setting to end:', targetIndex)
             }
           }
         } else {
           // Fallback: if no day-body found, place at end
           targetIndex = taskCards.length
-          console.log('No day-body found - setting to end:', targetIndex)
         }
-        
-        console.log('Final targetIndex:', targetIndex, 'total cards:', taskCards.length, 'dayKey:', dayKey)
         setDropTarget({ dayKey, index: targetIndex })
       }
     }
@@ -418,8 +354,6 @@ export default function Tasks(){
     }, 100)
     
     if (!isDragging || !draggedTask || !dragSource) return
-    
-    console.log('Mouse up - dropping task')
     
     // Find final drop target - use same improved logic
     const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
@@ -454,12 +388,9 @@ export default function Tasks(){
           const relativeY = e.clientY - bodyRect.top
           const bodyHeight = bodyRect.height
           
-          console.log('MouseUp - Day body height:', bodyHeight, 'relative Y:', relativeY, 'mouseY:', e.clientY)
-          
           if (taskCards.length === 0) {
             // Empty column - place at beginning
             targetIndex = 0
-            console.log('MouseUp - Empty column - setting to 0')
           } else {
             // Find position based on cards
             let foundPosition = false
@@ -469,7 +400,6 @@ export default function Tasks(){
               if (e.clientY < rect.top + rect.height / 2) {
                 targetIndex = i
                 foundPosition = true
-                console.log('MouseUp - Setting targetIndex to:', targetIndex)
                 break
               }
             }
@@ -477,17 +407,14 @@ export default function Tasks(){
             // If we didn't find a position above any card, place at end
             if (!foundPosition) {
               targetIndex = taskCards.length
-              console.log('MouseUp - No position found above cards - setting to end:', targetIndex)
             }
           }
         } else {
           // Fallback: if no day-body found, place at end
           targetIndex = taskCards.length
-          console.log('MouseUp - No day-body found - setting to end:', targetIndex)
         }
         
         // Perform the drop
-        console.log('Dropping at:', dayKey, 'index:', targetIndex, 'total cards:', taskCards.length)
         handleDrop(dayKey, targetIndex)
       }
     }
@@ -506,8 +433,6 @@ export default function Tasks(){
     const fromDayKey = dragSource.dayKey
     const fromIndex = dragSource.index
     const toIndex = index
-
-    console.log('handleDrop:', { fromDayKey, fromIndex, dayKey, toIndex })
 
     // Don't do anything if dropped in the same position
     if (fromDayKey === dayKey && fromIndex === toIndex) return
@@ -589,15 +514,11 @@ export default function Tasks(){
 
   // Global mouse event handlers for drag and drop
   useEffect(() => {
-    console.log('Setting up global mouse handlers, isDragging:', isDragging)
-    
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      console.log('Global mouse move event, isDragging:', isDragging, 'pendingDrag:', !!pendingDrag)
       handleMouseMove(e)
     }
     
     const handleGlobalMouseUp = (e: MouseEvent) => {
-      console.log('Global mouse up event')
       handleMouseUp(e)
     }
     
@@ -606,7 +527,6 @@ export default function Tasks(){
     document.addEventListener('mouseup', handleGlobalMouseUp)
     
     return () => {
-      console.log('Cleaning up global mouse handlers')
       document.removeEventListener('mousemove', handleGlobalMouseMove)
       document.removeEventListener('mouseup', handleGlobalMouseUp)
     }
@@ -671,7 +591,7 @@ const projectColorById = useMemo(() => {
       const endDate = format(end, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status,projects(name)')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date',     { ascending:true })
@@ -680,10 +600,11 @@ const projectColorById = useMemo(() => {
       const query = (activeProject===TASK_PROJECT_ALL) ? q : q.eq('project_id', activeProject)
       const { data, error } = await query
       
+      
       if (cancelled) return
       
       if (error) {
-        console.error('Error fetching tasks:', error)
+        console.error('❌ Error fetching tasks:', error)
         return
       }
       
@@ -701,7 +622,7 @@ const projectColorById = useMemo(() => {
           tag: t.tag, 
           todos: (t.todos||[]), 
           status: t.status || TASK_STATUSES.OPEN,
-          project_name: t.projects?.name || null
+          project_name: t.tasks_projects?.name || null
         })
       })
       
@@ -966,7 +887,7 @@ const projectColorById = useMemo(() => {
               const newList = map[newDate] || []
               const existingIndex = newList.findIndex(x => x.id === t.id)
               if(existingIndex >= 0) {
-                newList[existingIndex] = {...newList[existingIndex], ...t}
+                newList[existingIndex] = {...newList[existingIndex], ...t} as TaskItem
               } else {
                 newList.push(t as TaskItem)
               }
@@ -1050,13 +971,7 @@ const projectColorById = useMemo(() => {
                         )}
                         
                         {/* Drop indicator at the end - show on last card when dropping at end */}
-                        {(() => {
-                          const shouldShow = dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0) && index === (tasks[key]?.length || 0) - 1
-                          if (shouldShow) {
-                            console.log('Showing green indicator on last card:', { dayKey: key, dropTargetIndex: dropTarget?.index, currentIndex: index, totalCards: tasks[key]?.length })
-                          }
-                          return shouldShow
-                        })() && (
+                        {dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0) && index === (tasks[key]?.length || 0) - 1 && (
                           <div className="drop-indicator" style={{backgroundColor: 'green', height: '2px', margin: '1px 0'}} />
                         )}
                         
@@ -1104,7 +1019,6 @@ const projectColorById = useMemo(() => {
                             });
                           }}
                           onMouseDown={(e) => {
-                            console.log('Mouse down on task card:', t.title, 'button:', e.button)
                             // Only prevent right click
                             if (e.button === 2) {
                               e.preventDefault();
@@ -1119,10 +1033,8 @@ const projectColorById = useMemo(() => {
                           onClick={(e) => {
                             // Простой клик - открываем карточку, но только если не было перетаскивания
                             if (hasMoved) {
-                              console.log('Click ignored - was dragging')
                               return
                             }
-                            console.log('Direct click - opening task modal')
                             setViewTask(t)
                           }}
                         >
@@ -1230,13 +1142,7 @@ const projectColorById = useMemo(() => {
                   })}
                   
                   {/* Drop indicator at the very end of the column */}
-                  {(() => {
-                    const shouldShow = dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0)
-                    if (shouldShow) {
-                      console.log('Showing red indicator at end of column:', { dayKey: key, dropTargetIndex: dropTarget?.index, totalCards: tasks[key]?.length })
-                    }
-                    return shouldShow
-                  })() && (
+                  {dropTarget?.dayKey === key && dropTarget?.index === (tasks[key]?.length || 0) && (
                     <div className="drop-indicator" style={{backgroundColor: 'red', height: '2px', margin: '1px 0'}} />
                   )}
                 </div>
@@ -1279,7 +1185,7 @@ const projectColorById = useMemo(() => {
             const newList = map[newDate] || []
             const existingIndex = newList.findIndex(x => x.id === t.id)
             if(existingIndex >= 0) {
-              newList[existingIndex] = {...newList[existingIndex], ...t}
+              newList[existingIndex] = {...newList[existingIndex], ...t} as TaskItem
             } else {
               newList.push(t as TaskItem)
             }

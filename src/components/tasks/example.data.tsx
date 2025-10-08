@@ -119,7 +119,6 @@ export const mockApi = {
       throw new Error('Ошибка сети: не удалось переместить задачу')
     }
     
-    console.log('API: Moving task', move)
     
     // TODO: Replace with actual API call
     // await fetch('/api/tasks/move', {
@@ -139,7 +138,6 @@ export const mockApi = {
       throw new Error('Ошибка сети: не удалось изменить порядок задач')
     }
     
-    console.log('API: Reordering task', reorder)
     
     // TODO: Replace with actual API call
     // await fetch('/api/tasks/reorder', {
@@ -217,7 +215,6 @@ export function WeekBoardDemo() {
       await mockApi.moveTask(move)
       
       // Update local state (optimistic update already handled by WeekBoard)
-      console.log('Task moved successfully:', move)
       
       // TODO: Refresh data from server if needed
       // const updatedDays = await fetchDaysFromServer()
@@ -239,7 +236,6 @@ export function WeekBoardDemo() {
       await mockApi.reorderTask(reorder)
       
       // Update local state (optimistic update already handled by WeekBoard)
-      console.log('Task reordered successfully:', reorder)
       
       // TODO: Refresh data from server if needed
       // const updatedDays = await fetchDaysFromServer()

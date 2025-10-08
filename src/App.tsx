@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { ToastProvider } from './lib/toast'
@@ -24,18 +24,13 @@ const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 // Configuration is now hardcoded
 
 export default function App(){
-  const location = useLocation()
-  const navigate = useNavigate()
-  const isFinance = location.pathname.toLowerCase().includes('finance')
-  const isTasks = location.pathname.toLowerCase().includes('tasks')
-  const isNotes = location.pathname.toLowerCase().includes('notes')
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
 
   // Redirect to last visited page on app load (only once)
   useEffect(() => {
     const hasRedirected = sessionStorage.getItem('frovo_redirected')
     
-    if (!hasRedirected && location.pathname === '/') {
+    if (!hasRedirected && window.location.pathname === '/') {
       const isFirstVisit = !localStorage.getItem('frovo_has_visited')
       const lastPage = localStorage.getItem('frovo_last_page')
       
@@ -45,7 +40,7 @@ export default function App(){
         localStorage.setItem('frovo_last_page', '/')
       } else if (lastPage && lastPage !== '/') {
         // Returning user - redirect to last page (only once per session)
-        navigate(lastPage, { replace: true })
+        window.location.href = lastPage
       }
       
       // Mark that we've done the initial redirect check
@@ -55,10 +50,11 @@ export default function App(){
 
   // Save current page to localStorage when navigating
   useEffect(() => {
-    if (location.pathname !== '/login') {
-      localStorage.setItem('frovo_last_page', location.pathname)
+    const pathname = window.location.pathname
+    if (pathname !== '/login') {
+      localStorage.setItem('frovo_last_page', pathname)
     }
-  }, [location.pathname])
+  }, [])
 
   // Supabase is now hardcoded, no need to check
 
@@ -74,65 +70,39 @@ export default function App(){
     }
   }, [])
 
-  // Apply tasks-mode class to body
+  // Apply mode classes to body
   React.useEffect(() => {
+    const pathname = window.location.pathname.toLowerCase()
+    const isTasks = pathname.includes('tasks')
+    const isFinance = pathname.includes('finance')
+    const isNotes = pathname.includes('notes')
+    const isHome = pathname === '/'
+
+    // Remove all mode classes
+    document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'home-mode')
+    
+    // Add appropriate mode class
     if (isTasks) {
       document.body.classList.add('tasks-mode')
-    } else {
-      document.body.classList.remove('tasks-mode')
-    }
-    
-    return () => {
-      document.body.classList.remove('tasks-mode')
-    }
-  }, [isTasks])
-
-  // Apply finance-mode class to body
-  React.useEffect(() => {
-    if (isFinance) {
+    } else if (isFinance) {
       document.body.classList.add('finance-mode')
-    } else {
-      document.body.classList.remove('finance-mode')
-    }
-    
-    return () => {
-      document.body.classList.remove('finance-mode')
-    }
-  }, [isFinance])
-
-  // Apply notes-mode class to body
-  React.useEffect(() => {
-    if (isNotes) {
+    } else if (isNotes) {
       document.body.classList.add('notes-mode')
-    } else {
-      document.body.classList.remove('notes-mode')
-    }
-    
-    return () => {
-      document.body.classList.remove('notes-mode')
-    }
-  }, [isNotes])
-
-  // Apply home-mode class to body
-  React.useEffect(() => {
-    const isHome = location.pathname === '/'
-    if (isHome) {
+    } else if (isHome) {
       document.body.classList.add('home-mode')
-    } else {
-      document.body.classList.remove('home-mode')
     }
     
     return () => {
-      document.body.classList.remove('home-mode')
+      document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'home-mode')
     }
-  }, [location.pathname])
+  }, [])
 
   // Handle preloader completion
   return (
     <ToastProvider>
       <AppErrorBoundary>
         <SkipLinks />
-        <div className={`app-shell app-content flex flex-col h-screen overflow-x-hidden ${isFinance ? 'finance-mode' : ''} ${isTasks ? 'tasks-mode' : ''}`}>
+        <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
           <Suspense fallback={<AppLoader />}>
             <Header 
               currentYear={currentYear}

@@ -46,7 +46,7 @@ function NotesPageContent() {
         handleSuccess('Экспорт будет реализован в следующей версии')
         break
       default:
-        console.log('Unknown action:', action)
+        // Unknown action
     }
   }
   const [modalOpen, setModalOpen] = useState(false);

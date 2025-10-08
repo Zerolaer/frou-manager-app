@@ -91,25 +91,32 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   // Auto-save title and description with debounce
   useEffect(() => {
     if (!open || !task) return
+    console.log('⏱️ Title/description changed, scheduling save in 800ms')
     const timer = setTimeout(() => {
       save()
-    }, 500) // 500ms debounce
+    }, 800) // 800ms debounce
     return () => clearTimeout(timer)
-  }, [title, description])
+  }, [title, description, open, task, save])
 
-  // Auto-save other fields immediately
+  // Auto-save other fields with small delay
   useEffect(() => {
     if (!open || !task) return
-    save()
-  }, [priority, tag, date, status, projectId])
+    console.log('⏱️ Fields changed, scheduling save in 500ms')
+    const timer = setTimeout(() => {
+      save()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [priority, tag, date, status, projectId, open, task, save])
 
-  // Auto-save todos when they change (but not on initial load)
+  // Auto-save todos when they change
   useEffect(() => {
     if (!open || !task) return
-    // Skip initial load
-    if (todos.length === 0 && (!task.todos || task.todos.length === 0)) return
-    save()
-  }, [todos])
+    console.log('⏱️ Todos changed, scheduling save in 300ms')
+    const timer = setTimeout(() => {
+      save()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [todos, open, task, save])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -125,34 +132,75 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     }
   }, [menuOpen])
 
+  // Handler for closing with save
+  const handleClose = async () => {
+    console.log('🚪 Closing modal, saving first...')
+    await save()
+    console.log('🚪 Saved, now closing')
+    onClose()
+  }
+
   async function save() {
-    if (!task || !title.trim()) return
+    if (!task) {
+      console.log('❌ Save skipped: no task')
+      return
+    }
+
+    // Allow saving even with empty title for other fields
+    const finalTitle = title.trim() || task.title || 'Untitled Task'
+
+    console.log('💾 Saving task:', { 
+      id: task.id, 
+      title: finalTitle, 
+      description: description.trim(), 
+      priority, 
+      tag: tag.trim(), 
+      date, 
+      projectId,
+      todos: todos.length 
+    })
 
     const updates = {
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      tag: tag.trim(),
+      title: finalTitle,
+      description: description.trim() || '',
+      priority: priority || '',
+      tag: tag.trim() || '',
       date: date || null,
       todos,
       status,
       project_id: projectId || null,
-      updated_at: new Date().toISOString()
     }
 
+    console.log('📤 Updates payload:', updates)
+
     try {
-      const { error } = await supabase
-        .from('tasks')
+      const { data, error } = await supabase
+        .from('tasks_items')
         .update(updates)
         .eq('id', task.id)
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status')
+        .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Supabase error:', error)
+        throw error
+      }
 
-      // Update local task
-      const updatedTask = { ...task, ...updates }
-      onUpdated?.(updatedTask)
+      console.log('✅ Task saved successfully:', data)
+      
+      // Update local task with actual data from database
+      if (data) {
+        const updatedTask = { 
+          ...task, 
+          ...data,
+          project_id: data.project_id || projectId || null
+        }
+        console.log('📢 Calling onUpdated with:', updatedTask)
+        onUpdated?.(updatedTask)
+      }
     } catch (error) {
-      console.error('Error saving task:', error)
+      console.error('❌ Error saving task:', error)
+      alert('Ошибка при сохранении задачи: ' + (error as any).message)
     }
   }
 
@@ -182,7 +230,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     if (!task) return
     try {
       const { error } = await supabase
-        .from('tasks')
+        .from('tasks_items')
         .delete()
         .eq('id', task.id)
 
@@ -203,7 +251,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   return (
     <SideModal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       showCloseButton={false}
       noPadding={true}
       title={headerTitle}
@@ -227,7 +275,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
       footer={
         <div className="flex items-center justify-end gap-2">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Закрыть

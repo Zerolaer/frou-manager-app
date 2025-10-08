@@ -54,7 +54,7 @@ function useFocusTrap(enabled: boolean, containerRef: React.RefObject<HTMLDivEle
   }, [enabled, containerRef])
 }
 
-export default function Modal({
+const Modal = ({
   open,
   onClose,
   title,
@@ -67,7 +67,7 @@ export default function Modal({
   className,
   contentClassName,
   bodyClassName,
-}: ModalProps) {
+}: ModalProps) => {
   const panelRef = useRef<HTMLDivElement>(null)
   useFocusTrap(open, panelRef)
 
@@ -133,4 +133,6 @@ export default function Modal({
     </div>
   )
   return createPortal(content, document.body)
-}
+};
+
+export default Modal;

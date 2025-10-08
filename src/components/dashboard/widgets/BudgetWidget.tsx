@@ -19,7 +19,7 @@ interface BudgetData {
   projectedSpent: number;
 }
 
-export default function BudgetWidget() {
+const BudgetWidget = () => {
   const { userId } = useSupabaseAuth();
   const [budget, setBudget] = useState<BudgetData>({
     balance: 0,
@@ -125,14 +125,6 @@ export default function BudgetWidget() {
       const remainingDays = daysInMonth - daysPassed;
       const avgDailySpent = daysPassed > 0 ? totalExpense / daysPassed : 0;
       const projectedSpent = avgDailySpent * daysInMonth;
-
-      console.log('Budget calculation:', {
-        currentYear, currentMonth,
-        previousYear, previousMonth,
-        totalIncome, totalExpense, balance,
-        previousTotalIncome, previousTotalExpense, previousBalance,
-        daysInMonth, daysPassed, remainingDays, avgDailySpent, projectedSpent
-      });
 
       setBudget({
         balance,
@@ -242,4 +234,6 @@ export default function BudgetWidget() {
       </div>
     </div>
   );
-}
+};
+
+export default BudgetWidget;

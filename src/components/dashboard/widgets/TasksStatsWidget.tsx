@@ -13,7 +13,7 @@ interface ProjectStats {
   percentage: number;
 }
 
-export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
+const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
   const [stats, setStats] = useState({
     current: 0,
     previous: 0,
@@ -39,42 +39,12 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
       const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-      console.log('Date calculation:', {
-        now: now.toISOString(),
-        currentMonth, // 0-11
-        currentYear,
-        currentMonthName: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][currentMonth]
-      });
-
       // Форматируем даты для запроса - БЕЗ ПРОБЛЕМ С ЧАСОВЫМИ ПОЯСАМИ!
       const currentMonthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
       const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Последний день месяца
       
-      console.log('Date range calculation:', {
-        currentMonthStart,
-        currentMonthEnd,
-        currentMonth,
-        currentYear,
-        startDate: new Date(currentYear, currentMonth, 1),
-        endDate: new Date(currentYear, currentMonth + 1, 1),
-        expectedStart: '2025-10-01',
-        expectedEnd: '2025-11-01'
-      });
-      
       const previousMonthStart = new Date(previousYear, previousMonth, 1).toISOString().split('T')[0];
       const previousMonthEnd = new Date(previousYear, previousMonth + 1, 0).toISOString().split('T')[0];
-
-      console.log('Date ranges:', {
-        currentMonthStart,
-        currentMonthEnd,
-        previousMonthStart,
-        previousMonthEnd,
-        now: now.toISOString(),
-        currentMonth, // 0-11
-        currentYear,
-        currentMonthName: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][currentMonth],
-        previousMonthName: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][previousMonth]
-      });
 
       // Запрос для текущего месяца - строгий фильтр по датам
       const { data: currentData, error: currentError } = await supabase
@@ -83,71 +53,6 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
         .gte('date', currentMonthStart)
         .lte('date', currentMonthEnd)
         .order('date', { ascending: false });
-
-      console.log('Current data:', { 
-        currentData, 
-        currentError, 
-        currentMonthStart, 
-        currentMonthEnd,
-        currentYear,
-        currentMonth,
-        previousYear,
-        previousMonth
-      });
-
-      // Детальная информация о задачах
-      if (currentData) {
-        console.log('All tasks in current month:', currentData.map(task => ({
-          id: task.id,
-          title: task.title,
-          date: task.date,
-          status: task.status,
-          project_id: task.project_id,
-          hasProject: !!task.project_id
-        })));
-        
-        // Проверяем, какие именно даты у задач
-        const taskDates = currentData.map(task => task.date);
-        console.log('Task dates:', taskDates);
-        console.log('Unique dates:', [...new Set(taskDates)]);
-        
-        // Проверяем на дубликаты по ID
-        const taskIds = currentData.map(task => task.id);
-        const uniqueIds = [...new Set(taskIds)];
-        console.log('Task IDs:', taskIds);
-        console.log('Unique IDs:', uniqueIds);
-        console.log('Has duplicates:', taskIds.length !== uniqueIds.length);
-        
-        // Проверяем на дубликаты по названию
-        const taskTitles = currentData.map(task => task.title);
-        const uniqueTitles = [...new Set(taskTitles)];
-        console.log('Task titles:', taskTitles);
-        console.log('Unique titles:', uniqueTitles);
-        console.log('Has duplicate titles:', taskTitles.length !== uniqueTitles.length);
-        
-        // Проверяем, какие задачи попадают в диапазон
-        const tasksInRange = currentData.filter(task => 
-          task.date >= currentMonthStart && task.date <= currentMonthEnd
-        );
-        const tasksOutsideRange = currentData.filter(task => 
-          task.date < currentMonthStart || task.date > currentMonthEnd
-        );
-        
-        console.log('Date range check:', {
-          currentMonthStart,
-          currentMonthEnd,
-          tasksInRange: tasksInRange.length,
-          tasksOutsideRange: tasksOutsideRange.length,
-          tasksInRangeDetails: tasksInRange.map(task => ({
-            title: task.title,
-            date: task.date
-          })),
-          tasksOutsideRangeDetails: tasksOutsideRange.map(task => ({
-            title: task.title,
-            date: task.date
-          }))
-        });
-      }
 
       // Запрос для предыдущего месяца
       const { data: previousData } = await supabase
@@ -164,27 +69,11 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
         const tasksWithProject = (currentData || []).filter(task => task.project_id);
         currentCount = tasksWithProject.length;
         previousCount = (previousData || []).filter(task => task.project_id).length;
-        
-        console.log('Total tasks calculation:', {
-          type: 'total',
-          allTasks: currentData?.length || 0,
-          tasksWithProject: tasksWithProject.length,
-          tasksWithoutProject: (currentData || []).filter(task => !task.project_id).length,
-          finalCount: currentCount
-        });
       } else {
         // Все задачи уже отфильтрованы по датам в запросе к БД
         const closedTasksWithProject = (currentData || []).filter(task => task.status === 'closed' && task.project_id);
         currentCount = closedTasksWithProject.length;
         previousCount = (previousData || []).filter(task => task.status === 'closed' && task.project_id).length;
-        
-        console.log('Completed tasks calculation:', {
-          type: 'completed',
-          allTasks: currentData?.length || 0,
-          closedTasksWithProject: closedTasksWithProject.length,
-          closedTasksWithoutProject: (currentData || []).filter(task => task.status === 'closed' && !task.project_id).length,
-          finalCount: currentCount
-        });
       }
 
       const change = currentCount - previousCount;
@@ -196,21 +85,11 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
         .select('id, name')
         .order('name');
 
-      console.log('All projects:', allProjects, 'Error:', projectsError);
-
       // Вычисляем статистику по проектам
       const projectCounts: Record<string, number> = {};
       const filteredData = type === 'total' 
         ? (currentData || []).filter(task => task.project_id) // Только задачи с проектом
         : (currentData || []).filter(task => task.status === 'closed' && task.project_id); // Только закрытые задачи с проектом
-
-      console.log('Filtered data for projects:', {
-        type,
-        filteredData,
-        currentDataLength: currentData?.length || 0,
-        currentCount,
-        previousCount
-      });
 
       // Создаем мапу проектов для быстрого поиска
       const projectMap: Record<string, string> = {};
@@ -220,11 +99,8 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
         });
       }
 
-      console.log('Project map:', projectMap);
-
       // Если таблица проектов недоступна, используем данные из задач
       if (projectsError || !allProjects) {
-        console.log('Projects table not available, using task data');
         // Собираем уникальные project_id из задач
         const uniqueProjectIds = new Set<string>();
         filteredData.forEach(task => {
@@ -255,21 +131,12 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
 
       // Подсчитываем задачи по проектам
       filteredData.forEach(task => {
-        console.log('Processing task:', {
-          taskId: task.id,
-          projectId: task.project_id,
-          projectName: task.project_id ? projectMap[task.project_id] : null,
-          projectMapKeys: Object.keys(projectMap)
-        });
-        
         // Учитываем только задачи с проектом
         if (task.project_id) {
           const projectName = projectMap[task.project_id] || `Проект ${task.project_id.slice(0, 8)}`;
           projectCounts[projectName] = (projectCounts[projectName] || 0) + 1;
         }
       });
-
-      console.log('Project counts after processing:', projectCounts);
 
       const projectStatsArray: ProjectStats[] = Object.entries(projectCounts)
         .map(([project_name, count]) => ({
@@ -288,8 +155,6 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
       });
 
       setProjectStats(projectStatsArray);
-      
-      console.log('Project stats:', projectStatsArray);
     } catch (error) {
       console.error('Error loading tasks stats:', error);
     } finally {
@@ -376,4 +241,6 @@ export default function TasksStatsWidget({ type }: TasksStatsWidgetProps) {
       </div>
     </div>
   );
-}
+};
+
+export default TasksStatsWidget;

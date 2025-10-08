@@ -220,9 +220,6 @@
   transition: all 0.2s;
 }
 
-.mobile-tasks-day .task-card:hover {
-}
-
 .mobile-tasks-day .task-card.completed {
   opacity: 0.6;
 }

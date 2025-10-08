@@ -11,7 +11,7 @@ interface DayData {
   productivity: number; // процент выполнения
 }
 
-export default function ProductivityWidget() {
+const ProductivityWidget = () => {
   const { userId } = useSupabaseAuth();
   const [weekData, setWeekData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,16 +101,6 @@ export default function ProductivityWidget() {
       });
 
       setWeekData(weekDataArray);
-      console.log('ProductivityWidget - Productivity data:', weekDataArray);
-      console.log('ProductivityWidget - Tasks data from DB:', {
-        allTasks: tasksData?.length || 0,
-        tasksData: tasksData?.map(task => ({
-          date: task.date,
-          status: task.status,
-          project_id: task.project_id
-        }))
-      });
-      console.log('ProductivityWidget - Day stats:', dayStats);
     } catch (error) {
       console.error('Error loading productivity data:', error);
       setWeekData([]);
@@ -215,4 +205,6 @@ export default function ProductivityWidget() {
       </div>
     </div>
   );
-}
+};
+
+export default ProductivityWidget;

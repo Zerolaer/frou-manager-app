@@ -1,12 +1,12 @@
 
 /* ===== Tasks layout (no page vertical scroll) ===== */
 .tasks-page {
-  height: calc(100vh - 112px); /* 100vh - Header (80px) - padding (32px) */
+  height: calc(100vh - 112px); /* Фиксированная высота */
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 16px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: hidden; /* Запрещаем скролл страницы */
   /* Отключаем выделение текста в области календаря */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -168,6 +168,17 @@ body.tasks-mode #main-content {
   overflow: hidden; /* no page-level scroll */
 }
 
+/* Tasks board (right side) */
+.tasks-board {
+  height: 100%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Timeline */
 .timeline {
   flex: 0 0 auto;
@@ -192,18 +203,24 @@ body.tasks-mode #main-content {
 .week-board {
   flex: 1 1 auto;
   padding: 16px;
-  overflow: auto; /* Ãâ€™ÃÂ½Ã‘Æ’Ã‘â€šÃ‘â‚¬ÃÂµÃÂ½ÃÂ½ÃÂ¸ÃÂ¹ Ã‘ÂÃÂºÃ‘â‚¬ÃÂ¾ÃÂ»ÃÂ» ÃÂ´ÃÂ¾ÃÂ¿Ã‘Æ’Ã‘ÂÃ‘â€šÃÂ¸ÃÂ¼, Ã‘ÂÃ‘â€šÃ‘â‚¬ÃÂ°ÃÂ½ÃÂ¸Ã‘â€ ÃÂ° ÃÂ±ÃÂµÃÂ· ÃÂ²ÃÂµÃ‘â‚¬Ã‘â€šÃÂ¸ÃÂºÃÂ°ÃÂ»Ã‘Å’ÃÂ½ÃÂ¾ÃÂ³ÃÂ¾ */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column; /* Ãâ€™ÃÂ½Ã‘Æ’Ã‘â€šÃ‘â‚¬ÃÂµÃÂ½ÃÂ½ÃÂ¸ÃÂ¹ Ã‘ÂÃÂºÃ‘â‚¬ÃÂ¾ÃÂ»ÃÂ» ÃÂ´ÃÂ¾ÃÂ¿Ã‘Æ’Ã‘ÂÃ‘â€šÃÂ¸ÃÂ¼, Ã‘ÂÃ‘â€šÃ‘â‚¬ÃÂ°ÃÂ½ÃÂ¸Ã‘â€ ÃÂ° ÃÂ±ÃÂµÃÂ· ÃÂ²ÃÂµÃ‘â‚¬Ã‘â€šÃÂ¸ÃÂºÃÂ°ÃÂ»Ã‘Å’ÃÂ½ÃÂ¾ÃÂ³ÃÂ¾ */
 }
 .board-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: 1fr;
   gap: 16px;
+  height: 100%;
   min-width: 980px; /* Ã‘â€¡Ã‘â€šÃÂ¾ÃÂ±Ã‘â€¹ 7 ÃÂºÃÂ¾ÃÂ»ÃÂ¾ÃÂ½ÃÂ¾ÃÂº ÃÂ½ÃÂµ Ã‘ÂÃ‘â€¦ÃÂ»ÃÂ¾ÃÂ¿Ã‘â€¹ÃÂ²ÃÂ°ÃÂ»ÃÂ¸Ã‘ÂÃ‘Å’ ÃÂ½ÃÂ° Ã‘Æ’ÃÂ·ÃÂºÃÂ¸Ã‘â€¦ Ã‘ÂÃÂºÃ‘â‚¬ÃÂ°ÃÂ½ÃÂ°Ã‘â€¦ */
 }
 .day-col{ 
-  display:grid; 
-  grid-template-rows:auto 1fr; 
-  min-width:0; 
+  display: grid !important; 
+  grid-template-rows: auto 1fr !important; 
+  min-width: 0;
+  overflow: hidden !important;
+  height: 100%; /* Полная высота */
   /* Отключаем выделение текста */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -215,18 +232,27 @@ body.tasks-mode #main-content {
 .day-head .date { font-size: 12px; color:#64748b; }
 .day-body { 
   padding: 10px; 
-  display: grid; 
+  display: flex; 
+  flex-direction: column;
   gap: 8px; 
-  align-content: start; 
-  overflow-y: auto;
+  overflow-y: scroll !important; /* Принудительный скролл */
   background: #ffffff;
   /* Отключаем выделение текста */
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  max-height: calc(100vh - 200px); /* Adjust based on header height */
+  flex: 1; /* Занимаем все доступное пространство */
+  min-height: 0; /* Позволяем сжатие для работы скролла */
+  max-height: 100%; /* Ограничиваем по высоте родителя */
   position: relative; /* Ensure proper stacking context for absolute positioned indicators */
+  /* Скролл без видимого бара */
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.day-body::-webkit-scrollbar {
+  display: none; /* Скрываем скроллбар для Chrome/Safari/Edge */
 }
 .day-add {
   margin: 10px; display:none; 
@@ -237,19 +263,7 @@ body.tasks-mode #main-content {
 }
 .day-add .btn:hover { background:#f3f4f6; }
 
-/* Task card styles - белые карточки с серой обводкой */
-.task-card {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  color: #000000; /* Черный текст для всех задач */
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-}
-
-.task-card:hover {
-}
-
+/* Task card base styles */
 .task-card.is-dragging {
   opacity: 0.5;
   transform: rotate(5deg);
@@ -267,14 +281,6 @@ body.tasks-mode #main-content {
 }
 
 
-/* Header row inside the days grid: nav + range */
-.week-head{ grid-column:1 / -1; padding:0; }
-.week-head .timeline .nav button{
-  padding: 6px 10px;
-  border:1px solid #d1d5db;  background:#fff; cursor:pointer;
-}
-.week-head .timeline{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
-.week-head .timeline .range{ text-align:center; font-weight:600; }
 
 
 /* Projects panel card */
@@ -315,7 +321,16 @@ body.tasks-mode #main-content {
 
 
 /* Week grid layout */
-.week-grid{ height:100%; display:grid; grid-template-rows:auto 1fr; grid-template-columns:repeat(7,1fr); background:#fff; gap:0; overflow:hidden; border-radius: 24px; border: 1px solid #E9F2F6; }
+.week-grid{ 
+  height:100%; 
+  display:grid; 
+  grid-template-rows:auto 1fr; 
+  grid-template-columns:repeat(7,1fr); 
+  background:#fff; 
+  gap:0; 
+  border-radius: 24px; 
+  border: 1px solid #E9F2F6;
+}
 
 
 /* Timeline header (compact) */
@@ -325,17 +340,6 @@ body.tasks-mode #main-content {
 .week-head .timeline .nav-right{ justify-self:end; }
 .week-head .timeline .range{ text-align:center; font-weight:600; }
 .week-head .timeline .nav button{ padding:6px 10px; border:1px solid #d1d5db;  background:#fff; cursor:pointer; }
-
-.day-col{ 
-  display:grid; 
-  grid-template-rows:auto 1fr; 
-  min-width:0; 
-  /* Отключаем выделение текста */
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
 
 .day-col.is-weekend .day-head{ padding:8px 10px; background:#ffffff; font-size:13px; font-weight:600; color:#0f172a; display:flex; justify-content:space-between; align-items:center; }
 
@@ -348,21 +352,20 @@ body.tasks-mode #main-content {
   margin:0; 
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 12px;
   cursor: pointer;
   transition: box-shadow 120ms ease;
-  max-height: 200px;
+  min-height: 80px; /* Минимальная высота */
+  max-height: none; /* Убираем ограничение по высоте */
   /* Отключаем выделение текста */
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  overflow-y: auto;
+  overflow: visible; /* Убираем скролл внутри карточки */
   will-change: transform;
-}
-
-.task-card:hover {
+  flex-shrink: 0; /* Не сжимать карточки */
 }
 
 .task-card:active {
@@ -442,13 +445,6 @@ body.tasks-mode #main-content {
 }
 
 /* Dragged element styles are now handled inline */
-
-/* Prevent layout shifts during drag */
-.day-body {
-  min-height: 0; /* Prevent expansion */
-}
-
-
 
 /* --- helpers for task title wrapping --- */
 .clamp-2 {

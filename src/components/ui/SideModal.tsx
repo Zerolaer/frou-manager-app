@@ -14,7 +14,7 @@ type SideModalProps = {
   noPadding?: boolean
 }
 
-export default function SideModal({
+const SideModal = ({
   open,
   onClose,
   title,
@@ -23,7 +23,7 @@ export default function SideModal({
   showCloseButton = true,
   rightContent,
   noPadding = false,
-}: SideModalProps) {
+}: SideModalProps) => {
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -80,5 +80,7 @@ export default function SideModal({
   )
 
   return createPortal(content, document.body)
-}
+};
+
+export default SideModal;
 

@@ -1,5 +1,5 @@
 /* src/components/notes/NoteCard.tsx */
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { Note } from '@/features/notes/types';
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
   onTogglePin: (note: Note) => void;
 };
 
-const NoteCard = memo<Props>(({ note, onEdit, onTogglePin }: Props) => {
+const NoteCard = ({ note, onEdit, onTogglePin }: Props) => {
   const preview = useMemo(() => note.content?.slice(0, 160) ?? '', [note.content]);
   
   const handleEdit = useCallback(() => {
@@ -42,8 +42,6 @@ const NoteCard = memo<Props>(({ note, onEdit, onTogglePin }: Props) => {
       </div>
     </div>
   );
-});
-
-NoteCard.displayName = 'NoteCard';
+};
 
 export default NoteCard;

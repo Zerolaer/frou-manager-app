@@ -22,7 +22,7 @@ const PRIORITY_LABELS = {
   low: 'Низкий'
 };
 
-export default function PrioritiesWidget() {
+const PrioritiesWidget = () => {
   const { userId } = useSupabaseAuth();
   const [priorities, setPriorities] = useState<PriorityData>({
     high: 4,
@@ -198,4 +198,6 @@ export default function PrioritiesWidget() {
       </div>
     </div>
   );
-}
+};
+
+export default PrioritiesWidget;

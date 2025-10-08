@@ -8,7 +8,7 @@ type ModalHeaderProps = {
   showCloseButton?: boolean
 }
 
-export default function ModalHeader({ title, onClose, rightContent, showCloseButton = true }: ModalHeaderProps) {
+const ModalHeader = ({ title, onClose, rightContent, showCloseButton = true }: ModalHeaderProps) => {
   return (
     <div className="flex items-center justify-between px-6 border-b border-gray-200 flex-shrink-0" style={{ paddingTop: '20px', paddingBottom: '20px' }}>
       <div className="text-lg font-semibold text-gray-900 leading-none m-0 flex-1">{title}</div>
@@ -26,5 +26,7 @@ export default function ModalHeader({ title, onClose, rightContent, showCloseBut
       </div>
     </div>
   )
-}
+};
+
+export default ModalHeader;
 
