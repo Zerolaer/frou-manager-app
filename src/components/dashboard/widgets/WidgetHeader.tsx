@@ -9,7 +9,7 @@ interface WidgetHeaderProps {
 
 const WidgetHeader = ({ icon, title, subtitle, onMenuClick }: WidgetHeaderProps) => {
   return (
-    <div className="px-6 pt-4 pb-2 border-b border-gray-100">
+    <div className="px-6 pt-4 pb-4 border-b border-gray-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-gray-50">
