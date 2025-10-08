@@ -18,9 +18,9 @@ const WidgetHeader = ({ icon, title, subtitle, onMenuClick }: WidgetHeaderProps)
             </div>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 text-base leading-tight m-0">{title}</h3>
+            <h3 className="font-semibold text-gray-900 text-base leading-tight !m-0 block">{title}</h3>
             {subtitle && (
-              <p className="text-sm text-gray-500 leading-tight mt-1 m-0">{subtitle}</p>
+              <p className="text-sm text-gray-500 leading-tight mt-1 !m-0 block">{subtitle}</p>
             )}
           </div>
         </div>
