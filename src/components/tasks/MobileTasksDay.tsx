@@ -78,7 +78,7 @@ export default function MobileTasksDay({
     return (
       <div
         key={task.id}
-        className={`bg-white rounded-lg border-l-4 p-4 shadow-sm group ${
+        className={`bg-white rounded-xl border-l-4 p-4 shadow-sm group transition-all duration-150 hover:border-black ${
           isCompleted ? 'opacity-60' : ''
         }`}
         style={{ borderLeftColor: projectColor }}
@@ -104,7 +104,7 @@ export default function MobileTasksDay({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                {getPriorityText(task.priority) && (
+                {getPriorityText(task.priority) ? (
                   <span 
                     className="text-xs font-medium px-2 py-1 rounded-full flex-shrink-0"
                     style={{
@@ -114,6 +114,8 @@ export default function MobileTasksDay({
                   >
                     {getPriorityText(task.priority)}
                   </span>
+                ) : (
+                  <div></div>
                 )}
                 <h3 className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} flex-1 min-w-0`}>
                   {task.title}
@@ -126,7 +128,7 @@ export default function MobileTasksDay({
                   e.stopPropagation()
                   onContextMenu(e, task)
                 }}
-                className="p-1 rounded hover:bg-gray-100 flex-shrink-0 opacity-0 group-hover:opacity-100"
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 flex-shrink-0 opacity-0 group-hover:opacity-100"
               >
                 <div className="w-4 h-4 flex items-center justify-center">
                   <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
@@ -150,8 +152,8 @@ export default function MobileTasksDay({
                 <span 
                   className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
                   style={{
-                    backgroundColor: `${task.projectColor || '#6b7280'}20`,
-                    color: task.projectColor || '#6b7280'
+                    backgroundColor: '#e5e7eb',
+                    color: '#4b5563'
                   }}
                 >
                   {task.tag}
@@ -166,6 +168,28 @@ export default function MobileTasksDay({
                 </div>
               )}
             </div>
+
+            {/* Прогресс бар для подзадач */}
+            {todosTotal > 0 && (
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div 
+                    className="bg-gray-600 h-1.5 rounded-full transition-all duration-200"
+                    style={{ 
+                      width: `${(todosDone / todosTotal) * 100}%`,
+                      opacity: todosDone === todosTotal ? 0.3 : 1
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Название проекта */}
+            {task.project_name && (
+              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                {task.project_name}
+              </div>
+            )}
           </div>
         </div>
       </div>

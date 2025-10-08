@@ -48,6 +48,8 @@ function getPriorityColor(priority: string): { background: string, text: string 
   switch (priority) {
     case 'high':
       return { background: '#fee2e2', text: '#dc2626' } // красный
+    case 'normal':
+      return { background: '#f3f4f6', text: '#6b7280' } // серый
     case 'medium':
       return { background: '#fed7aa', text: '#ea580c' } // оранжевый
     case 'low':
@@ -84,6 +86,7 @@ export function TaskCard({
     high: 'High',
     medium: 'Medium', 
     low: 'Low',
+    normal: 'Normal',
     default: ''
   }
 
@@ -93,7 +96,7 @@ export function TaskCard({
   return (
     <Card
       className={cn(
-        "task-card group cursor-pointer transition-shadow duration-200 hover:shadow-md",
+        "task-card group cursor-pointer transition-all duration-150 hover:shadow-md hover:border-black",
         isDragged && "is-dragging",
         isGhost && "opacity-30",
         isCompleted && "is-closed",
@@ -102,7 +105,7 @@ export function TaskCard({
       style={{
         backgroundColor: '#ffffff',
         border: '1px solid #e5e7eb',
-        borderRadius: '8px',
+        borderRadius: '12px',
         ...style
       }}
       onContextMenu={onContextMenu}
@@ -114,7 +117,7 @@ export function TaskCard({
           {/* Header with priority and three dots */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {task.priority && priorityLabel && (
+              {task.priority && priorityLabel ? (
                 <span 
                   className="text-xs font-medium px-2 py-1 rounded-full"
                   style={{
@@ -124,21 +127,21 @@ export function TaskCard({
                 >
                   {priorityLabel}
                 </span>
+              ) : (
+                <div></div>
               )}
             </div>
             <button
-              className="p-1 rounded hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onContextMenu?.(e);
               }}
             >
-              <div className="w-4 h-4 flex items-center justify-center">
-                <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </div>
+              <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+              </svg>
             </button>
           </div>
 
@@ -148,12 +151,41 @@ export function TaskCard({
               {task.title}
             </h3>
             
-            {/* Саб-задачи - убраны */}
-            
-            {/* Progress indicator - упрощен */}
+            {/* Теги */}
+            {task.tag && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                <span 
+                  className="text-xs px-2 py-1 rounded-md font-medium"
+                  style={{ backgroundColor: '#e5e7eb', color: '#4b5563' }}
+                >
+                  {task.tag}
+                </span>
+              </div>
+            )}
+
+            {/* Прогресс бар для подзадач */}
             {task.todos && Array.isArray(task.todos) && task.todos.length > 0 && (
-              <div className="text-xs text-gray-500 mt-1">
-                {task.todos.filter((todo: any) => todo.done).length}/{task.todos.length}
+              <div className="space-y-1 mt-2">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Прогресс</span>
+                  <span>{task.todos.filter((todo: any) => todo.done).length}/{task.todos.length}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div 
+                    className="bg-gray-600 h-1.5 rounded-full transition-all duration-200"
+                    style={{ 
+                      width: `${(task.todos.filter((todo: any) => todo.done).length / task.todos.length) * 100}%`,
+                      opacity: task.todos.every((todo: any) => todo.done) ? 0.3 : 1
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Название проекта */}
+            {task.project_name && (
+              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                {task.project_name}
               </div>
             )}
           </div>
