@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
-import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { UnifiedModal } from '@/components/ui/ModalSystem'
+import { ModalFooter } from '@/components/ui/ModalFooter'
 import { ChevronLeft, Plus } from 'lucide-react'
 
 import type { Project } from '@/types/shared'
@@ -16,13 +17,12 @@ type Props = {
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
 
-export default function ProjectSidebar({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props){
+const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props) => {
   const [items, setItems] = useState<Project[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [hasColor, setHasColor] = useState(false)
   const [hasPosition, setHasPosition] = useState(false)
   const [hoveredProject, setHoveredProject] = useState<string | null>(null)
-  const { createSimpleFooter, createDangerFooter } = useModalActions()
 
   // load with feature detection
   useEffect(()=>{
@@ -260,17 +260,23 @@ export default function ProjectSidebar({ userId, activeId, onChange, collapsed =
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
         title="Переименовать проект"
-        footer={createSimpleFooter(
-          { 
-            label: 'Сохранить', 
-            onClick: renameOk,
-            disabled: !renameValue.trim()
-          },
-          { 
-            label: 'Отмена', 
-            onClick: () => setRenameOpen(false)
-          }
-        )}
+        footer={
+          <ModalFooter>
+            <button
+              onClick={() => setRenameOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={renameOk}
+              disabled={!renameValue.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Сохранить
+            </button>
+          </ModalFooter>
+        }
       >
         <input className="border rounded-lg px-3 py-2 text-sm w-full" value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
       </UnifiedModal>
@@ -279,19 +285,27 @@ export default function ProjectSidebar({ userId, activeId, onChange, collapsed =
         open={delOpen}
         onClose={()=>setDelOpen(false)}
         title="Удалить проект?"
-        footer={createDangerFooter(
-          { 
-            label: 'Удалить', 
-            onClick: deleteOk
-          },
-          { 
-            label: 'Отмена', 
-            onClick: () => setDelOpen(false)
-          }
-        )}
+        footer={
+          <ModalFooter>
+            <button
+              onClick={() => setDelOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={deleteOk}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            >
+              Удалить
+            </button>
+          </ModalFooter>
+        }
       >
         <div className="text-sm text-gray-600">Проект и связанные задачи будут удалены.</div>
       </UnifiedModal>
     </aside>
   )
 }
+
+export default ProjectSidebar

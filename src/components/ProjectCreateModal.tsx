@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { UnifiedModal } from '@/components/ui/ModalSystem'
 import { ModalField, ModalInput, ModalContent } from '@/components/ui/ModalForm'
+import { ModalFooter } from '@/components/ui/ModalFooter'
 import { supabase } from '@/lib/supabaseClient'
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
@@ -12,11 +13,10 @@ type Props = {
   onCreated: (p: { id:string, name:string, color?:string }) => void
 }
 
-export default function ProjectCreateModal({ open, onClose, userId, onCreated }: Props){
+const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
   const [name, setName] = useState('')
   const [color, setColor] = useState<string|undefined>(COLORS[8])
   const [loading, setLoading] = useState(false)
-  const { createStandardFooter } = useModalActions()
 
   async function submit(){
     const n = name.trim()
@@ -52,10 +52,23 @@ export default function ProjectCreateModal({ open, onClose, userId, onCreated }:
       open={open}
       onClose={onClose}
       title="Новый проект"
-      footer={createStandardFooter(
-        { label: 'Создать', onClick: submit, loading, disabled: !name.trim() },
-        { label: 'Отмена', onClick: onClose }
-      )}
+      footer={
+        <ModalFooter>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={submit}
+            disabled={!name.trim() || loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Создание...' : 'Создать'}
+          </button>
+        </ModalFooter>
+      }
     >
       <ModalContent>
         <ModalField label="Название" required>
@@ -86,3 +99,5 @@ export default function ProjectCreateModal({ open, onClose, userId, onCreated }:
     </UnifiedModal>
   )
 }
+
+export default ProjectCreateModal
