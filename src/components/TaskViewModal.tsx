@@ -5,7 +5,8 @@ import { useModalActions } from '@/components/ui/ModalSystem'
 import SideModal from '@/components/ui/SideModal'
 import CheckFinance from '@/components/CheckFinance'
 import { supabase } from '@/lib/supabaseClient'
-import { Plus, Trash2, MoreVertical } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
+import CoreMenu from '@/components/ui/CoreMenu'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -235,20 +236,17 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
             <div className="text-lg font-semibold text-gray-900">Задача</div>
             {task?.date && <div className="text-sm text-gray-500 mt-1">Создана: {new Date(task.date).toLocaleDateString()}</div>}
           </div>
-          <div className="relative" ref={menuRef}>
-            <button
-              className="h-10 w-10 grid place-items-center rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Меню"
-            >
-              <MoreVertical className="w-4 h-4 text-gray-600" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-xl z-10">
-                <div className="dd-item" onClick={duplicateTask}>Дублировать</div>
-                <div className="dd-item text-red-600" onClick={deleteTask}>Удалить</div>
-              </div>
-            )}
+          <div ref={menuRef}>
+            <CoreMenu
+              options={[
+                { value: 'duplicate', label: 'Дублировать' },
+                { value: 'delete', label: 'Удалить', destructive: true },
+              ]}
+              onSelect={(value) => {
+                if (value === 'duplicate') duplicateTask()
+                if (value === 'delete') deleteTask()
+              }}
+            />
           </div>
         </div>
       }

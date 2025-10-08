@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { Plus, Trash2, Calendar, Tag, MoreVertical, Check } from 'lucide-react'
+import { Plus, Trash2, Calendar, Tag, Check } from 'lucide-react'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
+import CoreMenu from '@/components/ui/CoreMenu'
 import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
 import type { Todo, Project } from '@/types/shared'
@@ -256,20 +257,22 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
       noPadding={true}
       title={headerTitle}
       rightContent={
-        <div className="relative" ref={menuRef}>
-          <button
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Меню"
-          >
-            <MoreVertical className="w-5 h-5 text-gray-500" />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 min-w-48 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl z-10">
-              <div className="ctx-item" onClick={() => setMenuOpen(false)}>Дублировать</div>
-              <div className="ctx-item text-red-600" onClick={() => { deleteTask(); setMenuOpen(false); }}>Удалить</div>
-            </div>
-          )}
+        <div ref={menuRef}>
+          <CoreMenu
+            options={[
+              { value: 'duplicate', label: 'Дублировать' },
+              { value: 'delete', label: 'Удалить', destructive: true },
+            ]}
+            onSelect={(value) => {
+              if (value === 'duplicate') {
+                // Minimal duplicate action: prefill title to indicate duplicate
+                setTitle((t) => `${t} (копия)`)
+              }
+              if (value === 'delete') {
+                deleteTask()
+              }
+            }}
+          />
         </div>
       }
       footer={
