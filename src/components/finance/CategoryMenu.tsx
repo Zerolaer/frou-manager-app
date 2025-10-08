@@ -1,5 +1,6 @@
-
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import CoreMenu from '@/components/ui/CoreMenu'
 import { Edit, Plus, Trash2 } from 'lucide-react'
 
 type Pos = { x: number; y: number }
@@ -13,101 +14,73 @@ type Props = {
   onDelete: () => void
 }
 
-export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub }: Props){
-  const itemsRef = useRef<Array<HTMLDivElement | null>>([])
+export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub }: Props) {
   const menuRef = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState(0)
 
-  useEffect(()=>{
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose() }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(p => Math.min(p + 1, itemsRef.current.length - 1)) }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(p => Math.max(p - 1, 0)) }
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        itemsRef.current[active]?.click()
+  // Close on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
       }
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [active, onClose])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
-  useEffect(()=>{
-    itemsRef.current[0]?.focus()
-  }, [])
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose])
 
-  return (
+  const options = [
+    { value: 'rename', label: 'Переименовать', icon: <Edit className="w-4 h-4" /> },
+    ...(canAddSub ?? true ? [{ value: 'addsub', label: 'Подкатегория', icon: <Plus className="w-4 h-4" /> }] : []),
+    { value: 'delete', label: 'Удалить', icon: <Trash2 className="w-4 h-4" />, destructive: true }
+  ]
+
+  return createPortal(
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} />
       <div
         ref={menuRef}
-        className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto p-2 w-60"
-        style={{ 
-          left: pos.x, 
-          top: pos.y,
+        style={{
           position: 'fixed',
+          left: pos.x,
+          top: pos.y,
           zIndex: 1000
         }}
-        role="menu"
-        aria-label="Действия с категорией"
       >
-        <button
-          ref={el => itemsRef.current[0] = el}
-          className={`w-full px-2 py-3 text-left transition-colors ${
-            active === 0 
-              ? 'bg-black text-white font-medium' 
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-          style={{ fontSize: '15px' }}
-          role="menuitem"
-          tabIndex={0}
-          onClick={onRename}
-          aria-label="Переименовать категорию"
-        >
-          <div className="flex items-center gap-2">
-            <Edit className="w-4 h-4" />
-            Переименовать
-          </div>
-        </button>
-        {(canAddSub ?? true) && (
-          <button
-            ref={el => itemsRef.current[1] = el}
-            className={`w-full px-2 py-3 text-left transition-colors ${
-              active === 1 
-                ? 'bg-black text-white font-medium' 
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            style={{ fontSize: '15px' }}
-            role="menuitem"
-            tabIndex={0}
-            onClick={onAddSub}
-            aria-label="Добавить подкатегорию"
-          >
-            <div className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Подкатегория
-            </div>
-          </button>
-        )}
-        <button
-          ref={el => itemsRef.current[2] = el}
-          className={`w-full px-2 py-3 text-left transition-colors ${
-            active === 2 
-              ? 'bg-black text-white font-medium' 
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-          style={{ fontSize: '15px', color: '#dc2626' }}
-          role="menuitem"
-          tabIndex={0}
-          onClick={onDelete}
-          aria-label="Удалить категорию"
-        >
-          <div className="flex items-center gap-2">
-            <Trash2 className="w-4 h-4" />
-            Удалить
-          </div>
-        </button>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => {
+                if (option.value === 'rename') onRename()
+                if (option.value === 'addsub') onAddSub()
+                if (option.value === 'delete') onDelete()
+                onClose()
+              }}
+              className={`w-full px-2 py-3 text-left transition-colors rounded-lg flex items-center gap-2 ${
+                option.destructive
+                  ? 'text-red-600 hover:bg-red-50'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              style={{ fontSize: '15px' }}
+            >
+              {option.icon}
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }

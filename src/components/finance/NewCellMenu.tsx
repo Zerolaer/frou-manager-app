@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Copy, Clipboard } from 'lucide-react'
-import ContextMenu from './ContextMenu'
 
 type Props = {
   x: number
@@ -13,63 +13,71 @@ type Props = {
 }
 
 export default function NewCellMenu({ x, y, onClose, canCopy, hasClipboard, onCopy, onPaste }: Props) {
-  const handleItemClick = (action: () => void) => {
-    action()
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose])
+
+  const options = [
+    ...(canCopy ? [{ value: 'copy', label: 'Копировать записи', icon: <Copy className="w-4 h-4" /> }] : []),
+    ...(hasClipboard ? [{ value: 'paste', label: 'Вставить записи (заменить)', icon: <Clipboard className="w-4 h-4" /> }] : [])
+  ]
+
+  if (options.length === 0) {
     onClose()
+    return null
   }
 
-  return (
-    <ContextMenu x={x} y={y} onClose={onClose}>
-      {canCopy && (
-        <div
-          className="ctx-item"
-          onClick={() => handleItemClick(onCopy)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 12px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#374151',
-            transition: 'background-color 0.15s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
-        >
-          <Copy className="w-4 h-4" />
-          Копировать записи
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-10" onClick={onClose} />
+      <div
+        ref={menuRef}
+        style={{
+          position: 'fixed',
+          left: x,
+          top: y,
+          zIndex: 1000
+        }}
+      >
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => {
+                if (option.value === 'copy') onCopy()
+                if (option.value === 'paste') onPaste()
+                onClose()
+              }}
+              className="w-full px-2 py-3 text-left transition-colors rounded-lg flex items-center gap-2 text-gray-700 hover:bg-gray-100"
+              style={{ fontSize: '15px' }}
+            >
+              {option.icon}
+              {option.label}
+            </button>
+          ))}
         </div>
-      )}
-      {hasClipboard && (
-        <div
-          className="ctx-item"
-          onClick={() => handleItemClick(onPaste)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 12px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#374151',
-            transition: 'background-color 0.15s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
-        >
-          <Clipboard className="w-4 h-4" />
-          Вставить записи (заменить)
-        </div>
-      )}
-    </ContextMenu>
+      </div>
+    </>,
+    document.body
   )
 }

@@ -138,26 +138,37 @@ function TaskContextMenu({
       />
       <div
         ref={menuRef}
-        className="ctx-menu"
         style={{
           position: 'fixed',
           left: adjustedPos.x,
           top: adjustedPos.y,
-          zIndex: 1000,
-          backgroundColor: 'white',
-          border: '1px solid #e5e7eb',
-          borderRadius: '6px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          minWidth: '160px',
-          padding: '4px 0'
+          zIndex: 1000
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <div className="ctx-item" onClick={onDuplicate}>Дублировать</div>
-        <div className="ctx-item" onClick={onToggleStatus}>
-          {task?.status === TASK_STATUSES.CLOSED ? 'Открыть' : 'Выполнить'}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+          <button
+            onClick={onDuplicate}
+            className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
+            style={{ fontSize: '15px' }}
+          >
+            Дублировать
+          </button>
+          <button
+            onClick={onToggleStatus}
+            className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
+            style={{ fontSize: '15px' }}
+          >
+            {task?.status === TASK_STATUSES.CLOSED ? 'Открыть' : 'Выполнить'}
+          </button>
+          <button
+            onClick={onDelete}
+            className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
+            style={{ fontSize: '15px' }}
+          >
+            Удалить
+          </button>
         </div>
-        <div className="ctx-item text-red-600" onClick={onDelete}>Удалить</div>
       </div>
     </>,
     document.body

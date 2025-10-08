@@ -238,18 +238,51 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
 
       {ctxOpen && ctxProject && (
         <>
-          <div className="ctx-backdrop" onClick={()=>setCtxOpen(false)} />
-          <div className="ctx-menu" ref={menuRef} style={{ left: ctxPos.x, top: ctxPos.y, minWidth: 200, padding: 6 }}>
-            <div className="dd-item" onClick={()=>{ setRenameValue(ctxProject.name); setRenameOpen(true); setCtxOpen(false) }}>Переименовать</div>
-            <div className="dd-item">
-              <div className="mb-1 text-xs text-gray-500">Цвет</div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 18px)', gap:6 }}>
-                {COLORS.map(c=>(
-                  <button key={c} onClick={()=>changeColor(c)} style={{ width:18, height:18, borderRadius:9999, background:c, border:'1px solid rgba(0,0,0,.08)' }} />
-                ))}
+          <div className="fixed inset-0 z-10" onClick={()=>setCtxOpen(false)} />
+          <div 
+            ref={menuRef} 
+            style={{ 
+              position: 'fixed',
+              left: ctxPos.x, 
+              top: ctxPos.y, 
+              zIndex: 1000
+            }}
+          >
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+              <button
+                onClick={()=>{ setRenameValue(ctxProject.name); setRenameOpen(true); setCtxOpen(false) }}
+                className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
+                style={{ fontSize: '15px' }}
+              >
+                Переименовать
+              </button>
+              <div className="px-2 py-3">
+                <div className="mb-2 text-xs text-gray-500">Цвет</div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:6 }}>
+                  {COLORS.map(c=>(
+                    <button 
+                      key={c} 
+                      onClick={()=>changeColor(c)} 
+                      style={{ 
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: '50%',
+                        background: c, 
+                        border: '2px solid rgba(0,0,0,.08)',
+                        cursor: 'pointer'
+                      }} 
+                    />
+                  ))}
+                </div>
               </div>
+              <button
+                onClick={()=>{ setDelOpen(true); setCtxOpen(false) }}
+                className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
+                style={{ fontSize: '15px' }}
+              >
+                Удалить
+              </button>
             </div>
-            <div className="dd-item" style={{ color:'#b91c1c' }} onClick={()=>{ setDelOpen(true); setCtxOpen(false) }}>Удалить</div>
           </div>
         </>
       )}

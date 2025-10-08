@@ -1,7 +1,8 @@
 /* src/components/notes/NoteEditorModal.tsx */
 import React, { useEffect, useState } from 'react';
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
-import { ModalField, ModalInput, ModalTextarea, ModalContent, ModalSelect } from '@/components/ui/ModalForm'
+import { ModalField, ModalInput, ModalTextarea, ModalContent } from '@/components/ui/ModalForm'
+import Dropdown from '@/components/ui/Dropdown'
 import { supabase } from '@/lib/supabaseClient'
 import type { Note } from '@/features/notes/types';
 
@@ -128,17 +129,17 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
         </ModalField>
 
         <ModalField label="Папка">
-          <ModalSelect
+          <Dropdown
+            options={[
+              { value: '', label: 'Без папки' },
+              ...folders.map(f => ({ value: f.id, label: f.name }))
+            ]}
             value={folderId}
-            onChange={(e) => setFolderId(e.target.value)}
-          >
-            <option value="">Без папки</option>
-            {folders.map((folder) => (
-              <option key={folder.id} value={folder.id}>
-                {folder.name}
-              </option>
-            ))}
-          </ModalSelect>
+            onChange={(value) => setFolderId(String(value))}
+            placeholder="Выберите папку"
+            className="w-full"
+            buttonClassName="w-full justify-between"
+          />
         </ModalField>
         
         <ModalField label="Содержимое">
