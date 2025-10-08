@@ -173,6 +173,7 @@ const ProductivityWidget = () => {
                 console.log(`Четверг: tasks=${day.tasks}, completed=${day.completed}, maxTasks=${maxTasks}`);
                 console.log(`Четверг: totalHeight=${totalHeight}%, completionPercentage=${completionPercentage}, completedHeight=${completedHeight}%`);
                 console.log(`Четверг: процент выполнения=${day.completed}/${day.tasks}=${Math.round(completionPercentage * 100)}%`);
+                console.log(`Четверг: allCompleted=${day.completed === day.tasks}, willShowFullBlack=${day.completed === day.tasks && day.tasks > 0}`);
               }
               
               return (
