@@ -54,8 +54,7 @@ const ProductivityWidget = () => {
         .select('date, status, project_id')
         .eq('user_id', userId)
         .gte('date', startDate.toISOString().split('T')[0])
-        .lte('date', endDate.toISOString().split('T')[0])
-        .not('project_id', 'is', null); // Только задачи с проектом
+        .lte('date', endDate.toISOString().split('T')[0]);
 
       if (error) {
         console.error('Error loading productivity data:', error);
