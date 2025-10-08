@@ -170,33 +170,53 @@ const ProductivityWidget = () => {
               return (
                 <div key={day.day} className="flex flex-col items-center flex-1 h-full">
                   <div className="w-full flex flex-col items-center justify-end h-full mb-2">
-                    {/* Основной столбик - всегда показываем */}
-                    <div
-                      className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
-                      style={{ 
-                        height: `${Math.max(totalHeight, minHeight)}%`,
-                        minHeight: '8px'
-                      }}
-                    >
-                      {/* Черная часть - выполненные задачи */}
-                      {day.completed > 0 && (
-                        <div
-                          className="absolute bottom-0 left-0 right-0 rounded-t-md bg-black"
-                          style={{ 
-                            height: `${completedHeight}%`,
-                            minHeight: completedHeight > 0 ? '4px' : '0px'
+                    {/* Основной столбик */}
+                    {day.completed === day.tasks && day.tasks > 0 ? (
+                      /* Если все задачи выполнены - полностью черный столбик */
+                      <div
+                        className="w-full rounded-t-md relative overflow-hidden bg-black"
+                        style={{ 
+                          height: `${Math.max(totalHeight, minHeight)}%`,
+                          minHeight: '8px'
+                        }}
+                      >
+                        {/* Диагональные линии для паттерна */}
+                        <div 
+                          className="absolute inset-0 opacity-20"
+                          style={{
+                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
                           }}
-                        >
-                          {/* Диагональные линии для паттерна */}
-                          <div 
-                            className="absolute inset-0 opacity-20"
-                            style={{
-                              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
+                        ></div>
+                      </div>
+                    ) : (
+                      /* Обычный серый столбик с черной частью */
+                      <div
+                        className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
+                        style={{ 
+                          height: `${Math.max(totalHeight, minHeight)}%`,
+                          minHeight: '8px'
+                        }}
+                      >
+                        {/* Черная часть - выполненные задачи */}
+                        {day.completed > 0 && (
+                          <div
+                            className="absolute bottom-0 left-0 right-0 rounded-t-md bg-black"
+                            style={{ 
+                              height: `${completedHeight}%`,
+                              minHeight: completedHeight > 0 ? '4px' : '0px'
                             }}
-                          ></div>
-                        </div>
-                      )}
-                    </div>
+                          >
+                            {/* Диагональные линии для паттерна */}
+                            <div 
+                              className="absolute inset-0 opacity-20"
+                              style={{
+                                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
+                              }}
+                            ></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="text-xs text-gray-600 font-medium">
                     {day.day}
