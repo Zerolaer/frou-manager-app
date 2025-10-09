@@ -54,7 +54,8 @@ export const LazyPages = {
   Finance: lazy(() => import('@/pages/Finance')),
   Tasks: lazy(() => import('@/pages/Tasks')),
   Notes: lazy(() => import('@/pages/Notes')),
-  Login: lazy(() => import('@/pages/Login'))
+  Login: lazy(() => import('@/pages/Login')),
+  Storybook: lazy(() => import('@/pages/Storybook'))
 }
 
 // Feature-based code splitting

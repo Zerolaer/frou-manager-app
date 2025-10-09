@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react'
 
-export type Toast = { id: string, title?: string, message: string, duration?: number }
+export type Toast = { id: string, title?: string, message: string, duration?: number, fading?: boolean }
 type Ctx = {
   toasts: Toast[]
   push: (t: Omit<Toast, 'id'>) => void
@@ -12,7 +12,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }){
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const remove = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
+    // Сначала помечаем как fading
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, fading: true } : t))
+    // Затем удаляем через 300ms для fade out
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id))
+    }, 300)
   }, [])
 
   const push = useCallback((t: Omit<Toast, 'id'>) => {

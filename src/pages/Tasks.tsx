@@ -1,5 +1,5 @@
 // Tasks.tsx — Tag tint tweak (alpha 0.2) + UPPERCASE — 2025-08-27T11:57:52.457526Z
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import { ru } from 'date-fns/locale/ru'
@@ -59,11 +59,11 @@ function TaskContextMenu({
   onToggleStatus: () => void
   onDelete: () => void
 }) {
-  const menuRef = useRef<HTMLDivElement>(null)
-  const [adjustedPos, setAdjustedPos] = useState({ x, y })
+  const menuRef = React.useRef<HTMLDivElement>(null)
+  const [adjustedPos, setAdjustedPos] = React.useState({ x, y })
 
   // Smart positioning - don't go off screen
-  useEffect(() => {
+  React.useEffect(() => {
     if (!menuRef.current) return
 
     const menu = menuRef.current
@@ -100,7 +100,7 @@ function TaskContextMenu({
   }, [x, y])
 
   // Close on Escape
-  useEffect(() => {
+  React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
@@ -111,7 +111,7 @@ function TaskContextMenu({
   }, [onClose])
 
   // Close on click outside
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose()
@@ -192,8 +192,8 @@ export default function Tasks(){
   const { handleError, handleSuccess } = useErrorHandler()
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const { isMobile } = useMobileDetection()
-  const [viewTask, setViewTask] = useState<TaskItem|null>(null)
-  const [mobileDate, setMobileDate] = useState(new Date())
+  const [viewTask, setViewTask] = React.useState<TaskItem|null>(null)
+  const [mobileDate, setMobileDate] = React.useState(new Date())
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -219,22 +219,22 @@ export default function Tasks(){
   }
 
   // New DnD system with mouse events
-  const [draggedTask, setDraggedTask] = useState<TaskItem | null>(null)
-  const [dragSource, setDragSource] = useState<{dayKey: string, index: number} | null>(null)
-  const [dropTarget, setDropTarget] = useState<{dayKey: string, index: number} | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
-  const [dragStartTimer, setDragStartTimer] = useState<NodeJS.Timeout | null>(null)
-  const [mouseDownPos, setMouseDownPos] = useState({ x: 0, y: 0 })
-  const [hasMoved, setHasMoved] = useState(false)
+  const [draggedTask, setDraggedTask] = React.useState<TaskItem | null>(null)
+  const [dragSource, setDragSource] = React.useState<{dayKey: string, index: number} | null>(null)
+  const [dropTarget, setDropTarget] = React.useState<{dayKey: string, index: number} | null>(null)
+  const [isDragging, setIsDragging] = React.useState(false)
+  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 })
+  const [dragPosition, setDragPosition] = React.useState({ x: 0, y: 0 })
+  const [dragStartTimer, setDragStartTimer] = React.useState<NodeJS.Timeout | null>(null)
+  const [mouseDownPos, setMouseDownPos] = React.useState({ x: 0, y: 0 })
+  const [hasMoved, setHasMoved] = React.useState(false)
   
   // Use ref to track dragging state for click handler
-  const hasMovedRef = useRef(false)
-  const isDraggingRef = useRef(false)
+  const hasMovedRef = React.useRef(false)
+  const isDraggingRef = React.useRef(false)
 
   // Сохраняем информацию о задаче для перетаскивания
-  const [pendingDrag, setPendingDrag] = useState<{
+  const [pendingDrag, setPendingDrag] = React.useState<{
     task: TaskItem
     dayKey: string
     index: number
@@ -583,15 +583,15 @@ export default function Tasks(){
   // Auth handled by useSupabaseAuth hook
 
   // timeline
-  const [start, setStart] = useState<Date>(()=> startOfWeek(new Date(), { weekStartsOn:1 }))
-  const [end,   setEnd]   = useState<Date>(()=> endOfWeek(new Date(), { weekStartsOn:1 }))
+  const [start, setStart] = React.useState<Date>(()=> startOfWeek(new Date(), { weekStartsOn:1 }))
+  const [end,   setEnd]   = React.useState<Date>(()=> endOfWeek(new Date(), { weekStartsOn:1 }))
   const todayKey = format(new Date(),'yyyy-MM-dd')
-  useEffect(()=>{
+  React.useEffect(()=>{
     setEnd(endOfWeek(start, { weekStartsOn:1 }))
   }, [start])
 
   // Listen for SubHeader actions
-  useEffect(() => {
+  React.useEffect(() => {
     const handleSubHeaderActionEvent = (event: CustomEvent) => {
       handleSubHeaderAction(event.detail)
     }
@@ -603,7 +603,7 @@ export default function Tasks(){
   }, [])
 
   // Global mouse event handlers for drag and drop
-  useEffect(() => {
+  React.useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       handleMouseMove(e)
     }
@@ -623,19 +623,19 @@ export default function Tasks(){
   }, [isDragging, pendingDrag, mouseDownPos, hasMoved, draggedTask, dragSource])
 
   // projects
-  const [projects, setProjects] = useState<Project[]>([])
-  const [activeProject, setActiveProject] = useState<string|null>(TASK_PROJECT_ALL)
-  const [projectsCollapsed, setProjectsCollapsed] = useState(() => {
+  const [projects, setProjects] = React.useState<Project[]>([])
+  const [activeProject, setActiveProject] = React.useState<string|null>(TASK_PROJECT_ALL)
+  const [projectsCollapsed, setProjectsCollapsed] = React.useState(() => {
     const saved = localStorage.getItem('frovo_projects_collapsed')
     return saved === 'true'
   })
-const projectColorById = useMemo(() => {
+const projectColorById = React.useMemo(() => {
     const m: Record<string, string|undefined> = {}
     for (const p of projects) m[p.id] = p.color || undefined
     return m
   }, [projects])
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!uid) return
     
     ;(async()=>{
@@ -658,11 +658,11 @@ const projectColorById = useMemo(() => {
 }, [uid])
 
   // tasks for the week of active project
-  const [tasks, setTasks] = useState<Record<string, TaskItem[]>>({})
+  const [tasks, setTasks] = React.useState<Record<string, TaskItem[]>>({})
   // Track last active project to clear cache on project switch
-  const lastActiveProject = useRef(activeProject)
+  const lastActiveProject = React.useRef(activeProject)
   
-  useEffect(() => {
+  React.useEffect(() => {
     if (!uid || !activeProject) { 
       setTasks({})
       return
@@ -747,11 +747,11 @@ const projectColorById = useMemo(() => {
   }, [uid, activeProject, start, end])
 
 // context menu state for task cards
-  const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
+  const [ctx, setCtx] = React.useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
     open: false, x: 0, y: 0, task: null, dayKey: undefined
   })
 
-  useEffect(() => {
+  React.useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setCtx(c => ({ ...c, open: false })) }
     window.addEventListener('keydown', onEsc)
     return () => window.removeEventListener('keydown', onEsc)
@@ -831,7 +831,7 @@ const projectColorById = useMemo(() => {
 
 
   // days of current week
-  const days = useMemo(() => {
+  const days = React.useMemo(() => {
     const arr: Date[] = []
     const d0 = new Date(start)
     for (let i=0; i<7; i++) {
@@ -841,8 +841,8 @@ const projectColorById = useMemo(() => {
   }, [start])
 
   // create project modal
-  const [openNewProject, setOpenNewProject] = useState(false)
-  const [projectName, setProjectName] = useState('')
+  const [openNewProject, setOpenNewProject] = React.useState(false)
+  const [projectName, setProjectName] = React.useState('')
   async function createProject(){
     if (!uid) return
     const name = projectName.trim()
@@ -863,10 +863,10 @@ const projectColorById = useMemo(() => {
   }
 
   // create task modal
-  const [openNewTask, setOpenNewTask] = useState(false)
-  const [taskDate, setTaskDate] = useState<Date|null>(null)
-  const [taskTitle, setTaskTitle] = useState('')
-  const [taskDesc, setTaskDesc] = useState('')
+  const [openNewTask, setOpenNewTask] = React.useState(false)
+  const [taskDate, setTaskDate] = React.useState<Date|null>(null)
+  const [taskTitle, setTaskTitle] = React.useState('')
+  const [taskDesc, setTaskDesc] = React.useState('')
   async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date){
     if (!uid) return
     
@@ -943,7 +943,7 @@ const projectColorById = useMemo(() => {
   }
 
   // Get tasks for mobile date
-  const mobileTasks = useMemo(() => {
+  const mobileTasks = React.useMemo(() => {
     const dayKey = format(mobileDate, 'yyyy-MM-dd')
     return tasks[dayKey] || []
   }, [tasks, mobileDate])

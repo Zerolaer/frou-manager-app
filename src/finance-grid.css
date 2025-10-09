@@ -10,9 +10,47 @@
   max-width: 100%;
 }
 
-/* Prevent horizontal scroll on finance page */
+/* Accordion animation for collapsing category rows */
+.finance-cell {
+  max-height: 500px; /* Default expanded state */
+  opacity: 1;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+
+/* Indentation for child categories - removed */
+.finance-cell.finance-cell-child-first {
+  /* padding-left: 24px; - removed */
+}
+
+.finance-cell.cell-collapsing,
+.finance-cell.cell-expanding {
+  overflow: hidden; /* Only apply overflow hidden during animation */
+  contain: layout; /* Isolate animation to prevent reflow */
+}
+
+.finance-cell.cell-collapsing {
+  max-height: 0 !important;
+  opacity: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  min-height: 0 !important;
+  will-change: max-height, opacity; /* GPU acceleration */
+}
+
+.finance-cell.cell-expanding {
+  /* Start from collapsed state */
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  will-change: max-height, opacity; /* GPU acceleration */
+}
+
+/* Allow horizontal scroll on finance page */
 .finance-mode .finance-page {
-  overflow-x: hidden;
+  overflow-x: auto; /* Changed from hidden to allow scroll */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -90,19 +128,106 @@ body.finance-mode,
   overflow: hidden;
   cursor: default;
 }
+
+/* Finance row styles */
+.finance-row {
+  display: contents;
+  transition: all 300ms ease-in-out;
+}
+
+/* Collapsed row animation */
+.finance-row.collapsed {
+  height: var(--row-height, 0px);
+  opacity: 0;
+}
+
+.finance-row.expanded {
+  height: var(--row-height, 28px);
+  opacity: 1;
+}
+
+/* Smooth collapse animations */
+@keyframes collapseAnimation {
+  0% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}
+
+@keyframes expandAnimation {
+  0% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
 .finance-row:last-child .finance-cell { border-bottom: 0; }
 .finance-cell:last-child { border-right: 0; }
+.finance-cell:first-child { border-left: 0; }
 
-.cell-head { padding: 6px; font-size: 13px; color: #334155; cursor: default; }
-.finance-head { background: #f8fafc; }
-.head-current { background: #f3f4f6 !important; color: #111827; font-weight: 600; }
+.cell-head { 
+  padding: 6px 6px 6px 8px; 
+  font-size: 13px; 
+  font-weight: 400;
+  color: #111827; 
+  cursor: default; 
+  text-align: left !important;
+}
+
+/* Default alignment for data cells */
+.finance-row .finance-cell:not(:first-child) .cell-head {
+  text-align: left !important;
+}
+
+/* Force left alignment for all finance table content */
+.finance-grid .cell-btn,
+.finance-grid .cell-head,
+.finance-grid .finance-cell .cell-btn,
+.finance-grid .finance-cell .cell-head {
+  text-align: left !important;
+}
+
+/* Override any Tailwind classes */
+.finance-grid *[class*="text-center"] {
+  text-align: left !important;
+}
+
+/* ULTIMATE FORCE - Override everything */
+.finance-grid .cell-btn {
+  text-align: left !important;
+}
+
+.finance-grid .finance-cell .cell-btn {
+  text-align: left !important;
+}
+
+.finance-grid .finance-row .finance-cell .cell-btn {
+  text-align: left !important;
+}
+
+/* First column headers and summary titles - aligned left */
+.finance-grid > .finance-cell:first-child .cell-head,
+.finance-row .finance-cell:first-child .cell-head {
+  text-align: left;
+}
+.finance-head { background: #ffffff; }
+.head-current { background: #ffffff !important; color: #111827; font-weight: 400; }
 
 .finance-section {
   grid-column: 1 / -1;
-  background: #f7f9fc;
-  color: #334155;
-  font-weight: 400;
-  font-size: 13px;
+  background: #ffffff;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
   padding: 8px 10px;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
@@ -116,12 +241,15 @@ body.finance-mode,
   align-items: center;
   padding: 6px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
+  color: #111827;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background 120ms, box-shadow 120ms;
+  text-align: left;
 }
 .cell-name:hover {
-  background: #f3f4f6;
+  background: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
 }
 
 /* Collapse button styles */
@@ -137,7 +265,7 @@ body.finance-mode,
 }
 
 .cell-name button.shrink-0:hover {
-  background-color: #f3f4f6;
+  background-color: #f8fafc;
 }
 
 /* Ensure icons are visible in collapse button */
@@ -169,50 +297,121 @@ body.finance-mode,
   display: block;
   width: 100%;
   height: 100%;
-  text-align: right;
+  text-align: left !important;
   padding: 6px;
   border-radius: 0;
   border: 1px solid transparent;
   background: transparent;
   font-size: 13px;
-  transition: background 120ms, border-color 120ms, box-shadow 120ms;
+  font-weight: 400;
+  color: #111827;
+  transition: background 120ms, border-color 120ms, box-shadow 120ms, opacity 120ms;
   cursor: pointer;
 }
-.cell-btn:hover { background: #f3f4f6; border-color: #e5e7eb; }
-.cell-btn:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 
-.col-current { background: #f3f4f6; }
+/* Empty cells (0,00) - gray color */
+.cell-btn-empty {
+  color: #64748b !important;
+}
 
-/* Align right helper for summary */
-.cell-right { text-align: right; }
+/* Parent categories with children - disabled */
+.cell-btn-parent {
+  opacity: 0.7;
+}
+
+.cell-btn-parent:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Unified hover effect */
+.cell-btn:hover { 
+  background: #f8fafc; 
+  border-color: #e5e7eb; 
+}
+
+.cell-btn:focus { 
+  outline: none; 
+  border-color: #2563eb; 
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); 
+}
+
+.col-current { background: #ffffff; }
+
+/* Summary rows (Доходы, Расходы, Баланс) */
+.summary-title {
+  font-weight: 400;
+  color: #111827;
+  text-align: left !important;
+}
+
+.summary-value {
+  font-weight: 400;
+  color: #111827;
+  text-align: left;
+}
+
+/* Balance row - bolder */
+.summary-title.balance-title {
+  font-weight: 600;
+}
+
+.summary-value.balance-value {
+  font-weight: 600;
+  text-align: left;
+}
 
 
-/* Responsive */
+/* Responsive - maintain unified styling */
 @media (max-width: 1024px) {
-  .cell-head, .cell-name, .cell-btn { font-size: 12px; padding: 6px; }
-  .finance-section { font-size: 12px; padding: 6px 8px; }
+  .cell-head, .cell-name, .cell-btn { 
+    font-size: 12px; 
+    padding: 6px; 
+  }
+  .finance-section { 
+    font-size: 12px; 
+    padding: 6px 8px; 
+  }
 }
 @media (max-width: 900px) {
-  .finance-grid { grid-template-columns: minmax(140px, 200px) repeat(12, 1fr); }
-  .cell-head, .cell-name, .cell-btn { font-size: 11px; padding: 5px; }
-  .finance-section { font-size: 11px; padding: 5px 6px; }
+  .finance-grid { 
+    grid-template-columns: minmax(140px, 200px) repeat(12, 1fr); 
+  }
+  .cell-head, .cell-name, .cell-btn { 
+    font-size: 11px; 
+    padding: 5px; 
+  }
+  .finance-section { 
+    font-size: 11px; 
+    padding: 5px 6px; 
+  }
 }
 
 
-/* === APPEND: hover for clickable data cells === */
-.finance-grid .finance-row .finance-cell:hover .cell-btn{
-  background:#f8fafc;
-  border-color:#e5e7eb;
-}
+/* Hover for clickable data cells - handled by .cell-btn:hover above */
 
 
 /* Disable hover for non-clickable header/cat cells */
-.finance-grid > .finance-cell .cell-head { 
+.finance-grid > .finance-cell .cell-head:not(.cell-name) { 
   cursor: default;
   pointer-events: none;
 }
-.finance-grid > .finance-cell:hover .cell-head { 
+.finance-grid > .finance-cell:hover .cell-head:not(.cell-name) { 
   background: transparent !important; 
+}
+
+/* Disable any hover effects on finance-cell that contains cell-name */
+.finance-grid > .finance-cell:has(.cell-name):hover {
+  background: transparent !important;
+}
+
+/* More specific rule to disable all hover effects on category cells */
+.finance-cell:has(.cell-name) {
+  pointer-events: none;
+}
+
+.finance-cell:has(.cell-name) .cell-name {
+  pointer-events: auto;
 }
 .finance-grid > .finance-cell.finance-head,
 .finance-grid > .finance-cell.head-current {
@@ -221,10 +420,10 @@ body.finance-mode,
 }
 .finance-grid > .finance-cell.finance-head:hover,
 .finance-grid > .finance-cell.head-current:hover {
-  background: #f8fafc !important;
+  background: #ffffff !important;
 }
 .finance-grid > .finance-cell.head-current:hover {
-  background: #f3f4f6 !important;
+  background: #ffffff !important;
 }
 .finance-grid > .finance-cell.finance-head *,
 .finance-grid > .finance-cell.head-current * {
@@ -291,7 +490,7 @@ body.finance-mode,
 }
 
 .ctx-item:hover { 
-  background: #f3f4f6; 
+  background: #f8fafc; 
 }
 
 .ctx-item:active,

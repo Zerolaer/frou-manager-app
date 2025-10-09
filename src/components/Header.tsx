@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Filter, Search, Download, Upload, Settings, Calendar } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Filter, Search, Download, Upload, Settings, Calendar, BookOpen } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import YearSelector from './YearSelector'
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/finance', icon: DollarSign, label: 'Финансы' },
   { to: '/tasks', icon: CheckSquare, label: 'Задачи' },
   { to: '/notes', icon: FileText, label: 'Заметки' },
+  { to: '/storybook', icon: BookOpen, label: 'Storybook' },
 ]
 
 interface HeaderProps {

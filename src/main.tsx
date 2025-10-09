@@ -130,6 +130,14 @@ const router = createBrowserRouter([
           </Suspense>
         )
       },
+      { 
+        path: 'storybook', 
+        element: (
+          <Suspense fallback={null}>
+            <LazyPages.Storybook />
+          </Suspense>
+        )
+      },
     ]
   },
 ])

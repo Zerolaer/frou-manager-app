@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Modal from '@/components/ui/Modal'
 import { CoreInput } from '@/components/ui/CoreInput'
+import Dropdown from '@/components/ui/Dropdown'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
 
-type Entry = { id: string; amount: number; note: string | null; included: boolean; position: number }
+type Entry = { id: string; amount: number; currency: 'EUR' | 'USD' | 'GEL'; note: string | null; included: boolean; position: number }
 
 export default function CellEditor({
   open, onClose, userId, categoryId, categoryName, monthIndex, year,
@@ -22,7 +24,10 @@ export default function CellEditor({
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<Entry[]>([])
   const [amount, setAmount] = useState<string>('')
+  const [currency, setCurrency] = useState<'EUR' | 'USD' | 'GEL'>('EUR')
   const [note, setNote] = useState<string>('')
+  const [animatingCheckboxes, setAnimatingCheckboxes] = useState<Set<string>>(new Set())
+  const [activeDropdownEntry, setActiveDropdownEntry] = useState<string | null>(null)
   const amountInputRef = useRef<HTMLInputElement>(null)
 
   const timers = useRef<Record<string, any>>({})
@@ -37,20 +42,45 @@ export default function CellEditor({
   // Drag state
   const dragId = useRef<string | null>(null)
 
+  // Закрываем dropdown при клике вне его
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeDropdownEntry && !(event.target as Element).closest('.currency-dropdown')) {
+        setActiveDropdownEntry(null)
+      }
+    }
+    
+    if (activeDropdownEntry) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [activeDropdownEntry])
+
   useEffect(() => {
     if (!open) return
     ;(async () => {
       setLoading(true)
+      
+      // Инициализируем курсы валют
+      await initializeExchangeRates()
+      
       const { data, error } = await supabase
         .from('finance_entries')
-        .select('id, amount, note, included, position, created_at')
+        .select('id, amount, currency, note, included, position, created_at')
         .eq('category_id', categoryId)
         .eq('year', year)
         .eq('month', monthIndex + 1)
         .order('position', { ascending: true })
         .order('created_at', { ascending: true })
       if (error) { console.error(error); setLoading(false); return }
-      const list = (data || []).map((d:any)=>({ id: d.id, amount: Number(d.amount)||0, note: d.note, included: !!d.included, position: d.position ?? 0 }))
+      const list = (data || []).map((d:any)=>({ 
+        id: d.id, 
+        amount: Number(d.amount)||0, 
+        currency: d.currency || 'EUR',
+        note: d.note, 
+        included: !!d.included, 
+        position: d.position ?? 0 
+      }))
       setItems(list)
       setLoading(false)
     })()
@@ -66,7 +96,11 @@ export default function CellEditor({
   }, [open])
 
   function sumIncluded(list: Entry[]) {
-    return list.reduce((s, e) => s + (e.included ? e.amount : 0), 0)
+    return list.reduce((s, e) => {
+      if (!e.included) return s
+      const amountInEUR = convertToEUR(e.amount, e.currency)
+      return s + amountInEUR
+    }, 0)
   }
 
   async function addItem() {
@@ -74,13 +108,20 @@ export default function CellEditor({
     if (!userId || isNaN(value)) return
     const insert = {
       user_id: userId, category_id: categoryId, year, month: monthIndex + 1,
-      amount: value, note, included: true, position: items.length
+      amount: value, currency, note, included: true, position: items.length
     }
     const { data, error } = await supabase.from('finance_entries')
-      .insert(insert).select('id, amount, note, included, position').single()
+      .insert(insert).select('id, amount, currency, note, included, position').single()
     if (error) { console.error(error); return }
-    const next: Entry[] = [...items, { id: data.id, amount: Number(data.amount)||0, note: data.note, included: !!data.included, position: data.position ?? items.length }]
-    setItems(next); setAmount(''); setNote('')
+    const next: Entry[] = [...items, { 
+      id: data.id, 
+      amount: Number(data.amount)||0, 
+      currency: data.currency || 'EUR',
+      note: data.note, 
+      included: !!data.included, 
+      position: data.position ?? items.length 
+    }]
+    setItems(next); setAmount(''); setNote(''); setCurrency('EUR')
     onApply(sumIncluded(next))
     // Focus back to amount input after adding
     setTimeout(() => {
@@ -120,10 +161,38 @@ export default function CellEditor({
     })
   }
 
+  function changeCurrency(id: string, value: 'EUR' | 'USD' | 'GEL') {
+    updateItemLocal(id, { currency: value })
+    debounce('currency:'+id, async () => {
+      const { error } = await supabase.from('finance_entries').update({ currency: value }).eq('id', id)
+      if (error) console.error(error)
+    })
+  }
+
+  function handleDropdownOpen(id: string) {
+    setActiveDropdownEntry(id)
+  }
+
+  function handleDropdownClose() {
+    setActiveDropdownEntry(null)
+  }
+
   async function toggleIncluded(id: string, checked: boolean) {
+    // Запускаем анимацию
+    setAnimatingCheckboxes(prev => new Set(prev).add(id))
+    
     updateItemLocal(id, { included: checked })
     const { error } = await supabase.from('finance_entries').update({ included: checked }).eq('id', id)
     if (error) console.error(error)
+    
+    // Останавливаем анимацию через 300ms
+    setTimeout(() => {
+      setAnimatingCheckboxes(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(id)
+        return newSet
+      })
+    }, 300)
   }
 
   async function removeItem(id: string) {
@@ -154,19 +223,68 @@ export default function CellEditor({
     await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
   }
 
+  // CSS анимации для чекбоксов (добавляем в head если их еще нет)
+  useEffect(() => {
+    if (typeof document !== 'undefined' && !document.getElementById('checkbox-animations-cell')) {
+      const style = document.createElement('style')
+      style.id = 'checkbox-animations-cell'
+      style.textContent = `
+        @keyframes checkboxPress {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(0.85);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes checkmarkBounce {
+          0% {
+            opacity: 0;
+            transform: scale(0);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `
+      document.head.appendChild(style)
+    }
+  }, [])
+
   return (
   
-<Modal   open={open}   onClose={onClose}   title={<span bodyClassName="p-0"><b>{categoryName}</b> · {monthLabel} {year}</span>}
-  footer={
-    <button 
-      className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors leading-none h-10" 
-      style={{ borderRadius: '12px', fontSize: '13px' }}
-      onClick={onClose}
-    >
-      Закрыть
-    </button>
+<Modal   open={open}   onClose={onClose}   title={
+    <div className="text-center">
+      <b>{categoryName}</b> · <span style={{ color: '#64748b', fontSize: '14px' }}>{monthLabel} {year}</span>
+    </div>
   }
-  size="md"
+  footer={
+    <div className="flex justify-between items-center w-full">
+      <div className="cursor-default" style={{ 
+        color: '#64748b',
+        padding: '8px 16px',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        backgroundColor: 'transparent',
+        fontSize: '14px'
+      }}>
+        <span style={{ fontWeight: 400 }}>Общее:</span> {fmt.format(sumIncluded(items))}
+      </div>
+      <button className="btn btn-outline" onClick={onClose}>
+        Закрыть
+      </button>
+    </div>
+  }
+  size="cell"
 >
   <div className="editor-body">
           {loading && <div className="loading-overlay">Загрузка…</div>}
@@ -174,11 +292,22 @@ export default function CellEditor({
             <CoreInput 
               ref={amountInputRef}
               type="number" 
-              placeholder="Сумма (€)" 
+              placeholder="Сумма" 
               value={amount} 
               onChange={e=>setAmount(e.target.value)} 
               onKeyPress={handleKeyPress}
               className="editor-input number" 
+            />
+            <Dropdown
+              value={currency}
+              onChange={(value) => setCurrency(value as 'EUR' | 'USD' | 'GEL')}
+              options={[
+                { value: 'EUR', label: 'EUR' },
+                { value: 'USD', label: 'USD' },
+                { value: 'GEL', label: 'GEL' }
+              ]}
+              className="editor-input currency"
+              dropdownClassName="currency-dropdown"
             />
             <CoreInput 
               placeholder="Описание (необязательно)" 
@@ -187,27 +316,77 @@ export default function CellEditor({
               onKeyPress={handleKeyPress}
               className="editor-input text" 
             />
-            <button className="btn btn-outline flex items-center gap-2" onClick={addItem}>
+            <button className="btn btn-primary" style={{ borderRadius: '12px' }} onClick={addItem}>
               <Plus className="w-4 h-4" />
-              Добавить
             </button>
           </div>
           <div>
             {items.map(i => (
-              <div key={i.id} className={"entry-row " + (!i.included ? "entry-disabled" : "")}
+              <div key={i.id} className={"entry-row " + (!i.included ? "entry-disabled" : "") + (activeDropdownEntry === i.id ? " entry-active" : "")}
                 draggable onDragStart={()=>onDragStart(i.id)} onDragOver={onDragOver} onDrop={()=>onDrop(i.id)}>
                 <div className="entry-drag">
                   <GripVertical className="w-4 h-4" />
                 </div>
-                <label className="chk">
-                  <input type="checkbox" checked={i.included} onChange={e=>toggleIncluded(i.id, e.target.checked)} />
-                  <span className="box"><svg className="icon" viewBox="0 0 20 20"><path fill="currentColor" d="M8.143 13.314 4.829 10l-1.18 1.18 4.494 4.494 8-8-1.18-1.18z"/></svg></span>
-                </label>
-                <CoreInput type="number" className="editor-input entry-amount" value={String(i.amount)} onChange={e=>changeAmount(i.id, e.target.value)} />
+                <div
+                  onClick={() => toggleIncluded(i.id, !i.included)}
+                  style={{ 
+                    width: '24px', 
+                    height: '24px',
+                    borderRadius: '999px',
+                    backgroundColor: i.included ? '#000000' : '#ffffff',
+                    border: '2px solid #000000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'background-color 0.2s ease',
+                    animation: animatingCheckboxes.has(i.id) ? 'checkboxPress 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+                  }}
+                >
+                  {i.included && (
+                    <svg 
+                      width="12" 
+                      height="12" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="white" 
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{
+                        animation: animatingCheckboxes.has(i.id) ? 'checkmarkBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
+                      }}
+                    >
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                  )}
+                </div>
+                <CoreInput 
+                  type="number" 
+                  className="editor-input entry-amount" 
+                  value={String(i.amount)} 
+                  onChange={e=>changeAmount(i.id, e.target.value)}
+                />
+                <div onClick={() => handleDropdownOpen(i.id)}>
+                  <Dropdown
+                    value={i.currency}
+                    onChange={(value) => {
+                      changeCurrency(i.id, value as 'EUR' | 'USD' | 'GEL')
+                      handleDropdownClose()
+                    }}
+                    options={[
+                      { value: 'EUR', label: 'EUR' },
+                      { value: 'USD', label: 'USD' },
+                      { value: 'GEL', label: 'GEL' }
+                    ]}
+                    className="editor-input entry-currency"
+                    dropdownClassName="currency-dropdown"
+                  />
+                </div>
                 <CoreInput className="editor-input entry-note" value={i.note || ""} onChange={e=>changeNote(i.id, e.target.value)} />
-                <button className="btn btn-danger btn-sm flex items-center gap-1" onClick={()=>removeItem(i.id)}>
-                  <Trash2 className="w-4 h-4" />
-                  Удалить
+                <button className="w-10 h-10 bg-white border border-gray-300 rounded-xl flex items-center justify-center hover:bg-gray-50" onClick={()=>removeItem(i.id)}>
+                  <Trash2 className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
             ))}

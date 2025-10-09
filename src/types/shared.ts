@@ -35,6 +35,7 @@ export type Cat = {
   type: MoneyType;
   values: number[];
   parent_id?: string | null;
+  isCollapsed?: boolean;
 }
 
 export type CtxCat = {

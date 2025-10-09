@@ -256,16 +256,29 @@ export default function Finance(){
   const aggregatedExpenseByParent = useMemo(() => computeDescendantSums(expenseRaw), [expenseRaw])
 
   function applyCollapse(list: Cat[], collapsed: Record<string, boolean>): Cat[]{
+    // Group categories with their children and add collapse state
     const parents = list.filter(c => !c.parent_id)
     const byParent: Record<string, Cat[]> = {}
     list.forEach(c => { if (c.parent_id) (byParent[c.parent_id] ||= []).push(c) })
-    const res: Cat[] = []
+    
+    const result: Cat[] = []
     parents.forEach(p => { 
-      res.push(p)
-      if (!collapsed[p.id]) (byParent[p.id]||[]).forEach(ch => res.push(ch))
+      // Add parent category
+      result.push({ ...p, isCollapsed: false })
+      
+      // Add children with collapse state
+      const children = byParent[p.id] || []
+      children.forEach(child => {
+        result.push({ ...child, isCollapsed: !!collapsed[p.id] })
+      })
     })
-    list.filter(c=>c.parent_id && !parents.find(p=>p.id===c.parent_id)).forEach(ch=>res.push(ch))
-    return res
+    
+    // Add orphaned children (if any)
+    list.filter(c=>c.parent_id && !parents.find(p=>p.id===c.parent_id)).forEach(ch=>{
+      result.push({ ...ch, isCollapsed: false })
+    })
+    
+    return result
   }
 
   async function addCategory(){
@@ -624,17 +637,29 @@ export default function Finance(){
         <div className="finance-cell"><div className="cell-head">Категория</div></div>
         {FINANCE_MONTHS.map((m,idx) => (
           <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
-            <div className="cell-head cell-right">{m} {year}</div>
+            <div className="cell-head text-left" style={{color: '#64748b'}}>{m} {year}</div>
           </div>
         ))}
 
         <SectionHeader title="Доходы" onAdd={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} />
 
-        {incomeCategories.map((row)=> {
-          const hasChildren = !!aggregatedIncomeByParent[row.id]
+        {incomeCategories.map((row, idx, arr)=> {
+          const hasChildren = (childrenMapIncome[row.id] || 0) > 0
           const valuesToShow = hasChildren ? aggregatedIncomeByParent[row.id] : row.values
+          
+          // Calculate child index for staggered animation
+          let childIndex = 0
+          if (row.parent_id) {
+            for (let i = 0; i < idx; i++) {
+              if (arr[i].parent_id === row.parent_id) {
+                childIndex++
+              }
+            }
+          }
+          
           return (
             <CategoryRow
+              key={row.id}
               type="income"
               row={row}
               values={valuesToShow}
@@ -642,6 +667,7 @@ export default function Finance(){
               currentMonth={currentMonth}
               hasChildren={hasChildren}
               collapsed={!!collapsed[row.id]}
+              childIndex={childIndex}
               onToggleCollapse={(id)=> setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))}
               onNameContext={(e, info)=> onContextCategory(e, info)}
               onCellContext={onCellContext}
@@ -655,11 +681,23 @@ export default function Finance(){
 
         <SectionHeader title="Расходы" onAdd={()=>{ setNewType(FINANCE_TYPES.EXPENSE); setNewParent(null); setShowAdd(true) }} />
 
-        {expenseCategories.map((row)=> {
-          const hasChildren = !!aggregatedExpenseByParent[row.id]
+        {expenseCategories.map((row, idx, arr)=> {
+          const hasChildren = (childrenMapExpense[row.id] || 0) > 0
           const valuesToShow = hasChildren ? aggregatedExpenseByParent[row.id] : row.values
+          
+          // Calculate child index for staggered animation
+          let childIndex = 0
+          if (row.parent_id) {
+            for (let i = 0; i < idx; i++) {
+              if (arr[i].parent_id === row.parent_id) {
+                childIndex++
+              }
+            }
+          }
+          
           return (
             <CategoryRow
+              key={row.id}
               type="expense"
               row={row}
               values={valuesToShow}
@@ -667,6 +705,7 @@ export default function Finance(){
               currentMonth={currentMonth}
               hasChildren={hasChildren}
               collapsed={!!collapsed[row.id]}
+              childIndex={childIndex}
               onToggleCollapse={(id)=> setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))}
               onNameContext={(e, info)=> onContextCategory(e, info)}
               onCellContext={onCellContext}
@@ -684,30 +723,30 @@ export default function Finance(){
         <div className="finance-cell"><div className="cell-head">Показатель</div></div>
         {FINANCE_MONTHS.map((m,idx) => (
           <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
-            <div className="cell-head cell-right">{m} {year}</div>
+            <div className="cell-head text-left" style={{color: '#64748b'}}>{m} {year}</div>
           </div>
         ))}
         <div className="finance-row contents">
-          <div className="finance-cell"><div className="cell-head" style={{fontWeight:600}}>Доходы</div></div>
+          <div className="finance-cell"><div className="cell-head">Доходы</div></div>
           {totalIncomeByMonth.map((v,i)=>(
             <div className={"finance-cell " + (isCurrentYear && i===currentMonth ? "col-current" : "")} key={i}>
-              <div className="cell-head cell-right">{fmtEUR(v)}</div>
+              <div className="cell-head">{fmtEUR(v)}</div>
             </div>
           ))}
         </div>
         <div className="finance-row contents">
-          <div className="finance-cell"><div className="cell-head" style={{fontWeight:600}}>Расходы</div></div>
+          <div className="finance-cell"><div className="cell-head">Расходы</div></div>
           {totalExpenseByMonth.map((v,i)=>(
             <div className={"finance-cell " + (isCurrentYear && i===currentMonth ? "col-current" : "")} key={i}>
-              <div className="cell-head cell-right">{fmtEUR(v)}</div>
+              <div className="cell-head">{fmtEUR(v)}</div>
             </div>
           ))}
         </div>
                 <div className="finance-row contents">
-          <div className="finance-cell"><div className="cell-head" style={{fontWeight:700}}>Баланс</div></div>
+          <div className="finance-cell"><div className="cell-head summary-title balance-title">Баланс</div></div>
           {balanceByMonth.map((v,i)=>(
             <div className={"finance-cell " + (isCurrentYear && i===currentMonth ? "col-current" : "")} key={i}>
-              <div className="cell-head cell-right" style={{fontWeight:700}}>{fmtEUR(v)}</div>
+              <div className="cell-head summary-value balance-value">{fmtEUR(v)}</div>
             </div>
           ))}
         </div>

@@ -187,10 +187,10 @@ export default function Dropdown({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div 
             ref={dropdownRef}
-            className={`absolute bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
+            className={`absolute bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
             style={{
               [dropdownPosition === 'bottom' ? 'top' : 'bottom']: '100%',
               [dropdownPosition === 'bottom' ? 'marginTop' : 'marginBottom']: '8px',

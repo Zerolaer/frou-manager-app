@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ModalHeader from './ModalHeader'
 import ModalFooter from './ModalFooter'
@@ -24,12 +24,29 @@ const SideModal = ({
   rightContent,
   noPadding = false,
 }: SideModalProps) => {
-  // Add safety check for React context
-  if (!React.useRef) {
-    return null
-  }
-  
   const panelRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true)
+      setIsAnimating(true)
+      // Небольшая задержка для начала анимации
+      const timer = setTimeout(() => {
+        setIsAnimating(false)
+      }, 10)
+      return () => clearTimeout(timer)
+    } else {
+      setIsAnimating(true)
+      // Задержка для анимации исчезновения
+      const timer = setTimeout(() => {
+        setIsVisible(false)
+        setIsAnimating(false)
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -49,11 +66,11 @@ const SideModal = ({
     }
   }, [open])
 
-  if (!open) return null
+  if (!isVisible) return null
 
   const content = (
     <div
-      className="fixed inset-0 z-[100]"
+      className="fixed inset-0 z-[100] opacity-100"
       onMouseDown={onClose}
     >
       {/* Overlay with backdrop blur */}
@@ -66,7 +83,11 @@ const SideModal = ({
       >
         <div
           ref={panelRef}
-          className="w-[40vw] h-[calc(100vh-32px)] my-4 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden"
+          className={`w-[40vw] h-[calc(100vh-32px)] my-4 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
+            !isAnimating 
+              ? 'opacity-100 translate-x-0' 
+              : 'opacity-0 translate-x-full'
+          }`}
           tabIndex={-1}
         >
           {/* Header */}

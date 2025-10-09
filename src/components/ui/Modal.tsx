@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ModalHeader from './ModalHeader'
 import ModalFooter from './ModalFooter'
@@ -13,8 +13,8 @@ type ModalProps = {
   children: React.ReactNode
   /** Если true — клик по оверлею закрывает модалку (по умолчанию true) */
   closeOnOverlay?: boolean
-  /** 'default' = 620px, 'large' = 880px. Legacy support: 'sm'|'md'|'lg'|'xl' map to 'default'|'large' */
-  size?: 'default' | 'large' | 'sm' | 'md' | 'lg' | 'xl'
+  /** 'default' = 500px, 'large' = 880px, 'cell' = 680px. Legacy support: 'sm'|'md'|'lg'|'xl' map to 'default'|'large' */
+  size?: 'default' | 'large' | 'cell' | 'sm' | 'md' | 'lg' | 'xl'
   /** Extra classes on outer container (kept for back-compat) */
   className?: string
   /** Extra classes on content panel */
@@ -68,13 +68,31 @@ const Modal = ({
   contentClassName,
   bodyClassName,
 }: ModalProps) => {
-  // Add safety check for React context
-  if (!React.useRef) {
-    return null
-  }
-  
   const panelRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  
   useFocusTrap(open, panelRef)
+
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true)
+      setIsAnimating(true)
+      // Небольшая задержка для начала анимации
+      const timer = setTimeout(() => {
+        setIsAnimating(false)
+      }, 10)
+      return () => clearTimeout(timer)
+    } else {
+      setIsAnimating(true)
+      // Задержка для анимации исчезновения
+      const timer = setTimeout(() => {
+        setIsVisible(false)
+        setIsAnimating(false)
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -83,14 +101,14 @@ const Modal = ({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  if (!open) return null
+  if (!isVisible) return null
 
   // Map legacy sizes to new sizes
-  const actualSize = size === 'sm' || size === 'md' ? 'default' : (size === 'lg' || size === 'xl') ? 'large' : size
+  const actualSize = size === 'cell' ? 'cell' : (size === 'sm' || size === 'md' ? 'default' : (size === 'lg' || size === 'xl') ? 'large' : size)
   
   // БЕЗ вложенных бэктиков — безопасно для esbuild/Netlify
   const panelClasses = [
-    actualSize === 'large' ? 'w-[880px]' : 'w-[620px]',
+    actualSize === 'cell' ? 'w-[680px]' : 'w-[500px]',
     'max-w-[95vw]',
     'rounded-2xl',
     'bg-white',
@@ -104,14 +122,18 @@ const Modal = ({
 
   const content = (
     <div
-      className="fixed inset-0 z-[100]"
+      className="fixed inset-0 z-[100] opacity-100"
       onMouseDown={() => { if (closeOnOverlay) onClose() }}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           ref={panelRef}
-          className={panelClasses}
+          className={`${panelClasses} transition-all duration-300 ease-out ${
+            !isAnimating 
+              ? 'opacity-100 scale-100 translate-y-0' 
+              : 'opacity-0 scale-95 translate-y-2'
+          }`}
           tabIndex={-1}
           onMouseDown={(e) => e.stopPropagation()}
         >
