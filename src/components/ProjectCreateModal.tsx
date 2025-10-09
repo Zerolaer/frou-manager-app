@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import { ModalField, ModalContent } from '@/components/ui/ModalForm'
 import { CoreInput } from '@/components/ui/CoreInput'
@@ -13,7 +14,8 @@ type Props = {
   onCreated: (p: { id:string, name:string, color?:string }) => void
 }
 
-const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
+export default function ProjectCreateModal({ open, onClose, userId, onCreated }: Props) {
+  const { t } = useTranslation()
   const [name, setName] = React.useState('')
   const [color, setColor] = React.useState<string|undefined>(COLORS[8])
   const [loading, setLoading] = React.useState(false)
@@ -51,7 +53,7 @@ const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
     <Modal
       open={open}
       onClose={onClose}
-      title="Новый проект"
+      title={t('projects.newProject')}
       footer={
         <>
           <button
@@ -59,7 +61,7 @@ const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
             className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
             style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
           >
-            Отмена
+            {t('actions.cancel')}
           </button>
           <button
             onClick={submit}
@@ -69,22 +71,22 @@ const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0d0d0d'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#171717'}
           >
-            {loading ? 'Создание...' : 'Создать'}
+            {loading ? t('projects.creating') : t('projects.create')}
           </button>
         </>
       }
     >
       <ModalContent>
-        <ModalField label="Название" required>
+        <ModalField label={t('projects.name')} required>
           <CoreInput
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="Например, Website Redesign"
+            placeholder={t('projects.exampleProjectName')}
             autoFocus
           />
         </ModalField>
         
-        <ModalField label="Цвет">
+        <ModalField label={t('projects.color')}>
           <div className="grid grid-cols-7 gap-2">
             {COLORS.map(c => (
               <button 
@@ -103,5 +105,3 @@ const ProjectCreateModal = ({ open, onClose, userId, onCreated }: Props) => {
     </Modal>
   )
 }
-
-export default ProjectCreateModal

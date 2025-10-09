@@ -3,6 +3,7 @@ import { Wallet, TrendingUp, TrendingDown, Euro } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCurrencyEUR } from '@/lib/format';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
 
 interface BudgetData {
@@ -21,6 +22,7 @@ interface BudgetData {
 
 const BudgetWidget = () => {
   const { userId } = useSupabaseAuth();
+  const { t } = useTranslation();
   const [budget, setBudget] = useState<BudgetData>({
     balance: 0,
     earned: 0,
@@ -46,12 +48,12 @@ const BudgetWidget = () => {
       setLoading(true);
       
       const now = new Date();
-      const currentMonth = now.getMonth(); // 0-11 для индексации массива
+      const currentMonth = now.getMonth(); // 0-11 for array indexing
       const currentYear = now.getFullYear();
       const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-      // Загружаем данные за текущий и предыдущий год
+      // Load data for current and previous year
       const [catsRes, currentEntriesRes, previousEntriesRes] = await Promise.all([
         supabase.from('finance_categories').select('id,name,type,parent_id').order('created_at', { ascending: true }),
         supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', currentYear),
@@ -72,14 +74,14 @@ const BudgetWidget = () => {
       const currentEntries = currentEntriesRes.data || [];
       const previousEntries = previousEntriesRes.data || [];
       
-      // Функция для обработки данных
+      // Function to process data
       const processEntries = (entries: any[], year: number) => {
         const byId: Record<string, number[]> = {};
         
-        // Создаем массив для каждой категории
+        // Create array for each category
         for (const c of cats) byId[c.id] = Array(12).fill(0);
         
-        // Заполняем данные из записей
+        // Fill data from entries
         for (const e of entries) {
           if (!e.included) continue;
           const i = Math.min(11, Math.max(0, (e.month as number) - 1));
@@ -88,7 +90,7 @@ const BudgetWidget = () => {
           byId[id][i] += Number(e.amount) || 0;
         }
         
-        // Фильтруем по типам и создаем итоговые массивы
+        // Filter by types and create final arrays
         const income = cats.filter((c) => c.type === 'income').map((c) => ({ 
           id: c.id, 
           name: c.name, 
@@ -109,17 +111,17 @@ const BudgetWidget = () => {
       const currentData = processEntries(currentEntries, currentYear);
       const previousData = processEntries(previousEntries, previousYear);
 
-      // Вычисляем итоги для текущего месяца
+      // Calculate totals for current month
       const totalIncome = currentData.income.reduce((s, c) => s + (c.values?.[currentMonth] ?? 0), 0);
       const totalExpense = currentData.expense.reduce((s, c) => s + (c.values?.[currentMonth] ?? 0), 0);
       const balance = totalIncome - totalExpense;
 
-      // Вычисляем итоги для предыдущего месяца
+      // Calculate totals for previous month
       const previousTotalIncome = previousData.income.reduce((s, c) => s + (c.values?.[previousMonth] ?? 0), 0);
       const previousTotalExpense = previousData.expense.reduce((s, c) => s + (c.values?.[previousMonth] ?? 0), 0);
       const previousBalance = previousTotalIncome - previousTotalExpense;
 
-      // Дополнительные расчеты
+      // Additional calculations
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       const daysPassed = now.getDate();
       const remainingDays = daysInMonth - daysPassed;
@@ -151,22 +153,22 @@ const BudgetWidget = () => {
     }
   };
 
-  // Используем formatCurrencyEUR для евро
+  // Use formatCurrencyEUR for euros
 
   return (
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<Euro className="w-5 h-5" />}
-        title="Бюджет месяца"
-        subtitle="Показывает доходы и расходы"
+        title={t('dashboard.budget')}
+        subtitle={t('dashboard.budget')}
       />
 
       <div className="flex-1 p-6 flex flex-col min-h-0">
-        {/* Основные показатели */}
+        {/* Main metrics */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          {/* Баланс */}
+          {/* Balance */}
           <div className="bg-black rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-300 mb-1">Баланс</div>
+            <div className="text-xs text-gray-300 mb-1">{t('dashboard.balance')}</div>
             <div className="text-lg font-bold text-white">
               {formatCurrencyEUR(budget.balance)}
             </div>
@@ -177,9 +179,9 @@ const BudgetWidget = () => {
             )}
           </div>
 
-          {/* Доходы */}
+          {/* Income */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">Доходы</div>
+            <div className="text-xs text-gray-500 mb-1">{t('dashboard.earned')}</div>
             <div className="text-lg font-bold text-gray-900">
               {formatCurrencyEUR(budget.earned)}
             </div>
@@ -190,9 +192,9 @@ const BudgetWidget = () => {
             )}
           </div>
 
-          {/* Расходы */}
+          {/* Expenses */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">Расходы</div>
+            <div className="text-xs text-gray-500 mb-1">{t('dashboard.spent')}</div>
             <div className="text-lg font-bold text-gray-900">
               {formatCurrencyEUR(budget.spent)}
             </div>
@@ -204,11 +206,11 @@ const BudgetWidget = () => {
           </div>
         </div>
 
-        {/* Дополнительная статистика */}
+        {/* Additional statistics */}
         <div className="space-y-3">
-          {/* Соотношение доходов и расходов */}
+          {/* Income to expense ratio */}
           <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-600 mb-2">Соотношение доходов к расходам</div>
+            <div className="text-sm text-gray-600 mb-2">Income to expense ratio</div>
             <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
               <div 
                 className="bg-black h-2 rounded-full"
@@ -216,15 +218,15 @@ const BudgetWidget = () => {
               ></div>
             </div>
             <div className="text-xs text-gray-500">
-              {budget.earned > 0 ? `${((budget.spent / budget.earned) * 100).toFixed(0)}%` : '0%'} от доходов потрачено
+              {budget.earned > 0 ? `${((budget.spent / budget.earned) * 100).toFixed(0)}%` : '0%'} of income spent
             </div>
           </div>
 
-          {/* Сравнение с предыдущим месяцем */}
+          {/* Comparison with previous month */}
           <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm font-medium text-gray-900 mb-2">Изменение баланса</div>
+            <div className="text-sm font-medium text-gray-900 mb-2">Balance change</div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-600">К прошлому месяцу</span>
+              <span className="text-xs text-gray-600">To previous month</span>
               <span className="text-sm font-bold text-gray-900">
                 {budget.balance > budget.previousBalance ? '+' : ''}{formatCurrencyEUR(budget.balance - budget.previousBalance)}
               </span>

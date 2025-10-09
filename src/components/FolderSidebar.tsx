@@ -1,7 +1,8 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabaseClient'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
-import { CoreInput } from '@/components/ui/CoreInput'
+import { ModalInput } from '@/components/ui/ModalForm'
 import { ChevronLeft, Plus } from 'lucide-react'
 
 type Folder = {
@@ -23,6 +24,7 @@ type Props = {
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
 
 export default function FolderSidebar({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props){
+  const { t } = useTranslation()
   const [items, setItems] = React.useState<Folder[]>([])
   const [showCreate, setShowCreate] = React.useState(false)
   const [hasColor, setHasColor] = React.useState(false)
@@ -38,14 +40,14 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
       const ext = await supabase.from('notes_folders').select('id,name,color,position').order('position', { ascending:true }).order('created_at', { ascending:true })
       if (!ext.error){
         setHasColor(true); setHasPosition(true)
-        setItems(([{ id: 'ALL', name: 'Все папки', color: null } as any, ...((ext.data||[]) as Folder[])]))
+        setItems(([{ id: 'ALL', name: t('notes.allNotes'), color: null } as any, ...((ext.data||[]) as Folder[])]))
         return
       }
       // fallback to id,name only
       const basic = await supabase.from('notes_folders').select('id,name').order('created_at', { ascending:true })
-      if (!basic.error) setItems(([{ id: 'ALL', name: 'Все папки', color: null } as any, ...((basic.data||[]) as Folder[])]))
+      if (!basic.error) setItems(([{ id: 'ALL', name: t('notes.allNotes'), color: null } as any, ...((basic.data||[]) as Folder[])]))
     })()
-  },[userId])
+  },[userId, t])
 
   // DnD reorder
   const dragId = React.useRef<string|null>(null)
@@ -367,7 +369,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
                 style={{ fontSize: '13px' }}
               >
-                Удалить
+                {t('actions.delete')}
               </button>
             </div>
           </div>
@@ -378,30 +380,30 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
       <UnifiedModal
         open={showCreate}
         onClose={()=>setShowCreate(false)}
-        title="Создать папку"
+        title={t('notes.createFolder')}
         footer={createSimpleFooter(
           { 
-            label: 'Создать', 
+            label: t('actions.create'), 
             onClick: createOk,
             disabled: !createName.trim()
           },
           { 
-            label: 'Отмена', 
+            label: t('actions.cancel'), 
             onClick: () => setShowCreate(false)
           }
         )}
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Название папки</label>
-            <CoreInput 
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes.folderName')}</label>
+            <ModalInput 
               value={createName} 
               onChange={(e)=>setCreateName(e.target.value)}
-              placeholder="Введите название папки"
+              placeholder={t('notes.folderName')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Цвет</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes.color')}</label>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 24px)', gap:8 }}>
               {COLORS.map(c=>(
                 <button 
@@ -425,38 +427,38 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
       <UnifiedModal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
-        title="Переименовать папку"
+        title={t('notes.renameFolder') || 'Rename Folder'}
         footer={createSimpleFooter(
           { 
-            label: 'Сохранить', 
+            label: t('actions.save'), 
             onClick: renameOk,
             disabled: !renameValue.trim()
           },
           { 
-            label: 'Отмена', 
+            label: t('actions.cancel'), 
             onClick: () => setRenameOpen(false)
           }
         )}
       >
-        <CoreInput value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
+        <ModalInput value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
       </UnifiedModal>
 
       <UnifiedModal
         open={delOpen}
         onClose={()=>setDelOpen(false)}
-        title="Удалить папку?"
+        title={t('notes.deleteFolder') || 'Delete Folder?'}
         footer={createDangerFooter(
           { 
-            label: 'Удалить', 
+            label: t('actions.delete'), 
             onClick: deleteOk
           },
           { 
-            label: 'Отмена', 
+            label: t('actions.cancel'), 
             onClick: () => setDelOpen(false)
           }
         )}
       >
-        <div className="text-sm text-gray-600">Папка и связанные заметки будут удалены.</div>
+        <div className="text-sm text-gray-600">{t('notes.deleteFolderWarning') || 'Folder and related notes will be deleted.'}</div>
       </UnifiedModal>
     </aside>
   )

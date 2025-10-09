@@ -1,8 +1,10 @@
 /* src/components/notes/NoteEditorModal.tsx */
-import React, { useEffect, useState } from 'react';
-import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import SideModal from '@/components/ui/SideModal'
 import { ModalField, ModalInput, ModalTextarea, ModalContent } from '@/components/ui/ModalForm'
 import Dropdown from '@/components/ui/Dropdown'
+import CoreMenu from '@/components/ui/CoreMenu'
 import { supabase } from '@/lib/supabaseClient'
 import type { Note } from '@/features/notes/types';
 
@@ -17,17 +19,23 @@ type Props = {
   note: Note | null;
   onClose: () => void;
   onSave: (draft: Partial<Note>, id?: string) => Promise<void>;
+  onAutoSave?: (draft: Partial<Note>, id?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 };
 
-export default function NoteEditorModal({ open, note, onClose, onSave, onDelete }: Props) {
+export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSave, onDelete }: Props) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
   const [folderId, setFolderId] = useState<string>('');
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const { createStandardFooter, createDangerFooter } = useModalActions();
+  const [saving, setSaving] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  
+  // Отслеживаем изначальные значения для определения изменений
+  const [initialValues, setInitialValues] = useState({ title: '', content: '', folderId: '' });
 
   // Load folders
   useEffect(() => {
@@ -56,6 +64,13 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
     setTitle(note?.title ?? '');
     setContent(note?.content ?? '');
     setFolderId(note?.folder_id ?? '');
+    
+    // Сохраняем изначальные значения для сравнения
+    setInitialValues({
+      title: note?.title ?? '',
+      content: note?.content ?? '',
+      folderId: note?.folder_id ?? ''
+    });
   }, [note]);
 
   async function handleSave() {
@@ -84,41 +99,104 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
     }
   }
 
-  const footer = note?.id && onDelete 
-    ? createDangerFooter(
-        { 
-          label: deleteLoading ? 'Удаляю...' : 'Удалить', 
-          onClick: handleDelete,
-          loading: deleteLoading
-        },
-        { 
-          label: 'Сохранить', 
-          onClick: handleSave, 
-          loading, 
-          disabled: !title.trim() 
-        },
-        { label: 'Отмена', onClick: onClose }
-      )
-    : createStandardFooter(
-        { 
-          label: 'Сохранить', 
-          onClick: handleSave, 
-          loading, 
-          disabled: !title.trim() 
-        },
-        { label: 'Отмена', onClick: onClose }
-      );
+  async function handleDuplicate() {
+    if (!note) return;
+    
+    try {
+      await onSave({
+        title: `${note.title} (${t('notes.copy')})`,
+        content: note.content,
+        folder_id: note.folder_id,
+        pinned: false
+      });
+      onClose();
+    } catch (error) {
+      console.error('Duplicate failed:', error);
+    }
+  }
+
+  // Автосохранение
+  const autoSave = useCallback(async () => {
+    if (!note?.id || saving) return;
+    
+    // Проверяем, есть ли реальные изменения
+    const hasChanges = 
+      title !== initialValues.title ||
+      content !== initialValues.content ||
+      folderId !== initialValues.folderId;
+    
+    if (!hasChanges) return; // Нет изменений - не сохраняем
+    
+    setSaving(true);
+    try {
+      // Используем onAutoSave если передан, иначе onSave
+      const saveFunction = onAutoSave || onSave;
+      await saveFunction({ 
+        title, 
+        content, 
+        folder_id: folderId || null 
+      }, note.id);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    } finally {
+      setSaving(false);
+    }
+  }, [note?.id, saving, title, content, folderId, onSave, onAutoSave, initialValues]);
+
+  // Автосохранение при изменении контента
+  useEffect(() => {
+    if (!open || !note?.id) return;
+    
+    const timer = setTimeout(() => {
+      autoSave();
+    }, 1000); // 1 секунда задержка
+    
+    return () => clearTimeout(timer);
+  }, [title, content, folderId, open, note?.id, autoSave]);
+
+  // Убираем футер - кнопка закрытия в хедере (как в TaskViewModal)
 
   return (
-    <UnifiedModal
+    <SideModal
       open={open}
       onClose={onClose}
-      title={note ? 'Редактировать заметку' : 'Новая заметку'}
-      size="lg"
-      variant="side"
-      footer={footer}
+      title={note ? 'Редактировать заметку' : 'Новая заметка'}
+      rightContent={
+        note?.id && onDelete ? (
+          <div ref={menuRef}>
+            <CoreMenu
+              options={[
+                { value: 'duplicate', label: 'Дублировать' },
+                { value: 'delete', label: 'Удалить', destructive: true },
+              ]}
+              onSelect={(value) => {
+                if (value === 'duplicate') {
+                  handleDuplicate();
+                }
+                if (value === 'delete') {
+                  handleDelete();
+                }
+              }}
+            />
+          </div>
+        ) : undefined
+      }
     >
       <ModalContent>
+        {/* Статус сохранения и информация */}
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+          <div>
+            {note?.updated_at && (
+              <span>Обновлено: {new Date(note.updated_at).toLocaleString()}</span>
+            )}
+          </div>
+          <div>
+            {saving && (
+              <span className="text-blue-500">Сохранение...</span>
+            )}
+          </div>
+        </div>
+
         <ModalField label="Заголовок" required>
           <ModalInput
             value={title}
@@ -150,7 +228,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onDelete 
             rows={12}
           />
         </ModalField>
-      </ModalContent>
-    </UnifiedModal>
+        </ModalContent>
+    </SideModal>
   );
 }

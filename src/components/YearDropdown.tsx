@@ -1,4 +1,5 @@
 import Dropdown from './ui/Dropdown'
+import { useTranslation } from 'react-i18next'
 
 export default function YearDropdown({
   value, years, onChange,
@@ -7,6 +8,7 @@ export default function YearDropdown({
   years: number[]
   onChange: (v:number)=>void
 }){
+  const { t } = useTranslation()
   const options = years.map(y => ({ value: y.toString(), label: y.toString() }))
 
   return (
@@ -14,8 +16,8 @@ export default function YearDropdown({
       options={options}
       value={value.toString()}
       onChange={(newValue) => onChange(parseInt(newValue))}
-      placeholder="Год"
-      ariaLabel="Выбор года"
+      placeholder={t('common.year')}
+      ariaLabel={t('aria.selectYear')}
     />
   )
 }

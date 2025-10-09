@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { format, isToday } from 'date-fns'
-import { ru } from 'date-fns/locale'
 import { Plus, CheckCircle, Circle, Clock, Flag } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { TaskItem, Project } from '@/types/shared'
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/constants'
 
@@ -28,6 +28,7 @@ export default function MobileTasksDay({
   onDuplicateTask,
   onContextMenu
 }: MobileTasksDayProps) {
+  const { t } = useTranslation()
   const isCurrentDay = isToday(date)
   
   // Group tasks by status
@@ -59,13 +60,13 @@ export default function MobileTasksDay({
   const getPriorityColor = (priority: string): { background: string, text: string } => {
     switch (priority) {
       case TASK_PRIORITIES.HIGH:
-        return { background: '#fee2e2', text: '#dc2626' } // красный
+        return { background: '#fee2e2', text: '#dc2626' } // red
       case TASK_PRIORITIES.MEDIUM:
-        return { background: '#fed7aa', text: '#ea580c' } // оранжевый
+        return { background: '#fed7aa', text: '#ea580c' } // orange
       case TASK_PRIORITIES.LOW:
-        return { background: '#dcfce7', text: '#16a34a' } // зеленый
+        return { background: '#dcfce7', text: '#16a34a' } // green
       default:
-        return { background: '#f3f4f6', text: '#6b7280' } // серый по умолчанию
+        return { background: '#f3f4f6', text: '#6b7280' } // gray default
     }
   }
 
@@ -169,7 +170,7 @@ export default function MobileTasksDay({
               )}
             </div>
 
-            {/* Прогресс бар для подзадач */}
+            {/* Progress bar for subtasks */}
             {todosTotal > 0 && (
               <div className="mt-2">
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -184,7 +185,7 @@ export default function MobileTasksDay({
               </div>
             )}
 
-            {/* Название проекта */}
+            {/* Project name */}
             {task.project_name && (
               <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
                 {task.project_name}
@@ -201,25 +202,25 @@ export default function MobileTasksDay({
       {/* Date header */}
       <div className="text-center">
         <h2 className="text-xl font-bold text-gray-900">
-          {format(date, 'EEEE, d MMMM yyyy', { locale: ru })}
+          {format(date, 'EEEE, d MMMM yyyy')}
         </h2>
         {isCurrentDay && (
-          <div className="text-sm text-blue-600 font-medium">Сегодня</div>
+          <div className="text-sm text-blue-600 font-medium">{t('common.today')}</div>
         )}
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-          <div className="text-sm font-medium text-blue-600 mb-1">Всего</div>
+          <div className="text-sm font-medium text-blue-600 mb-1">{t('tasks.total')}</div>
           <div className="text-lg font-bold text-blue-700">{tasks.length}</div>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-          <div className="text-sm font-medium text-green-600 mb-1">Выполнено</div>
+          <div className="text-sm font-medium text-green-600 mb-1">{t('tasks.completed')}</div>
           <div className="text-lg font-bold text-green-700">{closedTasks.length}</div>
         </div>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-          <div className="text-sm font-medium text-orange-600 mb-1">Активные</div>
+          <div className="text-sm font-medium text-orange-600 mb-1">{t('tasks.active')}</div>
           <div className="text-lg font-bold text-orange-700">{openTasks.length}</div>
         </div>
       </div>
@@ -230,13 +231,13 @@ export default function MobileTasksDay({
         className="w-full flex items-center justify-center gap-2 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
       >
         <Plus className="w-5 h-5" />
-        Добавить задачу
+        {t('tasks.addTask')}
       </button>
 
       {/* Open tasks */}
       {openTasks.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Активные задачи</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('tasks.activeTasks')}</h3>
           <div className="space-y-3">
             {openTasks.map(renderTaskCard)}
           </div>
@@ -246,7 +247,7 @@ export default function MobileTasksDay({
       {/* Completed tasks */}
       {closedTasks.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Выполненные задачи</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('tasks.completedTasks')}</h3>
           <div className="space-y-3">
             {closedTasks.map(renderTaskCard)}
           </div>
@@ -257,14 +258,14 @@ export default function MobileTasksDay({
       {tasks.length === 0 && (
         <div className="text-center py-12">
           <Clock className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет задач на этот день</h3>
-          <p className="text-gray-500 mb-4">Добавьте первую задачу или перейдите к другому дню</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('tasks.noTasksThisDay')}</h3>
+          <p className="text-gray-500 mb-4">{t('tasks.addFirstTaskOrNavigate')}</p>
           <button
             onClick={onAddTask}
             className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Добавить задачу
+            {t('tasks.addTask')}
           </button>
         </div>
       )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Target } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
 
 interface PriorityData {
@@ -17,12 +18,13 @@ const PRIORITY_COLORS = {
 };
 
 const PRIORITY_LABELS = {
-  high: 'Высокий',
-  medium: 'Средний',
-  low: 'Низкий'
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low'
 };
 
 const PrioritiesWidget = () => {
+  const { t } = useTranslation();
   const { userId } = useSupabaseAuth();
   const [priorities, setPriorities] = useState<PriorityData>({
     high: 4,
@@ -31,7 +33,7 @@ const PrioritiesWidget = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Убираем загрузку данных - используем только тестовые
+  // Remove data loading - use only test data
   // useEffect(() => {
   //   if (userId) {
   //     loadPrioritiesData();
@@ -46,11 +48,11 @@ const PrioritiesWidget = () => {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
       
-      // Правильный расчет дат для месяца
+      // Correct date calculation for month
       const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-      const monthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Последний день месяца
+      const monthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Last day of month
 
-      // Получаем ВСЕ задачи пользователя (не только за месяц)
+      // Get ALL user tasks (not only for month)
       const { data: tasksData } = await supabase
         .from('tasks_items')
         .select('priority, date')
@@ -71,7 +73,7 @@ const PrioritiesWidget = () => {
       }
 
 
-      // Если нет данных, показываем тестовые данные
+      // If no data, show test data
       if (counts.high === 0 && counts.medium === 0 && counts.low === 0) {
         setPriorities({ high: 4, medium: 2, low: 1 });
       } else {
@@ -95,15 +97,15 @@ const PrioritiesWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<Target className="w-5 h-5" />}
-        title="Приоритеты"
-        subtitle="Показывает распределение задач"
+        title={t('dashboard.priorities')}
+        subtitle={t('dashboard.prioritiesDescription')}
       />
 
       <div className="flex-1 p-6 flex flex-col justify-center">
-        {/* Круги в стиле Apple Watch */}
+        {/* Circles in Apple Watch style */}
         <div className="flex items-center justify-center mb-6">
           <div className="relative w-40 h-40">
-            {/* Низкий приоритет - внутренний круг */}
+            {/* Low priority - inner circle */}
             <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -126,7 +128,7 @@ const PrioritiesWidget = () => {
               />
             </svg>
             
-            {/* Средний приоритет - средний круг */}
+            {/* Medium priority - middle circle */}
             <svg className="absolute top-0 left-0 w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -149,7 +151,7 @@ const PrioritiesWidget = () => {
               />
             </svg>
             
-            {/* Высокий приоритет - внешний круг */}
+            {/* High priority - outer circle */}
             <svg className="absolute top-0 left-0 w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -174,7 +176,7 @@ const PrioritiesWidget = () => {
           </div>
         </div>
 
-        {/* Легенда */}
+        {/* Legend */}
         <div className="space-y-3">
           {Object.entries(priorities).map(([priority, count]) => (
             <div key={priority} className="flex items-center justify-between">
@@ -184,11 +186,11 @@ const PrioritiesWidget = () => {
                   style={{ backgroundColor: PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS] }}
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  {PRIORITY_LABELS[priority as keyof typeof PRIORITY_LABELS]}
+                  {t(`dashboard.priority.${priority}`)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">{count} задач</span>
+                <span className="text-sm font-bold text-gray-900">{count} {t('dashboard.tasks')}</span>
                 <span className="text-sm text-gray-500">{getPercentage(count)}%</span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Copy, Clipboard } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 type Pos = { x: number; y: number }
 
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, onPaste }: Props) {
+  const { t } = useTranslation()
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close on Escape
@@ -39,8 +41,8 @@ export default function CellMenu({ pos, onClose, canCopy, hasClipboard, onCopy, 
   }, [onClose])
 
   const options = [
-    ...(canCopy ? [{ value: 'copy', label: 'Копировать записи', icon: <Copy className="w-4 h-4" /> }] : []),
-    ...(hasClipboard ? [{ value: 'paste', label: 'Вставить записи (заменить)', icon: <Clipboard className="w-4 h-4" /> }] : [])
+    ...(canCopy ? [{ value: 'copy', label: t('finance.copyRecords'), icon: <Copy className="w-4 h-4" /> }] : []),
+    ...(hasClipboard ? [{ value: 'paste', label: t('finance.pasteRecords'), icon: <Clipboard className="w-4 h-4" /> }] : [])
   ]
 
   if (options.length === 0) {

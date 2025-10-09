@@ -15,8 +15,8 @@ export const FINANCE_TYPES = {
 } as const
 
 export const FINANCE_MONTHS = [
-  'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
-  'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ] as const
 
 // Task constants

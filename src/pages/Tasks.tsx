@@ -2,7 +2,6 @@
 import React from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
-import { ru } from 'date-fns/locale/ru'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
 import ModernTaskModal from '@/components/ModernTaskModal'
@@ -16,18 +15,19 @@ import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 
-// Функция для получения цвета приоритета
+// Function to get priority color
 function getPriorityColor(priority: string): { background: string, text: string } {
   switch (priority) {
     case TASK_PRIORITIES.HIGH:
-      return { background: '#fee2e2', text: '#dc2626' } // красный
+      return { background: '#fee2e2', text: '#dc2626' } // red
     case TASK_PRIORITIES.MEDIUM:
-      return { background: '#fed7aa', text: '#ea580c' } // оранжевый
+      return { background: '#fed7aa', text: '#ea580c' } // orange
     case TASK_PRIORITIES.LOW:
-      return { background: '#dcfce7', text: '#16a34a' } // зеленый
+      return { background: '#dcfce7', text: '#16a34a' } // green
     default:
-      return { background: '#f3f4f6', text: '#6b7280' } // серый по умолчанию
+      return { background: '#f3f4f6', text: '#6b7280' } // gray default
   }
 }
 
@@ -48,7 +48,7 @@ function getPriorityText(priority?: string): string | null {
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
-  x, y, task, dayKey, onClose, onDuplicate, onToggleStatus, onDelete 
+  x, y, task, dayKey, onClose, onDuplicate, onToggleStatus, onDelete, t
 }: {
   x: number
   y: number
@@ -58,6 +58,7 @@ function TaskContextMenu({
   onDuplicate: () => void
   onToggleStatus: () => void
   onDelete: () => void
+  t: (key: string) => string
 }) {
   const menuRef = React.useRef<HTMLDivElement>(null)
   const [adjustedPos, setAdjustedPos] = React.useState({ x, y })
@@ -154,21 +155,21 @@ function TaskContextMenu({
             className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
             style={{ fontSize: '13px' }}
           >
-            Дублировать
+            {t('common.duplicate')}
           </button>
           <button
             onClick={onToggleStatus}
             className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
             style={{ fontSize: '13px' }}
           >
-            {task?.status === TASK_STATUSES.CLOSED ? 'Открыть' : 'Выполнить'}
+            {task?.status === TASK_STATUSES.CLOSED ? t('tasks.open') : t('tasks.markComplete')}
           </button>
           <button
             onClick={onDelete}
             className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
             style={{ fontSize: '13px' }}
           >
-            Удалить
+            {t('actions.delete')}
           </button>
         </div>
       </div>
@@ -189,6 +190,7 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
 import type { Project, Todo, TaskItem } from '@/types/shared'
 
 export default function Tasks(){
+  const { t } = useTranslation()
   const { handleError, handleSuccess } = useErrorHandler()
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const { isMobile } = useMobileDetection()
@@ -203,15 +205,15 @@ export default function Tasks(){
         break
       case 'filter':
         // TODO: Implement filter functionality
-        handleSuccess('Фильтр будет реализован в следующей версии')
+        handleSuccess(t('tasks.filterComingSoon'))
         break
       case 'calendar':
         // TODO: Implement calendar view
-        handleSuccess('Календарный вид будет реализован в следующей версии')
+        handleSuccess(t('tasks.calendarComingSoon'))
         break
       case 'search':
         // TODO: Implement search functionality
-        handleSuccess('Поиск будет реализован в следующей версии')
+        handleSuccess(t('tasks.searchComingSoon'))
         break
       default:
         // Unknown action
@@ -233,23 +235,23 @@ export default function Tasks(){
   const hasMovedRef = React.useRef(false)
   const isDraggingRef = React.useRef(false)
 
-  // Сохраняем информацию о задаче для перетаскивания
+  // Save task info for dragging
   const [pendingDrag, setPendingDrag] = React.useState<{
     task: TaskItem
     dayKey: string
     index: number
   } | null>(null)
 
-  // Простое разделение: клик = открытие, зажатие = перетаскивание
+  // Simple separation: click = open, hold = drag
   function handleMouseDown(e: React.MouseEvent, task: TaskItem, dayKey: string, index: number) {
-    // Отключаем выделение текста при зажатии мыши, но только для левой кнопки
+    // Disable text selection on mouse hold, but only for left button
     if (e.button === 0) {
       e.preventDefault()
     }
-    
+
     console.log('🖱️ Mouse down on task:', task.title)
     
-    // Сохраняем позицию клика и информацию о задаче
+    // Save click position and task info
     setMouseDownPos({ x: e.clientX, y: e.clientY })
     setHasMoved(false)
     hasMovedRef.current = false
@@ -257,19 +259,19 @@ export default function Tasks(){
   }
 
   function handleMouseMove(e: MouseEvent | React.MouseEvent) {
-    // Проверяем, двинулась ли мышь достаточно далеко для начала перетаскивания
+    // Check if mouse moved far enough to start dragging
     if (!isDragging && !dragStartTimer) {
       const distance = Math.sqrt(
         Math.pow(e.clientX - mouseDownPos.x, 2) + 
         Math.pow(e.clientY - mouseDownPos.y, 2)
       )
       
-      if (distance > 5 && pendingDrag) { // Если мышь сдвинулась больше чем на 5px и есть задача для перетаскивания
+      if (distance > 5 && pendingDrag) { // If mouse moved more than 5px and there's a task to drag
         console.log('🚀 Starting drag, distance:', distance)
         setHasMoved(true)
         hasMovedRef.current = true
         
-        // Используем сохраненную информацию о задаче из handleMouseDown
+        // Use saved task info from handleMouseDown
         const { task, dayKey, index } = pendingDrag
         
         setDraggedTask(task)
@@ -286,7 +288,7 @@ export default function Tasks(){
           y: e.clientY
         })
         
-        // Очищаем pending drag
+        // Clear pending drag
         setPendingDrag(null)
       }
     }
@@ -387,7 +389,7 @@ export default function Tasks(){
   function handleMouseUp(e: MouseEvent | React.MouseEvent) {
     console.log('🖱️ Mouse up, isDragging:', isDragging, 'hasMoved:', hasMoved, 'hasMovedRef:', hasMovedRef.current, 'isDraggingRef:', isDraggingRef.current)
     
-    // Очищаем pending drag при отпускании мыши
+    // Clear pending drag on mouse release
     if (pendingDrag) {
       console.log('🔄 Clearing pending drag')
       setPendingDrag(null)
@@ -404,7 +406,7 @@ export default function Tasks(){
       setIsDragging(false)
       isDraggingRef.current = false
       
-      // Сбрасываем флаг движения через небольшую задержку, чтобы onClick не сработал
+      // Reset movement flag with small delay so onClick doesn't fire
       setTimeout(() => {
         setHasMoved(false)
         hasMovedRef.current = false
@@ -576,7 +578,7 @@ export default function Tasks(){
       }
     } catch (error) {
       console.error('Error updating task positions:', error)
-      handleError('Ошибка при перемещении задачи')
+      handleError(error, 'Error moving task')
     }
   }
 
@@ -612,7 +614,7 @@ export default function Tasks(){
       handleMouseUp(e)
     }
     
-    // Всегда добавляем обработчики для отслеживания движения мыши
+    // Always add handlers to track mouse movement
     document.addEventListener('mousemove', handleGlobalMouseMove)
     document.addEventListener('mouseup', handleGlobalMouseUp)
     
@@ -854,11 +856,11 @@ const projectColorById = React.useMemo(() => {
       const next = [...projects, { id:data.id, name:data.name }]
       setProjects(next)
       if (!activeProject) setActiveProject(data.id)
-      handleSuccess(`Проект "${name}" создан`)
+      handleSuccess(t('projects.projectCreated', { name }))
       setProjectName('')
       setOpenNewProject(false)
     } else if (error) {
-      handleError(error, 'Создание проекта')
+      handleError(error, 'Creating project...')
     }
   }
 
@@ -887,15 +889,15 @@ const projectColorById = React.useMemo(() => {
       resolvedProject = projectIdFromModal
       console.log('✅ Project explicitly set from modal:', resolvedProject)
     } else if (projectIdFromModal === '') {
-      // User selected "Без проекта" (empty string) - task without project
+      // User selected "No project" (empty string) - task without project
       resolvedProject = null
       console.log('✅ Task without project (null)')
     } else if (activeProject && activeProject !== TASK_PROJECT_ALL) {
-      // Use active project if it's not "Все проекты"
+      // Use active project if it's not "All projects"
       resolvedProject = activeProject
       console.log('✅ Using active project:', resolvedProject)
     } else if (projects.length > 0) {
-      // Fallback to first project ("Без категории")
+      // Fallback to first project ("Uncategorized")
       resolvedProject = projects[0].id
       console.log('⚠️ Fallback to first project:', resolvedProject)
     }
@@ -934,11 +936,11 @@ const projectColorById = React.useMemo(() => {
       const map = { ...tasks }
       ;(map[key] ||= []).push(t)
       setTasks(map)
-      handleSuccess(`Задача "${title}" создана`)
+      handleSuccess(t('tasks.taskCreatedWithTitle', { title }))
       setTaskTitle(''); setTaskDesc('')
       setOpenNewTask(false)
     } else if (error) {
-      handleError(error, 'Создание задачи')
+      handleError(error, 'Creating task...')
     }
   }
 
@@ -999,7 +1001,7 @@ const projectColorById = React.useMemo(() => {
           projects={projects} 
           activeProject={activeProject} 
           onClose={()=>setOpenNewTask(false)} 
-          dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE", { locale: ru }) : ""} 
+          dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE") : ""} 
           initialDate={taskDate || new Date()}
           onSubmit={async (title, desc, prio, tag, todos, projId, date)=>{ await createTask(title, desc, prio, tag, todos, projId, date) }} 
         />
@@ -1071,6 +1073,7 @@ const projectColorById = React.useMemo(() => {
           onDuplicate={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}
           onToggleStatus={()=> ctx.task && ctx.dayKey && toggleTaskStatus(ctx.task, ctx.dayKey)}
           onDelete={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}
+          t={t}
         />}
       </div>
     )
@@ -1079,7 +1082,7 @@ const projectColorById = React.useMemo(() => {
   // Desktop view - original week grid layout
   return (
     <div className={`tasks-page ${projectsCollapsed ? 'is-collapsed' : ''}`}>
-      {/* Левая область: панель проектов */}
+      {/* Left area: projects panel */}
       <ProjectSidebar 
         userId={uid!} 
         activeId={activeProject} 
@@ -1093,7 +1096,7 @@ const projectColorById = React.useMemo(() => {
       />
       
 
-      {/* Правая область: грид недели (без внешней шапки — кнопки внутри таблицы) */}
+      {/* Right area: week grid (no outer header - buttons inside table) */}
       <section className="tasks-board">
         <div className="week-grid">
           <div className="week-head">
@@ -1113,16 +1116,16 @@ const projectColorById = React.useMemo(() => {
                 className={`day-col ${([0,6].includes(new Date(d).getDay()) ? "is-weekend" : "")} ${key===todayKey ? "is-today" : ""}`}
               >
                 <div className="day-head">
-                  <span>{format(d,'EEE, d MMM', { locale: ru })}</span>
+                  <span>{format(d,'EEE, d MMM')}</span>
                   <button
                     className="btn btn-outline btn-xs add-on-hover"
                     onClick={()=>{ setTaskDate(d); setOpenNewTask(true) }}
-                  >+ Задача</button>
+                  >+ {t('tasks.task')}</button>
                 </div>
                 <div className="day-body">
                   
-                  {(tasks[key] || []).map((t, index) => {
-                    const isDragged = isDragging && draggedTask?.id === t.id
+                  {(tasks[key] || []).map((taskItem, index) => {
+                    const isDragged = isDragging && draggedTask?.id === taskItem.id
                     const isDropTarget = dropTarget?.dayKey === key && dropTarget?.index === index
                     const isGhost = isDragging && dragSource?.dayKey === key && dragSource?.index === index
                     
@@ -1132,7 +1135,7 @@ const projectColorById = React.useMemo(() => {
                     }
                     
                     return (
-                      <React.Fragment key={t.id}>
+                      <React.Fragment key={taskItem.id}>
                         {/* Drop indicator */}
                         {isDropTarget && (
                           <div className="drop-indicator" style={{
@@ -1143,23 +1146,23 @@ const projectColorById = React.useMemo(() => {
                           }} />
                         )}
                         
-                        {/* Оригинальная карточка задачи */}
+                        {/* Original task card */}
                         <div
-                          className={`task-card group transition-all duration-150 hover:border-black ${t.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
+                          className={`task-card group transition-all duration-150 hover:border-black ${taskItem.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
                           style={{
                             backgroundColor: '#ffffff',
                             border: '1px solid #e5e7eb',
                             borderRadius: '12px',
                             ...(isDragged ? {
                               position: 'fixed',
-                              left: dragPosition.x - 10, // Небольшое смещение от курсора
-                              top: dragPosition.y - 10,  // Небольшое смещение от курсора
+                              left: dragPosition.x - 10, // Small offset from cursor
+                              top: dragPosition.y - 10,  // Small offset from cursor
                               zIndex: 10001,
                               pointerEvents: 'none',
                               transform: 'none',
                               boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
-                              opacity: 0.8, // Прозрачность
-                              // НЕ меняем размеры - оставляем оригинальные
+                              opacity: 0.8, // Transparency
+                              // DON'T change dimensions - keep original
                             } : {})
                           }}
                           onContextMenu={(e) => {
@@ -1177,7 +1180,7 @@ const projectColorById = React.useMemo(() => {
                               open: true,
                               x: e.clientX + 10, // Right of cursor
                               y: e.clientY - 10, // Above cursor
-                              task: t,
+                              task: taskItem,
                               dayKey: key,
                             });
                           }}
@@ -1189,7 +1192,7 @@ const projectColorById = React.useMemo(() => {
                               return;
                             }
                             // Start tracking for potential drag
-                            handleMouseDown(e, t, key, index)
+                            handleMouseDown(e, taskItem, key, index)
                           }}
                           onClick={(e) => {
                             console.log('🖱️ Click on task, hasMovedRef:', hasMovedRef.current, 'isDraggingRef:', isDraggingRef.current)
@@ -1198,7 +1201,7 @@ const projectColorById = React.useMemo(() => {
                             // Use ref to check current state immediately
                             if (!hasMovedRef.current && !isDraggingRef.current) {
                               console.log('✅ Opening task modal immediately')
-                              setViewTask(t)
+                              setViewTask(taskItem)
                             } else {
                               console.log('❌ Not opening - was dragging')
                             }
@@ -1207,30 +1210,30 @@ const projectColorById = React.useMemo(() => {
                           <div className="text-sm">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {t.priority && getPriorityText(t.priority) ? (
+                                {taskItem.priority && getPriorityText(taskItem.priority) ? (
                                   <span 
-                                    className={`text-xs font-medium px-2 py-1 ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                    className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
-                                      backgroundColor: getPriorityColor(t.priority).background,
-                                      color: getPriorityColor(t.priority).text,
+                                      backgroundColor: getPriorityColor(taskItem.priority).background,
+                                      color: getPriorityColor(taskItem.priority).text,
                                       borderRadius: '999px !important'
                                     }}
                                   >
-                                    {getPriorityText(t.priority)}
+                                    {getPriorityText(taskItem.priority)}
                                   </span>
                                 ) : (
                                   <div></div>
                                 )}
-                                {t.tag && (
+                                {taskItem.tag && (
                                   <span 
-                                    className={`text-xs font-medium px-2 py-1 ${t.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                    className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                     style={{
                                       backgroundColor: '#f3f4f6',
                                       color: '#6b7280',
                                       borderRadius: '999px !important'
                                     }}
                                   >
-                                    {t.tag}
+                                    {taskItem.tag}
                                   </span>
                                 )}
                               </div>
@@ -1251,7 +1254,7 @@ const projectColorById = React.useMemo(() => {
                                     open: true,
                                     x: e.clientX + 10, // Right of cursor
                                     y: e.clientY - 10, // Above cursor
-                                    task: t,
+                                    task: taskItem,
                                     dayKey: key,
                                   });
                                 }}
@@ -1267,19 +1270,19 @@ const projectColorById = React.useMemo(() => {
                                 <span 
                                   className="font-medium text-black text-sm"
                                 >
-                                  {t.title}
+                                  {taskItem.title}
                                 </span>
                               </div>
                               
-                              {/* Прогресс бар для подзадач */}
+                              {/* Progress bar for subtasks */}
                               {(() => {
-                                const total = Array.isArray(t.todos) ? t.todos.length : 0;
-                                const done = Array.isArray(t.todos) ? t.todos.filter((x: Todo) => x.done).length : 0;
+                                const total = Array.isArray(taskItem.todos) ? taskItem.todos.length : 0;
+                                const done = Array.isArray(taskItem.todos) ? taskItem.todos.filter((x: Todo) => x.done).length : 0;
                                 if (total === 0) return null;
                                 return (
                                   <div className="space-y-1 mt-2">
                                     <div className="flex items-center justify-between text-xs text-gray-500">
-                                      <span>Прогресс</span>
+                                      <span>{t('tasks.progress')}</span>
                                       <span>{done}/{total}</span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -1295,14 +1298,14 @@ const projectColorById = React.useMemo(() => {
                                 );
                               })()}
 
-                              {/* Название проекта */}
+                              {/* Project name */}
                               <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
-                                {t.project_name || 'Без проекта'}
+                                {taskItem.project_name || t('tasks.noProject')}
                               </div>
                             </div>
                         </div>
                         
-                        {/* Старая карточка полностью удалена - используется только новая */}
+                        {/* Old card completely removed - only new one used */}
                       </React.Fragment>
                     )
                   })}
@@ -1323,18 +1326,18 @@ const projectColorById = React.useMemo(() => {
         </div>
       </section>
 
-      {/* Модалка: новый проект */}
+      {/* Modal: new project */}
       <TaskAddModal 
         open={openNewTask} 
         projects={projects} 
         activeProject={activeProject} 
         onClose={()=>setOpenNewTask(false)} 
-        dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE", { locale: ru }) : ""} 
+        dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE") : ""} 
         initialDate={taskDate || new Date()}
         onSubmit={async (title, desc, prio, tag, todos, projId, date)=>{ await createTask(title, desc, prio, tag, todos, projId, date) }} 
       />
 
-      {/* Модальные окна задач */}
+      {/* Task modals */}
       <ModernTaskModal
         key={viewTask?.id || 'new'}
         open={!!viewTask}
@@ -1401,6 +1404,7 @@ const projectColorById = React.useMemo(() => {
         onDuplicate={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}
         onToggleStatus={()=> ctx.task && ctx.dayKey && toggleTaskStatus(ctx.task, ctx.dayKey)}
         onDelete={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}
+        t={t}
       />}
 
 

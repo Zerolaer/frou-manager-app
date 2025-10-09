@@ -1,5 +1,7 @@
 
 import { UnifiedModal, ModalButton, ModalFooter } from '@/components/ui/ModalSystem'
+import { useTranslation } from 'react-i18next'
+import { useMemo } from 'react'
 
 type Props = {
   open: boolean
@@ -9,27 +11,43 @@ type Props = {
   expenseByMonth: number[]
 }
 
-const months = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'] as const
-
 export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, expenseByMonth }: Props){
+  const { t } = useTranslation()
+  
+  // Translated months array
+  const months = useMemo(() => [
+    t('finance.months.jan'),
+    t('finance.months.feb'),
+    t('finance.months.mar'),
+    t('finance.months.apr'),
+    t('finance.months.may'),
+    t('finance.months.jun'),
+    t('finance.months.jul'),
+    t('finance.months.aug'),
+    t('finance.months.sep'),
+    t('finance.months.oct'),
+    t('finance.months.nov'),
+    t('finance.months.dec')
+  ], [t])
+  
   const totalIncome = incomeByMonth.reduce((s,v)=>s+v,0)
   const totalExpense = expenseByMonth.reduce((s,v)=>s+v,0)
   const balance = totalIncome - totalExpense
   const maxBar = Math.max(...incomeByMonth, ...expenseByMonth, 1)
   
-  // Новые метрики
+  // New metrics
   const avgIncome = totalIncome / 12
   const avgExpense = totalExpense / 12
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0
   
-  // Лучшие месяцы
+  // Best months
   const bestIncomeMonth = incomeByMonth.indexOf(Math.max(...incomeByMonth))
   const bestExpenseMonth = expenseByMonth.indexOf(Math.max(...expenseByMonth))
   
-  // Баланс по месяцам для тренда
+  // Balance by months for trend
   const balanceByMonth = incomeByMonth.map((income, i) => income - expenseByMonth[i])
   
-  // Форматирование с символом евро и 2 знака после запятой
+  // Format with euro symbol and 2 decimal places
   const formatEUR = (value: number) => `€${value.toFixed(2)}`
   const formatPercent = (value: number) => `${value.toFixed(1)}%`
 
@@ -37,66 +55,66 @@ export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, e
     <UnifiedModal 
       open={open} 
       onClose={onClose} 
-      title={`Годовая статистика — ${year}`} 
+      title={`${t('finance.annualStats')} — ${year}`} 
       size="lg"
       variant="side"
       footer={
         <ModalFooter
           right={
             <ModalButton variant="secondary" onClick={onClose}>
-              Закрыть
+              {t('actions.close')}
             </ModalButton>
           }
         />
       }
     >
-      {/* Основные метрики */}
+      {/* Main metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Доходы</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.income')}</div>
           <div className="text-lg font-semibold">{formatEUR(totalIncome)}</div>
         </div>
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Расходы</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.expenses')}</div>
           <div className="text-lg font-semibold">{formatEUR(totalExpense)}</div>
         </div>
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Баланс</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.balance')}</div>
           <div className="text-lg font-semibold">{formatEUR(balance)}</div>
         </div>
       </div>
 
-      {/* Средние значения и коэффициенты */}
+      {/* Average values and coefficients */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Средний доход</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.stats.avgIncome')}</div>
           <div className="text-base font-medium">{formatEUR(avgIncome)}</div>
         </div>
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Средний расход</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.stats.avgExpense')}</div>
           <div className="text-base font-medium">{formatEUR(avgExpense)}</div>
         </div>
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Коэффициент сбережений</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.stats.savingsRate')}</div>
           <div className="text-base font-medium">{formatPercent(savingsRate)}</div>
         </div>
       </div>
 
-      {/* Лучшие месяцы */}
+      {/* Best months */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Лучший месяц по доходам</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.stats.bestIncomeMonth')}</div>
           <div className="text-base font-medium">{months[bestIncomeMonth]} · {formatEUR(incomeByMonth[bestIncomeMonth])}</div>
         </div>
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-xs text-gray-500 mb-1">Месяц с наибольшими расходами</div>
+          <div className="text-xs text-gray-500 mb-1">{t('finance.stats.highestExpenseMonth')}</div>
           <div className="text-base font-medium">{months[bestExpenseMonth]} · {formatEUR(expenseByMonth[bestExpenseMonth])}</div>
         </div>
       </div>
 
-      {/* График тренда баланса */}
+      {/* Balance trend chart */}
       <div className="border rounded-xl p-4 bg-white mb-6">
-        <div className="text-sm font-medium mb-3">Тренд баланса по месяцам</div>
+        <div className="text-sm font-medium mb-3">{t('finance.stats.balanceTrend')}</div>
         <div className="space-y-2">
           {balanceByMonth.map((balance, i) => {
             const isPositive = balance >= 0
@@ -121,7 +139,7 @@ export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, e
 
       <div className="grid grid-cols-2 gap-4">
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-sm font-medium mb-3">Доходы по месяцам</div>
+          <div className="text-sm font-medium mb-3">{t('finance.stats.incomeByMonths')}</div>
           <div className="space-y-2">
             {incomeByMonth.map((v,i)=>(
               <div key={i} className="flex items-center gap-2">
@@ -135,7 +153,7 @@ export default function AnnualStatsModal({ open, onClose, year, incomeByMonth, e
           </div>
         </div>
         <div className="border rounded-xl p-4 bg-white">
-          <div className="text-sm font-medium mb-3">Расходы по месяцам</div>
+          <div className="text-sm font-medium mb-3">{t('finance.stats.expensesByMonths')}</div>
           <div className="space-y-2">
             {expenseByMonth.map((v,i)=>(
               <div key={i} className="flex items-center gap-2">

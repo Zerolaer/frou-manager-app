@@ -4,6 +4,7 @@ import ProjectCreateModal from '@/components/ProjectCreateModal'
 import Modal from '@/components/ui/Modal'
 import { CoreInput } from '@/components/ui/CoreInput'
 import { ChevronLeft, Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { Project } from '@/types/shared'
 
@@ -18,6 +19,7 @@ type Props = {
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
 
 const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props) => {
+  const { t } = useTranslation()
   const [items, setItems] = React.useState<Project[]>([])
   const [showCreate, setShowCreate] = React.useState(false)
   const [hasColor, setHasColor] = React.useState(false)
@@ -34,11 +36,11 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
         setHasColor(true); setHasPosition(true)
         const projectsList = (ext.data||[]) as Project[]
         
-        // If user has no projects, create default "Без категории" project
+        // If user has no projects, create default "Uncategorized" project
         if (projectsList.length === 0) {
           const { data: newProject } = await supabase
             .from('tasks_projects')
-            .insert({ user_id: userId, name: 'Без категории', position: 0 })
+            .insert({ user_id: userId, name: t('projects.uncategorized'), position: 0 })
             .select('id,name,color,position')
             .single()
           
@@ -47,7 +49,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
           }
         }
         
-        setItems(([{ id: 'ALL', name: 'Все проекты', color: null } as any, ...projectsList]))
+        setItems(([{ id: 'ALL', name: t('projects.allProjects'), color: null } as any, ...projectsList]))
         return
       }
       // fallback to id,name only
@@ -55,11 +57,11 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
       if (!basic.error) {
         const projectsList = (basic.data||[]) as Project[]
         
-        // If user has no projects, create default "Без категории" project
+        // If user has no projects, create default "Uncategorized" project
         if (projectsList.length === 0) {
           const { data: newProject } = await supabase
             .from('tasks_projects')
-            .insert({ user_id: userId, name: 'Без категории' })
+            .insert({ user_id: userId, name: t('projects.uncategorized') })
             .select('id,name')
             .single()
           
@@ -68,7 +70,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
           }
         }
         
-        setItems(([{ id: 'ALL', name: 'Все проекты', color: null } as any, ...projectsList]))
+        setItems(([{ id: 'ALL', name: t('projects.allProjects'), color: null } as any, ...projectsList]))
       }
     })()
   },[userId])
@@ -198,7 +200,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
         <button 
           className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
           onClick={onToggleCollapse} 
-          aria-label={collapsed ? "Развернуть" : "Свернуть"}
+          aria-label={collapsed ? t('aria.expand') : t('aria.collapse')}
           style={{ 
             position: 'absolute',
             left: '0',
@@ -226,13 +228,13 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
             pointerEvents: 'none'
           }}
         >
-          Проекты
+          {t('projects.title')}
         </div>
         
         <button 
           className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
           onClick={()=>setShowCreate(true)} 
-          aria-label="Добавить проект" 
+          aria-label={t('projects.addProject')} 
           style={{ 
             position: 'absolute',
             right: '0',
@@ -349,10 +351,10 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
                 style={{ fontSize: '13px' }}
               >
-                Переименовать
+                {t('projects.rename')}
               </button>
               <div className="px-2 py-3">
-                <div className="mb-2 text-xs text-gray-500">Цвет</div>
+                <div className="mb-2 text-xs text-gray-500">{t('projects.color')}</div>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:6 }}>
                   {COLORS.map(c=>(
                     <button 
@@ -375,7 +377,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
                 style={{ fontSize: '13px' }}
               >
-                Удалить
+                {t('actions.delete')}
               </button>
             </div>
           </div>
@@ -387,7 +389,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
       <Modal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
-        title="Переименовать проект"
+        title={t('projects.renameProject')}
         footer={
           <>
             <button
@@ -395,7 +397,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
               style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
             >
-              Отмена
+              {t('actions.cancel')}
             </button>
             <button
               onClick={renameOk}
@@ -405,7 +407,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0d0d0d'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#171717'}
             >
-              Сохранить
+              {t('actions.save')}
             </button>
           </>
         }
@@ -416,7 +418,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
       <Modal
         open={delOpen}
         onClose={()=>setDelOpen(false)}
-        title="Удалить проект?"
+        title={t('projects.deleteProject')}
         footer={
           <>
             <button
@@ -424,19 +426,19 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
               style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
             >
-              Отмена
+              {t('actions.cancel')}
             </button>
             <button
               onClick={deleteOk}
               className="inline-flex items-center justify-center px-4 font-medium text-white bg-red-600 hover:bg-red-700 transition-colors leading-none h-10"
               style={{ borderRadius: '12px', fontSize: '13px' }}
             >
-              Удалить
+              {t('actions.delete')}
             </button>
           </>
         }
       >
-        <div className="text-sm text-gray-600">Проект и связанные задачи будут удалены.</div>
+        <div className="text-sm text-gray-600">{t('projects.deleteWarning')}</div>
       </Modal>
     </aside>
   )

@@ -17,7 +17,7 @@ const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 // const AppLoading = () => (
 //   <div className="flex items-center justify-center min-h-screen">
 //     <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
-//     <span className="ml-3 text-gray-600">Загрузка приложения...</span>
+//     <span className="ml-3 text-gray-600">{t('common.loading')}...</span>
 //   </div>
 // )
 

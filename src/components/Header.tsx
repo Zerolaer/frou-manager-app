@@ -2,15 +2,9 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Filter, Search, Download, Upload, Settings, Calendar, BookOpen } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { useTranslation } from 'react-i18next'
 import YearSelector from './YearSelector'
-
-const NAV_ITEMS = [
-  { to: '/', icon: Home, label: 'Главная' },
-  { to: '/finance', icon: DollarSign, label: 'Финансы' },
-  { to: '/tasks', icon: CheckSquare, label: 'Задачи' },
-  { to: '/notes', icon: FileText, label: 'Заметки' },
-  { to: '/storybook', icon: BookOpen, label: 'Storybook' },
-]
+import LanguageSwitcher from './LanguageSwitcher'
 
 interface HeaderProps {
   onAction?: (action: string) => void
@@ -21,48 +15,57 @@ interface HeaderProps {
 export default function Header({ onAction, currentYear, onYearChange }: HeaderProps) {
   const location = useLocation()
   const { signOut } = useSupabaseAuth()
+  const { t } = useTranslation()
+
+  const NAV_ITEMS = [
+    { to: '/', icon: Home, label: t('nav.home') },
+    { to: '/finance', icon: DollarSign, label: t('nav.finance') },
+    { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
+    { to: '/notes', icon: FileText, label: t('nav.notes') },
+    { to: '/storybook', icon: BookOpen, label: t('nav.storybook') },
+  ]
 
   const getSubHeaderContent = () => {
     switch (location.pathname) {
       case '/':
         return {
-          title: 'Обзор',
+          title: t('pages.overview'),
           actions: [
-            { id: 'refresh', label: 'Обновить', icon: Download, variant: 'secondary' },
-            { id: 'settings', label: 'Настройки', icon: Settings, variant: 'secondary' }
+            { id: 'refresh', label: t('actions.refresh'), icon: Download, variant: 'secondary' },
+            { id: 'settings', label: t('actions.settings'), icon: Settings, variant: 'secondary' }
           ]
         }
 
       case '/finance':
         return {
-          title: 'Финансы',
+          title: t('pages.finance'),
           actions: [
-            { id: 'add-category', label: 'Добавить категорию', icon: Plus, variant: 'primary' },
-            { id: 'annual-stats', label: 'Годовая статистика', icon: Target, variant: 'secondary' },
-            { id: 'export', label: 'Экспорт', icon: Download, variant: 'secondary' },
-            { id: 'import', label: 'Импорт', icon: Upload, variant: 'secondary' }
+            { id: 'add-category', label: t('actions.addCategory'), icon: Plus, variant: 'primary' },
+            { id: 'annual-stats', label: t('actions.annualStats'), icon: Target, variant: 'secondary' },
+            { id: 'export', label: t('actions.export'), icon: Download, variant: 'secondary' },
+            { id: 'import', label: t('actions.import'), icon: Upload, variant: 'secondary' }
           ]
         }
 
       case '/tasks':
         return {
-          title: 'Задачи',
+          title: t('pages.tasks'),
           actions: [
-            { id: 'add-task', label: 'Новая задача', icon: Plus, variant: 'primary' },
-            { id: 'filter', label: 'Фильтр', icon: Filter, variant: 'secondary' },
-            { id: 'calendar', label: 'Календарь', icon: Calendar, variant: 'secondary' },
-            { id: 'search', label: 'Поиск', icon: Search, variant: 'secondary' }
+            { id: 'add-task', label: t('actions.newTask'), icon: Plus, variant: 'primary' },
+            { id: 'filter', label: t('actions.filter'), icon: Filter, variant: 'secondary' },
+            { id: 'calendar', label: t('actions.calendar'), icon: Calendar, variant: 'secondary' },
+            { id: 'search', label: t('actions.search'), icon: Search, variant: 'secondary' }
           ]
         }
 
       case '/notes':
         return {
-          title: 'Заметки',
+          title: t('pages.notes'),
           actions: [
-            { id: 'add-note', label: 'Новая заметка', icon: Plus, variant: 'primary' },
-            { id: 'search', label: 'Поиск', icon: Search, variant: 'secondary' },
-            { id: 'filter', label: 'Фильтр', icon: Filter, variant: 'secondary' },
-            { id: 'export', label: 'Экспорт', icon: Download, variant: 'secondary' }
+            { id: 'add-note', label: t('actions.newNote'), icon: Plus, variant: 'primary' },
+            { id: 'search', label: t('actions.search'), icon: Search, variant: 'secondary' },
+            { id: 'filter', label: t('actions.filter'), icon: Filter, variant: 'secondary' },
+            { id: 'export', label: t('actions.export'), icon: Download, variant: 'secondary' }
           ]
         }
 
@@ -109,7 +112,7 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
       </div>
       
           {/* Navigation Menu - Center */}
-          <nav className="flex items-center gap-2" aria-label="Основная навигация">
+          <nav className="flex items-center gap-2" aria-label={t('aria.mainNavigation')}>
             {NAV_ITEMS.map((item) => {
               const isActive = location.pathname === item.to
               const Icon = item.icon
@@ -132,15 +135,16 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
           </nav>
 
           {/* User Profile - Right */}
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
+            <LanguageSwitcher />
             <button
               onClick={handleSignOut}
               className="flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 ease-out hover:scale-[1.03] text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              aria-label="Выйти из аккаунта"
-              title="Выйти из аккаунта"
+              aria-label={t('aria.logoutAccount')}
+              title={t('aria.logoutAccount')}
             >
               <LogOut className="w-5 h-5" />
-              <span className="text-sm font-medium">Выйти</span>
+              <span className="text-sm font-medium">{t('nav.logout')}</span>
             </button>
           </div>
         </div>

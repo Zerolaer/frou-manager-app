@@ -28,35 +28,29 @@ export function ModalButton({
   children,
   className = ''
 }: ModalButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2'
-  
+  // Используем корпоративные .btn классы
   const variantClasses = {
-    primary: 'bg-black text-white hover:bg-gray-800 focus:ring-gray-500',
-    secondary: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:ring-gray-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500'
+    primary: 'btn btn-primary',
+    secondary: 'btn btn-outline',
+    danger: 'btn btn-danger',
+    ghost: 'btn'
   }
   
   const sizeClasses = {
-    sm: 'h-9 px-4 leading-none',
-    md: 'h-10 px-6 leading-none',
-    lg: 'h-12 px-8 leading-none'
+    sm: 'btn-xs',
+    md: '',
+    lg: 'btn-lg'
   }
   
-  const disabledClasses = 'opacity-50 cursor-not-allowed'
-  
   const classes = [
-    baseClasses,
     variantClasses[variant],
     sizeClasses[size],
-    (disabled || loading) ? disabledClasses : '',
     className
   ].filter(Boolean).join(' ')
 
   return (
     <button
       className={classes}
-      style={{ borderRadius: '12px', fontSize: '13px' }}
       disabled={disabled || loading}
       onClick={onClick}
     >

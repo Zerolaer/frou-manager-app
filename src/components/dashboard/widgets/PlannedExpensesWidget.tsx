@@ -6,6 +6,7 @@ import { formatCurrencyEUR } from '@/lib/format';
 import { FINANCE_TYPES } from '@/lib/constants';
 import { monthRangeTZ } from '@/lib/dateUtils';
 import { DASHBOARD } from '@/config/dashboard.config';
+import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
 
 interface PlannedExpense {
@@ -18,14 +19,15 @@ interface PlannedExpense {
 }
 
 const PlannedExpensesWidget = () => {
+  const { t } = useTranslation();
   const { userId } = useSupabaseAuth();
   const [expenses, setExpenses] = useState<PlannedExpense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Получаем текущий месяц с учетом timezone
+  // Get current month considering timezone
   const [{ start }] = useState(() => monthRangeTZ(DASHBOARD.TZ));
   const currentYear = start.getFullYear();
-  const currentMonth = start.getMonth() + 1; // getMonth() возвращает 0-11, нам нужно 1-12
+  const currentMonth = start.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
 
   useEffect(() => {
     if (!userId) return;
@@ -41,7 +43,7 @@ const PlannedExpensesWidget = () => {
         return;
       }
 
-      // Сначала загружаем только категории расходов
+      // First load only expense categories
       const categoriesRes = await supabase
         .from('finance_categories')
         .select('id, name, type')
@@ -62,10 +64,10 @@ const PlannedExpensesWidget = () => {
         return;
       }
 
-      // Получаем ID категорий расходов
+      // Get expense category IDs
       const expenseCategoryIds = categories.map(cat => cat.id);
 
-      // Теперь загружаем записи только для категорий расходов
+      // Now load entries only for expense categories
       const entriesRes = await supabase
         .from('finance_entries')
         .select('id, amount, note, category_id')
@@ -85,15 +87,15 @@ const PlannedExpensesWidget = () => {
 
       const entries = entriesRes.data || [];
 
-      // Создаем мапу категорий для быстрого поиска
+      // Create category map for quick lookup
       const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
 
-      // Преобразуем записи в формат PlannedExpense
+      // Convert entries to PlannedExpense format
       const plannedExpenses: PlannedExpense[] = entries.map(entry => ({
         id: entry.id,
         amount: Number(entry.amount) || 0,
         note: entry.note,
-        category_name: categoryMap.get(entry.category_id) || 'Неизвестная категория',
+        category_name: categoryMap.get(entry.category_id) || t('dashboard.unknownCategory'),
         month: currentMonth,
         year: currentYear
       }));
@@ -110,9 +112,9 @@ const PlannedExpensesWidget = () => {
 
   const totalAmount = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
   
-  // Форматируем название месяца
+  // Format month name
   const monthLabel = useMemo(() => 
-    new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(start), 
+    new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(start), 
     [start]
   );
 
@@ -120,17 +122,17 @@ const PlannedExpensesWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<CreditCard className="w-5 h-5" />}
-        title="Запланированные траты"
-        subtitle={`Расходы за ${monthLabel}`}
+        title={t('dashboard.plannedExpenses')}
+        subtitle={t('dashboard.expensesFor', { month: monthLabel })}
       />
 
       <div className="flex-1 p-6 flex flex-col min-h-0">
-        {/* Список трат */}
+        {/* Expenses list */}
         <div className="flex-1 space-y-2 overflow-y-auto scrollbar-hide min-h-0">
           {expenses.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
               <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">Нет запланированных трат</p>
+              <p className="text-sm">{t('dashboard.noPlannedExpenses')}</p>
             </div>
           ) : (
             expenses.map((expense) => (
@@ -159,7 +161,7 @@ const PlannedExpensesWidget = () => {
         {expenses.length > 5 && (
           <div className="mt-2 text-center flex-shrink-0">
             <span className="text-xs text-gray-500">
-              и еще {expenses.length - 5} трат
+              {t('dashboard.andMore', { count: expenses.length - 5 })}
             </span>
           </div>
         )}

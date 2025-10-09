@@ -5,6 +5,7 @@ import { CoreInput } from '@/components/ui/CoreInput'
 import Dropdown from '@/components/ui/Dropdown'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
+import { useTranslation } from 'react-i18next'
 
 type Entry = { id: string; amount: number; currency: 'EUR' | 'USD' | 'GEL'; note: string | null; included: boolean; position: number }
 
@@ -21,6 +22,7 @@ export default function CellEditor({
   year: number
   onApply: (newSum: number) => void
 }) {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<Entry[]>([])
   const [amount, setAmount] = useState<string>('')
@@ -35,14 +37,27 @@ export default function CellEditor({
     clearTimeout(timers.current[key]); timers.current[key] = setTimeout(fn, ms)
   }
 
-  const monthNames = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
+  const monthNames = useMemo(() => [
+    t('finance.months.jan'),
+    t('finance.months.feb'),
+    t('finance.months.mar'),
+    t('finance.months.apr'),
+    t('finance.months.may'),
+    t('finance.months.jun'),
+    t('finance.months.jul'),
+    t('finance.months.aug'),
+    t('finance.months.sep'),
+    t('finance.months.oct'),
+    t('finance.months.nov'),
+    t('finance.months.dec')
+  ], [t])
   const monthLabel = monthNames[monthIndex]
-  const fmt = useMemo(()=> new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'EUR' }), [])
+  const fmt = useMemo(()=> new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }), [])
 
   // Drag state
   const dragId = useRef<string | null>(null)
 
-  // Закрываем dropdown при клике вне его
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (activeDropdownEntry && !(event.target as Element).closest('.currency-dropdown')) {
@@ -61,7 +76,7 @@ export default function CellEditor({
     ;(async () => {
       setLoading(true)
       
-      // Инициализируем курсы валют
+      // Initialize exchange rates
       await initializeExchangeRates()
       
       const { data, error } = await supabase
@@ -178,14 +193,14 @@ export default function CellEditor({
   }
 
   async function toggleIncluded(id: string, checked: boolean) {
-    // Запускаем анимацию
+    // Start animation
     setAnimatingCheckboxes(prev => new Set(prev).add(id))
     
     updateItemLocal(id, { included: checked })
     const { error } = await supabase.from('finance_entries').update({ included: checked }).eq('id', id)
     if (error) console.error(error)
     
-    // Останавливаем анимацию через 300ms
+    // Stop animation after 300ms
     setTimeout(() => {
       setAnimatingCheckboxes(prev => {
         const newSet = new Set(prev)
@@ -223,7 +238,7 @@ export default function CellEditor({
     await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
   }
 
-  // CSS анимации для чекбоксов (добавляем в head если их еще нет)
+  // CSS animations for checkboxes (add to head if not present)
   useEffect(() => {
     if (typeof document !== 'undefined' && !document.getElementById('checkbox-animations-cell')) {
       const style = document.createElement('style')
@@ -277,22 +292,22 @@ export default function CellEditor({
         backgroundColor: 'transparent',
         fontSize: '14px'
       }}>
-        <span style={{ fontWeight: 400 }}>Общее:</span> {fmt.format(sumIncluded(items))}
+        <span style={{ fontWeight: 400 }}>{t('finance.total')}:</span> {fmt.format(sumIncluded(items))}
       </div>
       <button className="btn btn-outline" onClick={onClose}>
-        Закрыть
+        {t('actions.close')}
       </button>
     </div>
   }
   size="cell"
 >
   <div className="editor-body">
-          {loading && <div className="loading-overlay">Загрузка…</div>}
+          {loading && <div className="loading-overlay">{t('common.loading')}</div>}
           <div className="editor-add">
             <CoreInput 
               ref={amountInputRef}
               type="number" 
-              placeholder="Сумма" 
+              placeholder={t('finance.amount')} 
               value={amount} 
               onChange={e=>setAmount(e.target.value)} 
               onKeyPress={handleKeyPress}
@@ -310,7 +325,7 @@ export default function CellEditor({
               dropdownClassName="currency-dropdown"
             />
             <CoreInput 
-              placeholder="Описание (необязательно)" 
+              placeholder={t('finance.descriptionOptional')} 
               value={note} 
               onChange={e=>setNote(e.target.value)} 
               onKeyPress={handleKeyPress}
@@ -390,7 +405,7 @@ export default function CellEditor({
                 </button>
               </div>
             ))}
-            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>Ещё нет записей.</div>)}
+            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>{t('finance.noEntries')}</div>)}
           </div>
         </div>
 

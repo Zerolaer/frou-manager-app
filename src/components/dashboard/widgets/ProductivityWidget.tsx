@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
 
 interface DayData {
   day: string;
   tasks: number;
   completed: number;
-  productivity: number; // процент выполнения
+  productivity: number; // completion percentage
 }
 
 const ProductivityWidget = () => {
+  const { t } = useTranslation();
   const { userId } = useSupabaseAuth();
   const [weekData, setWeekData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
-  const selectedPeriod = 'weekly'; // Фиксированный период - неделя
+  const selectedPeriod = 'weekly'; // Fixed period - week
 
   useEffect(() => {
     if (!userId) return;
@@ -31,19 +33,19 @@ const ProductivityWidget = () => {
       let endDate: Date;
 
       if (selectedPeriod === 'weekly') {
-        // Текущая неделя
+        // Current week
         const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Понедельник
+        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
         startOfWeek.setHours(0, 0, 0, 0);
         
         const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6); // Воскресенье
+        endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
         endOfWeek.setHours(23, 59, 59, 999);
         
         startDate = startOfWeek;
         endDate = endOfWeek;
       } else {
-        // Текущий месяц
+        // Current month
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         endDate.setHours(23, 59, 59, 999);
@@ -62,22 +64,22 @@ const ProductivityWidget = () => {
         return;
       }
 
-      // Группируем задачи по дням недели
+      // Group tasks by day of week
       const dayStats: Record<string, { total: number; completed: number }> = {};
       
-      // Инициализируем все дни недели
-      const dayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+      // Initialize all days of week
+      const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
       dayNames.forEach(day => {
         dayStats[day] = { total: 0, completed: 0 };
       });
       
       (tasksData || []).forEach(task => {
         const taskDate = new Date(task.date);
-        const dayOfWeek = taskDate.getDay(); // 0 = воскресенье, 1 = понедельник, ...
-        const dayNames = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+        const dayOfWeek = taskDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
         const dayName = dayNames[dayOfWeek];
         
-        // Логирование для отладки
+        // Debug logging
         console.log(`Task: date=${task.date}, day=${dayName}, status="${task.status}", project_id=${task.project_id}`);
         
         dayStats[dayName].total++;
@@ -86,8 +88,8 @@ const ProductivityWidget = () => {
         }
       });
 
-      // Создаем данные для недели
-      const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+      // Create week data
+      const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
       const weekDataArray: DayData[] = [];
 
       days.forEach(day => {
@@ -121,7 +123,7 @@ const ProductivityWidget = () => {
   };
 
   const getBusiestDay = () => {
-    return weekData.reduce((max, day) => day.completed > max.completed ? day : max, weekData[0] || { day: 'ПН', tasks: 0, completed: 0 });
+    return weekData.reduce((max, day) => day.completed > max.completed ? day : max, weekData[0] || { day: 'MON', tasks: 0, completed: 0 });
   };
 
   const getMaxTasks = () => Math.max(...weekData.map(day => day.tasks), 1);
@@ -135,8 +137,8 @@ const ProductivityWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<BarChart3 className="w-5 h-5" />}
-        title="Продуктивность"
-        subtitle="Показывает эффективность работы"
+        title={t('dashboard.productivity')}
+        subtitle={t('dashboard.productivityDescription')}
       />
 
 
@@ -151,7 +153,7 @@ const ProductivityWidget = () => {
             <span className="text-base font-medium">+{averageProductivity}%</span>
           </div>
           <p className="text-base text-gray-600">
-            {getTotalCompleted()}/{totalTasks} задач
+            {getTotalCompleted()}/{totalTasks} {t('dashboard.tasks')}
           </p>
         </div>
 
@@ -159,29 +161,29 @@ const ProductivityWidget = () => {
         <div className="flex-1 flex flex-col justify-end">
           <div className="flex items-end justify-between gap-1 h-full min-h-24">
             {weekData.map((day, index) => {
-              // Высота столбика = общее количество задач, но минимум 1/3 от высоты с одной задачей
-              const baseHeight = maxTasks > 0 ? (1 / maxTasks) * 100 : 100; // высота для 1 задачи
-              const minHeight = baseHeight / 3; // 1/3 от высоты с одной задачей
+              // Bar height = total number of tasks, but minimum 1/3 of height with one task
+              const baseHeight = maxTasks > 0 ? (1 / maxTasks) * 100 : 100; // height for 1 task
+              const minHeight = baseHeight / 3; // 1/3 of height with one task
               const totalHeight = day.tasks > 0 ? (day.tasks / maxTasks) * 100 : minHeight;
-              // Высота черной части = процент выполнения от высоты столбика (в процентах)
+              // Black part height = completion percentage of bar height (in percentage)
               const completionPercentage = day.tasks > 0 ? day.completed / day.tasks : 0;
-              const completedHeight = completionPercentage * 100; // Процент от высоты столбика
+              const completedHeight = completionPercentage * 100; // Percentage of bar height
               const isBusiest = day.completed === busiestDay.completed && day.completed > 0;
               
-              // Отладка для четверга
-              if (day.day === 'ЧТ') {
-                console.log(`Четверг: tasks=${day.tasks}, completed=${day.completed}, maxTasks=${maxTasks}`);
-                console.log(`Четверг: totalHeight=${totalHeight}%, completionPercentage=${completionPercentage}, completedHeight=${completedHeight}%`);
-                console.log(`Четверг: процент выполнения=${day.completed}/${day.tasks}=${Math.round(completionPercentage * 100)}%`);
-                console.log(`Четверг: allCompleted=${day.completed === day.tasks}, willShowFullBlack=${day.completed === day.tasks && day.tasks > 0}`);
+              // Debug for Thursday
+              if (day.day === 'THU') {
+                console.log(`Thursday: tasks=${day.tasks}, completed=${day.completed}, maxTasks=${maxTasks}`);
+                console.log(`Thursday: totalHeight=${totalHeight}%, completionPercentage=${completionPercentage}, completedHeight=${completedHeight}%`);
+                console.log(`Thursday: completion percentage=${day.completed}/${day.tasks}=${Math.round(completionPercentage * 100)}%`);
+                console.log(`Thursday: allCompleted=${day.completed === day.tasks}, willShowFullBlack=${day.completed === day.tasks && day.tasks > 0}`);
               }
               
               return (
                 <div key={day.day} className="flex flex-col items-center flex-1 h-full">
                   <div className="w-full flex flex-col items-center justify-end h-full mb-2">
-                    {/* Основной столбик */}
+                    {/* Main bar */}
                     {day.completed === day.tasks && day.tasks > 0 ? (
-                      /* Если все задачи выполнены - полностью черный столбик */
+                      /* If all tasks completed - fully black bar */
                       <div
                         className="w-full rounded-t-md relative overflow-hidden bg-black"
                         style={{ 
@@ -189,7 +191,7 @@ const ProductivityWidget = () => {
                           minHeight: '8px'
                         }}
                       >
-                        {/* Диагональные линии для паттерна */}
+                        {/* Diagonal lines for pattern */}
                         <div 
                           className="absolute inset-0 opacity-20"
                           style={{
@@ -198,7 +200,7 @@ const ProductivityWidget = () => {
                         ></div>
                       </div>
                     ) : (
-                      /* Обычный серый столбик с черной частью */
+                      /* Regular gray bar with black part */
                       <div
                         className="w-full rounded-t-md relative overflow-hidden bg-gray-200"
                         style={{ 
@@ -206,7 +208,7 @@ const ProductivityWidget = () => {
                           minHeight: '8px'
                         }}
                       >
-                        {/* Черная часть - выполненные задачи */}
+                        {/* Black part - completed tasks */}
                         {day.completed > 0 && (
                           <div
                             className="absolute bottom-0 left-0 right-0 rounded-t-md bg-black"
@@ -215,7 +217,7 @@ const ProductivityWidget = () => {
                               minHeight: completedHeight > 0 ? '4px' : '0px'
                             }}
                           >
-                            {/* Диагональные линии для паттерна */}
+                            {/* Diagonal lines for pattern */}
                             <div 
                               className="absolute inset-0 opacity-20"
                               style={{
@@ -228,7 +230,7 @@ const ProductivityWidget = () => {
                     )}
                   </div>
                   <div className="text-xs text-gray-600 font-medium">
-                    {day.day}
+                    {t(`dashboard.days.${day.day}`)}
                   </div>
                 </div>
               );

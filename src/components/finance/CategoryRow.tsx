@@ -109,7 +109,7 @@ export default function CategoryRow({
                 e.stopPropagation()
                 onToggleCollapse(row.id)
               }}
-              title={collapsed ? 'Развернуть' : 'Свернуть'}
+              title={collapsed ? 'Expand' : 'Collapse'}
             >
               <ChevronRight 
                 className={`w-4 h-4 text-gray-500 shrink-0 transition-transform duration-200 ${
@@ -129,7 +129,7 @@ export default function CategoryRow({
             className="icon-btn menu-btn"
             onClick={(e) => onNameContext(e, info)}
             onContextMenu={(e) => onNameContext(e, info)}
-            aria-label="Действия с категорией"
+            aria-label="Category actions"
           >
             <MoreVertical size={16} />
           </button>

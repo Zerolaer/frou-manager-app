@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Plus, Trash2 } from 'lucide-react'
 import CoreMenu from '@/components/ui/CoreMenu'
 import Dropdown from '@/components/ui/Dropdown'
+import { useTranslation } from 'react-i18next'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -32,6 +33,7 @@ type Props = {
 }
 
 export default function TaskViewModal({ open, onClose, task, onUpdated }: Props) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'' | 'low' | 'medium' | 'high'>('')
@@ -83,7 +85,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
 
   function addTodo() {
     const id = Math.random().toString(36).slice(2)
-    setTodos((prev) => [...prev, { id, text: 'Новая подзадача', done: false }])
+    setTodos((prev) => [...prev, { id, text: t('tasks.newSubtask'), done: false }])
     // Auto-save when adding todos
     setTimeout(() => save(), 100)
   }
@@ -234,14 +236,14 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       title={
         <div className="flex items-center justify-between w-full">
           <div>
-            <div className="text-lg font-semibold text-gray-900">Задача</div>
-            {task?.date && <div className="text-sm text-gray-500 mt-1">Создана: {new Date(task.date).toLocaleDateString()}</div>}
+            <div className="text-lg font-semibold text-gray-900">{t('tasks.task')}</div>
+            {task?.date && <div className="text-sm text-gray-500 mt-1">{t('tasks.created')}: {new Date(task.date).toLocaleDateString()}</div>}
           </div>
           <div ref={menuRef}>
             <CoreMenu
               options={[
-                { value: 'duplicate', label: 'Дублировать' },
-                { value: 'delete', label: 'Удалить', destructive: true },
+                { value: 'duplicate', label: t('common.duplicate') },
+                { value: 'delete', label: t('common.delete'), destructive: true },
               ]}
               onSelect={(value) => {
                 if (value === 'duplicate') duplicateTask()
@@ -253,17 +255,17 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       }
       footer={createDangerFooter(
         { 
-          label: 'Удалить', 
+          label: t('common.delete'), 
           onClick: deleteTask,
           loading: deleteLoading
         },
         { 
-          label: 'Сохранить', 
+          label: t('common.save'), 
           onClick: handleSave,
           loading: saving
         },
         { 
-          label: 'Закрыть', 
+          label: t('common.close'), 
           onClick: onClose
         }
       )}
@@ -273,28 +275,28 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         {/* LEFT */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Название</label>
+            <label className="block text-xs text-gray-500 mb-1">{t('tasks.taskTitle')}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base font-semibold"
-              placeholder="Название задачи"
+              placeholder={t('tasks.taskTitle')}
             />
           </div>
 
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Описание</label>
+            <label className="block text-xs text-gray-500 mb-1">{t('tasks.description')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full min-h-[140px] rounded-lg border border-gray-300 p-3"
-              placeholder="Добавьте детали задачи…"
+              placeholder={t('tasks.taskDetails')}
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">Подзадачи</div>
+              <div className="text-sm text-gray-600">{t('tasks.subtasks')}</div>
               <div className="text-xs text-gray-500">{doneCount} / {totalCount}</div>
             </div>
             <ul className="mt-2 space-y-2">
@@ -310,14 +312,14 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
                   />
                   <button className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50 flex items-center gap-1" onClick={() => removeTodo(item.id)}>
                     <Trash2 className="w-4 h-4" />
-                    Удалить
+                    {t('common.delete')}
                   </button>
                 </li>
               ))}
             </ul>
             <button className="h-10 px-6 py-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 mt-3 flex items-center gap-2" onClick={addTodo}>
               <Plus className="w-4 h-4" />
-              Подзадача
+              {t('tasks.subtask')}
             </button>
           </div>
         </div>
@@ -325,44 +327,44 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         {/* RIGHT inspector */}
         <aside className="space-y-4">
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
-            <div className="text-sm font-medium text-gray-700">Проект</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.project')}</div>
             <Dropdown
               options={[
-                { value: '', label: 'Без проекта' },
-                ...projects.map(p => ({ value: p.id, label: p.name || 'Без названия' }))
+                { value: '', label: t('tasks.noProject') },
+                ...projects.map(p => ({ value: p.id, label: p.name || t('tasks.noName') }))
               ]}
               value={projectId || ''}
               onChange={(newValue) => moveToProject(newValue ? newValue.toString() : null)}
-              placeholder="Выберите проект"
-              ariaLabel="Выбор проекта"
+              placeholder={t('projects.selectProject')}
+              ariaLabel={t('aria.selectProject')}
               className="w-full"
               buttonClassName="w-full justify-between"
             />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
-            <div className="text-sm font-medium text-gray-700">Статус</div>
-            <StatusSwitcher value={status} onChange={setStatusRemote} fullWidth />
+            <div className="text-sm font-medium text-gray-700">{t('tasks.status')}</div>
+            <StatusSwitcher value={status} onChange={setStatusRemote} fullWidth t={t} />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
-            <div className="text-sm font-medium text-gray-700">Приоритет</div>
-            <PriorityChipsFullWidth value={priority} onChange={setPriority} />
+            <div className="text-sm font-medium text-gray-700">{t('tasks.priority')}</div>
+            <PriorityChipsFullWidth value={priority} onChange={setPriority} t={t} />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
-            <div className="text-sm font-medium text-gray-700">Тег</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.tag')}</div>
             <input
               value={tag || ''}
               onChange={(e) => setTag(e.target.value)}
-              placeholder="Введите тег"
+              placeholder={t('tasks.tagPlaceholder')}
               className="h-9 w-full rounded-xl border border-gray-200 px-3"
             />
           </section>
 
           <section className="space-y-2 rounded-xl border border-gray-200 p-3">
-            <div className="text-sm font-medium text-gray-700">Дата</div>
-            <DateQuick value={date || ''} onChange={setDate} />
+            <div className="text-sm font-medium text-gray-700">{t('tasks.date')}</div>
+            <DateQuick value={date || ''} onChange={setDate} t={t} />
           </section>
 
         </aside>
@@ -377,10 +379,12 @@ function StatusSwitcher({
   value,
   onChange,
   fullWidth,
+  t
 }: {
   value: 'open' | 'closed'
   onChange: (next: 'open' | 'closed') => void
   fullWidth?: boolean
+  t: (key: string) => string
 }) {
   return (
     <div className={(fullWidth ? 'w-full ' : '') + 'flex rounded-full border border-gray-200 bg-gray-100 p-1 text-xs'}>
@@ -388,13 +392,13 @@ function StatusSwitcher({
         className={'flex-1 rounded-full px-3 py-1 text-center ' + (value === 'open' ? 'bg-white shadow-sm' : 'opacity-70 hover:opacity-100')}
         onClick={() => onChange('open')}
       >
-        Открытая
+        {t('tasks.open')}
       </button>
       <button
         className={'flex-1 rounded-full px-3 py-1 text-center ' + (value === 'closed' ? 'bg-white shadow-sm' : 'opacity-70 hover:opacity-100')}
         onClick={() => onChange('closed')}
       >
-        Закрытая
+        {t('tasks.closed')}
       </button>
     </div>
   )
@@ -403,9 +407,11 @@ function StatusSwitcher({
 function PriorityChips({
   value,
   onChange,
+  t
 }: {
   value: '' | 'low' | 'medium' | 'high'
   onChange: (v: '' | 'low' | 'medium' | 'high') => void
+  t: (key: string) => string
 }) {
   const base = 'h-8 px-3 rounded-full border text-sm inline-flex items-center justify-center transition'
   return (
@@ -415,29 +421,29 @@ function PriorityChips({
         className={`${base} ${value === 'low' ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         onClick={() => onChange('low')}
       >
-        Low
+        {t('tasks.low')}
       </button>
       <button
         type="button"
         className={`${base} ${value === 'medium' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         onClick={() => onChange('medium')}
       >
-        Med
+        {t('tasks.medium')}
       </button>
       <button
         type="button"
         className={`${base} ${value === 'high' ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         onClick={() => onChange('high')}
       >
-        High
+        {t('tasks.high')}
       </button>
       <button
         type="button"
         className={`${base} ${value === '' ? 'bg-white shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
         onClick={() => onChange('')}
-        title="Без приоритета"
+        title={t('tasks.noPriority')}
       >
-        Нет
+        {t('tasks.none')}
       </button>
     </div>
   )
@@ -446,9 +452,11 @@ function PriorityChips({
 function PriorityChipsFullWidth({
   value,
   onChange,
+  t
 }: {
   value: '' | 'low' | 'medium' | 'high'
   onChange: (v: '' | 'low' | 'medium' | 'high') => void
+  t: (key: string) => string
 }) {
   const base = 'flex-1 px-3 py-2 rounded-lg border text-sm inline-flex items-center justify-center transition'
   return (
@@ -458,21 +466,21 @@ function PriorityChipsFullWidth({
         className={`${base} ${value === 'low' ? 'border-green-300 bg-green-100 text-green-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         onClick={() => onChange('low')}
       >
-        Низкий
+        {t('tasks.lowPriority')}
       </button>
       <button
         type="button"
         className={`${base} ${value === 'medium' ? 'border-yellow-300 bg-yellow-100 text-yellow-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         onClick={() => onChange('medium')}
       >
-        Средний
+        {t('tasks.mediumPriority')}
       </button>
       <button
         type="button"
         className={`${base} ${value === 'high' ? 'border-red-300 bg-red-100 text-red-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         onClick={() => onChange('high')}
       >
-        Высокий
+        {t('tasks.highPriority')}
       </button>
     </div>
   )
@@ -481,9 +489,11 @@ function PriorityChipsFullWidth({
 function DateQuick({
   value,
   onChange,
+  t
 }: {
   value: string
   onChange: (v: string) => void
+  t: (key: string) => string
 }) {
   function toISO(d: Date) {
     return d.toISOString().slice(0, 10)
@@ -501,11 +511,11 @@ function DateQuick({
       <div className="flex gap-2">
         <button type="button" className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50"
           onClick={() => onChange(toISO(today))}>
-          Сегодня
+          {t('common.today')}
         </button>
         <button type="button" className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50"
           onClick={() => onChange(toISO(tomorrow))}>
-          Завтра
+          {t('common.tomorrow')}
         </button>
       </div>
     </div>

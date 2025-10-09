@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { format, isToday } from 'date-fns'
-import { ru } from 'date-fns/locale'
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Cat } from '@/types/shared'
 import { formatCurrencyEUR } from '@/lib/format'
 import { FINANCE_TYPES } from '@/lib/constants'
@@ -31,6 +31,7 @@ export default function MobileFinanceDay({
   ctxCellHighlight,
   fmt
 }: MobileFinanceDayProps) {
+  const { t } = useTranslation()
   const monthIndex = date.getMonth()
   const isCurrentDay = isToday(date)
 
@@ -60,7 +61,7 @@ export default function MobileFinanceDay({
         <div className="flex-1 min-w-0">
           <div className="font-medium text-gray-900 truncate">{category.name}</div>
           {category.parent_id && (
-            <div className="text-xs text-gray-500">Подкатегория</div>
+            <div className="text-xs text-gray-500">{t('finance.subcategory')}</div>
           )}
         </div>
         
@@ -78,7 +79,7 @@ export default function MobileFinanceDay({
               <button
                 onClick={(e) => onCellContext(e, type, category.id, monthIndex, amount)}
                 className="p-1 rounded hover:bg-gray-100"
-                aria-label="Открыть меню"
+                aria-label={t('aria.openMenu')}
               >
                 <div className="w-4 h-4 rounded-full bg-gray-300" />
               </button>
@@ -87,7 +88,7 @@ export default function MobileFinanceDay({
             <button
               onClick={(e) => onContextCategory(e, { id: category.id, name: category.name, type })}
               className="p-1 rounded hover:bg-gray-100"
-              aria-label="Настройки категории"
+              aria-label={t('aria.categorySettings')}
             >
               <div className="w-4 h-4 rounded-full bg-gray-400" />
             </button>
@@ -102,10 +103,10 @@ export default function MobileFinanceDay({
       {/* Date header */}
       <div className="text-center">
         <h2 className="text-xl font-bold text-gray-900">
-          {format(date, 'EEEE, d MMMM yyyy', { locale: ru })}
+          {format(date, 'EEEE, d MMMM yyyy')}
         </h2>
         {isCurrentDay && (
-          <div className="text-sm text-blue-600 font-medium">Сегодня</div>
+          <div className="text-sm text-blue-600 font-medium">{t('common.today')}</div>
         )}
       </div>
 
@@ -114,7 +115,7 @@ export default function MobileFinanceDay({
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center mb-1">
             <TrendingUp className="w-4 h-4 text-green-600 mr-1" />
-            <span className="text-xs font-medium text-green-600">Доходы</span>
+            <span className="text-xs font-medium text-green-600">{t('finance.income')}</span>
           </div>
           <div className="text-lg font-bold text-green-700">{fmt(dayIncome)}</div>
         </div>
@@ -122,7 +123,7 @@ export default function MobileFinanceDay({
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center mb-1">
             <TrendingDown className="w-4 h-4 text-red-600 mr-1" />
-            <span className="text-xs font-medium text-red-600">Расходы</span>
+            <span className="text-xs font-medium text-red-600">{t('finance.expenses')}</span>
           </div>
           <div className="text-lg font-bold text-red-700">{fmt(dayExpense)}</div>
         </div>
@@ -134,7 +135,7 @@ export default function MobileFinanceDay({
         }`}>
           <div className="text-xs font-medium mb-1">
             <span className={dayBalance >= 0 ? 'text-green-600' : 'text-red-600'}>
-              Баланс
+              {t('finance.balance')}
             </span>
           </div>
           <div className={`text-lg font-bold ${
@@ -148,13 +149,13 @@ export default function MobileFinanceDay({
       {/* Income section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Доходы</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('finance.income')}</h3>
           <button
             onClick={() => onAddCategory(FINANCE_TYPES.INCOME)}
             className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Добавить
+            {t('common.add')}
           </button>
         </div>
         
@@ -162,8 +163,8 @@ export default function MobileFinanceDay({
           {incomeCategories.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <TrendingUp className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <div>Нет категорий доходов</div>
-              <div className="text-sm">Добавьте первую категорию</div>
+              <div>{t('finance.noIncomeCategories')}</div>
+              <div className="text-sm">{t('finance.addFirstCategory')}</div>
             </div>
           ) : (
             incomeCategories.map(category => renderCategoryRow(category, 'income'))
@@ -174,13 +175,13 @@ export default function MobileFinanceDay({
       {/* Expense section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Расходы</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('finance.expenses')}</h3>
           <button
             onClick={() => onAddCategory(FINANCE_TYPES.EXPENSE)}
             className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Добавить
+            {t('common.add')}
           </button>
         </div>
         
@@ -188,8 +189,8 @@ export default function MobileFinanceDay({
           {expenseCategories.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <TrendingDown className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <div>Нет категорий расходов</div>
-              <div className="text-sm">Добавьте первую категорию</div>
+              <div>{t('finance.noExpenseCategories')}</div>
+              <div className="text-sm">{t('finance.addFirstCategory')}</div>
             </div>
           ) : (
             expenseCategories.map(category => renderCategoryRow(category, 'expense'))

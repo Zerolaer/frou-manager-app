@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
@@ -18,6 +19,8 @@ type Props = {
 }
 
 export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
+  const { t } = useTranslation()
+  
   // Add safety check for React context
   if (!React.useState) {
     return null
@@ -77,28 +80,28 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   }
 
   return (
-    <UnifiedModal 
+    <UnifiedModal
       size="lg"
       open={open}
       onClose={onClose}
-      title="Новая задача"
+      title={t('tasks.newTask')}
       subtitle={dateLabel}
       variant="side"
       footer={createStandardFooter(
         { 
-          label: 'Добавить', 
+          label: t('actions.add'), 
           onClick: save, 
           loading, 
           disabled: !title.trim() 
         },
-        { label: 'Отмена', onClick: onClose }
+        { label: t('actions.cancel'), onClick: onClose }
       )}
     >
       <div className="space-y-6">
         {/* Проект и Дата */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Проект *</label>
+            <label className="text-sm font-medium text-gray-700">{t('tasks.project')} *</label>
             <ProjectDropdown
               value={projectId}
               projects={projects}
@@ -107,7 +110,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Дата *</label>
+            <label className="text-sm font-medium text-gray-700">{t('tasks.dueDate')} *</label>
             <DateDropdown
               value={selectedDate.toISOString().split('T')[0]}
               onChange={(value) => setSelectedDate(new Date(value))}
@@ -117,29 +120,29 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
 
         {/* Название */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Название задачи *</label>
+          <label className="text-sm font-medium text-gray-700">{t('tasks.taskTitle')} *</label>
           <CoreInput
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Название задачи"
+            placeholder={t('tasks.titlePlaceholder')}
           />
         </div>
 
         {/* Описание */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Описание</label>
+          <label className="text-sm font-medium text-gray-700">{t('tasks.taskDescription')}</label>
           <CoreTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Подробности задачи"
+            placeholder={t('tasks.descriptionPlaceholder')}
             rows={4}
           />
         </div>
 
         {/* Приоритет - 3 кнопки */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Приоритет</label>
+          <label className="text-sm font-medium text-gray-700">{t('tasks.priority')}</label>
           <div className="flex gap-2">
             <button
               onClick={() => setPriority('low')}
@@ -149,7 +152,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Низкий
+              {t('tasks.low')}
             </button>
             <button
               onClick={() => setPriority('normal')}
@@ -159,7 +162,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Обычный
+              {t('tasks.medium')}
             </button>
             <button
               onClick={() => setPriority('high')}
@@ -169,26 +172,26 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Высокий
+              {t('tasks.high')}
             </button>
           </div>
         </div>
 
         {/* Тег */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Тег</label>
+          <label className="text-sm font-medium text-gray-700">{t('tasks.tags')}</label>
           <CoreInput
             type="text"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
-            placeholder="Напр. Work"
+            placeholder={t('tasks.tagPlaceholder')}
           />
         </div>
 
         {/* Подзадачи */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">Подзадачи</label>
+            <label className="text-sm font-medium text-gray-700">{t('tasks.subtasks')}</label>
             {todos.length > 0 && (
               <span className="text-sm text-gray-500">
                 {todos.filter(t => t.done).length}/{todos.length}
@@ -201,7 +204,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
               type="text"
               value={todoText}
               onChange={(e) => setTodoText(e.target.value)}
-              placeholder="Добавить подзадачу"
+              placeholder={t('tasks.addSubtask')}
               className="flex-1"
               onKeyPress={(e) => e.key === 'Enter' && addTodo()}
             />

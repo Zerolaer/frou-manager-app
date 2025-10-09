@@ -10,6 +10,7 @@
 
 import React from 'react'
 import { Card, AccessibilityAnnouncements } from './types'
+import { useTranslation } from 'react-i18next'
 
 interface DragOverlayContentProps {
   card: Card

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabaseClient'
 import AuthCard from '@/components/AuthCard'
 
@@ -10,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState<string|null>(null)
   const navigate = useNavigate()
   const [authChecked, setAuthChecked] = useState(false);
+  const { t } = useTranslation();
 
 useEffect(() => {
   let mounted = true;
@@ -32,7 +34,7 @@ useEffect(() => {
       if (error) throw error
       navigate('/finance', { replace: true })
     } catch (err: any) {
-      setError(err?.message || 'Ошибка входа. Проверьте email и пароль.')
+      setError(err?.message || t('errors.networkError'))
     } finally {
       setLoading(false)
     }
@@ -60,8 +62,8 @@ if (!authChecked) {
 
           {/* Заголовок */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hello, Welcome Back!</h1>
-            <p className="text-gray-600">We're happy to see you again, let's Stay ahead of the game.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('login.title')}</h1>
+            <p className="text-gray-600">{t('login.subtitle')}</p>
           </div>
 
           {/* Социальные кнопки */}
@@ -98,10 +100,10 @@ if (!authChecked) {
           <form onSubmit={onSubmit} className="space-y-4">
               {/* Email */}
               <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.email')}</label>
                 <input
                   type="email"
-                placeholder="frovsky@gmail.com"
+                placeholder={t('login.emailPlaceholder')}
                   value={email}
                   onChange={(e)=>setEmail(e.target.value)}
                   required
@@ -111,11 +113,11 @@ if (!authChecked) {
 
               {/* Password */}
               <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.password')}</label>
               <div className="relative">
                 <input
                   type="password"
-                  placeholder="•••••••••"
+                  placeholder={t('login.passwordPlaceholder')}
                   value={password}
                   onChange={(e)=>setPassword(e.target.value)}
                   required
@@ -132,7 +134,7 @@ if (!authChecked) {
 
             {/* Forgot Password */}
             <div className="flex justify-end">
-              <a href="#" className="text-sm text-gray-600 hover:text-gray-900">Forgot Password?</a>
+              <a href="#" className="text-sm text-gray-600 hover:text-gray-900">{t('login.forgotPassword')}</a>
               </div>
 
             {/* Login Button */}
@@ -140,14 +142,14 @@ if (!authChecked) {
               className="w-full bg-black text-white hover:bg-gray-800 px-4 py-[16px] rounded-xl font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed" 
               disabled={loading}
             >
-              {loading ? 'Загрузка…' : 'LOGIN'}
+              {loading ? t('common.loading') : t('login.signIn')}
               </button>
             </form>
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
-            <span className="text-gray-600">Don't have an account? </span>
-            <a href="#" className="text-gray-900 font-medium hover:underline">Sign up for free</a>
+            <span className="text-gray-600">{t('login.noAccount')} </span>
+            <a href="#" className="text-gray-900 font-medium hover:underline">{t('login.signUp')}</a>
           </div>
         </div>
       </div>

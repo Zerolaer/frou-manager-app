@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MoreVertical } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
@@ -38,10 +39,11 @@ import {
 
 // Added: accessible trigger for context menu
 function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.KeyboardEvent) => void }) {
+  const { t } = useTranslation()
   return (
     <button
       type="button"
-      aria-label="Open menu"
+      aria-label={t('aria.openMenu')}
       aria-haspopup="menu"
       onClick={(e) => onOpen(e)}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(e); } }}
@@ -58,6 +60,7 @@ const fmtEUR = (n:number) => formatCurrencyEUR(n, { maximumFractionDigits: 0 })
 
 
 export default function Finance(){
+  const { t } = useTranslation()
   const { handleError, handleSuccess } = useErrorHandler()
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
@@ -66,6 +69,22 @@ export default function Finance(){
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
+
+  // Translated months array
+  const translatedMonths = useMemo(() => [
+    t('finance.months.jan'),
+    t('finance.months.feb'),
+    t('finance.months.mar'),
+    t('finance.months.apr'),
+    t('finance.months.may'),
+    t('finance.months.jun'),
+    t('finance.months.jul'),
+    t('finance.months.aug'),
+    t('finance.months.sep'),
+    t('finance.months.oct'),
+    t('finance.months.nov'),
+    t('finance.months.dec')
+  ], [t])
 
   const [year, setYear] = useState(currentYear)
   const [mobileDate, setMobileDate] = useState(new Date())
@@ -123,11 +142,11 @@ export default function Finance(){
         break
       case 'export':
         // TODO: Implement export functionality
-        handleSuccess('Экспорт будет реализован в следующей версии')
+        handleSuccess(t('finance.exportComingSoon'))
         break
       case 'import':
         // TODO: Implement import functionality
-        handleSuccess('Импорт будет реализован в следующей версии')
+        handleSuccess(t('finance.importComingSoon'))
         break
       default:
         // Unknown action
@@ -147,7 +166,7 @@ export default function Finance(){
     }
     
     const handleFinanceDataUpdated = () => {
-      // Перезагружаем данные при обновлении через ИИ-ассистента
+      // Reload data when updated via AI assistant
       if (userId) {
         reloadFinanceData()
       }
@@ -168,7 +187,7 @@ export default function Finance(){
     window.dispatchEvent(new CustomEvent('finance-year-changed', { detail: year }))
   }, [year])
 
-  // Функция для загрузки финансовых данных
+  // Function to load financial data
   const reloadFinanceData = async (signal?: AbortSignal) => {
     if (!userId) return
     
@@ -183,7 +202,7 @@ export default function Finance(){
       if (signal?.aborted) return
       
       if (catsRes.error || entriesRes.error) { 
-        handleError(catsRes.error || entriesRes.error, 'Загрузка финансовых данных'); 
+        handleError(catsRes.error || entriesRes.error, t('finance.loadingFinancialData')); 
         setLoading(false); 
         return 
       }
@@ -209,7 +228,7 @@ export default function Finance(){
         setExpenseRaw(expense)
         setLoading(false)
         
-        // Обновляем кеш
+        // Update cache
         writeCache(userId, year, {
           income: income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
           expense: expense.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
@@ -217,7 +236,7 @@ export default function Finance(){
       }
     } catch (error) {
       if (!signal?.aborted) {
-        handleError(error, 'Загрузка финансовых данных')
+        handleError(error, t('finance.loadingFinancialData'))
         setLoading(false)
       }
     }
@@ -288,7 +307,7 @@ export default function Finance(){
     const payload: { user_id: string; type: 'income' | 'expense'; name: string; parent_id?: string } = { user_id: userId, type, name }
     if (newParent) payload.parent_id = newParent.id
     const { data, error } = await supabase.from('finance_categories').insert(payload).select('id,name,type,parent_id').single()
-    if (error) { handleError(error, 'Создание категории'); return }
+    if (error) { handleError(error, t('finance.creatingCategory')); return }
     const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(MONTHS_IN_YEAR).fill(0) }
     if (type === FINANCE_TYPES.INCOME) {
       const raw = [incomeRaw, cat]; setIncomeRaw(raw)
@@ -297,7 +316,7 @@ export default function Finance(){
       const raw = [expenseRaw, cat]; setExpenseRaw(raw)
       writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     }
-    handleSuccess(`Категория "${name}" создана`)
+    handleSuccess(t('finance.categoryCreated', { name }))
     setShowAdd(false); setNewName(''); setNewType(FINANCE_TYPES.INCOME); setNewParent(null)
   }
 
@@ -308,7 +327,7 @@ export default function Finance(){
     setCtxCellHighlight(null)
     setCtxCatHighlight(cat.id)
     
-    // ПОЛНАЯ НЕЗАВИСИМОСТЬ ОТ СКРОЛЛА - только координаты мыши
+    // COMPLETE SCROLL INDEPENDENCE - only mouse coordinates
     setCtxMouseX(e.clientX + 10) // Right of cursor
     setCtxMouseY(e.clientY - 10) // Above cursor
     setCtxCat(cat)
@@ -320,7 +339,7 @@ export default function Finance(){
     const name = renameValue.trim()
     if (!name || !ctxCat) { setRenameOpen(false); return }
     const { error } = await supabase.from('finance_categories').update({ name }).eq('id', ctxCat.id)
-    if (error) { handleError(error, 'Создание категории'); return }
+    if (error) { handleError(error, t('finance.creatingCategory')); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -334,7 +353,7 @@ export default function Finance(){
   async function confirmDelete(){
     if (!ctxCat) return
     const { error } = await supabase.from('finance_categories').delete().eq('id', ctxCat.id)
-    if (error) { handleError(error, 'Создание категории'); return }
+    if (error) { handleError(error, t('finance.creatingCategory')); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.filter(c => c.id !== ctxCat.id); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -388,7 +407,7 @@ export default function Finance(){
       return 
     }
 
-    // ПОЛНАЯ НЕЗАВИСИМОСТЬ ОТ СКРОЛЛА - только координаты мыши
+    // COMPLETE SCROLL INDEPENDENCE - only mouse coordinates
     setCellCtxMouseX(e.clientX - 90) // Center menu (menu width ~180px)
     setCellCtxMouseY(e.clientY + 10) // Below cursor
     setCellCtx({catId, type, month})
@@ -448,9 +467,9 @@ export default function Finance(){
         })
       }
       
-      handleSuccess('Данные вставлены')
+      handleSuccess(t('finance.dataInserted'))
     } catch (error) {
-      handleError('Ошибка при вставке данных')
+      handleError(t('finance.errorInsertingData'))
       console.error('Paste error:', error)
     }
     
@@ -507,30 +526,30 @@ export default function Finance(){
         <UnifiedModal
           open={showAdd}
           onClose={()=>{ setShowAdd(false); setNewParent(null) }}
-          title={newParent ? 'Новая подкатегория' : 'Новая категория'}
-          subtitle={newParent ? `Родитель: ${newParent.name}` : undefined}
+          title={newParent ? t('finance.newSubcategory') : t('finance.newCategory')}
+          subtitle={newParent ? `${t('finance.parent')}: ${newParent.name}` : undefined}
           footer={createSimpleFooter(
             { 
-              label: newParent ? 'Добавить подкатегорию' : 'Добавить категорию', 
+              label: newParent ? t('finance.addSubcategory') : t('finance.addCategory'), 
               onClick: addCategory,
               disabled: !newName.trim()
             },
             { 
-              label: 'Отмена', 
+              label: t('actions.cancel'), 
               onClick: () => { setShowAdd(false); setNewParent(null) }
             }
           )}
         >
           <div className="flex items-center gap-3">
-            <label className="text-label text-gray-600 w-28">Тип</label>
+            <label className="text-label text-gray-600 w-28">{t('finance.type')}</label>
             <div className="flex-1"><TypeDropdown value={newType} onChange={setNewType} fullWidth /></div>
           </div>
           <div className="flex items-center gap-3 mt-3">
-            <label className="text-label text-gray-600 w-28">Название</label>
+            <label className="text-label text-gray-600 w-28">{t('finance.name')}</label>
             <CoreInput
               value={newName}
               onChange={e=>setNewName(e.target.value)}
-              placeholder={newParent ? 'Напр. Коммунальные' : 'Напр. Жильё'}
+              placeholder={newParent ? t('finance.placeholderUtilities') : t('finance.placeholderHousing')}
               className="flex-1"
             />
           </div>
@@ -539,15 +558,15 @@ export default function Finance(){
         <UnifiedModal
           open={renameOpen}
           onClose={()=>setRenameOpen(false)}
-          title="Переименовать категорию"
+          title={t('finance.renameCategory')}
           footer={createSimpleFooter(
             { 
-              label: 'Сохранить', 
+              label: t('finance.save'), 
               onClick: submitRename,
               disabled: !renameValue.trim()
             },
             { 
-              label: 'Отмена', 
+              label: t('finance.cancel'), 
               onClick: () => setRenameOpen(false)
             }
           )}
@@ -562,19 +581,19 @@ export default function Finance(){
         <UnifiedModal
           open={deleteOpen}
           onClose={()=>setDeleteOpen(false)}
-          title="Удалить категорию?"
+          title={t('finance.deleteCategory')}
           footer={createDangerFooter(
             { 
-              label: 'Удалить', 
+              label: t('finance.delete'), 
               onClick: confirmDelete
             },
             { 
-              label: 'Отмена', 
+              label: t('finance.cancel'), 
               onClick: () => setDeleteOpen(false)
             }
           )}
         >
-          <div className="text-sm text-gray-600">Все записи в этой категории будут удалены без возможности восстановления.</div>
+          <div className="text-sm text-gray-600">{t('finance.allRecordsWillBeDeleted')}</div>
         </UnifiedModal>
 
         {editorOpen && editorCat && (
@@ -634,14 +653,14 @@ export default function Finance(){
     <React.Fragment>
       <div className="finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
       <div className="finance-grid">
-        <div className="finance-cell"><div className="cell-head">Категория</div></div>
-        {FINANCE_MONTHS.map((m,idx) => (
-          <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
+        <div className="finance-cell"><div className="cell-head">{t('finance.category')}</div></div>
+        {translatedMonths.map((m,idx) => (
+          <div key={idx} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
             <div className="cell-head text-left" style={{color: '#64748b'}}>{m} {year}</div>
           </div>
         ))}
 
-        <SectionHeader title="Доходы" onAdd={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} />
+        <SectionHeader title={t('finance.income')} onAdd={()=>{ setNewType(FINANCE_TYPES.INCOME); setNewParent(null); setShowAdd(true) }} />
 
         {incomeCategories.map((row, idx, arr)=> {
           const hasChildren = (childrenMapIncome[row.id] || 0) > 0
@@ -679,7 +698,7 @@ export default function Finance(){
           )
         })}
 
-        <SectionHeader title="Расходы" onAdd={()=>{ setNewType(FINANCE_TYPES.EXPENSE); setNewParent(null); setShowAdd(true) }} />
+        <SectionHeader title={t('finance.expense')} onAdd={()=>{ setNewType(FINANCE_TYPES.EXPENSE); setNewParent(null); setShowAdd(true) }} />
 
         {expenseCategories.map((row, idx, arr)=> {
           const hasChildren = (childrenMapExpense[row.id] || 0) > 0
@@ -720,14 +739,14 @@ export default function Finance(){
 
       <div className="mt-4">
         <div className="finance-grid">
-        <div className="finance-cell"><div className="cell-head">Показатель</div></div>
-        {FINANCE_MONTHS.map((m,idx) => (
-          <div key={m} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
+        <div className="finance-cell"><div className="cell-head">{t('finance.indicator')}</div></div>
+        {translatedMonths.map((m,idx) => (
+          <div key={idx} className={"finance-cell " + (isCurrentYear && idx===currentMonth ? "head-current" : "finance-head")}>
             <div className="cell-head text-left" style={{color: '#64748b'}}>{m} {year}</div>
           </div>
         ))}
         <div className="finance-row contents">
-          <div className="finance-cell"><div className="cell-head">Доходы</div></div>
+          <div className="finance-cell"><div className="cell-head">{t('finance.income')}</div></div>
           {totalIncomeByMonth.map((v,i)=>(
             <div className={"finance-cell " + (isCurrentYear && i===currentMonth ? "col-current" : "")} key={i}>
               <div className="cell-head">{fmtEUR(v)}</div>
@@ -735,7 +754,7 @@ export default function Finance(){
           ))}
         </div>
         <div className="finance-row contents">
-          <div className="finance-cell"><div className="cell-head">Расходы</div></div>
+          <div className="finance-cell"><div className="cell-head">{t('finance.expense')}</div></div>
           {totalExpenseByMonth.map((v,i)=>(
             <div className={"finance-cell " + (isCurrentYear && i===currentMonth ? "col-current" : "")} key={i}>
               <div className="cell-head">{fmtEUR(v)}</div>
@@ -743,7 +762,7 @@ export default function Finance(){
           ))}
         </div>
                 <div className="finance-row contents">
-          <div className="finance-cell"><div className="cell-head summary-title balance-title">Баланс</div></div>
+          <div className="finance-cell"><div className="cell-head summary-title balance-title">{t('finance.balance')}</div></div>
           {balanceByMonth.map((v,i)=>(
             <div className={"finance-cell " + (isCurrentYear && i===currentMonth ? "col-current" : "")} key={i}>
               <div className="cell-head summary-value balance-value">{fmtEUR(v)}</div>
@@ -776,30 +795,30 @@ export default function Finance(){
       )}<UnifiedModal
         open={showAdd}
         onClose={()=>{ setShowAdd(false); setNewParent(null) }}
-        title={newParent ? 'Новая подкатегория' : 'Новая категория'}
-        subtitle={newParent ? `Родитель: ${newParent.name}` : undefined}
+        title={newParent ? t('finance.newSubcategory') : t('finance.newCategory')}
+        subtitle={newParent ? `${t('finance.parent')}: ${newParent.name}` : undefined}
         footer={createSimpleFooter(
           { 
-            label: newParent ? 'Добавить подкатегорию' : 'Добавить категорию', 
+            label: newParent ? t('finance.addSubcategory') : t('finance.addCategory'), 
             onClick: addCategory,
             disabled: !newName.trim()
           },
           { 
-            label: 'Отмена', 
+            label: t('actions.cancel'), 
             onClick: () => { setShowAdd(false); setNewParent(null) }
           }
         )}
       >
         <div className="flex items-center gap-3">
-          <label className="text-label text-gray-600 w-28">Тип</label>
+          <label className="text-label text-gray-600 w-28">{t('finance.type')}</label>
           <div className="flex-1"><TypeDropdown value={newType} onChange={setNewType} fullWidth /></div>
         </div>
         <div className="flex items-center gap-3 mt-3">
-          <label className="text-label text-gray-600 w-28">Название</label>
+          <label className="text-label text-gray-600 w-28">{t('finance.name')}</label>
           <CoreInput
             value={newName}
             onChange={e=>setNewName(e.target.value)}
-            placeholder={newParent ? 'Напр. Коммунальные' : 'Напр. Жильё'}
+            placeholder={newParent ? t('finance.placeholderUtilities') : t('finance.placeholderHousing')}
             className="flex-1"
           />
         </div>
@@ -808,15 +827,15 @@ export default function Finance(){
       <UnifiedModal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
-        title="Переименовать категорию"
+        title={t('finance.renameCategory')}
         footer={createSimpleFooter(
           { 
-            label: 'Сохранить', 
+            label: t('actions.save'), 
             onClick: submitRename,
             disabled: !renameValue.trim()
           },
           { 
-            label: 'Отмена', 
+            label: t('actions.cancel'), 
             onClick: () => setRenameOpen(false)
           }
         )}
@@ -831,19 +850,19 @@ export default function Finance(){
       <UnifiedModal
         open={deleteOpen}
         onClose={()=>setDeleteOpen(false)}
-        title="Удалить категорию?"
+        title={t('finance.deleteCategory')}
         footer={createDangerFooter(
           { 
-            label: 'Удалить', 
+            label: t('actions.delete'), 
             onClick: confirmDelete
           },
           { 
-            label: 'Отмена', 
+            label: t('actions.cancel'), 
             onClick: () => setDeleteOpen(false)
           }
         )}
       >
-        <div className="text-sm text-gray-600">Все записи в этой категории будут удалены без возможности восстановления.</div>
+        <div className="text-sm text-gray-600">{t('finance.allRecordsWillBeDeleted')}</div>
       </UnifiedModal>
 
       {editorOpen && editorCat && (

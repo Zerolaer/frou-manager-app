@@ -1,5 +1,6 @@
 import Dropdown from './ui/Dropdown'
 import type { Project } from '@/types/shared'
+import { useTranslation } from 'react-i18next'
 
 export default function ProjectDropdown({
   value, projects, onChange,
@@ -8,8 +9,10 @@ export default function ProjectDropdown({
   projects: Array<{id: string, name: string}>
   onChange: (v: string) => void
 }){
+  const { t } = useTranslation()
+  
   const options = [
-    { value: '', label: 'Без проекта' },
+    { value: '', label: t('projects.noProject') },
     ...projects.map(p => ({ value: p.id, label: p.name }))
   ]
 
@@ -18,8 +21,8 @@ export default function ProjectDropdown({
       options={options}
       value={value}
       onChange={onChange}
-      placeholder="Выберите проект"
-      ariaLabel="Выбор проекта"
+      placeholder={t('projects.selectProject')}
+      ariaLabel={t('aria.selectProject')}
       className="w-full"
       buttonClassName="w-full justify-between"
     />

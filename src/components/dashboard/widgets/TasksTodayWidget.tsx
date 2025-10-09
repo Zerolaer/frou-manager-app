@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CalendarCheck, CheckCircle, Circle, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
 
 interface Task {
@@ -14,6 +15,7 @@ interface Task {
 
 const TasksTodayWidget = () => {
   const { userId } = useSupabaseAuth();
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,16 +68,16 @@ const TasksTodayWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<CalendarCheck className="w-5 h-5" />}
-        title="Задачи на сегодня"
-        subtitle="Показывает задачи на сегодня"
+        title={t('dashboard.tasksToday')}
+        subtitle={t('dashboard.tasksToday')}
       />
 
       <div className="flex-1 p-6 flex flex-col">
-        {/* Прогресс */}
+        {/* Progress */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">
-              {completedTasks} из {totalTasks} выполнено
+              {completedTasks} {t('common.of')} {totalTasks} {t('dashboard.completedTasks')}
             </span>
             <span className="text-sm font-medium text-gray-900">
               {Math.round(progressPercentage)}%
@@ -89,12 +91,12 @@ const TasksTodayWidget = () => {
           </div>
         </div>
 
-        {/* Список задач */}
+        {/* Tasks list */}
         <div className="flex-1 space-y-2 overflow-y-auto">
           {tasks.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
               <Clock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">Нет задач на сегодня</p>
+              <p className="text-sm">{t('dashboard.noTasks')}</p>
             </div>
           ) : (
             tasks.slice(0, 5).map((task) => (
@@ -124,7 +126,7 @@ const TasksTodayWidget = () => {
         {tasks.length > 5 && (
           <div className="mt-2 text-center">
             <span className="text-xs text-gray-500">
-              и еще {tasks.length - 5} задач
+              and {tasks.length - 5} more tasks
             </span>
           </div>
         )}

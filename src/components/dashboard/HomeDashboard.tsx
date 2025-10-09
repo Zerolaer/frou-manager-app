@@ -1,6 +1,7 @@
 import React from 'react';
 import BentoGrid, { BentoCard } from './BentoGrid';
 import '@/home.css';
+import { useTranslation } from 'react-i18next';
 
 // Direct imports without lazy loading
 import TasksStatsWidget from './widgets/TasksStatsWidget';
@@ -12,44 +13,45 @@ import ProductivityWidget from './widgets/ProductivityWidget';
 import { DebugBanner } from './widgets/DebugBanner';
 
 export default function HomeDashboard() {
+  const { t } = useTranslation()
   return (
     <div className="home-page">
       <DebugBanner />
       
       <div className="home-grid">
-        {/* ПЕРВАЯ СТРОЧКА */}
-        {/* Созданные задачи */}
+        {/* FIRST ROW */}
+        {/* Created Tasks */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
           <TasksStatsWidget type="total" />
         </BentoCard>
 
-        {/* Закрытые задачи */}
+        {/* Completed Tasks */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
           <TasksStatsWidget type="completed" />
         </BentoCard>
 
-        {/* Продуктивность */}
+        {/* Productivity */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
           <ProductivityWidget />
         </BentoCard>
 
-        {/* Задачи на сегодня - растянутый блок */}
+        {/* Tasks Today - stretched block */}
         <BentoCard colSpan={1} rowSpan={2} className="bento-card">
           <TasksTodayWidget />
         </BentoCard>
 
-        {/* ВТОРАЯ СТРОЧКА */}
-        {/* Приоритеты */}
+        {/* SECOND ROW */}
+        {/* Priorities */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
           <PrioritiesWidget />
         </BentoCard>
 
-        {/* Запланированные траты */}
+        {/* Planned Expenses */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
           <PlannedExpensesWidget />
         </BentoCard>
 
-        {/* Бюджет месяца */}
+        {/* Monthly Budget */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
           <BudgetWidget />
         </BentoCard>

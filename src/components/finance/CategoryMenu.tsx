@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import CoreMenu from '@/components/ui/CoreMenu'
 import { Edit, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 type Pos = { x: number; y: number }
 
@@ -15,6 +16,7 @@ type Props = {
 }
 
 export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelete, canAddSub }: Props) {
+  const { t } = useTranslation()
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close on Escape
@@ -40,9 +42,9 @@ export default function CategoryMenu({ pos, onClose, onRename, onAddSub, onDelet
   }, [onClose])
 
   const options = [
-    { value: 'rename', label: 'Переименовать', icon: <Edit className="w-4 h-4" /> },
-    ...(canAddSub ?? true ? [{ value: 'addsub', label: 'Подкатегория', icon: <Plus className="w-4 h-4" /> }] : []),
-    { value: 'delete', label: 'Удалить', icon: <Trash2 className="w-4 h-4" />, destructive: true }
+    { value: 'rename', label: t('actions.edit'), icon: <Edit className="w-4 h-4" /> },
+    ...(canAddSub ?? true ? [{ value: 'addsub', label: t('finance.subcategory'), icon: <Plus className="w-4 h-4" /> }] : []),
+    { value: 'delete', label: t('actions.delete'), icon: <Trash2 className="w-4 h-4" />, destructive: true }
   ]
 
   return createPortal(

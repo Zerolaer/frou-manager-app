@@ -1,5 +1,6 @@
 /* src/pages/Notes.tsx */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
 import FolderSidebar from '@/components/FolderSidebar';
@@ -14,6 +15,7 @@ import '@/notes.css';
 
 function NotesPageContent() {
   const { handleError, handleSuccess } = useErrorHandler();
+  const { t } = useTranslation();
   const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -34,16 +36,16 @@ function NotesPageContent() {
         break
       case 'search':
         // Focus search input
-        const searchInput = document.querySelector('input[placeholder*="Поиск"]') as HTMLInputElement;
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
         if (searchInput) searchInput.focus();
         break
       case 'filter':
         // TODO: Implement filter functionality
-        handleSuccess('Фильтр будет реализован в следующей версии')
+        handleSuccess(t('notes.filterComingSoon') || 'Filter coming soon')
         break
       case 'export':
         // TODO: Implement export functionality
-        handleSuccess('Экспорт будет реализован в следующей версии')
+        handleSuccess(t('notes.exportComingSoon') || 'Export coming soon')
         break
       default:
         // Unknown action
@@ -76,10 +78,10 @@ function NotesPageContent() {
       }
     } catch (err) {
       if (!signal?.aborted) {
-        const error = err instanceof Error ? err : new Error('Ошибка загрузки заметок');
+        const error = err instanceof Error ? err : new Error(t('errors.unknownError'));
         setError(error);
         setIsLoading(false);
-        handleError(err, 'Загрузка заметок');
+        handleError(err, t('notes.loading') || 'Loading notes');
       }
     }
   }
@@ -108,6 +110,25 @@ function NotesPageContent() {
       handleError(error, id ? 'Обновление заметки' : 'Создание заметки');
     }
   }, [handleError, handleSuccess]);
+
+  // Автосохранение без уведомлений
+  const handleAutoSave = useCallback(async (draft: Partial<Note>, id?: string) => {
+    try {
+      if (!id) {
+        // При создании используем folder_id из draft (выбранный в модальном окне)
+        const created = await createNote(draft);
+        setNotes((prev) => [created, ...prev]);
+        handleSuccess('Заметка создана');
+      } else {
+        const updated = await updateNote(id, draft);
+        setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+        // НЕ показываем уведомление при автосохранении
+      }
+    } catch (error) {
+      // Только логируем ошибку автосохранения, не показываем пользователю
+      console.error('Auto-save failed:', error);
+    }
+  }, [handleSuccess]);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
@@ -204,6 +225,7 @@ function NotesPageContent() {
         note={editing}
         onClose={handleCloseModal}
         onSave={handleSave}
+        onAutoSave={handleAutoSave}
         onDelete={handleDelete}
       />
     </div>

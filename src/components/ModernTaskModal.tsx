@@ -6,9 +6,10 @@ import CoreMenu from '@/components/ui/CoreMenu'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
+import { useTranslation } from 'react-i18next'
 import type { Todo, Project } from '@/types/shared'
 
-// CSS анимации для чекбоксов
+// CSS animations for checkboxes
 const checkboxAnimations = `
   @keyframes checkboxPress {
     0% {
@@ -47,7 +48,7 @@ const checkboxAnimations = `
   }
 `;
 
-// Добавляем стили в head если их еще нет
+// Add styles to head if not present
 if (typeof document !== 'undefined' && !document.getElementById('checkbox-animations')) {
   const style = document.createElement('style');
   style.id = 'checkbox-animations';
@@ -75,6 +76,7 @@ type Props = {
 }
 
 export default function ModernTaskModal({ open, onClose, task, onUpdated }: Props) {
+  const { t } = useTranslation()
   // Add safety check for React context
   if (!React.useState) {
     return null
@@ -245,7 +247,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
       }
     } catch (error) {
       console.error('❌ Error saving task:', error)
-      alert('Ошибка при сохранении задачи: ' + (error as any).message)
+      alert(t('tasks.saveError') + ': ' + (error as any).message)
     }
   }
 
@@ -300,11 +302,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     }
   }
 
-  const projectName = projects.find(p => p.id === projectId)?.name || 'Без проекта'
-  const statusText = status === 'open' ? 'Открыта' : 'Закрыта'
+  const projectName = projects.find(p => p.id === projectId)?.name || t('tasks.noProject')
+  const statusText = status === 'open' ? t('tasks.open') : t('tasks.closed')
   
-  // Dynamic header - "Задача \ Проект \ Статус" format
-  const headerTitle = `Задача \\ ${projectName} \\ ${statusText}`
+  // Dynamic header - "Task \ Project \ Status" format
+  const headerTitle = `${t('tasks.task')} \\ ${projectName} \\ ${statusText}`
 
   return (
     <SideModal
@@ -317,13 +319,13 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         <div ref={menuRef}>
           <CoreMenu
             options={[
-              { value: 'duplicate', label: 'Дублировать' },
-              { value: 'delete', label: 'Удалить', destructive: true },
+              { value: 'duplicate', label: t('common.duplicate') },
+              { value: 'delete', label: t('common.delete'), destructive: true },
             ]}
             onSelect={(value) => {
               if (value === 'duplicate') {
                 // Minimal duplicate action: prefill title to indicate duplicate
-                setTitle((t) => `${t} (копия)`)
+                setTitle((t) => `${t} (${t('common.copy')})`)
               }
               if (value === 'delete') {
                 deleteTask()
@@ -338,7 +340,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors leading-none h-10"
           style={{ borderRadius: '12px', fontSize: '13px' }}
         >
-          Закрыть
+          {t('actions.close')}
         </button>
       }
     >
@@ -347,7 +349,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         <div className="flex h-full items-center justify-center">
           <div className="text-center space-y-4">
             <div className="inline-block w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
-            <p className="text-sm text-gray-500">Загрузка задачи...</p>
+            <p className="text-sm text-gray-500">{t('tasks.loadingTask')}</p>
           </div>
         </div>
       ) : (
@@ -356,7 +358,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {/* Title */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Название задачи</label>
+            <label className="text-sm font-medium text-gray-700">{t('tasks.taskTitle')}</label>
             <CoreInput
               type="text"
               value={title}
@@ -366,11 +368,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
 
           {/* Description */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Описание</label>
+            <label className="text-sm font-medium text-gray-700">{t('tasks.description')}</label>
             <CoreTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Подробности задачи"
+              placeholder={t('tasks.taskDetails')}
               rows={6}
             />
           </div>
@@ -378,7 +380,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           {/* Subtasks */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">Подзадачи</label>
+              <label className="text-sm font-medium text-gray-700">{t('tasks.subtasks')}</label>
               {todos.length > 0 && (
                 <span className="text-sm text-gray-500">
                   {todos.filter(t => t.done).length}/{todos.length}
@@ -391,7 +393,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                 type="text"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
-                placeholder="Добавить подзадачу"
+                placeholder={t('tasks.addSubtask')}
                 className="flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && addTodo()}
               />
@@ -505,7 +507,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         <aside className="w-[300px] bg-[#F2F7FA] p-0 flex flex-col flex-1 space-y-4 pt-6">
           {/* Project */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-            <div className="text-sm font-medium text-gray-700">Проект</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.project')}</div>
             <ProjectDropdown
               value={projectId}
               projects={projects}
@@ -515,7 +517,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
 
           {/* Status */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-            <div className="text-sm font-medium text-gray-700">Статус</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.status')}</div>
             <div className="relative rounded-xl h-10 flex p-1" style={{ backgroundColor: '#F2F7FA' }}>
               <div 
                 className={`absolute top-1 bottom-1 w-1/2 bg-black rounded-lg transition-transform duration-200 ${
@@ -530,7 +532,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     : 'text-gray-700'
                 }`}
               >
-                Открыта
+                {t('tasks.open')}
               </button>
               <button
                 onClick={() => setStatus('closed')}
@@ -540,14 +542,14 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     : 'text-gray-700'
                 }`}
               >
-                Закрыта
+                {t('tasks.closed')}
               </button>
             </div>
           </section>
 
           {/* Priority */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-            <div className="text-sm font-medium text-gray-700">Приоритет</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.priority')}</div>
             <div className="flex gap-2">
               <button
                 onClick={() => setPriority('low')}
@@ -557,7 +559,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Низкий
+                {t('tasks.lowPriority')}
               </button>
               <button
                 onClick={() => setPriority('normal')}
@@ -567,7 +569,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Обычный
+                {t('tasks.normalPriority')}
               </button>
               <button
                 onClick={() => setPriority('high')}
@@ -577,14 +579,14 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Высокий
+                {t('tasks.highPriority')}
               </button>
             </div>
           </section>
 
           {/* Date */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-            <div className="text-sm font-medium text-gray-700">Дата</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.date')}</div>
             <DateDropdown
               value={date}
               onChange={setDate}
@@ -593,22 +595,22 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
 
           {/* Tag */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-            <div className="text-sm font-medium text-gray-700">Тег</div>
+            <div className="text-sm font-medium text-gray-700">{t('tasks.tag')}</div>
             <CoreInput
               type="text"
               value={tag}
               onChange={(e) => setTag(e.target.value)}
-              placeholder="Напр. Work"
+              placeholder={t('tasks.tagExample')}
             />
           </section>
 
           {/* Task Info */}
           <div className="px-6 pb-6 text-center mt-auto">
             <div className="text-xs text-gray-600 mb-1">
-              Задача создана: {task?.created_at ? new Date(task.created_at).toLocaleDateString('ru-RU') : 'Не указано'}
+              {t('tasks.taskCreated')}: {task?.created_at ? new Date(task.created_at).toLocaleDateString() : t('common.notSpecified')}
             </div>
             <div className="text-xs text-gray-600">
-              Последнее редактирование: {task?.updated_at ? new Date(task.updated_at).toLocaleDateString('ru-RU') : 'Не указано'}
+              {t('tasks.lastEdited')}: {task?.updated_at ? new Date(task.updated_at).toLocaleDateString() : t('common.notSpecified')}
             </div>
           </div>
         </aside>

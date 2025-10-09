@@ -29,12 +29,11 @@ interface ModalInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function ModalInput({ error, className = '', ...props }: ModalInputProps) {
-  const baseClasses = 'w-full inline-flex items-center px-4 py-2.5 rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 border border-gray-200 outline-none leading-none'
-  const errorClasses = error ? 'focus:ring-2 focus:ring-red-500 focus:ring-offset-2' : 'focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
-  
+  // Используем корпоративный CoreInput стиль
   return (
     <input
-      className={`${baseClasses} ${errorClasses} ${className}`}
+      className={`w-full inline-flex items-center px-4 py-2.5 rounded-xl bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 border outline-none ${className}`}
+      style={{ borderColor: error ? '#ef4444' : '#E5E7EB' }}
       {...props}
     />
   )
@@ -45,12 +44,11 @@ interface ModalTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaEl
 }
 
 export function ModalTextarea({ error, className = '', ...props }: ModalTextareaProps) {
-  const baseClasses = 'w-full px-4 py-3 rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 border border-gray-200 outline-none resize-none'
-  const errorClasses = error ? 'focus:ring-2 focus:ring-red-500 focus:ring-offset-2' : 'focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
-  
+  // Используем корпоративный CoreTextarea стиль
   return (
     <textarea
-      className={`${baseClasses} ${errorClasses} ${className}`}
+      className={`w-full px-4 py-3 rounded-xl bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 border outline-none resize-none ${className}`}
+      style={{ borderColor: error ? '#ef4444' : '#E5E7EB' }}
       {...props}
     />
   )
