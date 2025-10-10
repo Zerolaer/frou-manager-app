@@ -39,7 +39,7 @@ export function DebugBanner() {
       <div className="font-semibold mb-2">{t('dashboard.diagnostics')}</div>
       <ul className="list-disc pl-5 space-y-1">
         {checks.map((c, i) => (
-          <li key={i}><span className={c.ok ? 'text-emerald-700' : 'text-red-700'}>{c.name}: {c.ok ? 'OK' : t('dashboard.error')}</span>{c.msg ? <span className="ml-2 opacity-80">{c.msg}</span> : null}</li>
+          <li key={i}><span className={c.ok ? 'text-emerald-700' : 'text-red-700'}>{c.name}: {c.ok ? 'OK' : (t('dashboard.error') || 'Error')}</span>{c.msg ? <span className="ml-2 opacity-80">{c.msg}</span> : null}</li>
         ))}
       </ul>
     </div>
