@@ -114,7 +114,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
         
         // Create map with names "Project 1", "Project 2", etc.
         Array.from(uniqueProjectIds).forEach((projectId, index) => {
-          projectMap[projectId] = t('dashboard.projectNumber', { number: index + 1 });
+          projectMap[projectId] = t('dashboard.projectNumber', { number: index + 1 }) || `Project ${index + 1}`;
         });
       }
 
@@ -136,7 +136,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
       filteredData.forEach(task => {
         // Only consider tasks with project
         if (task.project_id) {
-          const projectName = projectMap[task.project_id] || t('dashboard.projectNumber', { number: task.project_id.slice(0, 8) });
+          const projectName = projectMap[task.project_id] || (t('dashboard.projectNumber', { number: task.project_id.slice(0, 8) }) || `Project ${task.project_id.slice(0, 8)}`);
           projectCounts[projectName] = (projectCounts[projectName] || 0) + 1;
         }
       });
@@ -166,7 +166,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
   };
 
   const isPositive = stats.change >= 0;
-  const title = type === 'total' ? t('dashboard.createdTasks') : t('dashboard.completedTasks');
+  const title = type === 'total' ? (t('dashboard.createdTasks') || 'Created Tasks') : (t('dashboard.completedTasks') || 'Completed Tasks');
   const icon = type === 'total' ? CheckSquare : CheckSquare;
 
   return (
@@ -174,7 +174,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
       <WidgetHeader
         icon={<CheckSquare className="w-5 h-5" />}
         title={title}
-        subtitle={t('dashboard.tasksStatsDescription')}
+        subtitle={t('dashboard.tasksStatsDescription') || 'Task statistics'}
       />
 
       <div className="flex-1 p-6 flex flex-col justify-center">
@@ -198,7 +198,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
             </>
           )}
           <span className="text-xs text-gray-500">
-            {isPositive ? t('dashboard.moreThan') : t('dashboard.lessThan')} {t('dashboard.thanLastMonth')}
+            {isPositive ? (t('dashboard.moreThan') || 'More than') : (t('dashboard.lessThan') || 'Less than')} {t('dashboard.thanLastMonth') || 'than last month'}
           </span>
         </div>
 
@@ -237,7 +237,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
             })
           ) : (
             <div className="text-center text-gray-500 py-2">
-              <div className="text-xs">{t('dashboard.noProjectData')}</div>
+              <div className="text-xs">{t('dashboard.noProjectData') || 'No project data'}</div>
             </div>
           )}
         </div>
