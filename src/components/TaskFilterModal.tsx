@@ -97,7 +97,7 @@ export default function TaskFilterModal({
       size="md"
       footer={createStandardFooter(
         { 
-          label: `${t('common.apply')}${hasActiveFilters ? ` (${Object.values(form.fields).filter(f => f.value && f.value !== 'all' && f.value !== false && f.value !== true).length})` : ''}`, 
+          label: `${t('common.apply')}${hasActiveFilters ? ` (${Object.values(form.fields).filter(f => f.value && f.value !== 'all' && f.value !== false && f.value !== true && typeof f.value === 'string').length})` : ''}`, 
           onClick: handleApply, 
           loading: form.isSubmitting
         },
@@ -113,7 +113,7 @@ export default function TaskFilterModal({
           <ProjectDropdown
             value={form.fields.project.value}
             projects={projects}
-            onChange={(projectId) => form.setField('project', projectId || '')}
+            onChange={(projectId) => form.setField('project', String(projectId || ''))}
           />
         </div>
 

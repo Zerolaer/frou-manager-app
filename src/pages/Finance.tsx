@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MoreVertical } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient'
@@ -9,7 +9,6 @@ import { CoreInput } from '@/components/ui/CoreInput'
 import { YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
 import { LazyComponent, LazyFinanceRow } from '@/components/ui/LazyComponent'
 import { FinanceRowSkeleton } from '@/components/ui/LoadingStates'
-import React, { Suspense } from 'react'
 import type { Cat, CtxCat, CellCtx, EntryLite, FinanceCellCtx } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'

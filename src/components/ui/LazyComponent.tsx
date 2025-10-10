@@ -4,9 +4,8 @@ import { WidgetSkeleton, TaskCardSkeleton, FinanceRowSkeleton, ListItemSkeleton,
 
 interface LazyComponentProps<T extends ComponentType<any>> {
   importFunction: () => Promise<{ default: T }>
-  fallback?: ComponentType | React.ReactNode
+  fallback?: React.ReactNode
   preloadTriggers?: ('hover' | 'focus' | 'mousedown')[]
-  children?: React.ReactNode
   [key: string]: any
 }
 
@@ -15,7 +14,6 @@ export function LazyComponent<T extends ComponentType<any>>({
   importFunction,
   fallback,
   preloadTriggers = ['hover', 'focus'],
-  children,
   ...props
 }: LazyComponentProps<T>) {
   const LazyComponent = React.lazy(importFunction)
@@ -24,9 +22,7 @@ export function LazyComponent<T extends ComponentType<any>>({
   return (
     <div {...preloadProps}>
       <Suspense fallback={fallback || <WidgetSkeleton />}>
-        <LazyComponent {...props}>
-          {children}
-        </LazyComponent>
+        <LazyComponent {...props} />
       </Suspense>
     </div>
   )
@@ -104,11 +100,7 @@ export function IntersectionLazy<T extends ComponentType<any>>({
   }
 
   if (Component) {
-    return (
-      <Component {...props}>
-        {children}
-      </Component>
-    )
+    return <Component {...props} />
   }
 
   return (
@@ -169,11 +161,7 @@ export function ProgressiveLazy<T extends ComponentType<any>>({
   }
 
   if (Component) {
-    return (
-      <Component {...props}>
-        {children}
-      </Component>
-    )
+    return <Component {...props} />
   }
 
   if (isLoading) {
