@@ -259,6 +259,5 @@ export function UnifiedDropdown({
 // Export all dropdown variants
 export {
   Dropdown,
-  type DropdownOption,
-  UnifiedDropdown
+  type DropdownOption
 }
