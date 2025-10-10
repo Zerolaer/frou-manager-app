@@ -22,7 +22,7 @@ export function LazyComponent<T extends ComponentType<any>>({
   return (
     <div {...preloadProps}>
       <Suspense fallback={fallback || <WidgetSkeleton />}>
-        <LazyComponent {...props} />
+        <LazyComponent {...(props as any)} />
       </Suspense>
     </div>
   )
@@ -30,23 +30,23 @@ export function LazyComponent<T extends ComponentType<any>>({
 
 // Specialized lazy components for different use cases
 export function LazyWidget<T extends ComponentType<any>>(props: Omit<LazyComponentProps<T>, 'fallback'>) {
-  return <LazyComponent {...props} fallback={<WidgetSkeleton />} />
+  return <LazyComponent {...(props as any)} fallback={<WidgetSkeleton />} />
 }
 
 export function LazyTaskCard<T extends ComponentType<any>>(props: Omit<LazyComponentProps<T>, 'fallback'>) {
-  return <LazyComponent {...props} fallback={<TaskCardSkeleton />} />
+  return <LazyComponent {...(props as any)} fallback={<TaskCardSkeleton />} />
 }
 
 export function LazyFinanceRow<T extends ComponentType<any>>(props: Omit<LazyComponentProps<T>, 'fallback'>) {
-  return <LazyComponent {...props} fallback={<FinanceRowSkeleton />} />
+  return <LazyComponent {...(props as any)} fallback={<FinanceRowSkeleton />} />
 }
 
 export function LazyListItem<T extends ComponentType<any>>(props: Omit<LazyComponentProps<T>, 'fallback'>) {
-  return <LazyComponent {...props} fallback={<ListItemSkeleton />} />
+  return <LazyComponent {...(props as any)} fallback={<ListItemSkeleton />} />
 }
 
 export function LazyPage<T extends ComponentType<any>>(props: Omit<LazyComponentProps<T>, 'fallback'>) {
-  return <LazyComponent {...props} fallback={<PageSkeleton />} />
+  return <LazyComponent {...(props as any)} fallback={<PageSkeleton />} />
 }
 
 // Intersection-based lazy loading for below-the-fold content
@@ -100,7 +100,7 @@ export function IntersectionLazy<T extends ComponentType<any>>({
   }
 
   if (Component) {
-    return <Component {...props} />
+    return <Component {...(props as any)} />
   }
 
   return (
@@ -161,7 +161,7 @@ export function ProgressiveLazy<T extends ComponentType<any>>({
   }
 
   if (Component) {
-    return <Component {...props} />
+    return <Component {...(props as any)} />
   }
 
   if (isLoading) {

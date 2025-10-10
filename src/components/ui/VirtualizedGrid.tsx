@@ -100,9 +100,9 @@ export function VirtualizedGrid<T>({
       for (let col = visibleRange.startCol; col <= visibleRange.endCol; col++) {
         const index = row * dimensions.cols + col
         
-        if (index < items.length) {
+        if (index < data.length) {
           items.push({
-            item: items[index],
+            item: data[index],
             index,
             row,
             col,
