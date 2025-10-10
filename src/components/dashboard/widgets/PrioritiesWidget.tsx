@@ -98,8 +98,8 @@ const PrioritiesWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<Target className="w-5 h-5" />}
-        title={t('dashboard.priorities') || 'Priorities'}
-        subtitle={t('dashboard.prioritiesDescription') || 'Task priorities overview'}
+        title={String(t('dashboard.priorities') || 'Priorities')}
+        subtitle={String(t('dashboard.prioritiesDescription') || 'Task priorities overview')}
       />
 
       <div className="flex-1 p-6 flex flex-col justify-center">
@@ -187,11 +187,11 @@ const PrioritiesWidget = () => {
                   style={{ backgroundColor: PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS] }}
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  {t(`dashboard.priority.${priority}`) || priority}
+                  {String(t(`dashboard.priority.${priority}`) || priority)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">{count} {t('dashboard.tasks') || 'tasks'}</span>
+                <span className="text-sm font-bold text-gray-900">{count} {String(t('dashboard.tasks') || 'tasks')}</span>
                 <span className="text-sm text-gray-500">{getPercentage(count)}%</span>
               </div>
             </div>

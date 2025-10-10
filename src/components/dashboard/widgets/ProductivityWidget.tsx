@@ -138,8 +138,8 @@ const ProductivityWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<BarChart3 className="w-5 h-5" />}
-        title={t('dashboard.productivity') || 'Productivity'}
-        subtitle={t('dashboard.productivityDescription') || 'Weekly productivity overview'}
+        title={String(t('dashboard.productivity') || 'Productivity')}
+        subtitle={String(t('dashboard.productivityDescription') || 'Weekly productivity overview')}
       />
 
 
@@ -154,7 +154,7 @@ const ProductivityWidget = () => {
             <span className="text-base font-medium">+{averageProductivity}%</span>
           </div>
           <p className="text-base text-gray-600">
-            {getTotalCompleted()}/{totalTasks} {t('dashboard.tasks') || 'tasks'}
+            {getTotalCompleted()}/{totalTasks} {String(t('dashboard.tasks') || 'tasks')}
           </p>
         </div>
 
@@ -231,7 +231,7 @@ const ProductivityWidget = () => {
                     )}
                   </div>
                   <div className="text-xs text-gray-600 font-medium">
-                    {t(`dashboard.days.${day.day}`) || day.day}
+                    {String(t(`dashboard.days.${day.day}`) || day.day)}
                   </div>
                 </div>
               );
