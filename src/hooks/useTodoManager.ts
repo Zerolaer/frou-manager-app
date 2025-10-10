@@ -3,11 +3,13 @@ import type { Todo } from '@/types/shared'
 
 interface UseTodoManagerReturn {
   todos: Todo[]
-  addTodo: (text: string) => void
+  newTodo: string
+  addTodo: (text?: string) => void
   toggleTodo: (id: string) => void
   removeTodo: (id: string) => void
   updateTodoText: (id: string, text: string) => void
   setTodos: (todos: Todo[]) => void
+  setNewTodo: (text: string) => void
   clearTodos: () => void
   completedCount: number
   totalCount: number
@@ -38,18 +40,21 @@ interface UseTodoManagerReturn {
  */
 export function useTodoManager(initialTodos: Todo[] = []): UseTodoManagerReturn {
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
+  const [newTodo, setNewTodo] = useState('')
 
-  const addTodo = useCallback((text: string) => {
-    if (!text.trim()) return
+  const addTodo = useCallback((text?: string) => {
+    const todoText = text || newTodo
+    if (!todoText.trim()) return
     
-    const newTodo: Todo = {
+    const newTodoItem: Todo = {
       id: crypto.randomUUID(),
-      text: text.trim(),
+      text: todoText.trim(),
       done: false
     }
     
-    setTodos(prev => [...prev, newTodo])
-  }, [])
+    setTodos(prev => [...prev, newTodoItem])
+    setNewTodo('')
+  }, [newTodo])
 
   const toggleTodo = useCallback((id: string) => {
     setTodos(prev => 
@@ -82,6 +87,7 @@ export function useTodoManager(initialTodos: Todo[] = []): UseTodoManagerReturn 
 
   const clearTodos = useCallback(() => {
     setTodos([])
+    setNewTodo('')
   }, [])
 
   const completedCount = todos.filter(t => t.done).length
@@ -91,11 +97,13 @@ export function useTodoManager(initialTodos: Todo[] = []): UseTodoManagerReturn 
 
   return {
     todos,
+    newTodo,
     addTodo,
     toggleTodo,
     removeTodo,
     updateTodoText,
     setTodos,
+    setNewTodo,
     clearTodos,
     completedCount,
     totalCount,

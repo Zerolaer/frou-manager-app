@@ -1,7 +1,9 @@
 import { logger } from '@/lib/monitoring'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { useForm } from '@/hooks/useForm'
+import { useTodoManager } from '@/hooks/useTodoManager'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
 import { CoreInput, CoreTextarea } from './ui/CoreInput'
@@ -21,63 +23,63 @@ type Props = {
 
 export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
   const { t } = useTranslation()
-  
-  // Add safety check for React context
-  if (!React.useState) {
-    return null
-  }
-  
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<'low'|'normal'|'high'>('normal')
-  const [tag, setTag] = useState('')
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [todoText, setTodoText] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<Date>(initialDate || new Date())
   const { createStandardFooter } = useModalActions()
 
-  // --- Project selection ---
-  const initialProject = (activeProject && activeProject !== 'ALL') ? (activeProject as string) : ''
-  const [projectId, setProjectId] = useState<string>(initialProject)
+  // Initialize form with validation
+  const form = useForm({
+    initialValues: {
+      title: '',
+      description: '',
+      priority: 'normal' as 'low'|'normal'|'high',
+      tag: '',
+      projectId: (activeProject && activeProject !== 'ALL') ? activeProject : '',
+      selectedDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+    },
+    validation: {
+      title: (value) => !value.trim() ? t('validation.titleRequired') : undefined,
+      priority: (value) => !['low', 'normal', 'high'].includes(value) ? t('validation.invalidPriority') : undefined
+    }
+  })
 
+  // Todo management
+  const todoManager = useTodoManager()
+
+  // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      // When opening, sync selection from activeProject.
-      setProjectId((activeProject && activeProject !== 'ALL') ? (activeProject as string) : '')
-      // Initialize date
+      form.reset()
+      todoManager.clearTodos()
+      // Set initial values
+      form.setField('projectId', (activeProject && activeProject !== 'ALL') ? activeProject : '')
       if (initialDate) {
-        setSelectedDate(initialDate)
+        form.setField('selectedDate', initialDate.toISOString().split('T')[0])
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeProject, initialDate])
 
-  function addTodo(){
-    const t = todoText.trim()
-    if (!t) return
-    setTodos(prev => [...prev, { id: String(Date.now()), text: t, done: false }])
-    setTodoText('')
-  }
-  function toggleTodo(id: string){ setTodos(prev => prev.map(x => x.id === id ? { ...x, done: !x.done } : x)) }
-  function removeTodo(id: string){ setTodos(prev => prev.filter(x => x.id !== id)) }
-
-  async function save(){
-    const t = title.trim()
-    if (!t) return
-    // Allow creating tasks without project (projectId can be empty string)
-    
-    logger.debug('📝 TaskAddModal save with projectId:', { projectId, type: typeof projectId })
-    
-    setLoading(true)
-    try {
-      // Pass projectId as-is (empty string means "Без проекта")
-      await onSubmit(t, description, String(priority), tag.trim(), todos, projectId, selectedDate)
-      setTitle(''); setDescription(''); setPriority('normal'); setTag(''); setTodos([]); setTodoText('')
+  // Submit handler
+  const handleSubmit = async () => {
+    await form.submit(async (values) => {
+      logger.debug('📝 TaskAddModal save with projectId:', { 
+        projectId: values.projectId, 
+        type: typeof values.projectId 
+      })
+      
+      await onSubmit(
+        values.title,
+        values.description,
+        values.priority,
+        values.tag,
+        todoManager.todos,
+        values.projectId,
+        new Date(values.selectedDate)
+      )
+      
+      // Reset and close
+      form.reset()
+      todoManager.clearTodos()
       onClose()
-    } finally {
-      setLoading(false)
-    }
+    })
   }
 
   return (
@@ -91,188 +93,151 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       footer={createStandardFooter(
         { 
           label: t('actions.add'), 
-          onClick: save, 
-          loading, 
-          disabled: !title.trim() 
+          onClick: handleSubmit, 
+          loading: form.isSubmitting, 
+          disabled: !form.isValid || !form.fields.title.value.trim()
         },
         { label: t('actions.cancel'), onClick: onClose }
       )}
     >
       <div className="space-y-6">
         {/* Проект и Дата */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">{t('tasks.project')} *</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.project')}
+            </label>
             <ProjectDropdown
-              value={projectId}
               projects={projects}
-              onChange={setProjectId}
+              value={form.fields.projectId.value}
+              onChange={(value) => form.setField('projectId', value)}
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">{t('tasks.dueDate')} *</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.date')}
+            </label>
             <DateDropdown
-              value={selectedDate.toISOString().split('T')[0]}
-              onChange={(value) => setSelectedDate(new Date(value))}
+              value={form.fields.selectedDate.value}
+              onChange={(date) => form.setField('selectedDate', date)}
             />
           </div>
         </div>
 
-        {/* Название */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">{t('tasks.taskTitle')} *</label>
+        {/* Заголовок */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('tasks.title')} <span className="text-red-500">*</span>
+          </label>
           <CoreInput
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={form.fields.title.value}
+            onChange={(e) => form.setField('title', e.target.value)}
+            onBlur={() => form.setTouched('title')}
             placeholder={t('tasks.titlePlaceholder')}
+            className={form.fields.title.touched && form.fields.title.error ? 'border-red-300' : ''}
           />
+          {form.fields.title.touched && form.fields.title.error && (
+            <p className="text-sm text-red-600 mt-1">{form.fields.title.error}</p>
+          )}
         </div>
 
         {/* Описание */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">{t('tasks.taskDescription')}</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('tasks.description')}
+          </label>
           <CoreTextarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={form.fields.description.value}
+            onChange={(e) => form.setField('description', e.target.value)}
             placeholder={t('tasks.descriptionPlaceholder')}
-            rows={4}
+            rows={3}
           />
         </div>
 
-        {/* Приоритет - 3 кнопки */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">{t('tasks.priority')}</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPriority('low')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                priority === 'low'
-                  ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+        {/* Приоритет и Тег */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.priority')}
+            </label>
+            <select
+              value={form.fields.priority.value}
+              onChange={(e) => form.setField('priority', e.target.value as 'low'|'normal'|'high')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {t('tasks.low')}
-            </button>
-            <button
-              onClick={() => setPriority('normal')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                priority === 'normal'
-                  ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {t('tasks.medium')}
-            </button>
-            <button
-              onClick={() => setPriority('high')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                priority === 'high'
-                  ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {t('tasks.high')}
-            </button>
-          </div>
-        </div>
-
-        {/* Тег */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">{t('tasks.tags')}</label>
-          <CoreInput
-            type="text"
-            value={tag}
-            onChange={(e) => setTag(e.target.value)}
-            placeholder={t('tasks.tagPlaceholder')}
-          />
-        </div>
-
-        {/* Подзадачи */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">{t('tasks.subtasks')}</label>
-            {todos.length > 0 && (
-              <span className="text-sm text-gray-500">
-                {todos.filter(t => t.done).length}/{todos.length}
-              </span>
-            )}
+              <option value="low">{t('tasks.priorityLow')}</option>
+              <option value="normal">{t('tasks.priorityNormal')}</option>
+              <option value="high">{t('tasks.priorityHigh')}</option>
+            </select>
           </div>
           
-          <div className="flex gap-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.tag')}
+            </label>
             <CoreInput
-              type="text"
-              value={todoText}
-              onChange={(e) => setTodoText(e.target.value)}
-              placeholder={t('tasks.addSubtask')}
-              className="flex-1"
-              onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+              value={form.fields.tag.value}
+              onChange={(e) => form.setField('tag', e.target.value)}
+              placeholder={t('tasks.tagPlaceholder')}
+            />
+          </div>
+        </div>
+
+        {/* Todo список */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('tasks.todos')}
+          </label>
+          
+          <div className="space-y-2">
+            {todoManager.todos.map(todo => (
+              <div key={todo.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <button
+                  onClick={() => todoManager.toggleTodo(todo.id)}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                    todo.done 
+                      ? 'bg-green-500 border-green-500 text-white' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {todo.done && <Check className="w-3 h-3" />}
+                </button>
+                
+                <span className={`flex-1 text-sm ${todo.done ? 'line-through text-gray-500' : ''}`}>
+                  {todo.text}
+                </span>
+                
+                <button
+                  onClick={() => todoManager.removeTodo(todo.id)}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex gap-2 mt-2">
+            <CoreInput
+              value={todoManager.newTodo || ''}
+              onChange={(e) => todoManager.setNewTodo(e.target.value)}
+              placeholder={t('tasks.addTodo')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  todoManager.addTodo()
+                }
+              }}
             />
             <button
-              onClick={addTodo}
-              disabled={!todoText.trim()}
-              className="w-10 h-10 flex-shrink-0 bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200"
-              style={{ borderRadius: '12px' }}
+              onClick={() => todoManager.addTodo()}
+              disabled={!todoManager.newTodo?.trim()}
+              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
           </div>
-          
-          {todos.length > 0 && (
-            <div className="space-y-3">
-              {todos.map((todo) => (
-                <div key={todo.id} className="flex items-center gap-3 border border-gray-200 p-3 hover:border-gray-300 transition-colors" style={{ borderRadius: '12px' }}>
-                  <div
-                    onClick={() => toggleTodo(todo.id)}
-                    style={{ 
-                      width: '24px', 
-                      height: '24px',
-                      borderRadius: '999px',
-                      backgroundColor: todo.done ? '#000000' : '#ffffff',
-                      border: '2px solid #000000',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      transition: 'background-color 0.2s ease'
-                    }}
-                  >
-                    {todo.done && (
-                      <svg 
-                        width="12" 
-                        height="12" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="white" 
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20,6 9,17 4,12"></polyline>
-                      </svg>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={todo.text}
-                    onChange={(e) => setTodos(prev => prev.map(t => 
-                      t.id === todo.id ? { ...t, text: e.target.value } : t
-                    ))}
-                    className="flex-1 bg-transparent border-none outline-none text-sm"
-                    style={{ textDecoration: todo.done ? 'line-through' : 'none', opacity: todo.done ? 0.6 : 1 }}
-                  />
-                  <button
-                    onClick={() => removeTodo(todo.id)}
-                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 text-gray-400" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </UnifiedModal>
