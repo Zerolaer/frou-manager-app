@@ -94,7 +94,7 @@ export default function PWAInstallPrompt() {
       {/* Notification */}
       {showNotification && (
         <Notification
-          message={t('pwa.installAvailable') || 'Приложение можно установить!'}
+          message={String(t('pwa.installAvailable') || 'Приложение можно установить!')}
           type="info"
           duration={5000}
           onClose={() => setShowNotification(false)}
@@ -120,10 +120,10 @@ export default function PWAInstallPrompt() {
 
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 mb-1">
-                  {t('pwa.installTitle') || 'Установить приложение'}
+                  {String(t('pwa.installTitle') || 'Установить приложение')}
                 </h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  {t('pwa.installDescription') || 'Быстрый доступ с главного экрана, работает оффлайн'}
+                  {String(t('pwa.installDescription') || 'Быстрый доступ с главного экрана, работает оффлайн')}
                 </p>
 
                 <div className="flex gap-2">
@@ -131,13 +131,13 @@ export default function PWAInstallPrompt() {
                     onClick={handleInstall}
                     className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
-                    {t('pwa.install') || 'Установить'}
+                    {String(t('pwa.install') || 'Установить')}
                   </button>
                   <button
                     onClick={handleDismiss}
                     className="py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                   >
-                    {t('common.later') || 'Позже'}
+                    {String(t('common.later') || 'Позже')}
                   </button>
                 </div>
               </div>
