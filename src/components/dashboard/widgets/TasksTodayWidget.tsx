@@ -60,8 +60,8 @@ const TasksTodayWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<CalendarCheck className="w-5 h-5" />}
-        title={t('dashboard.tasksToday')}
-        subtitle={t('dashboard.tasksToday')}
+        title={t('dashboard.tasksToday') || 'Tasks Today'}
+        subtitle={t('dashboard.tasksToday') || 'Tasks Today'}
       />
 
       <div className="flex-1 p-6 flex flex-col">
@@ -69,7 +69,7 @@ const TasksTodayWidget = () => {
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">
-              {completedTasks} {t('common.of')} {totalTasks} {t('dashboard.completedTasks')}
+              {completedTasks} {t('common.of') || 'of'} {totalTasks} {t('dashboard.completedTasks') || 'completed tasks'}
             </span>
             <span className="text-sm font-medium text-gray-900">
               {Math.round(progressPercentage)}%
@@ -88,7 +88,7 @@ const TasksTodayWidget = () => {
           {tasks.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
               <Clock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">{t('dashboard.noTasks')}</p>
+              <p className="text-sm">{t('dashboard.noTasks') || 'No tasks for today'}</p>
             </div>
           ) : (
             tasks.slice(0, 5).map((task) => (
