@@ -4,6 +4,7 @@ import { MoreVertical } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
 import { LazyFeatures, LazyFinance, LazyComponents } from '@/utils/codeSplitting'
+import SectionHeader from '@/components/finance/SectionHeader'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
 import { YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
