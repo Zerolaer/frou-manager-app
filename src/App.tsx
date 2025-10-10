@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { ToastProvider } from './lib/toast'
+import { NotificationProvider } from './components/NotificationProvider'
 import { SkipLinks } from './components/AccessibleComponents'
 import AppLoader from './components/AppLoader'
 
@@ -91,7 +92,8 @@ export default function App(){
   // Handle preloader completion
   return (
     <ToastProvider>
-      <AppErrorBoundary>
+      <NotificationProvider>
+        <AppErrorBoundary>
         <SkipLinks />
         <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
           <Suspense fallback={<AppLoader />}>
@@ -132,7 +134,8 @@ export default function App(){
         <Suspense fallback={null}>
           <PWAInstallPrompt />
         </Suspense>
-      </AppErrorBoundary>
+        </AppErrorBoundary>
+      </NotificationProvider>
     </ToastProvider>
   )
 }

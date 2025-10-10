@@ -21,7 +21,7 @@ function findCatById(id: string, list: Cat[]): Cat | undefined { return list.fin
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
-import { useErrorHandler } from '@/lib/errorHandler'
+import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { exportToJSON, exportToCSV, downloadFile, parseJSONImport } from '@/lib/financeExport'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
@@ -64,7 +64,7 @@ const fmtEUR = (n:number) => EURNoDecimals.format(n)
 
 export default function Finance(){
   const { t } = useTranslation()
-  const { handleError, handleSuccess } = useErrorHandler()
+  const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler()
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
   const { createSimpleFooter, createDangerFooter } = useModalActions()

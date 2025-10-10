@@ -3,6 +3,7 @@ import { X, Filter } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@/hooks/useForm'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { useNotificationContext } from './NotificationProvider'
 import ProjectDropdown from './ProjectDropdown'
 import type { Project } from '@/types/shared'
 
@@ -31,6 +32,7 @@ export default function TaskFilterModal({
 }: TaskFilterModalProps) {
   const { t } = useTranslation()
   const { createStandardFooter } = useModalActions()
+  const notifications = useNotificationContext()
 
   // Initialize form with current filters
   const form = useForm({
@@ -65,6 +67,7 @@ export default function TaskFilterModal({
     }
     
     onFiltersChange(newFilters)
+    notifications.showInfo(t('tasks.filtersApplied') || 'Фильтры применены')
     onClose()
   }
 
@@ -75,6 +78,7 @@ export default function TaskFilterModal({
     }
     form.reset()
     onFiltersChange(emptyFilters)
+    notifications.showInfo(t('tasks.filtersReset') || 'Фильтры сброшены')
     onClose()
   }
 

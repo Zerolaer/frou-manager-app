@@ -7,7 +7,7 @@ import FolderSidebar from '@/components/FolderSidebar';
 import NotesFilterModal, { type NotesFilters } from '@/components/NotesFilterModal';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
-import { useErrorHandler } from '@/lib/errorHandler';
+import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler';
 import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
@@ -17,7 +17,7 @@ import { logger } from '@/lib/monitoring';
 import '@/notes.css';
 
 function NotesPageContent() {
-  const { handleError, handleSuccess } = useErrorHandler();
+  const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler();
   const { t } = useTranslation();
   const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();

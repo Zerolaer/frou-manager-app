@@ -12,7 +12,7 @@ import TaskFilterModal, { type TaskFilters } from '@/components/TaskFilterModal'
 import TaskCalendarModal from '@/components/TaskCalendarModal'
 import TaskSearchModal from '@/components/TaskSearchModal'
 import '@/tasks.css'
-import { useErrorHandler } from '@/lib/errorHandler'
+import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
@@ -167,7 +167,7 @@ import type { Project, Todo, TaskItem } from '@/types/shared'
 
 export default function Tasks(){
   const { t } = useTranslation()
-  const { handleError, handleSuccess } = useErrorHandler()
+  const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler()
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const { isMobile } = useMobileDetection()
   const [viewTask, setViewTask] = React.useState<TaskItem|null>(null)

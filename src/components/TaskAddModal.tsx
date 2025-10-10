@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { useForm } from '@/hooks/useForm'
 import { useTodoManager } from '@/hooks/useTodoManager'
+import { useNotificationContext } from './NotificationProvider'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
 import { CoreInput, CoreTextarea } from './ui/CoreInput'
@@ -24,6 +25,7 @@ type Props = {
 export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
   const { t } = useTranslation()
   const { createStandardFooter } = useModalActions()
+  const notifications = useNotificationContext()
 
   // Initialize form with validation
   const form = useForm({
@@ -60,25 +62,33 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   // Submit handler
   const handleSubmit = async () => {
     await form.submit(async (values) => {
-      logger.debug('📝 TaskAddModal save with projectId:', { 
-        projectId: values.projectId, 
-        type: typeof values.projectId 
-      })
-      
-      await onSubmit(
-        values.title,
-        values.description,
-        values.priority,
-        values.tag,
-        todoManager.todos,
-        values.projectId,
-        new Date(values.selectedDate)
-      )
-      
-      // Reset and close
-      form.reset()
-      todoManager.clearTodos()
-      onClose()
+      try {
+        logger.debug('📝 TaskAddModal save with projectId:', { 
+          projectId: values.projectId, 
+          type: typeof values.projectId 
+        })
+        
+        await onSubmit(
+          values.title,
+          values.description,
+          values.priority,
+          values.tag,
+          todoManager.todos,
+          values.projectId,
+          new Date(values.selectedDate)
+        )
+        
+        // Show success notification
+        notifications.showSuccess(t('tasks.taskCreated') || 'Задача создана!')
+        
+        // Reset and close
+        form.reset()
+        todoManager.clearTodos()
+        onClose()
+      } catch (error) {
+        logger.error('Failed to create task:', error)
+        notifications.showError(t('tasks.createError') || 'Ошибка при создании задачи')
+      }
     })
   }
 
