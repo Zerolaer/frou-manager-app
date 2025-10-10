@@ -96,7 +96,7 @@ const PlannedExpensesWidget = () => {
         id: entry.id,
         amount: Number(entry.amount) || 0,
         note: entry.note,
-        category_name: categoryMap.get(entry.category_id) || t('dashboard.unknownCategory'),
+        category_name: categoryMap.get(entry.category_id) || (t('dashboard.unknownCategory') || 'Unknown Category'),
         month: currentMonth,
         year: currentYear
       }));
@@ -123,8 +123,8 @@ const PlannedExpensesWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<CreditCard className="w-5 h-5" />}
-        title={t('dashboard.plannedExpenses')}
-        subtitle={t('dashboard.expensesFor', { month: monthLabel })}
+        title={t('dashboard.plannedExpenses') || 'Planned Expenses'}
+        subtitle={t('dashboard.expensesFor', { month: monthLabel }) || `Expenses for ${monthLabel}`}
       />
 
       <div className="flex-1 p-6 flex flex-col min-h-0">
@@ -133,7 +133,7 @@ const PlannedExpensesWidget = () => {
           {expenses.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
               <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">{t('dashboard.noPlannedExpenses')}</p>
+              <p className="text-sm">{t('dashboard.noPlannedExpenses') || 'No planned expenses'}</p>
             </div>
           ) : (
             expenses.map((expense) => (
@@ -162,7 +162,7 @@ const PlannedExpensesWidget = () => {
         {expenses.length > 5 && (
           <div className="mt-2 text-center flex-shrink-0">
             <span className="text-xs text-gray-500">
-              {t('dashboard.andMore', { count: expenses.length - 5 })}
+              {t('dashboard.andMore', { count: expenses.length - 5 }) || `and ${expenses.length - 5} more`}
             </span>
           </div>
         )}

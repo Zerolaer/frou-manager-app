@@ -30,7 +30,7 @@ const WidgetHeader = ({ icon, title, subtitle, onMenuClick }: WidgetHeaderProps)
           <button
             onClick={onMenuClick}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label={t('aria.menu')}
+            aria-label={t('aria.menu') || 'Menu'}
           >
             <MoreVertical className="w-5 h-5 text-gray-400" />
           </button>
