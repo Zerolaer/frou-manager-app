@@ -9,6 +9,7 @@ import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
 
 import { preloadCriticalResources, analyzeBundleSize, registerServiceWorker } from './utils/performance'
+import { bundleAnalyzer } from './utils/bundleAnalyzer'
 import { isDevelopment } from './lib/env'
 import { clearQueryCache } from './hooks/useSupabaseQuery'
 import { indexedDBCache } from './lib/indexedDbCache'
@@ -24,6 +25,11 @@ preloadCriticalResources()
 // Analyze bundle size in development
 if (isDevelopment()) {
   setTimeout(analyzeBundleSize, 2000)
+  
+  // Advanced bundle analysis
+  setTimeout(() => {
+    bundleAnalyzer.logPerformanceReport()
+  }, 3000) // Wait for all bundles to load
 }
 
 // Expose cache utilities globally for debugging

@@ -153,8 +153,35 @@ export function preloadCriticalResources() {
     document.head.appendChild(dnsPrefetch)
   }
 
+  // Preload critical images
+  const criticalImages = [
+    '/images/login-hero.webp',
+    '/favicon.ico',
+    '/favicon.svg'
+  ]
+  
+  criticalImages.forEach(imagePath => {
+    const preload = document.createElement('link')
+    preload.rel = 'preload'
+    preload.as = 'image'
+    preload.href = imagePath
+    document.head.appendChild(preload)
+  })
+
+  // Preload critical UI components
+  const criticalComponents = [
+    () => import('../components/ui/LoadingStates'),
+    () => import('../components/NotificationProvider'),
+    () => import('../components/AppLoader')
+  ]
+  
+  // Load critical components immediately
+  criticalComponents.forEach(importFn => {
+    importFn().catch(err => logger.error('Failed to preload critical component:', err))
+  })
+
   // Prefetch critical routes on idle
-  const criticalRoutes = ['/finance', '/tasks', '/goals', '/notes']
+  const criticalRoutes = ['/finance', '/tasks', '/notes']
   
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
