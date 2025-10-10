@@ -1,6 +1,6 @@
 
 import React from 'react'
-import YearDropdown from '@/components/YearDropdown'
+import { YearDropdown } from '@/components/ui/UnifiedDropdown'
 import { Plus, BarChart3 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -18,7 +18,7 @@ export default function YearToolbar({ year, years, onYearChange, onAddCategory, 
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3">
-        <YearDropdown value={year} years={years} onChange={onYearChange} />
+        <YearDropdown value={year} years={years} onChange={(value) => onYearChange(typeof value === 'number' ? value : parseInt(String(value)))} />
       </div>
       <div className="flex gap-3">
         <button className="btn flex items-center gap-2" onClick={onAddCategory}>

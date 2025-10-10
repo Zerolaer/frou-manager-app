@@ -5,8 +5,7 @@ import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { useForm } from '@/hooks/useForm'
 import { useTodoManager } from '@/hooks/useTodoManager'
 import { useNotificationContext } from './NotificationProvider'
-import ProjectDropdown from './ProjectDropdown'
-import DateDropdown from './DateDropdown'
+import { ProjectDropdown, DateDropdown } from './ui/UnifiedDropdown'
 import { CoreInput, CoreTextarea } from './ui/CoreInput'
 import { Plus, Trash2, Check } from 'lucide-react'
 
@@ -120,7 +119,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <ProjectDropdown
               projects={projects}
               value={form.fields.projectId.value}
-              onChange={(value) => form.setField('projectId', value)}
+              onChange={(value) => form.setField('projectId', String(value))}
             />
           </div>
           
@@ -130,7 +129,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             </label>
             <DateDropdown
               value={form.fields.selectedDate.value}
-              onChange={(date) => form.setField('selectedDate', date)}
+              onChange={(date) => form.setField('selectedDate', String(date))}
             />
           </div>
         </div>

@@ -32,11 +32,8 @@ import ModernTaskModal from '@/components/ModernTaskModal'
 import TaskViewModal from '@/components/TaskViewModal'
 
 // Navigation Components
-import ProjectDropdown from '@/components/ProjectDropdown'
-import DateDropdown from '@/components/DateDropdown'
+import { ProjectDropdown, DateDropdown, YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
 import YearSelector from '@/components/YearSelector'
-import YearDropdown from '@/components/YearDropdown'
-import TypeDropdown from '@/components/TypeDropdown'
 import Sidebar from '@/components/Sidebar'
 import SidebarItem from '@/components/SidebarItem'
 import Header from '@/components/Header'

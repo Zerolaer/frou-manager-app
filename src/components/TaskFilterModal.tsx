@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from '@/hooks/useForm'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { useNotificationContext } from './NotificationProvider'
-import ProjectDropdown from './ProjectDropdown'
+import { ProjectDropdown } from './ui/UnifiedDropdown'
 import type { Project } from '@/types/shared'
 
 export interface TaskFilters {
@@ -97,11 +97,11 @@ export default function TaskFilterModal({
       size="md"
       footer={createStandardFooter(
         { 
-          label: `${t('common.apply')}${hasActiveFilters ? ` (${Object.values(form.fields).filter(f => f.value && f.value !== 'all' && f.value !== false).length})` : ''}`, 
+          label: `${t('common.apply')}${hasActiveFilters ? ` (${Object.values(form.fields).filter(f => f.value && f.value !== 'all' && f.value !== false && f.value !== true).length})` : ''}`, 
           onClick: handleApply, 
           loading: form.isSubmitting
         },
-        { label: t('common.reset'), onClick: handleReset, variant: 'outline' }
+        { label: t('common.reset'), onClick: handleReset }
       )}
     >
       <div className="space-y-6">

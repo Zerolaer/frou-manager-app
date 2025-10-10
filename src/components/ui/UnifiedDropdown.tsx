@@ -146,6 +146,68 @@ export function DateDropdown({
   )
 }
 
+// Year dropdown variant
+export interface YearDropdownProps extends UnifiedDropdownProps {
+  years: number[]
+}
+
+export function YearDropdown({ 
+  years,
+  value, 
+  onChange, 
+  placeholder = 'Выберите год...',
+  ...props 
+}: YearDropdownProps) {
+  const options: DropdownOption[] = years.map(year => ({
+    value: year.toString(),
+    label: year.toString()
+  }))
+
+  return (
+    <Dropdown
+      options={options}
+      value={value.toString()}
+      onChange={(newValue) => onChange(typeof newValue === 'number' ? newValue : parseInt(String(newValue)))}
+      placeholder={placeholder}
+      {...props}
+    />
+  )
+}
+
+// Type dropdown variant
+export interface TypeDropdownProps extends UnifiedDropdownProps {
+  types?: Array<{ value: string; label: string }>
+  fullWidth?: boolean
+}
+
+export function TypeDropdown({ 
+  types = [
+    { value: 'income', label: 'Доход' },
+    { value: 'expense', label: 'Расход' }
+  ],
+  fullWidth = false,
+  value, 
+  onChange, 
+  placeholder = 'Выберите тип...',
+  ...props 
+}: TypeDropdownProps) {
+  const options: DropdownOption[] = types.map(type => ({
+    value: type.value,
+    label: type.label
+  }))
+
+  return (
+    <Dropdown
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={fullWidth ? 'w-full' : props.className}
+      {...props}
+    />
+  )
+}
+
 // Generic unified dropdown
 export function UnifiedDropdown({
   options,
@@ -197,5 +259,12 @@ export function UnifiedDropdown({
 // Export all dropdown variants
 export {
   Dropdown,
-  type DropdownOption
+  type DropdownOption,
+  ProjectDropdown,
+  PriorityDropdown,
+  StatusDropdown,
+  DateDropdown,
+  YearDropdown,
+  TypeDropdown,
+  UnifiedDropdown
 }
