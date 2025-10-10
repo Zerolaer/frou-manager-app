@@ -12,6 +12,7 @@ const Header = lazy(() => import('./components/Header'))
 const Toaster = lazy(() => import('./components/Toaster'))
 const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
 const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
+const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 
 export default function App(){
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
@@ -127,6 +128,9 @@ export default function App(){
         </Suspense>
         <Suspense fallback={null}>
           <OfflineSupport />
+        </Suspense>
+        <Suspense fallback={null}>
+          <PWAInstallPrompt />
         </Suspense>
       </AppErrorBoundary>
     </ToastProvider>

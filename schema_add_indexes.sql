@@ -69,13 +69,12 @@ WHERE parent_id IS NOT NULL;
 -- ============================================
 
 -- Index for user-based queries (RLS filtering)
-CREATE INDEX IF NOT EXISTS idx_notes_folders_user_id 
-ON notes_folders(user_id);
+-- Note: notes_folders уже имеет notes_folders_user_id_idx из schema_notes_folders.sql
+-- Пропускаем создание дублирующего индекса
 
--- Index for parent_id (hierarchical queries)
-CREATE INDEX IF NOT EXISTS idx_notes_folders_parent_id 
-ON notes_folders(parent_id) 
-WHERE parent_id IS NOT NULL;
+-- Index for position (ordering)
+CREATE INDEX IF NOT EXISTS idx_notes_folders_position 
+ON notes_folders(position);
 
 -- ============================================
 -- TASKS_PROJECTS INDEXES

@@ -159,6 +159,8 @@ if (!authChecked) {
         <img 
           src="/images/login-hero.webp"
           alt="FROVO Hero"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover"
           style={{ objectPosition: 'center calc(50% + 200px)' }}
         />

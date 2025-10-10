@@ -23,6 +23,7 @@ import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/featur
 import { formatCurrencyEUR } from '@/lib/format'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { exportToJSON, exportToCSV, downloadFile, parseJSONImport } from '@/lib/financeExport'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { 
@@ -142,12 +143,10 @@ export default function Finance(){
         setShowStats(true)
         break
       case 'export':
-        // TODO: Implement export functionality
-        handleSuccess(t('finance.exportComingSoon'))
+        handleExport()
         break
       case 'import':
-        // TODO: Implement import functionality
-        handleSuccess(t('finance.importComingSoon'))
+        handleImport()
         break
       default:
         // Unknown action
@@ -478,6 +477,77 @@ export default function Finance(){
     }
     
     setCellCtxOpen(false); setCtxCellHighlight(null)
+  }
+
+  // Export functionality
+  function handleExport() {
+    const timestamp = new Date().toISOString().slice(0, 10)
+    
+    // Show export options
+    const exportFormat = window.confirm(
+      t('finance.exportFormat') || 'Экспортировать в JSON? (Отмена = CSV)'
+    )
+    
+    if (exportFormat) {
+      // Export as JSON
+      const jsonData = exportToJSON(incomeRaw, expenseRaw, year)
+      downloadFile(jsonData, `finance-${year}-${timestamp}.json`, 'application/json')
+      handleSuccess(t('finance.exportedJSON') || 'Экспортировано в JSON')
+    } else {
+      // Export as CSV
+      const csvData = exportToCSV(incomeRaw, expenseRaw, year)
+      downloadFile(csvData, `finance-${year}-${timestamp}.csv`, 'text/csv')
+      handleSuccess(t('finance.exportedCSV') || 'Экспортировано в CSV')
+    }
+  }
+
+  // Import functionality
+  function handleImport() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      
+      try {
+        const text = await file.text()
+        const data = parseJSONImport(text)
+        
+        if (!data) {
+          handleError(t('finance.invalidImportFile') || 'Неверный формат файла')
+          return
+        }
+        
+        // Confirm import
+        const confirm = window.confirm(
+          t('finance.confirmImport', { year: data.year }) || 
+          `Импортировать данные за ${data.year}? Это перезапишет текущие данные.`
+        )
+        
+        if (!confirm) return
+        
+        // Apply imported data
+        setIncomeRaw(data.income)
+        setExpenseRaw(data.expense)
+        setYear(data.year)
+        
+        // Save to cache
+        if (userId) {
+          writeCache(userId, data.year, {
+            income: data.income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
+            expense: data.expense.map(({id,name,values,parent_id})=>({id,name,values,parent_id}))
+          })
+        }
+        
+        handleSuccess(t('finance.importedSuccessfully') || 'Данные успешно импортированы')
+      } catch (error) {
+        handleError(error, t('finance.importFailed') || 'Ошибка импорта')
+      }
+    }
+    
+    input.click()
   }
 
   useEffect(() => {

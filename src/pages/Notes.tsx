@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
 import FolderSidebar from '@/components/FolderSidebar';
+import NotesFilterModal, { type NotesFilters } from '@/components/NotesFilterModal';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
 import { useErrorHandler } from '@/lib/errorHandler';
@@ -11,6 +12,7 @@ import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { downloadNotes } from '@/lib/notesExport';
 import '@/notes.css';
 
 function NotesPageContent() {
@@ -26,6 +28,10 @@ function NotesPageContent() {
     const saved = localStorage.getItem('frovo_folders_collapsed')
     return saved === 'true'
   });
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<NotesFilters>({});
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -40,12 +46,10 @@ function NotesPageContent() {
         if (searchInput) searchInput.focus();
         break
       case 'filter':
-        // TODO: Implement filter functionality
-        handleSuccess(t('notes.filterComingSoon') || 'Filter coming soon')
+        setShowFilters(true)
         break
       case 'export':
-        // TODO: Implement export functionality
-        handleSuccess(t('notes.exportComingSoon') || 'Export coming soon')
+        handleExportNotes()
         break
       default:
         // Unknown action
@@ -156,6 +160,37 @@ function NotesPageContent() {
     setModalOpen(true);
   }, []);
 
+  // Export functionality
+  const handleExportNotes = useCallback(() => {
+    const exportFormat = window.confirm(
+      t('notes.exportFormat') || 'Экспортировать в JSON? (Отмена = Markdown)'
+    )
+    
+    const notesToExport = activeFolder === 'ALL' 
+      ? notes 
+      : notes.filter(n => n.folder_id === activeFolder)
+    
+    downloadNotes(notesToExport, exportFormat ? 'json' : 'markdown')
+    handleSuccess(
+      exportFormat 
+        ? (t('notes.exportedJSON') || 'Экспортировано в JSON')
+        : (t('notes.exportedMarkdown') || 'Экспортировано в Markdown')
+    )
+  }, [notes, activeFolder, handleSuccess, t])
+
+  // Apply filters to notes
+  const applyNotesFilters = useCallback((notesList: Note[]): Note[] => {
+    return notesList.filter(note => {
+      // Pinned filter
+      if (filters.pinned && !note.pinned) return false
+      
+      // Has content filter
+      if (filters.hasContent && (!note.content || !note.content.trim())) return false
+      
+      return true
+    })
+  }, [filters])
+
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
   }, []);
@@ -190,7 +225,7 @@ function NotesPageContent() {
           <div className="p-4 text-gray-500">Пока нет заметок. Создайте первую заметку!</div>
         ) : notes.length > 50 ? (
           <VirtualizedGrid
-            items={notes}
+            items={applyNotesFilters(notes)}
             columns={gridColumns}
             itemHeight={200}
             containerHeight={600}
@@ -208,7 +243,7 @@ function NotesPageContent() {
           />
         ) : (
           <div className="notes-grid">
-            {notes.map((n) => (
+            {applyNotesFilters(notes).map((n) => (
               <NoteCard
                 key={n.id}
                 note={n}
@@ -219,6 +254,13 @@ function NotesPageContent() {
           </div>
         )}
       </div>
+
+      <NotesFilterModal
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
 
       <NoteEditorModal
         open={modalOpen}

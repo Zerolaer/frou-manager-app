@@ -8,6 +8,9 @@ import ModernTaskModal from '@/components/ModernTaskModal'
 import TaskAddModal from '@/components/TaskAddModal'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
+import TaskFilterModal, { type TaskFilters } from '@/components/TaskFilterModal'
+import TaskCalendarModal from '@/components/TaskCalendarModal'
+import TaskSearchModal from '@/components/TaskSearchModal'
 import '@/tasks.css'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
@@ -196,6 +199,45 @@ export default function Tasks(){
   const { isMobile } = useMobileDetection()
   const [viewTask, setViewTask] = React.useState<TaskItem|null>(null)
   const [mobileDate, setMobileDate] = React.useState(new Date())
+  
+  // Filter state
+  const [showFilters, setShowFilters] = React.useState(false)
+  const [filters, setFilters] = React.useState<TaskFilters>({
+    status: 'all',
+    priority: 'all'
+  })
+  
+  // Calendar state
+  const [showCalendar, setShowCalendar] = React.useState(false)
+  
+  // Search state
+  const [showSearch, setShowSearch] = React.useState(false)
+
+  // Apply filters to tasks
+  const applyFilters = React.useCallback((taskList: TaskItem[]): TaskItem[] => {
+    return taskList.filter(task => {
+      // Project filter (already handled by activeProject)
+      
+      // Status filter
+      if (filters.status && filters.status !== 'all') {
+        if (filters.status === 'open' && task.status !== TASK_STATUSES.OPEN) return false
+        if (filters.status === 'closed' && task.status !== TASK_STATUSES.CLOSED) return false
+      }
+      
+      // Priority filter
+      if (filters.priority && filters.priority !== 'all') {
+        if (task.priority !== filters.priority) return false
+      }
+      
+      // Has description filter
+      if (filters.hasDescription && !task.description?.trim()) return false
+      
+      // Has todos filter
+      if (filters.hasTodos && (!task.todos || task.todos.length === 0)) return false
+      
+      return true
+    })
+  }, [filters])
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -204,16 +246,13 @@ export default function Tasks(){
         setOpenNewTask(true)
         break
       case 'filter':
-        // TODO: Implement filter functionality
-        handleSuccess(t('tasks.filterComingSoon'))
+        setShowFilters(true)
         break
       case 'calendar':
-        // TODO: Implement calendar view
-        handleSuccess(t('tasks.calendarComingSoon'))
+        setShowCalendar(true)
         break
       case 'search':
-        // TODO: Implement search functionality
-        handleSuccess(t('tasks.searchComingSoon'))
+        setShowSearch(true)
         break
       default:
         // Unknown action
@@ -947,8 +986,8 @@ const projectColorById = React.useMemo(() => {
   // Get tasks for mobile date
   const mobileTasks = React.useMemo(() => {
     const dayKey = format(mobileDate, 'yyyy-MM-dd')
-    return tasks[dayKey] || []
-  }, [tasks, mobileDate])
+    return applyFilters(tasks[dayKey] || [])
+  }, [tasks, mobileDate, applyFilters])
 
   // Mobile view - single day display
   if (isMobile) {
@@ -1124,7 +1163,7 @@ const projectColorById = React.useMemo(() => {
                 </div>
                 <div className="day-body">
                   
-                  {(tasks[key] || []).map((taskItem, index) => {
+                  {applyFilters(tasks[key] || []).map((taskItem, index) => {
                     const isDragged = isDragging && draggedTask?.id === taskItem.id
                     const isDropTarget = dropTarget?.dayKey === key && dropTarget?.index === index
                     const isGhost = isDragging && dragSource?.dayKey === key && dragSource?.index === index
@@ -1407,6 +1446,38 @@ const projectColorById = React.useMemo(() => {
         t={t}
       />}
 
+      {/* Filter modal */}
+      <TaskFilterModal
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+        projects={projects}
+      />
+
+      {/* Calendar modal */}
+      <TaskCalendarModal
+        open={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        tasks={tasks}
+        onDateSelect={(date) => {
+          if (isMobile) {
+            setMobileDate(date)
+          } else {
+            setStart(startOfWeek(date, { weekStartsOn: 1 }))
+          }
+        }}
+      />
+
+      {/* Search modal */}
+      <TaskSearchModal
+        open={showSearch}
+        onClose={() => setShowSearch(false)}
+        tasks={tasks}
+        onTaskSelect={(task) => {
+          setViewTask(task)
+        }}
+      />
 
     </div>
   )
