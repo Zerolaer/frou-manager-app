@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { indexedDBCache } from '@/lib/indexedDbCache'
 import { cacheMonitor } from '@/lib/cacheMonitor'
 import { logger } from '@/lib/monitoring'
+import { requestDeduplicator } from '@/utils/requestDeduplication'
 
 interface QueryOptions {
   enabled?: boolean
@@ -10,6 +11,9 @@ interface QueryOptions {
   staleTime?: number
   cacheTime?: number
   persist?: boolean // Enable IndexedDB persistence
+  deduplicate?: boolean // Enable request deduplication
+  timeout?: number
+  retries?: number
 }
 
 interface QueryResult<T> {
@@ -34,7 +38,10 @@ export function useSupabaseQuery<T>(
     refetchOnMount = true,
     staleTime = 5 * 60 * 1000, // 5 minutes
     cacheTime = 30 * 60 * 1000, // 30 minutes (increased)
-    persist = true // Enable persistence by default
+    persist = true, // Enable persistence by default
+    deduplicate = true, // Enable deduplication by default
+    timeout = 10000, // 10 seconds
+    retries = 2
   } = options
 
   const [data, setData] = useState<T | null>(null)
@@ -92,8 +99,10 @@ export function useSupabaseQuery<T>(
         setLoading(true)
       }
 
-      // Execute query
-      const result = await queryFn()
+      // Execute query with deduplication
+      const result = deduplicate 
+        ? await requestDeduplicator.deduplicate(queryKey, queryFn, { timeout, retries })
+        : await queryFn()
       
       if (!mountedRef.current) return
 
