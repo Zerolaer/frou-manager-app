@@ -261,24 +261,23 @@ body.tasks-mode #main-content {
   display: flex; 
   flex-direction: column;
   gap: 8px; 
-  overflow-y: scroll !important; /* Принудительный скролл */
+  overflow-y: scroll !important;
   background: #ffffff;
-  /* Отключаем выделение текста */
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  flex: 1; /* Занимаем все доступное пространство */
-  min-height: 0; /* Позволяем сжатие для работы скролла */
-  max-height: 100%; /* Ограничиваем по высоте родителя */
-  position: relative; /* Ensure proper stacking context for absolute positioned indicators */
-  /* Скролл без видимого бара */
-  -ms-overflow-style: none;  /* IE/Edge */
-  scrollbar-width: none;  /* Firefox */
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  position: relative;
+  /* Use global scrollbar-hide */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .day-body::-webkit-scrollbar {
-  display: none; /* Скрываем скроллбар для Chrome/Safari/Edge */
+  display: none;
 }
 .day-add {
   margin: 10px; display:none; 

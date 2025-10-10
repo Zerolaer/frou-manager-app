@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import React, { useState, useEffect } from 'react'
 import { X, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -53,9 +54,9 @@ export default function PWAInstallPrompt() {
     const { outcome } = await installPrompt.userChoice
 
     if (outcome === 'accepted') {
-      console.log('✅ User accepted PWA install')
+      logger.debug('✅ User accepted PWA install')
     } else {
-      console.log('❌ User dismissed PWA install')
+      logger.debug('❌ User dismissed PWA install')
     }
 
     // Hide banner

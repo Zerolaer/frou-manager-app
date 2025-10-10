@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { CACHE_KEYS } from '@/lib/constants'
+import { logger } from '@/lib/monitoring'
 
 interface CacheData {
   income: { id: string; name: string; values: number[]; parent_id?: string | null }[]
@@ -11,7 +12,7 @@ export function useFinanceCache() {
     try {
       localStorage.setItem(CACHE_KEYS.FINANCE(uid, year), JSON.stringify(data))
     } catch (error) {
-      console.warn('Failed to write finance cache:', error)
+      logger.warn('Failed to write finance cache:', error)
     }
   }, [])
 
@@ -20,7 +21,7 @@ export function useFinanceCache() {
       const raw = localStorage.getItem(CACHE_KEYS.FINANCE(uid, year))
       return raw ? JSON.parse(raw) : null
     } catch (error) {
-      console.warn('Failed to read finance cache:', error)
+      logger.warn('Failed to read finance cache:', error)
       return null
     }
   }, [])
@@ -29,7 +30,7 @@ export function useFinanceCache() {
     try {
       localStorage.removeItem(CACHE_KEYS.FINANCE(uid, year))
     } catch (error) {
-      console.warn('Failed to clear finance cache:', error)
+      logger.warn('Failed to clear finance cache:', error)
     }
   }, [])
 

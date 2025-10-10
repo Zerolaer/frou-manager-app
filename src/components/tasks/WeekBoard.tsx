@@ -9,6 +9,7 @@
  * - Modular design with customizable rendering
  */
 
+import { logger } from '@/lib/monitoring'
 import React, { useState, useCallback, useMemo } from 'react'
 import {
   DndContext,
@@ -304,7 +305,7 @@ export function WeekBoard({
       }
 
       // TODO: Show toast notification for error
-      console.error('Failed to move card:', error)
+      logger.error('Failed to move card:', error)
     }
   }, [dragState, optimisticDays, onMove, onReorder, getCardId, allowDrop, days])
 

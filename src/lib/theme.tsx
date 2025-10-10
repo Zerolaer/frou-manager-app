@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import React from 'react'
 
 // Theme system and dark mode utilities
@@ -283,7 +284,7 @@ class ThemeManager {
       try {
         listener(this.currentTheme)
       } catch (error) {
-        console.error('Theme listener error:', error)
+        logger.error('Theme listener error:', error)
       }
     })
   }

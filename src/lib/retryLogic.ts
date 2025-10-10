@@ -1,4 +1,5 @@
 // Retry logic for API requests and async operations
+import { logger } from './monitoring'
 
 export interface RetryOptions {
   maxRetries?: number
@@ -39,7 +40,7 @@ const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
     return false
   },
   onRetry: (attempt: number, error: any) => {
-    console.warn(`Retry attempt ${attempt} after error:`, error)
+    logger.warn(`Retry attempt ${attempt} after error:`, error)
   }
 }
 

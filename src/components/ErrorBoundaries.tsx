@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { useErrorHandler } from '@/lib/errorHandler'
 import { AccessibleButton } from './AccessibleComponents'
@@ -36,7 +37,7 @@ export class PageErrorBoundary extends Component<PageErrorBoundaryProps, PageErr
     const { retryCount } = this.state
 
     // Log error
-    console.error(`Error in ${pageName}:`, error, errorInfo)
+    logger.error(`Error in ${pageName}:`, { error, errorInfo })
     
     // Call custom error handler
     onError?.(error, errorInfo)
@@ -294,7 +295,7 @@ export const AppErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }
     <PageErrorBoundary
       pageName="Приложение"
       onError={(error, errorInfo) => {
-        console.error('App error:', error, errorInfo)
+        logger.error('App error:', { error, errorInfo })
       }}
     >
       {children}

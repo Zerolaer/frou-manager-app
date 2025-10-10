@@ -1,5 +1,6 @@
 // Cache performance monitoring utility
 import { isDevelopment } from './env'
+import { logger } from './monitoring'
 
 interface CacheStats {
   hits: number
@@ -56,7 +57,7 @@ class CacheMonitor {
     
     console.group('📊 Cache Performance Report')
     this.stats.forEach((stats, name) => {
-      console.log(`${name}:`, {
+      logger.debug(`${name}:`, {
         hits: stats.hits,
         misses: stats.misses,
         hitRate: `${stats.hitRate.toFixed(2)}%`,

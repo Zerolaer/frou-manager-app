@@ -1,10 +1,11 @@
+import { logger } from '@/lib/monitoring'
 import { useToast } from './toast'
 
 export function useErrorHandler() {
   const { push } = useToast()
 
   const handleError = (error: unknown, context?: string) => {
-    console.error(context ? `[${context}] Error:` : 'Error:', error)
+    logger.error(context ? `[${context}] Error:` : 'Error:', error)
     
     let message = 'Произошла ошибка'
     

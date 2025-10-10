@@ -3,7 +3,8 @@ import { format, isToday } from 'date-fns'
 import { Plus, CheckCircle, Circle, Clock, Flag } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { TaskItem, Project } from '@/types/shared'
-import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/constants'
+import { TASK_STATUSES } from '@/lib/constants'
+import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 
 interface MobileTasksDayProps {
   date: Date
@@ -42,32 +43,6 @@ export default function MobileTasksDay({
   const getProjectColor = (projectId: string) => {
     const project = projects.find(p => p.id === projectId)
     return project?.color || '#e5e7eb'
-  }
-
-  const getPriorityText = (priority?: string | null) => {
-    switch (priority) {
-      case TASK_PRIORITIES.HIGH:
-        return "High"
-      case TASK_PRIORITIES.MEDIUM:
-        return "Medium"
-      case TASK_PRIORITIES.LOW:
-        return "Low"
-      default:
-        return null
-    }
-  }
-
-  const getPriorityColor = (priority?: string | null): { background: string, text: string } => {
-    switch (priority) {
-      case TASK_PRIORITIES.HIGH:
-        return { background: '#fee2e2', text: '#dc2626' } // red
-      case TASK_PRIORITIES.MEDIUM:
-        return { background: '#fed7aa', text: '#ea580c' } // orange
-      case TASK_PRIORITIES.LOW:
-        return { background: '#dcfce7', text: '#16a34a' } // green
-      default:
-        return { background: '#f3f4f6', text: '#6b7280' } // gray default
-    }
   }
 
   const renderTaskCard = (task: TaskItem) => {

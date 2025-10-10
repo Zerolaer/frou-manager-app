@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import type { Cat } from '@/types/shared'
 
 interface ExportData {
@@ -104,7 +105,7 @@ export function parseJSONImport(jsonString: string): { income: Cat[], expense: C
       year: data.year
     }
   } catch (error) {
-    console.error('Failed to parse JSON:', error)
+    logger.error('Failed to parse JSON:', error)
     return null
   }
 }

@@ -1,4 +1,5 @@
 /* src/components/notes/NoteEditorModal.tsx */
+import { logger } from '@/lib/monitoring'
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import SideModal from '@/components/ui/SideModal'
@@ -53,7 +54,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
           setFolders(data);
         }
       } catch (error) {
-        console.error('Error loading folders:', error);
+        logger.error('Error loading folders:', error);
       }
     };
     
@@ -111,7 +112,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
       });
       onClose();
     } catch (error) {
-      console.error('Duplicate failed:', error);
+      logger.error('Duplicate failed:', error);
     }
   }
 
@@ -137,7 +138,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
         folder_id: folderId || null 
       }, note.id);
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      logger.error('Auto-save failed:', error);
     } finally {
       setSaving(false);
     }

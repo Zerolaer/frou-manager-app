@@ -1,6 +1,7 @@
 // Performance utilities
 import React from 'react'
 import { isDevelopment } from '@/lib/env'
+import { logger } from '@/lib/monitoring'
 
 // Debounce function for search and other frequent operations
 export function debounce<T extends (...args: any[]) => any>(
@@ -115,16 +116,14 @@ export function analyzeBundleSize() {
     sum + (resource.transferSize || 0), 0
   )
 
-  console.group('📦 Bundle Analysis')
-  console.log(`Total JS size: ${(totalSize / 1024).toFixed(2)} KB`)
+  logger.info('📦 Bundle Analysis')
+  logger.info(`Total JS size: ${(totalSize / 1024).toFixed(2)} KB`)
   
   jsFiles.forEach((resource: any) => {
     const size = (resource.transferSize || 0) / 1024
     const name = resource.name.split('/').pop()
-    console.log(`${name}: ${size.toFixed(2)} KB`)
+    logger.info(`${name}: ${size.toFixed(2)} KB`)
   })
-  
-  console.groupEnd()
 
   return {
     totalSize,
@@ -197,10 +196,10 @@ export function registerServiceWorker() {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {
-        console.log('SW registered: ', registration)
+        logger.info('SW registered: ', registration)
       })
       .catch(registrationError => {
-        console.log('SW registration failed: ', registrationError)
+        logger.error('SW registration failed: ', registrationError)
       })
   })
 }

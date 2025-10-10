@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/monitoring'
 import { CheckSquare, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
@@ -158,7 +159,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
 
       setProjectStats(projectStatsArray);
     } catch (error) {
-      console.error('Error loading tasks stats:', error);
+      logger.error('Error loading tasks stats:', error);
     } finally {
       setLoading(false);
     }

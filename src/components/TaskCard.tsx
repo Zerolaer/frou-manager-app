@@ -2,6 +2,7 @@ import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { getPriorityColor } from '@/lib/taskHelpers'
 
 // Функция для затемнения цвета (делает цвет темнее)
 function darkenColor(hex: string, factor: number = 0.3): string {
@@ -41,22 +42,6 @@ function getPastelColor(taskId: string): { light: string, dark: string } {
     return a & a
   }, 0)
   return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length]
-}
-
-// Функция для получения цвета приоритета
-function getPriorityColor(priority: string): { background: string, text: string } {
-  switch (priority) {
-    case 'high':
-      return { background: '#fee2e2', text: '#dc2626' } // красный
-    case 'normal':
-      return { background: '#f3f4f6', text: '#6b7280' } // серый
-    case 'medium':
-      return { background: '#fed7aa', text: '#ea580c' } // оранжевый
-    case 'low':
-      return { background: '#dcfce7', text: '#16a34a' } // зеленый
-    default:
-      return { background: '#f3f4f6', text: '#6b7280' } // серый по умолчанию
-  }
 }
 
 interface TaskCardProps {

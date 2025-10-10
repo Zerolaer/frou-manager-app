@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { indexedDBCache } from '@/lib/indexedDbCache'
 import { cacheMonitor } from '@/lib/cacheMonitor'
+import { logger } from '@/lib/monitoring'
 
 interface QueryOptions {
   enabled?: boolean
@@ -110,7 +111,7 @@ export function useSupabaseQuery<T>(
       queryCache.set(queryKey, cacheEntry)
       
       if (persist) {
-        indexedDBCache.set(queryKey, result.data, cacheTime).catch(console.error)
+        indexedDBCache.set(queryKey, result.data, cacheTime).catch(logger.error)
       }
 
       setData(result.data)
@@ -130,7 +131,7 @@ export function useSupabaseQuery<T>(
 
   const invalidate = useCallback(() => {
     queryCache.delete(queryKey)
-    indexedDBCache.delete(queryKey).catch(console.error)
+    indexedDBCache.delete(queryKey).catch(logger.error)
   }, [queryKey])
 
   useEffect(() => {
@@ -181,7 +182,7 @@ export function useSupabaseMutation<T, V = any>(
       if (options.invalidateQueries) {
         options.invalidateQueries.forEach(key => {
           queryCache.delete(key)
-          indexedDBCache.delete(key).catch(console.error)
+          indexedDBCache.delete(key).catch(logger.error)
         })
       }
 
@@ -214,7 +215,7 @@ export function useSupabaseMutation<T, V = any>(
 // Utility to clear all cache
 export function clearQueryCache() {
   queryCache.clear()
-  indexedDBCache.clear().catch(console.error)
+  indexedDBCache.clear().catch(logger.error)
 }
 
 // Utility to get cache stats

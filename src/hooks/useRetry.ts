@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import { useState, useCallback, useRef } from 'react'
 import { retry, retryStrategies, RetryOptions, RetryResult } from '@/lib/retryLogic'
 import { useErrorHandler } from '@/lib/errorHandler'
@@ -102,7 +103,7 @@ export function useApiWithRetry() {
         )
       },
       onRetry: (attempt, error) => {
-        console.log(`Retry attempt ${attempt} for API call:`, error)
+        logger.debug(`Retry attempt ${attempt} for API call:`, error)
       },
       ...options
     })

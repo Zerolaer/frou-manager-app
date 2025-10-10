@@ -62,60 +62,30 @@
   box-sizing: border-box;
 }
 
-/* Hide scrollbars but allow scrolling */
-body.finance-mode {
-  overflow-x: auto;
-  width: 100%;
-  max-width: 100%;
-}
-
-.finance-mode #main-content {
-  overflow-x: auto;
-  width: 100%;
-  max-width: 100%;
-}
-
-.finance-mode .finance-page .p-4 {
-  overflow-x: auto;
-  width: 100%;
-  max-width: 100%;
-}
-
-/* Hide scrollbars for all containers */
-body.finance-mode::-webkit-scrollbar,
-.finance-mode #main-content::-webkit-scrollbar,
-.finance-mode .finance-page::-webkit-scrollbar,
-.finance-mode .finance-page .p-4::-webkit-scrollbar {
-  display: none;
-}
-
+/* Hide scrollbars but allow scrolling - using global utility */
 body.finance-mode,
 .finance-mode #main-content,
 .finance-mode .finance-page,
-.finance-mode .finance-page .p-4 {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-/* Hide horizontal scrollbar but allow scrolling */
-.finance-mode html, 
+.finance-mode .finance-page .p-4,
+.finance-mode html,
 .finance-mode body {
   overflow-x: auto;
   width: 100%;
   max-width: 100%;
 }
 
-/* Hide scrollbar for webkit browsers */
-.finance-mode html::-webkit-scrollbar, 
-.finance-mode body::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for Firefox */
-.finance-mode html, 
-.finance-mode body {
+/* Apply scrollbar-hide utility */
+body.finance-mode,
+.finance-mode #main-content,
+.finance-mode .finance-page {
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+body.finance-mode::-webkit-scrollbar,
+.finance-mode #main-content::-webkit-scrollbar,
+.finance-mode .finance-page::-webkit-scrollbar {
+  display: none;
 }
 
 .finance-cell {

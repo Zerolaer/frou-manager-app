@@ -5,6 +5,7 @@ import { formatCurrencyEUR } from '@/lib/format';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
+import { logger } from '@/lib/monitoring'
 
 interface BudgetData {
   balance: number;
@@ -61,7 +62,7 @@ const BudgetWidget = () => {
       ]);
       
       if (catsRes.error || currentEntriesRes.error || previousEntriesRes.error) { 
-        console.error('Error loading data:', catsRes.error || currentEntriesRes.error || previousEntriesRes.error);
+        logger.error('Error loading data:', catsRes.error || currentEntriesRes.error || previousEntriesRes.error);
         setBudget({
           balance: 0, earned: 0, spent: 0,
           previousBalance: 0, previousEarned: 0, previousSpent: 0,
@@ -142,7 +143,7 @@ const BudgetWidget = () => {
         projectedSpent
       });
     } catch (error) {
-      console.error('Error loading budget data:', error);
+      logger.error('Error loading budget data:', error);
       setBudget({
         balance: 0, earned: 0, spent: 0,
         previousBalance: 0, previousEarned: 0, previousSpent: 0,

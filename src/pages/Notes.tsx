@@ -13,6 +13,7 @@ import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBound
 import { useApiWithRetry } from '@/hooks/useRetry';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { downloadNotes } from '@/lib/notesExport';
+import { logger } from '@/lib/monitoring';
 import '@/notes.css';
 
 function NotesPageContent() {
@@ -130,7 +131,7 @@ function NotesPageContent() {
       }
     } catch (error) {
       // Только логируем ошибку автосохранения, не показываем пользователю
-      console.error('Auto-save failed:', error);
+      logger.error('Auto-save failed:', error);
     }
   }, [handleSuccess]);
 
@@ -279,7 +280,7 @@ export default function NotesPage() {
     <PageErrorBoundary 
       pageName="Заметки"
       onError={(error, errorInfo) => {
-        console.error('Notes page error:', error, errorInfo);
+        logger.error('Notes page error:', { error, errorInfo });
       }}
     >
       <NotesPageContent />

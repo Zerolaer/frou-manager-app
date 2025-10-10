@@ -9,6 +9,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import CoreMenu from '@/components/ui/CoreMenu'
 import Dropdown from '@/components/ui/Dropdown'
 import { useTranslation } from 'react-i18next'
+import { logger } from '@/lib/monitoring'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -151,11 +152,11 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
 
   const save = useCallback(async (): Promise<boolean> => {
     if (!task) {
-      console.log('Save skipped: no task')
+      logger.debug('Save skipped: no task')
       return false
     }
     
-    console.log('Saving task:', { id: task.id, title, description, priority, tag, date, projectId, status })
+    logger.debug('Saving task:', { id: task.id, title, description, priority, tag, date, projectId, status })
     setSaving(true)
     
     const payload: any = {
@@ -179,11 +180,11 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
     setSaving(false)
     
     if (!error && data) {
-      console.log('Task saved successfully:', data)
+      logger.debug('Task saved successfully:', data)
       onUpdated(data as unknown as Task)
       return true
     } else {
-      console.error('Error saving task:', error)
+      logger.error('Error saving task:', error)
       return false
     }
   }, [task, title, description, priority, tag, date, todos, status, projectId, onUpdated])
@@ -191,7 +192,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   // Auto-save on field changes
   useEffect(() => {
     if (!open || !task) return
-    console.log('Auto-saving task:', { id: task.id, title, description, priority, tag, date, projectId })
+    logger.debug('Auto-saving task:', { id: task.id, title, description, priority, tag, date, projectId })
     const timer = setTimeout(() => {
       save()
     }, 500) // 500ms debounce
@@ -203,7 +204,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
     if (!open || !task) return
     // Skip initial load
     if (todos.length === 0 && (!task.todos || task.todos.length === 0)) return
-    console.log('Auto-saving todos:', { todos })
+    logger.debug('Auto-saving todos:', { todos })
     const timer = setTimeout(() => {
       save()
     }, 300)
@@ -213,7 +214,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
   // Auto-save when modal closes
   useEffect(() => {
     if (!open && task) {
-      console.log('Auto-saving on close')
+      logger.debug('Auto-saving on close')
       save()
     }
   }, [open, task, save])

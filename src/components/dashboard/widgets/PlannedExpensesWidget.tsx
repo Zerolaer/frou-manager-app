@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { logger } from '@/lib/monitoring'
 import { CreditCard, AlertTriangle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
@@ -52,7 +53,7 @@ const PlannedExpensesWidget = () => {
         .order('created_at', { ascending: true });
 
       if (categoriesRes.error) {
-        console.error('Error loading categories:', categoriesRes.error);
+        logger.error('Error loading categories:', categoriesRes.error);
         setExpenses([]);
         return;
       }
@@ -80,7 +81,7 @@ const PlannedExpensesWidget = () => {
         .order('created_at', { ascending: true });
 
       if (entriesRes.error) {
-        console.error('Error loading entries:', entriesRes.error);
+        logger.error('Error loading entries:', entriesRes.error);
         setExpenses([]);
         return;
       }
@@ -103,7 +104,7 @@ const PlannedExpensesWidget = () => {
       setExpenses(plannedExpenses);
       
     } catch (error) {
-      console.error('Error loading planned expenses:', error);
+      logger.error('Error loading planned expenses:', error);
       setExpenses([]);
     } finally {
       setLoading(false);

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { AccessibleButton } from './AccessibleComponents'
 import { announceToScreenReader } from '@/lib/accessibility'
 import { isProduction } from '../lib/env'
+import { logger } from '@/lib/monitoring'
 
 // Hook for detecting online/offline status
 export function useOnlineStatus() {
@@ -109,7 +110,7 @@ class OfflineQueue {
         if (item.retries >= 3) {
           // Remove failed operation after 3 retries
           this.queue.shift()
-          console.error('Operation failed after 3 retries:', item.id, error)
+          logger.error('Operation failed after 3 retries:', { itemId: item.id, error })
         } else {
           // Move to end of queue for retry
           this.queue.push(this.queue.shift()!)
@@ -136,7 +137,7 @@ class OfflineQueue {
     try {
       localStorage.setItem('offlineQueue', JSON.stringify(this.queue))
     } catch (error) {
-      console.error('Failed to save offline queue:', error)
+      logger.error('Failed to save offline queue:', error)
     }
   }
 
@@ -147,7 +148,7 @@ class OfflineQueue {
         this.queue = JSON.parse(stored)
       }
     } catch (error) {
-      console.error('Failed to load offline queue:', error)
+      logger.error('Failed to load offline queue:', error)
     }
   }
 }
@@ -257,10 +258,10 @@ export function registerServiceWorker() {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
-          console.log('SW registered: ', registration)
+          logger.debug('SW registered: ', registration)
         })
         .catch(registrationError => {
-          console.log('SW registration failed: ', registrationError)
+          logger.debug('SW registration failed: ', registrationError)
         })
     })
   }
@@ -291,7 +292,7 @@ export function createOfflineApiCall<T>(
       try {
         localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheData))
       } catch (error) {
-        console.warn('Failed to cache API result:', error)
+        logger.warn('Failed to cache API result:', error)
       }
       
       return result
@@ -308,7 +309,7 @@ export function createOfflineApiCall<T>(
           }
         }
       } catch (cacheError) {
-        console.warn('Failed to read from cache:', cacheError)
+        logger.warn('Failed to read from cache:', cacheError)
       }
       
       // Return offline fallback if available

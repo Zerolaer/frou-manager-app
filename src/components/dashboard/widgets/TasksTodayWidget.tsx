@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useTranslation } from 'react-i18next';
 import WidgetHeader from './WidgetHeader';
+import { getPriorityText } from '@/lib/taskHelpers';
+import { logger } from '@/lib/monitoring';
 
 interface Task {
   id: string;
@@ -37,26 +39,16 @@ const TasksTodayWidget = () => {
         .order('position', { ascending: true });
 
       if (error) {
-        console.error('Error loading today tasks:', error);
+        logger.error('Error loading today tasks:', error);
         setTasks([]);
       } else {
         setTasks(data || []);
       }
     } catch (error) {
-      console.error('Error loading today tasks:', error);
+      logger.error('Error loading today tasks:', error);
       setTasks([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-gray-900 bg-gray-100';
-      case 'medium': return 'text-gray-700 bg-gray-50';
-      case 'low': return 'text-gray-600 bg-gray-50';
-      case 'normal': return 'text-gray-600 bg-gray-50';
-      default: return 'text-gray-600 bg-gray-50';
     }
   };
 
@@ -114,8 +106,8 @@ const TasksTodayWidget = () => {
                   </p>
                 </div>
                 <div className="flex-shrink-0">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                    {task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : 'Normal'}
+                  <span className="px-2 py-1 rounded-full text-xs font-medium text-gray-900 bg-gray-100">
+                    {getPriorityText(task.priority) || 'Normal'}
                   </span>
                 </div>
               </div>

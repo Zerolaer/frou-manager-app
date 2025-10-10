@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/monitoring'
 import { BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
@@ -59,7 +60,7 @@ const ProductivityWidget = () => {
         .lte('date', endDate.toISOString().split('T')[0]);
 
       if (error) {
-        console.error('Error loading productivity data:', error);
+        logger.error('Error loading productivity data:', error);
         setWeekData([]);
         return;
       }
@@ -80,7 +81,7 @@ const ProductivityWidget = () => {
         const dayName = dayNames[dayOfWeek];
         
         // Debug logging
-        console.log(`Task: date=${task.date}, day=${dayName}, status="${task.status}", project_id=${task.project_id}`);
+        logger.debug(`Task: date=${task.date}, day=${dayName}, status="${task.status}", project_id=${task.project_id}`);
         
         dayStats[dayName].total++;
         if (task.status === 'closed') {
@@ -104,11 +105,11 @@ const ProductivityWidget = () => {
         });
       });
 
-      console.log('Final dayStats:', dayStats);
-      console.log('WeekDataArray:', weekDataArray);
+      logger.debug('Final dayStats:', dayStats);
+      logger.debug('WeekDataArray:', weekDataArray);
       setWeekData(weekDataArray);
     } catch (error) {
-      console.error('Error loading productivity data:', error);
+      logger.error('Error loading productivity data:', error);
       setWeekData([]);
     } finally {
       setLoading(false);
@@ -172,10 +173,10 @@ const ProductivityWidget = () => {
               
               // Debug for Thursday
               if (day.day === 'THU') {
-                console.log(`Thursday: tasks=${day.tasks}, completed=${day.completed}, maxTasks=${maxTasks}`);
-                console.log(`Thursday: totalHeight=${totalHeight}%, completionPercentage=${completionPercentage}, completedHeight=${completedHeight}%`);
-                console.log(`Thursday: completion percentage=${day.completed}/${day.tasks}=${Math.round(completionPercentage * 100)}%`);
-                console.log(`Thursday: allCompleted=${day.completed === day.tasks}, willShowFullBlack=${day.completed === day.tasks && day.tasks > 0}`);
+                logger.debug(`Thursday: tasks=${day.tasks}, completed=${day.completed}, maxTasks=${maxTasks}`);
+                logger.debug(`Thursday: totalHeight=${totalHeight}%, completionPercentage=${completionPercentage}, completedHeight=${completedHeight}%`);
+                logger.debug(`Thursday: completion percentage=${day.completed}/${day.tasks}=${Math.round(completionPercentage * 100)}%`);
+                logger.debug(`Thursday: allCompleted=${day.completed === day.tasks}, willShowFullBlack=${day.completed === day.tasks && day.tasks > 0}`);
               }
               
               return (

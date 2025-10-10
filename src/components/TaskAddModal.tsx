@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
@@ -66,7 +67,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
     if (!t) return
     // Allow creating tasks without project (projectId can be empty string)
     
-    console.log('📝 TaskAddModal save with projectId:', projectId, 'type:', typeof projectId)
+    logger.debug('📝 TaskAddModal save with projectId:', { projectId, type: typeof projectId })
     
     setLoading(true)
     try {

@@ -26,6 +26,7 @@ import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { exportToJSON, exportToCSV, downloadFile, parseJSONImport } from '@/lib/financeExport'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
+import { logger } from '@/lib/monitoring'
 import { 
   CACHE_VERSION, 
   MONTHS_IN_YEAR, 
@@ -400,7 +401,7 @@ export default function Finance(){
           })))
         }
       } catch (error) {
-        console.error('Error loading cell entries:', error)
+        logger.error('Error loading cell entries:', error)
       }
     }
 
@@ -473,7 +474,7 @@ export default function Finance(){
       handleSuccess(t('finance.dataInserted'))
     } catch (error) {
       handleError(t('finance.errorInsertingData'))
-      console.error('Paste error:', error)
+      logger.error('Paste error:', error)
     }
     
     setCellCtxOpen(false); setCtxCellHighlight(null)

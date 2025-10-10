@@ -1,4 +1,6 @@
 // IndexedDB cache for persisting data across sessions
+import { logger } from './monitoring'
+
 const DB_NAME = 'frou-manager-cache'
 const DB_VERSION = 1
 const STORE_NAME = 'query-cache'
@@ -22,7 +24,7 @@ class IndexedDBCache {
       const request = indexedDB.open(DB_NAME, DB_VERSION)
 
       request.onerror = () => {
-        console.error('IndexedDB failed to open:', request.error)
+        logger.error('IndexedDB failed to open:', request.error)
         reject(request.error)
       }
 
@@ -75,12 +77,12 @@ class IndexedDBCache {
         }
 
         request.onerror = () => {
-          console.error('Failed to get from IndexedDB:', request.error)
+          logger.error('Failed to get from IndexedDB:', request.error)
           reject(request.error)
         }
       })
     } catch (error) {
-      console.error('IndexedDB get error:', error)
+      logger.error('IndexedDB get error:', error)
       return null
     }
   }
@@ -104,12 +106,12 @@ class IndexedDBCache {
 
         request.onsuccess = () => resolve()
         request.onerror = () => {
-          console.error('Failed to set in IndexedDB:', request.error)
+          logger.error('Failed to set in IndexedDB:', request.error)
           reject(request.error)
         }
       })
     } catch (error) {
-      console.error('IndexedDB set error:', error)
+      logger.error('IndexedDB set error:', error)
     }
   }
 
@@ -125,12 +127,12 @@ class IndexedDBCache {
 
         request.onsuccess = () => resolve()
         request.onerror = () => {
-          console.error('Failed to delete from IndexedDB:', request.error)
+          logger.error('Failed to delete from IndexedDB:', request.error)
           reject(request.error)
         }
       })
     } catch (error) {
-      console.error('IndexedDB delete error:', error)
+      logger.error('IndexedDB delete error:', error)
     }
   }
 
@@ -146,12 +148,12 @@ class IndexedDBCache {
 
         request.onsuccess = () => resolve()
         request.onerror = () => {
-          console.error('Failed to clear IndexedDB:', request.error)
+          logger.error('Failed to clear IndexedDB:', request.error)
           reject(request.error)
         }
       })
     } catch (error) {
-      console.error('IndexedDB clear error:', error)
+      logger.error('IndexedDB clear error:', error)
     }
   }
 
@@ -184,12 +186,12 @@ class IndexedDBCache {
         }
 
         request.onerror = () => {
-          console.error('Failed to clean expired entries:', request.error)
+          logger.error('Failed to clean expired entries:', request.error)
           reject(request.error)
         }
       })
     } catch (error) {
-      console.error('IndexedDB cleanExpired error:', error)
+      logger.error('IndexedDB cleanExpired error:', error)
     }
   }
 }
@@ -199,6 +201,6 @@ export const indexedDBCache = new IndexedDBCache()
 
 // Clean expired entries on startup
 if (typeof window !== 'undefined') {
-  indexedDBCache.cleanExpired().catch(console.error)
+  indexedDBCache.cleanExpired().catch(logger.error)
 }
 

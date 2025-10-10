@@ -19,35 +19,8 @@ import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constant
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-
-// Function to get priority color
-function getPriorityColor(priority: string): { background: string, text: string } {
-  switch (priority) {
-    case TASK_PRIORITIES.HIGH:
-      return { background: '#fee2e2', text: '#dc2626' } // red
-    case TASK_PRIORITIES.MEDIUM:
-      return { background: '#fed7aa', text: '#ea580c' } // orange
-    case TASK_PRIORITIES.LOW:
-      return { background: '#dcfce7', text: '#16a34a' } // green
-    default:
-      return { background: '#f3f4f6', text: '#6b7280' } // gray default
-  }
-}
-
-function getPriorityText(priority?: string): string | null {
-  switch (priority) {
-    case TASK_PRIORITIES.HIGH:
-      return "High"
-    case TASK_PRIORITIES.MEDIUM:
-      return "Medium"
-    case TASK_PRIORITIES.LOW:
-      return "Low"
-    case TASK_PRIORITIES.NORMAL:
-      return "Normal"
-    default:
-      return null
-  }
-}
+import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
+import { logger } from '@/lib/monitoring'
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
@@ -288,7 +261,7 @@ export default function Tasks(){
       e.preventDefault()
     }
 
-    console.log('🖱️ Mouse down on task:', task.title)
+    logger.debug('🖱️ Mouse down on task:', task.title)
     
     // Save click position and task info
     setMouseDownPos({ x: e.clientX, y: e.clientY })
@@ -306,7 +279,7 @@ export default function Tasks(){
       )
       
       if (distance > 5 && pendingDrag) { // If mouse moved more than 5px and there's a task to drag
-        console.log('🚀 Starting drag, distance:', distance)
+        logger.debug('🚀 Starting drag, distance:', distance)
         setHasMoved(true)
         hasMovedRef.current = true
         
@@ -379,7 +352,7 @@ export default function Tasks(){
           const relativeY = e.clientY - bodyRect.top
           const bodyHeight = bodyRect.height
           
-          console.log('📍 Day body rect:', { relativeY, bodyHeight, mouseY: e.clientY, bodyTop: bodyRect.top })
+          logger.debug('📍 Day body rect:', { relativeY, bodyHeight, mouseY: e.clientY, bodyTop: bodyRect.top })
           
           if (taskCards.length === 0) {
             // Empty column - place at beginning
@@ -392,19 +365,19 @@ export default function Tasks(){
               const rect = card.getBoundingClientRect()
               const cardCenter = rect.top + rect.height / 2
               
-              console.log(`📍 Card ${i}: top=${rect.top}, center=${cardCenter}, mouseY=${e.clientY}, isAbove=${e.clientY < cardCenter}`)
+              logger.debug(`📍 Card ${i}: top=${rect.top}, center=${cardCenter}, mouseY=${e.clientY}, isAbove=${e.clientY < cardCenter}`)
               
               if (e.clientY < cardCenter) {
                 // If we're dragging from the same day, we need to adjust the index
                 // because the dragged task is hidden from taskCards
                 if (isSameDay && dragSource && dragSource.index <= i) {
                   targetIndex = i + 1 // Place after the card we're hovering over
-                  console.log('📍 Same day drag: adjusting index from', i, 'to', targetIndex)
+                  logger.debug('📍 Same day drag: adjusting index from', { from: i, to: targetIndex })
                 } else {
                   targetIndex = i
                 }
                 foundPosition = true
-                console.log('📍 Found position above card', i, 'at Y:', rect.top, 'final targetIndex:', targetIndex)
+                logger.debug('📍 Found position above card', { cardIndex: i, y: rect.top, targetIndex })
                 break
               }
             }
@@ -412,32 +385,31 @@ export default function Tasks(){
             // If we didn't find a position above any card, place at end
             if (!foundPosition) {
               targetIndex = isSameDay ? actualTaskCount : taskCards.length
-              console.log('📍 No position found above cards, placing at end (isSameDay:', isSameDay, 'actualTaskCount:', actualTaskCount, ')')
+              logger.debug('📍 No position found above cards, placing at end', { isSameDay, actualTaskCount })
             }
           }
         } else {
           // Fallback: if no day-body found, place at end
           targetIndex = isSameDay ? actualTaskCount : taskCards.length
         }
-        // console.log('🎯 Setting drop target:', { dayKey, targetIndex, taskCardsLength: taskCards.length, actualTaskCount, isSameDay })
         setDropTarget({ dayKey, index: targetIndex })
       }
     }
   }
 
   function handleMouseUp(e: MouseEvent | React.MouseEvent) {
-    console.log('🖱️ Mouse up, isDragging:', isDragging, 'hasMoved:', hasMoved, 'hasMovedRef:', hasMovedRef.current, 'isDraggingRef:', isDraggingRef.current)
+    logger.debug('🖱️ Mouse up', { isDragging, hasMoved, hasMovedRef: hasMovedRef.current, isDraggingRef: isDraggingRef.current })
     
     // Clear pending drag on mouse release
     if (pendingDrag) {
-      console.log('🔄 Clearing pending drag')
+      logger.debug('🔄 Clearing pending drag')
       setPendingDrag(null)
     }
     
     // CRITICAL: Only handle drop if we were actually dragging AND moved
     // Use refs for immediate check without state delay
     if (!isDraggingRef.current || !hasMovedRef.current || !draggedTask || !dragSource) {
-      console.log('❌ NOT CALLING handleDrop - no real drag detected')
+      logger.debug('❌ NOT CALLING handleDrop - no real drag detected')
       // Clean up drag state
       setDraggedTask(null)
       setDragSource(null)
@@ -453,7 +425,7 @@ export default function Tasks(){
       return
     }
     
-    console.log('✅✅✅ CALLING handleDrop - real drag detected ✅✅✅')
+    logger.debug('✅✅✅ CALLING handleDrop - real drag detected ✅✅✅')
     
     // Find final drop target - use same improved logic
     const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
@@ -491,7 +463,7 @@ export default function Tasks(){
           const relativeY = e.clientY - bodyRect.top
           const bodyHeight = bodyRect.height
           
-          console.log('📍 Final drop - Day body rect:', { relativeY, bodyHeight, mouseY: e.clientY, bodyTop: bodyRect.top })
+          logger.debug('📍 Final drop - Day body rect:', { relativeY, bodyHeight, mouseY: e.clientY, bodyTop: bodyRect.top })
           
           if (taskCards.length === 0) {
             // Empty column - place at beginning
@@ -504,19 +476,19 @@ export default function Tasks(){
               const rect = card.getBoundingClientRect()
               const cardCenter = rect.top + rect.height / 2
               
-              console.log(`📍 Final drop - Card ${i}: top=${rect.top}, center=${cardCenter}, mouseY=${e.clientY}, isAbove=${e.clientY < cardCenter}`)
+              logger.debug(`📍 Final drop - Card ${i}: top=${rect.top}, center=${cardCenter}, mouseY=${e.clientY}, isAbove=${e.clientY < cardCenter}`)
               
               if (e.clientY < cardCenter) {
                 // If we're dragging from the same day, we need to adjust the index
                 // because the dragged task is hidden from taskCards
                 if (isSameDay && dragSource && dragSource.index <= i) {
                   targetIndex = i + 1 // Place after the card we're hovering over
-                  console.log('📍 Final drop - Same day drag: adjusting index from', i, 'to', targetIndex)
+                  logger.debug('📍 Final drop - Same day drag: adjusting index from', { from: i, to: targetIndex })
                 } else {
                   targetIndex = i
                 }
                 foundPosition = true
-                console.log('📍 Final drop - Found position above card', i, 'at Y:', rect.top, 'final targetIndex:', targetIndex)
+                logger.debug('📍 Final drop - Found position above card', { cardIndex: i, y: rect.top, targetIndex })
                 break
               }
             }
@@ -524,7 +496,7 @@ export default function Tasks(){
             // If we didn't find a position above any card, place at end
             if (!foundPosition) {
               targetIndex = isSameDay ? actualTaskCount : taskCards.length
-              console.log('📍 Final drop - No position found above cards, placing at end (isSameDay:', isSameDay, 'actualTaskCount:', actualTaskCount, ')')
+              logger.debug('📍 Final drop - No position found above cards, placing at end', { isSameDay, actualTaskCount })
             }
           }
         } else {
@@ -532,7 +504,6 @@ export default function Tasks(){
           targetIndex = isSameDay ? actualTaskCount : taskCards.length
         }
         
-        // console.log('🎯 Final drop at:', { dayKey, targetIndex, taskCardsLength: taskCards.length, actualTaskCount, isSameDay })
         // Perform the drop
         handleDrop(dayKey, targetIndex)
       }
@@ -549,10 +520,10 @@ export default function Tasks(){
   }
 
   async function handleDrop(dayKey: string, index: number) {
-    console.log('📦 handleDrop called:', { dayKey, index, draggedTask: draggedTask?.title, fromDayKey: dragSource?.dayKey, fromIndex: dragSource?.index })
+    logger.debug('📦 handleDrop called:', { dayKey, index, draggedTask: draggedTask?.title, fromDayKey: dragSource?.dayKey, fromIndex: dragSource?.index })
     
     if (!draggedTask || !dragSource || !uid) {
-      console.log('❌ handleDrop early return - missing data')
+      logger.debug('❌ handleDrop early return - missing data')
       return
     }
 
@@ -562,11 +533,11 @@ export default function Tasks(){
 
     // Don't do anything if dropped in the same position
     if (fromDayKey === dayKey && fromIndex === toIndex) {
-      console.log('❌ handleDrop early return - same position')
+      logger.debug('❌ handleDrop early return - same position')
       return
     }
     
-    console.log('✅ handleDrop proceeding with move')
+    logger.debug('✅ handleDrop proceeding with move')
 
     const map = { ...tasks }
     const fromList = [...(map[fromDayKey] || [])]
@@ -616,7 +587,7 @@ export default function Tasks(){
           .eq('id', item.id)
       }
     } catch (error) {
-      console.error('Error updating task positions:', error)
+      logger.error('Error updating task positions:', error)
       handleError(error, 'Error moving task')
     }
   }
@@ -736,7 +707,7 @@ const projectColorById = React.useMemo(() => {
       if (cancelled) return
       
       if (error) {
-        console.error('❌ Error fetching tasks:', error)
+        logger.error('❌ Error fetching tasks:', error)
         return
       }
       
@@ -911,7 +882,7 @@ const projectColorById = React.useMemo(() => {
   async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date){
     if (!uid) return
     
-    console.log('🔧 createTask called with:', {
+    logger.debug('🔧 createTask called with:', {
       projectIdFromModal,
       projectIdType: typeof projectIdFromModal,
       activeProject,
@@ -926,23 +897,23 @@ const projectColorById = React.useMemo(() => {
     if (projectIdFromModal !== undefined && projectIdFromModal !== '') {
       // User explicitly selected a specific project in modal
       resolvedProject = projectIdFromModal
-      console.log('✅ Project explicitly set from modal:', resolvedProject)
+      logger.debug('✅ Project explicitly set from modal:', resolvedProject)
     } else if (projectIdFromModal === '') {
       // User selected "No project" (empty string) - task without project
       resolvedProject = null
-      console.log('✅ Task without project (null)')
+      logger.debug('✅ Task without project (null)')
     } else if (activeProject && activeProject !== TASK_PROJECT_ALL) {
       // Use active project if it's not "All projects"
       resolvedProject = activeProject
-      console.log('✅ Using active project:', resolvedProject)
+      logger.debug('✅ Using active project:', resolvedProject)
     } else if (projects.length > 0) {
       // Fallback to first project ("Uncategorized")
       resolvedProject = projects[0].id
-      console.log('⚠️ Fallback to first project:', resolvedProject)
+      logger.debug('⚠️ Fallback to first project:', resolvedProject)
     }
     // If no projects exist and no project selected, resolvedProject stays null
     
-    console.log('🎯 Final resolvedProject:', resolvedProject)
+    logger.debug('🎯 Final resolvedProject:', resolvedProject)
     
     const title = (titleFromModal ?? taskTitle).trim()
     const desc  = (descFromModal ?? taskDesc)
@@ -1052,7 +1023,7 @@ const projectColorById = React.useMemo(() => {
           task={viewTask}
           onUpdated={(t)=>{
             if(!t) return
-            console.log('🔄 onUpdated called for task:', t.title)
+            logger.debug('🔄 onUpdated called for task:', t.title)
             const map={...tasks}
             const oldDate = viewTask?.date || ""
             const newDate = t.date || ""
@@ -1063,7 +1034,7 @@ const projectColorById = React.useMemo(() => {
               const originalIndex = map[oldDate].findIndex(x => x.id === t.id)
               if(originalIndex >= 0) {
                 originalPosition = map[oldDate][originalIndex].position || originalIndex
-                console.log('📍 Original position:', originalPosition, 'at index:', originalIndex)
+                logger.debug('📍 Original position:', { originalPosition, originalIndex })
               }
             }
             
@@ -1080,24 +1051,24 @@ const projectColorById = React.useMemo(() => {
               if(existingIndex >= 0) {
                 // Update existing task, preserve position
                 newList[existingIndex] = {...newList[existingIndex], ...t, position: newList[existingIndex].position} as TaskItem
-                console.log('✅ Updated existing task at position:', newList[existingIndex].position)
+                logger.debug('✅ Updated existing task at position:', newList[existingIndex].position)
               } else {
                 // Add new task at original position or at end
                 const taskWithPosition = {...t, position: originalPosition >= 0 ? originalPosition : newList.length} as TaskItem
                 if(originalPosition >= 0 && originalPosition < newList.length) {
                   // Insert at original position
                   newList.splice(originalPosition, 0, taskWithPosition)
-                  console.log('📍 Inserted at original position:', originalPosition)
+                  logger.debug('📍 Inserted at original position:', originalPosition)
                 } else {
                   // Add to end
                   newList.push(taskWithPosition)
-                  console.log('📍 Added to end, position:', taskWithPosition.position)
+                  logger.debug('📍 Added to end, position:', taskWithPosition.position)
                 }
               }
               map[newDate] = newList
             }
             
-            console.log('🔄 Setting new tasks state')
+            logger.debug('🔄 Setting new tasks state')
             setTasks(map)
           }}
         />
@@ -1170,7 +1141,7 @@ const projectColorById = React.useMemo(() => {
                     
                     // Debug logging for drop target detection
                     if (dropTarget?.dayKey === key) {
-                      console.log(`🔍 Card ${index}: dropTarget.index=${dropTarget?.index}, index=${index}, isDropTarget=${isDropTarget}`)
+                      logger.debug(`🔍 Card ${index}: dropTarget.index=${dropTarget?.index}, index=${index}, isDropTarget=${isDropTarget}`)
                     }
                     
                     return (
@@ -1234,15 +1205,15 @@ const projectColorById = React.useMemo(() => {
                             handleMouseDown(e, taskItem, key, index)
                           }}
                           onClick={(e) => {
-                            console.log('🖱️ Click on task, hasMovedRef:', hasMovedRef.current, 'isDraggingRef:', isDraggingRef.current)
+                            logger.debug('🖱️ Click on task', { hasMovedRef: hasMovedRef.current, isDraggingRef: isDraggingRef.current })
                             
                             // Only open task modal if we haven't moved the mouse (not dragging)
                             // Use ref to check current state immediately
                             if (!hasMovedRef.current && !isDraggingRef.current) {
-                              console.log('✅ Opening task modal immediately')
+                              logger.debug('✅ Opening task modal immediately')
                               setViewTask(taskItem)
                             } else {
-                              console.log('❌ Not opening - was dragging')
+                              logger.debug('❌ Not opening - was dragging')
                             }
                           }}
                         >
@@ -1384,7 +1355,7 @@ const projectColorById = React.useMemo(() => {
         task={viewTask}
         onUpdated={(t)=>{
           if(!t) return
-          console.log('🔄 onUpdated (duplicate) called for task:', t.title)
+          logger.debug('🔄 onUpdated (duplicate) called for task:', t.title)
           const map={...tasks}
           const oldDate = viewTask?.date || ""
           const newDate = t.date || ""
@@ -1395,7 +1366,7 @@ const projectColorById = React.useMemo(() => {
             const originalIndex = map[oldDate].findIndex(x => x.id === t.id)
             if(originalIndex >= 0) {
               originalPosition = map[oldDate][originalIndex].position || originalIndex
-              console.log('📍 Original position (duplicate):', originalPosition, 'at index:', originalIndex)
+              logger.debug('📍 Original position (duplicate):', { originalPosition, originalIndex })
             }
           }
           
@@ -1412,24 +1383,24 @@ const projectColorById = React.useMemo(() => {
             if(existingIndex >= 0) {
               // Update existing task, preserve position
               newList[existingIndex] = {...newList[existingIndex], ...t, position: newList[existingIndex].position} as TaskItem
-              console.log('✅ Updated existing task (duplicate) at position:', newList[existingIndex].position)
+              logger.debug('✅ Updated existing task (duplicate) at position:', newList[existingIndex].position)
             } else {
               // Add new task at original position or at end
               const taskWithPosition = {...t, position: originalPosition >= 0 ? originalPosition : newList.length} as TaskItem
               if(originalPosition >= 0 && originalPosition < newList.length) {
                 // Insert at original position
                 newList.splice(originalPosition, 0, taskWithPosition)
-                console.log('📍 Inserted at original position (duplicate):', originalPosition)
+                logger.debug('📍 Inserted at original position (duplicate):', originalPosition)
               } else {
                 // Add to end
                 newList.push(taskWithPosition)
-                console.log('📍 Added to end (duplicate), position:', taskWithPosition.position)
+                logger.debug('📍 Added to end (duplicate), position:', taskWithPosition.position)
               }
             }
             map[newDate] = newList
           }
           
-          console.log('🔄 Setting new tasks state (duplicate)')
+          logger.debug('🔄 Setting new tasks state (duplicate)')
           setTasks(map)
         }}
       />

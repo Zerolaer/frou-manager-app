@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring'
 import React, { lazy, ComponentType } from 'react'
 import { isDevelopment } from '@/lib/env'
 
@@ -119,7 +120,7 @@ export function analyzeBundleSize() {
       if (entry.entryType === 'resource') {
         const resource = entry as PerformanceResourceTiming
         if (resource.name.includes('.js') || resource.name.includes('.css')) {
-          console.log(`Bundle loaded: ${resource.name} (${(resource.transferSize / 1024).toFixed(2)}KB)`)
+          logger.debug(`Bundle loaded: ${resource.name} (${(resource.transferSize / 1024).toFixed(2)}KB)`)
         }
       }
     })

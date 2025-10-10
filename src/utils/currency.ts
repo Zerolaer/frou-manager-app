@@ -1,4 +1,6 @@
 // Курсы валют к EUR (базовые значения, будут обновляться через API)
+import { logger } from '@/lib/monitoring'
+
 const EXCHANGE_RATES = {
   EUR: 1,
   USD: 0.85, // 1 USD = 0.85 EUR (примерно)
@@ -45,7 +47,7 @@ export async function fetchExchangeRates(): Promise<typeof EXCHANGE_RATES> {
     
     return cachedRates
   } catch (error) {
-    console.error('Error fetching exchange rates:', error)
+    logger.error('Error fetching exchange rates:', error)
     
     // Пытаемся загрузить из localStorage
     try {
@@ -59,7 +61,7 @@ export async function fetchExchangeRates(): Promise<typeof EXCHANGE_RATES> {
         }
       }
     } catch (e) {
-      console.error('Error loading cached rates:', e)
+      logger.error('Error loading cached rates:', e)
     }
     
     // Fallback на базовые курсы
@@ -92,6 +94,6 @@ export async function initializeExchangeRates(): Promise<void> {
   try {
     await fetchExchangeRates()
   } catch (error) {
-    console.error('Failed to initialize exchange rates:', error)
+    logger.error('Failed to initialize exchange rates:', error)
   }
 }

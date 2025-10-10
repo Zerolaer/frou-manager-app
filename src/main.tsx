@@ -13,6 +13,7 @@ import { isDevelopment } from './lib/env'
 import { clearQueryCache } from './hooks/useSupabaseQuery'
 import { indexedDBCache } from './lib/indexedDbCache'
 import { cacheMonitor } from './lib/cacheMonitor'
+import { logger } from './lib/monitoring'
 
 // Register service worker for caching
 registerServiceWorker()
@@ -33,17 +34,17 @@ if (typeof window !== 'undefined') {
       clearQueryCache()
       const cacheNames = await caches.keys()
       await Promise.all(cacheNames.map(name => caches.delete(name)))
-      console.log('✅ All caches cleared')
+      logger.info('✅ All caches cleared')
     },
     // Clear query cache only
     clearQueries: () => {
       clearQueryCache()
-      console.log('✅ Query cache cleared')
+      logger.info('✅ Query cache cleared')
     },
     // Clear IndexedDB only
     clearDB: async () => {
       await indexedDBCache.clear()
-      console.log('✅ IndexedDB cleared')
+      logger.info('✅ IndexedDB cleared')
     },
     // Show cache stats
     stats: () => {
@@ -52,16 +53,16 @@ if (typeof window !== 'undefined') {
     // Show all cache keys
     keys: async () => {
       const cacheNames = await caches.keys()
-      console.log('Cache Names:', cacheNames)
+      logger.info('Cache Names:', cacheNames)
       for (const name of cacheNames) {
         const cache = await caches.open(name)
         const keys = await cache.keys()
-        console.log(`${name}:`, keys.map(k => k.url))
+        logger.info(`${name}:`, keys.map(k => k.url))
       }
     }
   }
   
-  console.log('💡 Cache utilities available: __cache.clearAll(), __cache.stats(), __cache.keys()')
+  logger.info('💡 Cache utilities available: __cache.clearAll(), __cache.stats(), __cache.keys()')
 }
 
 

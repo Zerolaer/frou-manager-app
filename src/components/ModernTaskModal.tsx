@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
 import { useTranslation } from 'react-i18next'
 import type { Todo, Project } from '@/types/shared'
+import { logger } from '@/lib/monitoring'
 
 // CSS animations for checkboxes
 const checkboxAnimations = `
@@ -140,7 +141,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   // Auto-save title and description with debounce
   useEffect(() => {
     if (!open || !task) return
-    console.log('⏱️ Title/description changed, scheduling save in 800ms')
+    logger.debug('⏱️ Title/description changed, scheduling save in 800ms')
     const timer = setTimeout(() => {
       save()
     }, 800) // 800ms debounce
@@ -150,7 +151,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   // Auto-save other fields with small delay
   useEffect(() => {
     if (!open || !task) return
-    console.log('⏱️ Fields changed, scheduling save in 500ms')
+    logger.debug('⏱️ Fields changed, scheduling save in 500ms')
     const timer = setTimeout(() => {
       save()
     }, 500)
@@ -160,7 +161,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   // Auto-save todos when they change
   useEffect(() => {
     if (!open || !task) return
-    console.log('⏱️ Todos changed, scheduling save in 300ms')
+    logger.debug('⏱️ Todos changed, scheduling save in 300ms')
     const timer = setTimeout(() => {
       save()
     }, 300)
@@ -183,22 +184,22 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
 
   // Handler for closing with save
   const handleClose = async () => {
-    console.log('🚪 Closing modal, saving first...')
+    logger.debug('🚪 Closing modal, saving first...')
     await save()
-    console.log('🚪 Saved, now closing')
+    logger.debug('🚪 Saved, now closing')
     onClose()
   }
 
   async function save() {
     if (!task) {
-      console.log('❌ Save skipped: no task')
+      logger.debug('❌ Save skipped: no task')
       return
     }
 
     // Allow saving even with empty title for other fields
     const finalTitle = title.trim() || task.title || 'Untitled Task'
 
-    console.log('💾 Saving task:', { 
+    logger.debug('💾 Saving task:', { 
       id: task.id, 
       title: finalTitle, 
       description: description.trim(), 
@@ -220,7 +221,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
       project_id: projectId || null,
     }
 
-    console.log('📤 Updates payload:', updates)
+    logger.debug('📤 Updates payload:', updates)
 
     try {
       const { data, error } = await supabase
@@ -231,11 +232,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         .single()
 
       if (error) {
-        console.error('❌ Supabase error:', error)
+        logger.error('❌ Supabase error:', error)
         throw error
       }
 
-      console.log('✅ Task saved successfully:', data)
+      logger.debug('✅ Task saved successfully:', data)
       
       // Update local task with actual data from database
       if (data) {
@@ -244,11 +245,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           ...data,
           project_id: data.project_id || projectId || null
         }
-        console.log('📢 Calling onUpdated with:', updatedTask)
+        logger.debug('📢 Calling onUpdated with:', updatedTask)
         onUpdated?.(updatedTask)
       }
     } catch (error) {
-      console.error('❌ Error saving task:', error)
+      logger.error('❌ Error saving task:', error)
       alert(t('tasks.saveError') + ': ' + (error as any).message)
     }
   }
@@ -300,7 +301,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
       onUpdated?.(null)
       onClose()
     } catch (error) {
-      console.error('Error deleting task:', error)
+      logger.error('Error deleting task:', error)
     }
   }
 

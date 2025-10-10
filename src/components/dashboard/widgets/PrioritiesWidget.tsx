@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/monitoring'
 import { Target } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
@@ -80,7 +81,7 @@ const PrioritiesWidget = () => {
         setPriorities(counts);
       }
     } catch (error) {
-      console.error('Error loading priorities data:', error);
+      logger.error('Error loading priorities data:', error);
     } finally {
       setLoading(false);
     }

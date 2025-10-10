@@ -6,6 +6,7 @@ import Dropdown from '@/components/ui/Dropdown'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
 import { useTranslation } from 'react-i18next'
+import { logger } from '@/lib/monitoring'
 
 type Entry = { id: string; amount: number; currency: 'EUR' | 'USD' | 'GEL'; note: string | null; included: boolean; position: number }
 
@@ -87,7 +88,7 @@ export default function CellEditor({
         .eq('month', monthIndex + 1)
         .order('position', { ascending: true })
         .order('created_at', { ascending: true })
-      if (error) { console.error(error); setLoading(false); return }
+      if (error) { logger.error('Failed to load entries:', error); setLoading(false); return }
       const list = (data || []).map((d:any)=>({ 
         id: d.id, 
         amount: Number(d.amount)||0, 
@@ -127,7 +128,7 @@ export default function CellEditor({
     }
     const { data, error } = await supabase.from('finance_entries')
       .insert(insert).select('id, amount, currency, note, included, position').single()
-    if (error) { console.error(error); return }
+    if (error) { logger.error('Failed to add entry:', error); return }
     const next: Entry[] = [...items, { 
       id: data.id, 
       amount: Number(data.amount)||0, 
@@ -164,7 +165,7 @@ export default function CellEditor({
     updateItemLocal(id, { amount: isNaN(num) ? 0 : num })
     debounce('amt:'+id, async () => {
       const { error } = await supabase.from('finance_entries').update({ amount: isNaN(num) ? 0 : num }).eq('id', id)
-      if (error) console.error(error)
+      if (error) logger.error('Failed to update entry:', error)
     })
   }
 
@@ -172,7 +173,7 @@ export default function CellEditor({
     updateItemLocal(id, { note: value })
     debounce('note:'+id, async () => {
       const { error } = await supabase.from('finance_entries').update({ note: value }).eq('id', id)
-      if (error) console.error(error)
+      if (error) logger.error('Failed to update entry:', error)
     })
   }
 
@@ -180,7 +181,7 @@ export default function CellEditor({
     updateItemLocal(id, { currency: value })
     debounce('currency:'+id, async () => {
       const { error } = await supabase.from('finance_entries').update({ currency: value }).eq('id', id)
-      if (error) console.error(error)
+      if (error) logger.error('Failed to update entry:', error)
     })
   }
 
@@ -198,7 +199,7 @@ export default function CellEditor({
     
     updateItemLocal(id, { included: checked })
     const { error } = await supabase.from('finance_entries').update({ included: checked }).eq('id', id)
-    if (error) console.error(error)
+    if (error) logger.error('Failed to toggle entry inclusion:', error)
     
     // Stop animation after 300ms
     setTimeout(() => {
@@ -212,7 +213,7 @@ export default function CellEditor({
 
   async function removeItem(id: string) {
     const { error } = await supabase.from('finance_entries').delete().eq('id', id)
-    if (error) { console.error(error); return }
+    if (error) { logger.error('Failed to delete entry:', error); return }
     const next = items.filter(i => i.id !== id)
     next.forEach((it, idx) => { it.position = idx })
     setItems(next)
