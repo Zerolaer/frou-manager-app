@@ -1,6 +1,6 @@
 import React from 'react'
 import { useModal } from '@/hooks/useModal'
-import { Dropdown, DropdownOption } from './Dropdown'
+import Dropdown, { DropdownOption } from './Dropdown'
 
 export interface UnifiedDropdownProps {
   value: string | number
@@ -258,6 +258,5 @@ export function UnifiedDropdown({
 
 // Export all dropdown variants
 export {
-  Dropdown,
   type DropdownOption
 }
