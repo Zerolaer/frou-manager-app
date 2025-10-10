@@ -1,59 +1,68 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import BentoGrid, { BentoCard } from './BentoGrid';
 import '@/home.css';
 import { useTranslation } from 'react-i18next';
-
-// Direct imports without lazy loading
-import TasksStatsWidget from './widgets/TasksStatsWidget';
-import BudgetWidget from './widgets/BudgetWidget';
-import PrioritiesWidget from './widgets/PrioritiesWidget';
-import TasksTodayWidget from './widgets/TasksTodayWidget';
-import PlannedExpensesWidget from './widgets/PlannedExpensesWidget';
-import ProductivityWidget from './widgets/ProductivityWidget';
-import { DebugBanner } from './widgets/DebugBanner';
+import { LazyWidgets } from '@/utils/codeSplitting';
+import { WidgetSkeleton } from '@/components/ui/LoadingStates';
 
 export default function HomeDashboard() {
   const { t } = useTranslation()
   return (
     <div className="home-page">
-      <DebugBanner />
+      <Suspense fallback={<WidgetSkeleton />}>
+        <LazyWidgets.DebugBanner />
+      </Suspense>
       
       <div className="home-grid">
         {/* FIRST ROW */}
         {/* Created Tasks */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
-          <TasksStatsWidget type="total" />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.TasksStatsWidget type="total" />
+          </Suspense>
         </BentoCard>
 
         {/* Completed Tasks */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
-          <TasksStatsWidget type="completed" />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.TasksStatsWidget type="completed" />
+          </Suspense>
         </BentoCard>
 
         {/* Productivity */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
-          <ProductivityWidget />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.ProductivityWidget />
+          </Suspense>
         </BentoCard>
 
         {/* Tasks Today - stretched block */}
         <BentoCard colSpan={1} rowSpan={2} className="bento-card">
-          <TasksTodayWidget />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.TasksTodayWidget />
+          </Suspense>
         </BentoCard>
 
         {/* SECOND ROW */}
         {/* Priorities */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
-          <PrioritiesWidget />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.PrioritiesWidget />
+          </Suspense>
         </BentoCard>
 
         {/* Planned Expenses */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
-          <PlannedExpensesWidget />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.PlannedExpensesWidget />
+          </Suspense>
         </BentoCard>
 
         {/* Monthly Budget */}
         <BentoCard colSpan={1} rowSpan={1} className="bento-card">
-          <BudgetWidget />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <LazyWidgets.BudgetWidget />
+          </Suspense>
         </BentoCard>
       </div>
     </div>

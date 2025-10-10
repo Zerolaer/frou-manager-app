@@ -3,18 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { MoreVertical } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
-import CellEditor from '@/components/CellEditor'
+import { LazyFeatures, LazyFinance, LazyComponents } from '@/utils/codeSplitting'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
 import { YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
-import AnnualStatsModal from '@/components/AnnualStatsModal'
-import SectionHeader from '@/components/finance/SectionHeader'
-import CategoryRow from '@/components/finance/CategoryRow'
-import SummaryRow from '@/components/finance/SummaryRow'
-import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
-import NewCellMenu from '@/components/finance/NewCellMenu'
-import MobileDayNavigator from '@/components/MobileDayNavigator'
-import MobileFinanceDay from '@/components/finance/MobileFinanceDay'
+import { LazyComponent, LazyFinanceRow } from '@/components/ui/LazyComponent'
+import { FinanceRowSkeleton } from '@/components/ui/LoadingStates'
+import React, { Suspense } from 'react'
 import type { Cat, CtxCat, CellCtx, EntryLite, FinanceCellCtx } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
@@ -567,33 +562,37 @@ export default function Finance(){
   if (isMobile) {
     return (
       <div className="mobile-finance-page">
-        <MobileDayNavigator
-          currentDate={mobileDate}
-          onDateChange={setMobileDate}
-          className="sticky top-0 z-10"
-        />
+        <Suspense fallback={<div className="h-16 bg-gray-100 animate-pulse" />}>
+          <LazyComponents.MobileDayNavigator
+            currentDate={mobileDate}
+            onDateChange={setMobileDate}
+            className="sticky top-0 z-10"
+          />
+        </Suspense>
         
         <div className="flex-1">
-          <MobileFinanceDay
-            date={mobileDate}
-            incomeCategories={incomeCategories}
-            expenseCategories={expenseCategories}
-            onAddCategory={(type) => {
-              setNewType(type)
-              setNewParent(null)
-              setShowAdd(true)
-            }}
-            onEditCategory={(category, monthIndex) => {
-              setEditorCat({ id: category.id, name: category.name, type: category.type } as CtxCat)
-              setEditorMonth(monthIndex)
-              setEditorOpen(true)
-            }}
-            onContextCategory={onContextCategory}
-            onCellContext={onCellContext}
-            ctxCatHighlight={ctxCatHighlight}
-            ctxCellHighlight={ctxCellHighlight}
-            fmt={fmtEUR}
-          />
+          <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-lg m-4" />}>
+            <LazyFinance.MobileFinanceDay
+              date={mobileDate}
+              incomeCategories={incomeCategories}
+              expenseCategories={expenseCategories}
+              onAddCategory={(type) => {
+                setNewType(type)
+                setNewParent(null)
+                setShowAdd(true)
+              }}
+              onEditCategory={(category, monthIndex) => {
+                setEditorCat({ id: category.id, name: category.name, type: category.type } as CtxCat)
+                setEditorMonth(monthIndex)
+                setEditorOpen(true)
+              }}
+              onContextCategory={onContextCategory}
+              onCellContext={onCellContext}
+              ctxCatHighlight={ctxCatHighlight}
+              ctxCellHighlight={ctxCellHighlight}
+              fmt={fmtEUR}
+            />
+          </Suspense>
         </div>
 
         {/* Mobile modals */}
@@ -671,28 +670,32 @@ export default function Finance(){
         </UnifiedModal>
 
         {editorOpen && editorCat && (
-          <CellEditor
-            open={editorOpen}
-            onClose={()=>setEditorOpen(false)}
-            userId={userId!}
-            categoryId={editorCat.id}
-            categoryName={editorCat.name}
-            monthIndex={editorMonth}
-            year={year}
-            onApply={(sum)=>{
-              const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
-              if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
-            }}
-          />
+          <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 animate-pulse w-96 h-64" /></div>}>
+            <LazyFeatures.CellEditor
+              open={editorOpen}
+              onClose={()=>setEditorOpen(false)}
+              userId={userId!}
+              categoryId={editorCat.id}
+              categoryName={editorCat.name}
+              monthIndex={editorMonth}
+              year={year}
+              onApply={(sum)=>{
+                const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
+                if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
+              }}
+            />
+          </Suspense>
         )}
 
-        <AnnualStatsModal
-          open={showStats}
-          onClose={()=>setShowStats(false)}
-          year={year}
-          incomeByMonth={totalIncomeByMonth}
-          expenseByMonth={totalExpenseByMonth}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="bg-white rounded-lg p-6 animate-pulse w-96 h-64" /></div>}>
+          <LazyFeatures.AnnualStatsModal
+            open={showStats}
+            onClose={()=>setShowStats(false)}
+            year={year}
+            incomeByMonth={totalIncomeByMonth}
+            expenseByMonth={totalExpenseByMonth}
+          />
+        </Suspense>
 
         {/* Context menus */}
         {ctxOpen && ctxCat && (
