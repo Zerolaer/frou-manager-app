@@ -104,11 +104,11 @@ const StorybookPage = () => {
         {
           name: 'CoreInput',
           description: 'Базовый инпут с корпоративным стилем',
-          usage: t('storybook.allTextInputs'),
+          usage: String(t('storybook.allTextInputs')),
           demo: (
             <div className="space-y-4">
               <CoreInput 
-                placeholder={t('storybook.enterText')}
+                placeholder={String(t('storybook.enterText'))}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
@@ -182,7 +182,7 @@ const StorybookPage = () => {
         {
           name: 'ProjectDropdown',
           description: 'Выбор проекта',
-          usage: t('storybook.projectFiltering'),
+          usage: String(t('storybook.projectFiltering')),
           demo: (
             <div className="w-48">
               <ProjectDropdown
@@ -237,7 +237,7 @@ const StorybookPage = () => {
               <button className="btn" onClick={() => toast({ title: 'Успешно', message: 'Операция выполнена' })}>
                 Показать уведомление
               </button>
-              <button className="btn" onClick={() => toast({ title: t('common.error'), message: t('storybook.somethingWentWrong') })}>
+              <button className="btn" onClick={() => toast({ title: String(t('common.error')), message: String(t('storybook.somethingWentWrong')) })}>
                 Показать ошибку
               </button>
               <Toaster />
