@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { format, isToday } from 'date-fns'
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { Cat } from '@/types/shared'
+import type { Cat, FinanceCellCtx } from '@/types/shared'
 import { formatCurrencyEUR } from '@/lib/format'
 import { FINANCE_TYPES } from '@/lib/constants'
 
@@ -15,7 +15,7 @@ interface MobileFinanceDayProps {
   onContextCategory: (e: React.MouseEvent, category: { id: string; name: string; type: 'income' | 'expense' }) => void
   onCellContext: (e: React.MouseEvent, type: 'income' | 'expense', catId: string, month: number, displayed: number) => void
   ctxCatHighlight: string | null
-  ctxCellHighlight: { type: 'income' | 'expense'; catId: string; month: number } | null
+  ctxCellHighlight: FinanceCellCtx | null
   fmt: (n: number) => string
 }
 

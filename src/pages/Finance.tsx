@@ -16,7 +16,7 @@ import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
 import NewCellMenu from '@/components/finance/NewCellMenu'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileFinanceDay from '@/components/finance/MobileFinanceDay'
-import type { Cat, CtxCat, CellCtx, EntryLite } from '@/types/shared'
+import type { Cat, CtxCat, CellCtx, EntryLite, FinanceCellCtx } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
@@ -54,7 +54,8 @@ function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.Ke
   );
 }
 
-const fmtEUR = (n:number) => formatCurrencyEUR(n, { maximumFractionDigits: 0 })
+const EURNoDecimals = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+const fmtEUR = (n:number) => EURNoDecimals.format(n)
 
 // Cache functions moved to useFinanceCache hook
 
@@ -115,7 +116,7 @@ export default function Finance(){
   const [cellCtxOpen, setCellCtxOpen] = useState(false)
   const [cellCtxMouseX, setCellCtxMouseX] = useState(0)
   const [cellCtxMouseY, setCellCtxMouseY] = useState(0)
-  const [cellCtx, setCellCtx] = useState<CellCtx|null>(null)
+  const [cellCtx, setCellCtx] = useState<FinanceCellCtx|null>(null)
   const [cellClipboard, setCellClipboard] = useState<EntryLite[]|null>(null)
   const [cellCanCopy, setCellCanCopy] = useState(false)
   const [cellEntries, setCellEntries] = useState<EntryLite[]|null>(null)
@@ -127,7 +128,7 @@ export default function Finance(){
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const [ctxCatHighlight, setCtxCatHighlight] = useState<string|null>(null)
-  const [ctxCellHighlight, setCtxCellHighlight] = useState<CellCtx|null>(null)
+  const [ctxCellHighlight, setCtxCellHighlight] = useState<FinanceCellCtx|null>(null)
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -220,8 +221,8 @@ export default function Finance(){
         byId[id][i] += Number(e.amount) || 0
       }
       
-      const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
-      const expense = cats.filter((c)=>c.type===FINANCE_TYPES.EXPENSE).map((c)=>({ id:c.id, name:c.name, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
+      const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, type: 'income' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
+      const expense = cats.filter((c)=>c.type===FINANCE_TYPES.EXPENSE).map((c)=>({ id:c.id, name:c.name, type: 'expense' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
       
       if (!signal?.aborted) {
         setIncomeRaw(income)
@@ -246,8 +247,8 @@ export default function Finance(){
     if (!userId) return
     const cached = readCache(userId, year)
     if (cached) {
-      setIncomeRaw(cached.income ?? [])
-      setExpenseRaw(cached.expense ?? [])
+      setIncomeRaw((cached.income ?? []).map(c => ({ ...c, type: 'income' as const })))
+      setExpenseRaw((cached.expense ?? []).map(c => ({ ...c, type: 'expense' as const })))
       setLoading(false)
     }
     
@@ -310,10 +311,10 @@ export default function Finance(){
     if (error) { handleError(error, t('finance.creatingCategory')); return }
     const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(MONTHS_IN_YEAR).fill(0) }
     if (type === FINANCE_TYPES.INCOME) {
-      const raw = [incomeRaw, cat]; setIncomeRaw(raw)
+      const raw = [...incomeRaw, cat]; setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     } else {
-      const raw = [expenseRaw, cat]; setExpenseRaw(raw)
+      const raw = [...expenseRaw, cat]; setExpenseRaw(raw)
       writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     }
     handleSuccess(t('finance.categoryCreated', { name }))
@@ -391,7 +392,10 @@ export default function Finance(){
         
         if (data) {
           setCellEntries(data.map(e => ({
+            id: e.id,
             amount: e.amount,
+            month: e.month,
+            category_id: e.category_id,
             note: e.note,
             included: e.included
           })))

@@ -336,7 +336,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
               value={projectId || ''}
               onChange={(newValue) => moveToProject(newValue ? newValue.toString() : null)}
               placeholder={t('projects.selectProject')}
-              ariaLabel={t('aria.selectProject')}
+              aria-label={t('aria.selectProject')}
               className="w-full"
               buttonClassName="w-full justify-between"
             />

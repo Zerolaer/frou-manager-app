@@ -59,7 +59,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
       // Query for previous month
       const { data: previousData } = await supabase
         .from('tasks_items')
-        .select('id, status')
+        .select('id, status, project_id')
         .gte('date', previousMonthStart)
         .lte('date', previousMonthEnd);
 

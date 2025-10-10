@@ -147,7 +147,7 @@ export function useFormValidation<T extends Record<string, any>>(
     validateField,
     validateForm,
     reset,
-    isValid: Object.values(errors).every(fieldErrors => fieldErrors.length === 0)
+    isValid: Object.values(errors).every(fieldErrors => fieldErrors?.length === 0)
   }
 }
 

@@ -129,7 +129,7 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
           focusManager.current.focusFirst(modalRef.current)
           
           // Trap focus
-          cleanupRef.current = focusManager.current.trapFocus(modalRef.current)
+          cleanupRef.current = focusManager.current.trapFocus(modalRef.current) ?? null
         }
       }, 0)
     } else {

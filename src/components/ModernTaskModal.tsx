@@ -66,6 +66,8 @@ type Task = {
   date?: string | null
   todos?: Todo[]
   status?: string
+  created_at?: string
+  updated_at?: string
 }
 
 type Props = {
@@ -325,7 +327,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
             onSelect={(value) => {
               if (value === 'duplicate') {
                 // Minimal duplicate action: prefill title to indicate duplicate
-                setTitle((t) => `${t} (${t('common.copy')})`)
+                setTitle((prevTitle) => `${prevTitle} (${t('common.copy')})`)
               }
               if (value === 'delete') {
                 deleteTask()

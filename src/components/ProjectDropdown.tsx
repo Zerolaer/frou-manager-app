@@ -20,9 +20,9 @@ export default function ProjectDropdown({
     <Dropdown
       options={options}
       value={value}
-      onChange={onChange}
+      onChange={(v) => onChange(String(v))}
       placeholder={t('projects.selectProject')}
-      ariaLabel={t('aria.selectProject')}
+      aria-label={t('aria.selectProject')}
       className="w-full"
       buttonClassName="w-full justify-between"
     />

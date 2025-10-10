@@ -48,11 +48,17 @@ export default {
         'pulse-slow': {
           '0%, 100%': { opacity: '1', transform: 'scale(1)' },
           '50%': { opacity: '0.7', transform: 'scale(1.05)' }
+        },
+        wave: {
+          '0%': { transform: 'translateX(-100%)' },
+          '50%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(100%)' }
         }
       },
       animation: {
         fadeIn: 'fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        wave: 'wave 1.6s linear 0.5s infinite'
       }
     },
   },

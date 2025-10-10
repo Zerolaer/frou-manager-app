@@ -237,8 +237,8 @@ export function createAnimation(
     duration: animationConfig.duration,
     delay: animationConfig.delay || 0,
     easing: animationConfig.easing,
-    fill: animationConfig.fillMode,
-    iterations: animationConfig.iterationCount || 1,
+    fill: animationConfig.fillMode as FillMode,
+    iterations: animationConfig.iterationCount === 'infinite' ? Infinity : (animationConfig.iterationCount || 1),
     direction: animationConfig.direction || 'normal'
   })
 }

@@ -13,16 +13,6 @@ const Toaster = lazy(() => import('./components/Toaster'))
 const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
 const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 
-// Loading component (unused, replaced by AppLoader)
-// const AppLoading = () => (
-//   <div className="flex items-center justify-center min-h-screen">
-//     <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
-//     <span className="ml-3 text-gray-600">{t('common.loading')}...</span>
-//   </div>
-// )
-
-// Configuration is now hardcoded
-
 export default function App(){
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
 

@@ -1,146 +1,89 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import mobile styles */
-@import './mobile.css';
-
-/* ==================== Loading Animations ==================== */
-
-/* Shimmer effect for skeleton screens */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+/* Global CSS reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.animate-shimmer {
-  animation: shimmer 2s infinite;
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
-/* Fade in animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.fade-in {
-  animation: fadeIn 0.4s ease-out;
-}
-
-/* Stagger delays for children */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
-
-/* Content visibility optimization */
-.optimized-content {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 500px;
-}
-
-/* View Transitions API support */
-@supports (view-transition-name: none) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: 0.3s;
-  }
-}
-
-/* Prevent layout shift during loading */
-.content-loader-container {
-  min-height: 400px;
-  transition: min-height 0.3s ease;
-}
-
-/* Temporarily disabled to test animations
+/* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  .animate-spin,
-  .animate-bounce,
-  .animate-ping,
-  .animate-shimmer,
-  .animate-pulse {
-    animation: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
-*/
 
-/* Smooth transitions for theme changes */
-.theme-transition {
-  transition: background-color 0.3s ease, color 0.3s ease;
+/* Disable animations for elements with data-no-animation */
+[data-no-animation] {
+  animation: none !important;
+  transition: none !important;
 }
 
-/* Loading button states */
-.btn-loading {
-  position: relative;
-  pointer-events: none;
-  opacity: 0.7;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-html, body { margin: 0; padding: 0; }
-body { @apply bg-background text-black font-[Inter]; font-size:14px; line-height:1.4; }
-
-:root{ 
-  --brand-primary: #171717; 
-  --brand-secondary: #F2F7FA; 
-  --brand-outline: #E5E7EB; 
-  --brand-background: #F2F7FA; 
-  --brand-white: #FFFFFF;
-  
-  /* Legacy support */
-  --brand-blue: #171717; 
-  --brand-blue-rgb: 23,23,23; 
-  --brand-gradient: linear-gradient(135deg, #171717 0%, #404040 100%);
-  --brand-gradient-hover: linear-gradient(135deg, #0d0d0d 0%, #2d2d2d 100%);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Hide scrollbar for mobile tabs */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
-}
-.scrollbar-hide::-webkit-scrollbar { 
-  display: none;  /* Safari and Chrome */
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
-/* Ensure content doesn't get hidden behind floating nav bar */
-#main-content {
-  /* Padding handled by individual page components */
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-/* Скошенные вкладки */
-.tab-skewed {
-  position: relative;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%);
-  border-radius: 8px 8px 0 0;
+/* Focus visible styles */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
-.tab-skewed-active {
-  position: relative;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%);
-  border-radius: 8px 8px 0 0;
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #3b82f6;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  z-index: 100;
 }
 
-/* Sidebar link overrides to kill default blue anchors from any UI kit */
+.skip-to-content:focus {
+  top: 0;
+}
 
-
-/* Active item text color if using .is-active helper */
-.sidebar .is-active { color: var(--brand-primary); }
-
-.active-bg{ background-color: rgba(23, 23, 23, 0.10); }
+/* Mobile responsive import */
+@import './mobile.css';

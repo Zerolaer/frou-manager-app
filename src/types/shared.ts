@@ -25,6 +25,8 @@ export type TaskItem = {
   status?: string;
   project_id?: string | null;
   project_name?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type MoneyType = 'income' | 'expense';
@@ -62,6 +64,7 @@ export type EntryLite = {
   month: number;
   category_id: string;
   included: boolean;
+  note?: string | null;
 }
 
 // API Response types

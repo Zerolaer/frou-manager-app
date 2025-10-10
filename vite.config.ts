@@ -50,9 +50,6 @@ export default defineConfig({
           if (id.includes('/components/tasks/')) {
             return 'feature-tasks'
           }
-          if (id.includes('/components/goals/')) {
-            return 'feature-goals'
-          }
           if (id.includes('/components/notes/')) {
             return 'feature-notes'
           }

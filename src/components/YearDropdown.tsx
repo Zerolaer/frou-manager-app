@@ -15,9 +15,9 @@ export default function YearDropdown({
     <Dropdown
       options={options}
       value={value.toString()}
-      onChange={(newValue) => onChange(parseInt(newValue))}
+      onChange={(newValue) => onChange(typeof newValue === 'number' ? newValue : parseInt(String(newValue)))}
       placeholder={t('common.year')}
-      ariaLabel={t('aria.selectYear')}
+      aria-label={t('aria.selectYear')}
     />
   )
 }

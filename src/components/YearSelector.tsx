@@ -20,7 +20,7 @@ export default function YearSelector({ currentYear, onYearChange }: YearSelector
     <Dropdown
       options={options}
       value={currentYear}
-      onChange={onYearChange}
+      onChange={(v) => onYearChange(typeof v === 'number' ? v : parseInt(String(v)))}
       icon={<Calendar className="w-4 h-4" />}
       aria-label="Выбрать год"
     />

@@ -305,9 +305,9 @@ export function useFormValidation<T extends Record<string, any>>(
   const [errors, setErrors] = React.useState<Record<keyof T, string[]>>({} as Record<keyof T, string[]>)
   const [touched, setTouched] = React.useState<Record<keyof T, boolean>>({} as Record<keyof T, boolean>)
 
-  const validateField = React.useCallback((fieldName: keyof T, value: any) => {
+  const validateSingleField = React.useCallback((fieldName: keyof T, value: any): ValidationResult => {
     const rule = schema[fieldName as string]
-    if (!rule) return
+    if (!rule) return { isValid: true, errors: [], sanitizedValue: value }
 
     const result = validateField(value, rule, String(fieldName))
     setErrors(prev => ({
@@ -359,6 +359,7 @@ export function useFormValidation<T extends Record<string, any>>(
     isValid: Object.values(errors).every(fieldErrors => fieldErrors.length === 0),
     handleChange,
     handleBlur,
+    validateField: validateSingleField,
     validateAll,
     reset
   }

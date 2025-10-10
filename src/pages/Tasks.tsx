@@ -920,7 +920,7 @@ const projectColorById = React.useMemo(() => {
       .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, todos, user_id: uid })
       .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
     if (!error && data){
-      const t: TaskItem = { 
+      const newTask: TaskItem = { 
         id: data.id, 
         project_id: data.project_id, 
         title: data.title, 
@@ -934,7 +934,7 @@ const projectColorById = React.useMemo(() => {
         project_name: (data as any).tasks_projects?.name || null
       }
       const map = { ...tasks }
-      ;(map[key] ||= []).push(t)
+      ;(map[key] ||= []).push(newTask)
       setTasks(map)
       handleSuccess(t('tasks.taskCreatedWithTitle', { title }))
       setTaskTitle(''); setTaskDesc('')

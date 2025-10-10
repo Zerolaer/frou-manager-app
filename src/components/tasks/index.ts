@@ -8,7 +8,6 @@ export { WeekBoard } from './WeekBoard'
 export { DayColumn } from './DayColumn'
 export { CardItem, MemoizedCardItem } from './CardItem'
 export { DragOverlayContent, AnimatedDragOverlay, createDragAnnouncements } from './DragOverlay'
-export { WeekBoardDemo, sampleDays, mockApi, customCardRenderer, customDayHeaderRenderer } from './example.data'
 
 // Types
 export type {

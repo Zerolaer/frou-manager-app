@@ -128,7 +128,7 @@ export function CardItem({
         )}
 
         {/* Render card content */}
-        {renderCard(card)}
+        {renderCard?.(card)}
 
         {/* Drop indicator for when hovering over this card */}
         {isOver && !isSortableDragging && (

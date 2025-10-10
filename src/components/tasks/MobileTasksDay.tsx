@@ -44,7 +44,7 @@ export default function MobileTasksDay({
     return project?.color || '#e5e7eb'
   }
 
-  const getPriorityText = (priority?: string) => {
+  const getPriorityText = (priority?: string | null) => {
     switch (priority) {
       case TASK_PRIORITIES.HIGH:
         return "High"
@@ -57,7 +57,7 @@ export default function MobileTasksDay({
     }
   }
 
-  const getPriorityColor = (priority: string): { background: string, text: string } => {
+  const getPriorityColor = (priority?: string | null): { background: string, text: string } => {
     switch (priority) {
       case TASK_PRIORITIES.HIGH:
         return { background: '#fee2e2', text: '#dc2626' } // red

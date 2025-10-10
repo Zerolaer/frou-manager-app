@@ -12,7 +12,7 @@ import React, { useMemo } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
-import { DayColumnProps, Card } from './types'
+import { DayColumnProps, Card, Day } from './types'
 import { CardItem } from './CardItem'
 
 export function DayColumn({
@@ -39,7 +39,7 @@ export function DayColumn({
   )
 
   // Default day header renderer
-  const defaultDayHeader = (day: typeof day) => (
+  const defaultDayHeader = (day: Day) => (
     <div className="flex flex-col items-center p-3 bg-gray-50 rounded-t-lg border-b">
       <div className="text-sm font-medium text-gray-700">
         {day.title || new Date(day.date).toLocaleDateString('ru-RU', { 

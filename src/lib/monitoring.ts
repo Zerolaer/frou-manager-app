@@ -40,7 +40,7 @@ export const LOG_LEVELS = {
 class Logger {
   private logs: LogEntry[] = []
   private maxLogs = 1000
-  private currentLevel = LOG_LEVELS.INFO
+  private currentLevel: 0 | 1 | 2 | 3 = LOG_LEVELS.INFO
   private sessionId = this.generateSessionId()
 
   constructor() {
@@ -180,8 +180,8 @@ class PerformanceMonitor {
           entries.forEach(entry => {
             if (entry.entryType === 'navigation') {
               const navEntry = entry as PerformanceNavigationTiming
-              this.recordMetric('navigation.load', navEntry.loadEventEnd - navEntry.navigationStart)
-              this.recordMetric('navigation.domContentLoaded', navEntry.domContentLoadedEventEnd - navEntry.navigationStart)
+              this.recordMetric('navigation.load', navEntry.loadEventEnd - navEntry.startTime)
+              this.recordMetric('navigation.domContentLoaded', navEntry.domContentLoadedEventEnd - navEntry.startTime)
               this.recordMetric('navigation.firstPaint', navEntry.responseEnd - navEntry.requestStart)
             }
           })

@@ -10,4 +10,4 @@ export const env = {
 // Helper functions for environment checks
 export const isDevelopment = () => env.DEV
 export const isProduction = () => env.PROD
-export const isNodeEnv = (env: string) => env === env.NODE_ENV
+export const isNodeEnv = (nodeEnv: string) => nodeEnv === env.NODE_ENV
