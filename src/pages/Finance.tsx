@@ -41,7 +41,7 @@ function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.Ke
   return (
     <button
       type="button"
-      aria-label={t('aria.openMenu')}
+      aria-label={String(t('aria.openMenu'))}
       aria-haspopup="menu"
       onClick={(e) => onOpen(e)}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(e); } }}
@@ -71,18 +71,18 @@ export default function Finance(){
 
   // Translated months array
   const translatedMonths = useMemo(() => [
-    t('finance.months.jan'),
-    t('finance.months.feb'),
-    t('finance.months.mar'),
-    t('finance.months.apr'),
-    t('finance.months.may'),
-    t('finance.months.jun'),
-    t('finance.months.jul'),
-    t('finance.months.aug'),
-    t('finance.months.sep'),
-    t('finance.months.oct'),
-    t('finance.months.nov'),
-    t('finance.months.dec')
+    String(t('finance.months.jan')),
+    String(t('finance.months.feb')),
+    String(t('finance.months.mar')),
+    String(t('finance.months.apr')),
+    String(t('finance.months.may')),
+    String(t('finance.months.jun')),
+    String(t('finance.months.jul')),
+    String(t('finance.months.aug')),
+    String(t('finance.months.sep')),
+    String(t('finance.months.oct')),
+    String(t('finance.months.nov')),
+    String(t('finance.months.dec'))
   ], [t])
 
   const [year, setYear] = useState(currentYear)
@@ -199,7 +199,7 @@ export default function Finance(){
       if (signal?.aborted) return
       
       if (catsRes.error || entriesRes.error) { 
-        handleError(catsRes.error || entriesRes.error, t('finance.loadingFinancialData')); 
+        handleError(catsRes.error || entriesRes.error, String(t('finance.loadingFinancialData'))); 
         setLoading(false); 
         return 
       }
@@ -233,7 +233,7 @@ export default function Finance(){
       }
     } catch (error) {
       if (!signal?.aborted) {
-        handleError(error, t('finance.loadingFinancialData'))
+        handleError(error, String(t('finance.loadingFinancialData')))
         setLoading(false)
       }
     }
