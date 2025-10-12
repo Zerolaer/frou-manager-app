@@ -37,8 +37,7 @@ export default defineConfig({
         moduleSideEffects: false
       },
       output: {
-        // Disable manual chunking to avoid empty chunks
-        // manualChunks: undefined,
+        manualChunks: undefined,
         // Use content hash for better caching
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',

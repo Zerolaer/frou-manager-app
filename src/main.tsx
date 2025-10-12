@@ -2,7 +2,7 @@ import React, { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './styles.css'
-// import './lib/i18n' // Temporarily disabled
+import './lib/i18n'
 import App from './App'
 import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
