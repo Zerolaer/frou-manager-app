@@ -84,14 +84,15 @@ const router = createBrowserRouter([
           </Suspense>
         )
       },
-      { 
+      // Storybook route only available in development
+      ...(import.meta.env.DEV ? [{
         path: 'storybook', 
         element: (
           <Suspense fallback={null}>
             <LazyPages.Storybook />
           </Suspense>
         )
-      },
+      }] : []),
     ]
   },
 ])

@@ -29,12 +29,14 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
 
   // Initialize settings when modal opens
   useEffect(() => {
-    console.log('RecurringSettingsModal useEffect:', { open, currentSettings })
+    if (import.meta.env.DEV) {
+      console.log('RecurringSettingsModal useEffect:', { open, currentSettings })
+    }
     if (open && currentSettings) {
-      console.log('Setting settings from currentSettings:', currentSettings)
+      if (import.meta.env.DEV) console.log('Setting settings from currentSettings:', currentSettings)
       setSettings(currentSettings)
     } else if (open) {
-      console.log('Setting default settings')
+      if (import.meta.env.DEV) console.log('Setting default settings')
       // Default settings for new recurring task
       setSettings({
         isRecurring: true,
@@ -201,12 +203,14 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
           <input
             type="date"
             value={(() => {
-              console.log('Date input value calculation:', {
-                endDate: settings.endDate,
-                isDate: settings.endDate instanceof Date,
-                isValid: settings.endDate && !isNaN(settings.endDate.getTime()),
-                formatted: settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
-              })
+              if (import.meta.env.DEV) {
+                console.log('Date input value calculation:', {
+                  endDate: settings.endDate,
+                  isDate: settings.endDate instanceof Date,
+                  isValid: settings.endDate && !isNaN(settings.endDate.getTime()),
+                  formatted: settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
+                })
+              }
               return settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
             })()}
             onChange={(e) => updateSettings({ endDate: e.target.value ? new Date(e.target.value) : undefined })}

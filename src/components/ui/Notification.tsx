@@ -21,7 +21,7 @@ export interface NotificationProps {
  *   message="Task saved successfully!"
  *   type="success"
  *   duration={3000}
- *   onClose={() => console.log('Notification closed')}
+ *   onClose={() => import.meta.env.DEV && console.log('Notification closed')}
  * />
  * ```
  */

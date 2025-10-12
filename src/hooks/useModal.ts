@@ -38,8 +38,8 @@ export interface UseModalOptions {
  * const modal = useModal({
  *   closeOnEscape: true,
  *   closeOnOverlay: true,
- *   onOpen: () => console.log('Modal opened'),
- *   onClose: () => console.log('Modal closed')
+ *   onOpen: () => import.meta.env.DEV && console.log('Modal opened'),
+ *   onClose: () => import.meta.env.DEV && console.log('Modal closed')
  * })
  * 
  * return (

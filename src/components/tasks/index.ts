@@ -28,4 +28,4 @@ export type {
 export { dragOverlayStyles } from './DragOverlay'
 
 // CSS file path for import
-export const WEEK_BOARD_CSS_PATH = './WeekBoard.css'
+export const WEEK_BOARD_CSS_PATH = './WeekBoard.css' // Note: CSS file removed for production

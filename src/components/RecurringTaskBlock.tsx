@@ -41,8 +41,10 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
         }
 
         if (data) {
-          console.log('Loaded recurring data:', data)
-          console.log('end_date from DB:', data.end_date, 'type:', typeof data.end_date)
+          if (import.meta.env.DEV) {
+            console.log('Loaded recurring data:', data)
+            console.log('end_date from DB:', data.end_date, 'type:', typeof data.end_date)
+          }
           
           const settings: RecurringTaskSettings = {
             isRecurring: true,
@@ -52,11 +54,11 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
             dayOfMonth: data.recurrence_day_of_month,
             endDate: data.end_date ? (() => {
               const date = new Date(data.end_date)
-              console.log('Created date from end_date:', date, 'isValid:', !isNaN(date.getTime()))
+              if (import.meta.env.DEV) console.log('Created date from end_date:', date, 'isValid:', !isNaN(date.getTime()))
               return isNaN(date.getTime()) ? undefined : date
             })() : undefined
           }
-          console.log('Final settings with endDate:', settings)
+          if (import.meta.env.DEV) console.log('Final settings with endDate:', settings)
           setRecurringSettings(settings)
         }
       } catch (error) {

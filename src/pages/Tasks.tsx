@@ -1153,7 +1153,7 @@ const projectColorById = React.useMemo(() => {
       if (!uid) return
       
       // Debug: check if recurring settings are passed correctly
-      if (recurringSettings?.isRecurring) {
+      if (import.meta.env.DEV && recurringSettings?.isRecurring) {
         console.log('🔄 Creating recurring task:', recurringSettings)
       }
     
@@ -1266,7 +1266,7 @@ const projectColorById = React.useMemo(() => {
         throw error
       }
 
-      console.log('✅ Recurring task settings updated')
+      if (import.meta.env.DEV) console.log('✅ Recurring task settings updated')
     } catch (error) {
       console.error('❌ Error updating recurring task settings:', error)
       throw error
@@ -1275,12 +1275,14 @@ const projectColorById = React.useMemo(() => {
 
   // Handle task updates - check for recurring tasks
   const handleTaskUpdate = async (updatedTask: TaskItem | null, isSave?: boolean) => {
-    console.log('🔄 handleTaskUpdate called:', { 
-      updatedTask: updatedTask?.title, 
-      isSave, 
-      viewTask: viewTask?.title,
-      viewTaskRecurringId: viewTask?.recurring_task_id
-    })
+    if (import.meta.env.DEV) {
+      console.log('🔄 handleTaskUpdate called:', { 
+        updatedTask: updatedTask?.title, 
+        isSave, 
+        viewTask: viewTask?.title,
+        viewTaskRecurringId: viewTask?.recurring_task_id
+      })
+    }
     
     // Handle task deletion (updatedTask is null)
     if (!updatedTask) {
@@ -1305,21 +1307,23 @@ const projectColorById = React.useMemo(() => {
       ? hasChanges 
       : hasChanges || (updatedTask.date !== viewTask.date)
     
-    console.log('🔍 Changes detected:', {
-      hasChanges,
-      hasRelevantChanges,
-      titleChanged: updatedTask.title !== viewTask.title,
-      descriptionChanged: updatedTask.description !== viewTask.description,
-      priorityChanged: updatedTask.priority !== viewTask.priority,
-      tagChanged: updatedTask.tag !== viewTask.tag,
-      dateChanged: updatedTask.date !== viewTask.date,
-      projectChanged: updatedTask.project_id !== viewTask.project_id,
-      todosChanged: JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask.todos)
-    })
+    if (import.meta.env.DEV) {
+      console.log('🔍 Changes detected:', {
+        hasChanges,
+        hasRelevantChanges,
+        titleChanged: updatedTask.title !== viewTask.title,
+        descriptionChanged: updatedTask.description !== viewTask.description,
+        priorityChanged: updatedTask.priority !== viewTask.priority,
+        tagChanged: updatedTask.tag !== viewTask.tag,
+        dateChanged: updatedTask.date !== viewTask.date,
+        projectChanged: updatedTask.project_id !== viewTask.project_id,
+        todosChanged: JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask.todos)
+      })
+    }
     
     // Only check for recurring tasks when it's actually a manual save operation AND there are relevant changes
     if (isSave && viewTask.recurring_task_id && hasRelevantChanges) {
-      console.log('🔍 Checking recurring tasks for save operation with changes')
+      if (import.meta.env.DEV) console.log('🔍 Checking recurring tasks for save operation with changes')
       
       try {
         // Check database directly for all tasks with this recurring_task_id

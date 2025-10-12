@@ -16,7 +16,7 @@ export default function HomeDashboard() {
   const { t } = useSafeTranslation()
   return (
     <div className="home-page">
-      <DebugBanner />
+      {import.meta.env.DEV && <DebugBanner />}
       
       <div className="home-grid">
         {/* FIRST ROW */}
