@@ -60,5 +60,5 @@
 
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/index-simple.html"
   status = 200
