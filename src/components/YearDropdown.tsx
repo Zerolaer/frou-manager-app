@@ -1,5 +1,5 @@
 import Dropdown from './ui/Dropdown'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 export default function YearDropdown({
   value, years, onChange,
@@ -8,7 +8,7 @@ export default function YearDropdown({
   years: number[]
   onChange: (v:number)=>void
 }){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const options = years.map(y => ({ value: y.toString(), label: y.toString() }))
 
   return (

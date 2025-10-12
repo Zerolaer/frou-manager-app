@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { supabase } from '@/lib/supabaseClient';
 import { getUserId } from '@/lib/auth';
-import { useTranslation } from 'react-i18next';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 
 type Check = { name: string; ok: boolean; msg?: string };
-export function DebugBanner() {
-  const { t } = useTranslation()
+export default function DebugBanner() {
+  const { t } = useSafeTranslation()
   const [checks, setChecks] = useState<Check[] | null>(null);
   useEffect(() => {
     if (!DASHBOARD.debug) return;
@@ -14,7 +14,7 @@ export function DebugBanner() {
     (async () => {
       const out: Check[] = [];
       const uid = await getUserId();
-      out.push({ name: 'Auth', ok: !!uid, msg: uid ? 'OK' : String(t('dashboard.noUser') || 'No user') });
+      out.push({ name: 'Auth', ok: !!uid, msg: uid ? 'OK' : 'No user' });
       try {
         const { error } = await supabase.from(DASHBOARD.notes.table).select(DASHBOARD.notes.id).limit(1);
         out.push({ name: 'Notes', ok: !error, msg: error?.message });
@@ -36,10 +36,10 @@ export function DebugBanner() {
   if (!hasErr) return null;
   return (
     <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-      <div className="font-semibold mb-2">{String(t('dashboard.diagnostics') || 'Diagnostics')}</div>
+      <div className="font-semibold mb-2">Diagnostics</div>
       <ul className="list-disc pl-5 space-y-1">
         {checks.map((c, i) => (
-          <li key={i}><span className={c.ok ? 'text-emerald-700' : 'text-red-700'}>{c.name}: {c.ok ? 'OK' : String(t('dashboard.error') || 'Error')}</span>{c.msg ? <span className="ml-2 opacity-80">{String(c.msg)}</span> : null}</li>
+          <li key={i}><span className={c.ok ? 'text-emerald-700' : 'text-red-700'}>{c.name}: {c.ok ? 'OK' : 'Error'}</span>{c.msg ? <span className="ml-2 opacity-80">{c.msg}</span> : null}</li>
         ))}
       </ul>
     </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import AuthCard from '@/components/AuthCard'
 
@@ -11,7 +11,7 @@ export default function Login() {
   const [error, setError] = useState<string|null>(null)
   const navigate = useNavigate()
   const [authChecked, setAuthChecked] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useSafeTranslation();
 
 useEffect(() => {
   let mounted = true;

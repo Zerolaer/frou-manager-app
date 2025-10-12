@@ -48,44 +48,16 @@
   will-change: max-height, opacity; /* GPU acceleration */
 }
 
-/* Allow horizontal scroll on finance page */
+/* Finance page container - let main-content handle scrolling */
 .finance-mode .finance-page {
-  overflow-x: auto; /* Changed from hidden to allow scroll */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   position: relative;
-  min-height: calc(100vh - 172px); /* 100vh - SubHeader (64px) - FloatingNavBar (80px) - Bottom padding (24px) - Extra margin (4px) */
 }
 
 .finance-mode .finance-page * {
   box-sizing: border-box;
-}
-
-/* Hide scrollbars but allow scrolling - using global utility */
-body.finance-mode,
-.finance-mode #main-content,
-.finance-mode .finance-page,
-.finance-mode .finance-page .p-4,
-.finance-mode html,
-.finance-mode body {
-  overflow-x: auto;
-  width: 100%;
-  max-width: 100%;
-}
-
-/* Apply scrollbar-hide utility */
-body.finance-mode,
-.finance-mode #main-content,
-.finance-mode .finance-page {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-body.finance-mode::-webkit-scrollbar,
-.finance-mode #main-content::-webkit-scrollbar,
-.finance-mode .finance-page::-webkit-scrollbar {
-  display: none;
 }
 
 .finance-cell {

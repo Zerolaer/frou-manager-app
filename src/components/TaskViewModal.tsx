@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Plus, Trash2 } from 'lucide-react'
 import CoreMenu from '@/components/ui/CoreMenu'
 import Dropdown from '@/components/ui/Dropdown'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { logger } from '@/lib/monitoring'
 
 import type { Todo, Project } from '@/types/shared'
@@ -34,7 +34,7 @@ type Props = {
 }
 
 export default function TaskViewModal({ open, onClose, task, onUpdated }: Props) {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'' | 'low' | 'medium' | 'high'>('')

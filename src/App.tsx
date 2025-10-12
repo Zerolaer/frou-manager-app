@@ -62,8 +62,8 @@ export default function App(){
     }
   }, [])
 
-  // Apply mode classes to body
-  React.useEffect(() => {
+  // Apply mode classes to body immediately and on route changes
+  const applyModeClass = React.useCallback(() => {
     const pathname = window.location.pathname.toLowerCase()
     const isTasks = pathname.includes('tasks')
     const isFinance = pathname.includes('finance')
@@ -83,11 +83,24 @@ export default function App(){
     } else if (isHome) {
       document.body.classList.add('home-mode')
     }
-    
-    return () => {
-      document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'home-mode')
-    }
   }, [])
+
+  // Apply immediately on mount
+  React.useEffect(() => {
+    applyModeClass()
+  }, [applyModeClass])
+
+  // Listen for route changes
+  React.useEffect(() => {
+    const handleRouteChange = () => {
+      applyModeClass()
+    }
+    
+    window.addEventListener('popstate', handleRouteChange)
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange)
+    }
+  }, [applyModeClass])
 
   // Handle preloader completion
   return (

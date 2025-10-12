@@ -1,6 +1,6 @@
 import Dropdown from './ui/Dropdown'
 import type { Project } from '@/types/shared'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 export default function ProjectDropdown({
   value, projects, onChange,
@@ -9,7 +9,7 @@ export default function ProjectDropdown({
   projects: Array<{id: string, name: string}>
   onChange: (v: string) => void
 }){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   
   const options = [
     { value: '', label: t('projects.noProject') },

@@ -1,6 +1,6 @@
 import React from 'react'
 import { X, Filter } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useForm } from '@/hooks/useForm'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { useNotificationContext } from './NotificationProvider'
@@ -30,7 +30,7 @@ export default function TaskFilterModal({
   onFiltersChange,
   projects
 }: TaskFilterModalProps) {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const { createStandardFooter } = useModalActions()
   const notifications = useNotificationContext()
 
@@ -67,7 +67,7 @@ export default function TaskFilterModal({
     }
     
     onFiltersChange(newFilters)
-    notifications.showInfo(String(t('tasks.filtersApplied') || 'Фильтры применены'))
+    notifications.showInfo(t('tasks.filtersApplied') || 'Фильтры применены')
     onClose()
   }
 
@@ -78,7 +78,7 @@ export default function TaskFilterModal({
     }
     form.reset()
     onFiltersChange(emptyFilters)
-    notifications.showInfo(String(t('tasks.filtersReset') || 'Фильтры сброшены'))
+    notifications.showInfo(t('tasks.filtersReset') || 'Фильтры сброшены')
     onClose()
   }
 
@@ -93,22 +93,22 @@ export default function TaskFilterModal({
     <UnifiedModal
       open={open}
       onClose={onClose}
-      title={String(t('tasks.filterTasks'))}
+      title={t('tasks.filterTasks')}
       size="md"
       footer={createStandardFooter(
         { 
-          label: `${String(t('common.apply'))}${hasActiveFilters ? ` (${Object.values(form.fields).filter(f => f.value && f.value !== 'all' && typeof f.value === 'string').length})` : ''}`, 
+          label: `${t('common.apply')}${hasActiveFilters ? ` (${Object.values(form.fields).filter(f => f.value && f.value !== 'all' && typeof f.value === 'string').length})` : ''}`, 
           onClick: handleApply, 
           loading: form.isSubmitting
         },
-        { label: String(t('common.reset')), onClick: handleReset }
+        { label: t('common.reset'), onClick: handleReset }
       )}
     >
       <div className="space-y-6">
         {/* Project filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {String(t('projects.project'))}
+            {t('projects.project')}
           </label>
           <ProjectDropdown
             value={form.fields.project.value}
@@ -120,7 +120,7 @@ export default function TaskFilterModal({
         {/* Status filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {String(t('tasks.status'))}
+            {t('tasks.status')}
           </label>
           <div className="flex gap-2">
             {['all', 'open', 'closed'].map((status) => (
@@ -133,7 +133,7 @@ export default function TaskFilterModal({
                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                {status === 'all' ? String(t('common.all')) : status === 'open' ? String(t('tasks.open')) : String(t('tasks.closed'))}
+                {status === 'all' ? t('common.all') : status === 'open' ? t('tasks.open') : t('tasks.closed')}
               </button>
             ))}
           </div>
@@ -142,7 +142,7 @@ export default function TaskFilterModal({
         {/* Priority filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {String(t('tasks.priority'))}
+            {t('tasks.priority')}
           </label>
           <div className="grid grid-cols-3 gap-2">
             {['all', 'low', 'normal', 'medium', 'high'].map((priority) => (
@@ -155,7 +155,7 @@ export default function TaskFilterModal({
                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                {priority === 'all' ? String(t('common.all')) : priority.charAt(0).toUpperCase() + priority.slice(1)}
+                {priority === 'all' ? t('common.all') : priority.charAt(0).toUpperCase() + priority.slice(1)}
               </button>
             ))}
           </div>
@@ -170,7 +170,7 @@ export default function TaskFilterModal({
               onChange={(e) => form.setField('hasDescription', e.target.checked)}
               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-700">{String(t('tasks.hasDescription'))}</span>
+            <span className="text-sm text-gray-700">{t('tasks.hasDescription')}</span>
           </label>
 
           <label className="flex items-center gap-3 cursor-pointer">
@@ -180,7 +180,7 @@ export default function TaskFilterModal({
               onChange={(e) => form.setField('hasTodos', e.target.checked)}
               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-700">{String(t('tasks.hasSubtasks'))}</span>
+            <span className="text-sm text-gray-700">{t('tasks.hasSubtasks')}</span>
           </label>
         </div>
       </div>

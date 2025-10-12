@@ -6,7 +6,7 @@ import CoreMenu from '@/components/ui/CoreMenu'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Todo, Project } from '@/types/shared'
 import { logger } from '@/lib/monitoring'
 
@@ -79,7 +79,7 @@ type Props = {
 }
 
 export default function ModernTaskModal({ open, onClose, task, onUpdated }: Props) {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   // Add safety check for React context
   if (!React.useState) {
     return null

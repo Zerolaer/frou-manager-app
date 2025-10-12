@@ -3,7 +3,7 @@ import { Wallet, TrendingUp, TrendingDown, Euro } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCurrencyEUR } from '@/lib/format';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import { useTranslation } from 'react-i18next';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { logger } from '@/lib/monitoring'
 
@@ -23,7 +23,7 @@ interface BudgetData {
 
 const BudgetWidget = () => {
   const { userId } = useSupabaseAuth();
-  const { t } = useTranslation();
+  const { t } = useSafeTranslation();
   const [budget, setBudget] = useState<BudgetData>({
     balance: 0,
     earned: 0,
@@ -160,8 +160,8 @@ const BudgetWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<Euro className="w-5 h-5" />}
-        title={String(t('dashboard.budget') || 'Budget')}
-        subtitle={String(t('dashboard.budget') || 'Budget')}
+        title={t('dashboard.budget') || 'Budget'}
+        subtitle={t('dashboard.budget') || 'Budget'}
       />
 
       <div className="flex-1 p-6 flex flex-col min-h-0">
@@ -169,7 +169,7 @@ const BudgetWidget = () => {
         <div className="grid grid-cols-3 gap-3 mb-4">
           {/* Balance */}
           <div className="bg-black rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-300 mb-1">{String(t('dashboard.balance') || 'Balance')}</div>
+            <div className="text-xs text-gray-300 mb-1">{t('dashboard.balance') || 'Balance'}</div>
             <div className="text-lg font-bold text-white">
               {formatCurrencyEUR(budget.balance)}
             </div>
@@ -182,7 +182,7 @@ const BudgetWidget = () => {
 
           {/* Income */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">{String(t('dashboard.earned') || 'Earned')}</div>
+            <div className="text-xs text-gray-500 mb-1">{t('dashboard.earned') || 'Earned'}</div>
             <div className="text-lg font-bold text-gray-900">
               {formatCurrencyEUR(budget.earned)}
             </div>
@@ -195,7 +195,7 @@ const BudgetWidget = () => {
 
           {/* Expenses */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">{String(t('dashboard.spent') || 'Spent')}</div>
+            <div className="text-xs text-gray-500 mb-1">{t('dashboard.spent') || 'Spent'}</div>
             <div className="text-lg font-bold text-gray-900">
               {formatCurrencyEUR(budget.spent)}
             </div>

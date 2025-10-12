@@ -1,11 +1,12 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 import { Languages } from 'lucide-react';
 
 export default function LanguageSwitcher() {
-  const { i18n, t } = useTranslation();
+  const { i18n, t } = useSafeTranslation();
 
   const toggleLanguage = () => {
+    if (!i18n || !i18n.language) return;
     const newLang = i18n.language === 'en' ? 'ru' : 'en';
     i18n.changeLanguage(newLang);
   };
@@ -18,7 +19,7 @@ export default function LanguageSwitcher() {
       title={t('language.selectLanguage')}
     >
       <Languages className="w-5 h-5" />
-      <span className="text-sm font-medium uppercase">{i18n.language}</span>
+      <span className="text-sm font-medium uppercase">{i18n?.language || 'en'}</span>
     </button>
   );
 }

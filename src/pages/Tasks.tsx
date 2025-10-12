@@ -18,7 +18,7 @@ import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 import { logger } from '@/lib/monitoring'
 
@@ -166,7 +166,7 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
 import type { Project, Todo, TaskItem } from '@/types/shared'
 
 export default function Tasks(){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler()
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const { isMobile } = useMobileDetection()

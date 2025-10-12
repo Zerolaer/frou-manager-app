@@ -23,11 +23,11 @@ export default function YearToolbar({ year, years, onYearChange, onAddCategory, 
       <div className="flex gap-3">
         <button className="btn flex items-center gap-2" onClick={onAddCategory}>
           <Plus className="w-4 h-4" />
-          {String(t('finance.addCategory'))}
+          {t('finance.addCategory')}
         </button>
         <button className="btn btn-outline text-gray-900 flex items-center gap-2" onClick={onShowStats}>
           <BarChart3 className="w-4 h-4" />
-          {String(t('finance.annualStats'))}
+          {t('finance.annualStats')}
         </button>
       </div>
     </div>

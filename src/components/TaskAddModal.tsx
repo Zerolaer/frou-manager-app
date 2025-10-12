@@ -1,6 +1,6 @@
 import { logger } from '@/lib/monitoring'
 import React, { useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { useForm } from '@/hooks/useForm'
 import { useTodoManager } from '@/hooks/useTodoManager'
@@ -22,7 +22,7 @@ type Props = {
 }
 
 export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const { createStandardFooter } = useModalActions()
   const notifications = useNotificationContext()
 
@@ -37,8 +37,8 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       selectedDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     },
     validation: {
-      title: (value) => !value.trim() ? String(t('validation.titleRequired')) : undefined,
-      priority: (value) => !['low', 'normal', 'high'].includes(value) ? String(t('validation.invalidPriority')) : undefined
+      title: (value) => !value.trim() ? t('validation.titleRequired') : undefined,
+      priority: (value) => !['low', 'normal', 'high'].includes(value) ? t('validation.invalidPriority') : undefined
     }
   })
 
@@ -78,7 +78,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         )
         
         // Show success notification
-        notifications.showSuccess(String(t('tasks.taskCreated') || 'Задача создана!'))
+        notifications.showSuccess(t('tasks.taskCreated') || 'Задача создана!')
         
         // Reset and close
         form.reset()
@@ -86,7 +86,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         onClose()
       } catch (error) {
         logger.error('Failed to create task:', error)
-        notifications.showError(String(t('tasks.createError') || 'Ошибка при создании задачи'))
+        notifications.showError(t('tasks.createError') || 'Ошибка при создании задачи')
       }
     })
   }
@@ -96,17 +96,17 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       size="lg"
       open={open}
       onClose={onClose}
-      title={String(t('tasks.newTask'))}
+      title={t('tasks.newTask')}
       subtitle={dateLabel}
       variant="side"
       footer={createStandardFooter(
         { 
-          label: String(t('actions.add')), 
+          label: t('actions.add'), 
           onClick: handleSubmit, 
           loading: form.isSubmitting, 
           disabled: !form.isValid || !form.fields.title.value.trim()
         },
-        { label: String(t('actions.cancel')), onClick: onClose }
+        { label: t('actions.cancel'), onClick: onClose }
       )}
     >
       <div className="space-y-6">
@@ -114,7 +114,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {String(t('tasks.project'))}
+              {t('tasks.project')}
             </label>
             <ProjectDropdown
               projects={projects}
@@ -125,7 +125,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {String(t('tasks.date'))}
+              {t('tasks.date')}
             </label>
             <DateDropdown
               value={form.fields.selectedDate.value}
@@ -137,13 +137,13 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Заголовок */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {String(t('tasks.title'))} <span className="text-red-500">*</span>
+            {t('tasks.title')} <span className="text-red-500">*</span>
           </label>
           <CoreInput
             value={form.fields.title.value}
             onChange={(e) => form.setField('title', e.target.value)}
             onBlur={() => form.setTouched('title')}
-            placeholder={String(t('tasks.titlePlaceholder'))}
+            placeholder={t('tasks.titlePlaceholder')}
             className={form.fields.title.touched && form.fields.title.error ? 'border-red-300' : ''}
           />
           {form.fields.title.touched && form.fields.title.error && (
@@ -154,12 +154,12 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Описание */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {String(t('tasks.description'))}
+            {t('tasks.description')}
           </label>
           <CoreTextarea
             value={form.fields.description.value}
             onChange={(e) => form.setField('description', e.target.value)}
-            placeholder={String(t('tasks.descriptionPlaceholder'))}
+            placeholder={t('tasks.descriptionPlaceholder')}
             rows={3}
           />
         </div>
@@ -168,27 +168,27 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {String(t('tasks.priority'))}
+              {t('tasks.priority')}
             </label>
             <select
               value={form.fields.priority.value}
               onChange={(e) => form.setField('priority', e.target.value as 'low'|'normal'|'high')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="low">{String(t('tasks.priorityLow'))}</option>
-              <option value="normal">{String(t('tasks.priorityNormal'))}</option>
-              <option value="high">{String(t('tasks.priorityHigh'))}</option>
+              <option value="low">{t('tasks.priorityLow')}</option>
+              <option value="normal">{t('tasks.priorityNormal')}</option>
+              <option value="high">{t('tasks.priorityHigh')}</option>
             </select>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {String(t('tasks.tag'))}
+              {t('tasks.tag')}
             </label>
             <CoreInput
               value={form.fields.tag.value}
               onChange={(e) => form.setField('tag', e.target.value)}
-              placeholder={String(t('tasks.tagPlaceholder'))}
+              placeholder={t('tasks.tagPlaceholder')}
             />
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Todo список */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {String(t('tasks.todos'))}
+            {t('tasks.todos')}
           </label>
           
           <div className="space-y-2">
@@ -231,7 +231,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <CoreInput
               value={todoManager.newTodo || ''}
               onChange={(e) => todoManager.setNewTodo(e.target.value)}
-              placeholder={String(t('tasks.addTodo'))}
+              placeholder={t('tasks.addTodo')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()

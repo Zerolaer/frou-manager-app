@@ -1,5 +1,5 @@
 import Dropdown from './ui/Dropdown'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 type Props = {
   value: 'income' | 'expense'
@@ -8,7 +8,7 @@ type Props = {
 }
 
 export default function TypeDropdown({ value, onChange, fullWidth }: Props){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   
   const TYPE_OPTIONS = [
     { value: 'income', label: t('finance.income') },

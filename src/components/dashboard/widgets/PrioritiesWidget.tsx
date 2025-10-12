@@ -3,7 +3,7 @@ import { logger } from '@/lib/monitoring'
 import { Target } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import { useTranslation } from 'react-i18next';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 
 interface PriorityData {
@@ -25,21 +25,20 @@ const PRIORITY_LABELS = {
 };
 
 const PrioritiesWidget = () => {
-  const { t } = useTranslation();
+  const { t } = useSafeTranslation();
   const { userId } = useSupabaseAuth();
   const [priorities, setPriorities] = useState<PriorityData>({
-    high: 4,
-    medium: 2,
-    low: 1
+    high: 0,
+    medium: 0,
+    low: 0
   });
   const [loading, setLoading] = useState(false);
 
-  // Remove data loading - use only test data
-  // useEffect(() => {
-  //   if (userId) {
-  //     loadPrioritiesData();
-  //   }
-  // }, [userId]);
+  useEffect(() => {
+    if (userId) {
+      loadPrioritiesData();
+    }
+  }, [userId]);
 
   const loadPrioritiesData = async () => {
     try {
@@ -53,11 +52,13 @@ const PrioritiesWidget = () => {
       const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
       const monthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Last day of month
 
-      // Get ALL user tasks (not only for month)
+      // Get tasks for current month
       const { data: tasksData } = await supabase
         .from('tasks_items')
         .select('priority, date')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .gte('date', monthStart)
+        .lte('date', monthEnd);
 
       const counts = {
         high: 0,
@@ -68,18 +69,13 @@ const PrioritiesWidget = () => {
       if (tasksData) {
         tasksData.forEach(task => {
           if (task.priority === 'high') counts.high++;
-          else if (task.priority === 'medium') counts.medium++;
+          else if (task.priority === 'normal' || task.priority === 'medium') counts.medium++;
           else if (task.priority === 'low') counts.low++;
         });
       }
 
 
-      // If no data, show test data
-      if (counts.high === 0 && counts.medium === 0 && counts.low === 0) {
-        setPriorities({ high: 4, medium: 2, low: 1 });
-      } else {
-        setPriorities(counts);
-      }
+      setPriorities(counts);
     } catch (error) {
       logger.error('Error loading priorities data:', error);
     } finally {
@@ -98,8 +94,8 @@ const PrioritiesWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<Target className="w-5 h-5" />}
-        title={String(t('dashboard.priorities') || 'Priorities')}
-        subtitle={String(t('dashboard.prioritiesDescription') || 'Task priorities overview')}
+        title={t('dashboard.priorities') || 'Priorities'}
+        subtitle={t('dashboard.prioritiesDescription') || 'Task priorities overview'}
       />
 
       <div className="flex-1 p-6 flex flex-col justify-center">
@@ -187,11 +183,11 @@ const PrioritiesWidget = () => {
                   style={{ backgroundColor: PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS] }}
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  {String(t(`dashboard.priority.${priority}`) || priority)}
+                  {t('dashboard.priority.' + priority) || priority}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">{count} {String(t('dashboard.tasks') || 'tasks')}</span>
+                <span className="text-sm font-bold text-gray-900">{count} {t('dashboard.tasks') || 'tasks'}</span>
                 <span className="text-sm text-gray-500">{getPercentage(count)}%</span>
               </div>
             </div>

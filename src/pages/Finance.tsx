@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, Suspense } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { MoreVertical } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient'
 import '../finance-grid.css'
@@ -37,11 +37,11 @@ import {
 
 // Added: accessible trigger for context menu
 function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.KeyboardEvent) => void }) {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   return (
     <button
       type="button"
-      aria-label={String(t('aria.openMenu'))}
+      aria-label={t('aria.openMenu')}
       aria-haspopup="menu"
       onClick={(e) => onOpen(e)}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(e); } }}
@@ -59,7 +59,7 @@ const fmtEUR = (n:number) => EURNoDecimals.format(n)
 
 
 export default function Finance(){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler()
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
@@ -71,18 +71,18 @@ export default function Finance(){
 
   // Translated months array
   const translatedMonths = useMemo(() => [
-    String(t('finance.months.jan')),
-    String(t('finance.months.feb')),
-    String(t('finance.months.mar')),
-    String(t('finance.months.apr')),
-    String(t('finance.months.may')),
-    String(t('finance.months.jun')),
-    String(t('finance.months.jul')),
-    String(t('finance.months.aug')),
-    String(t('finance.months.sep')),
-    String(t('finance.months.oct')),
-    String(t('finance.months.nov')),
-    String(t('finance.months.dec'))
+    t('finance.months.jan'),
+    t('finance.months.feb'),
+    t('finance.months.mar'),
+    t('finance.months.apr'),
+    t('finance.months.may'),
+    t('finance.months.jun'),
+    t('finance.months.jul'),
+    t('finance.months.aug'),
+    t('finance.months.sep'),
+    t('finance.months.oct'),
+    t('finance.months.nov'),
+    t('finance.months.dec')
   ], [t])
 
   const [year, setYear] = useState(currentYear)
@@ -199,7 +199,7 @@ export default function Finance(){
       if (signal?.aborted) return
       
       if (catsRes.error || entriesRes.error) { 
-        handleError(catsRes.error || entriesRes.error, String(t('finance.loadingFinancialData'))); 
+        handleError(catsRes.error || entriesRes.error, t('finance.loadingFinancialData')); 
         setLoading(false); 
         return 
       }
@@ -233,7 +233,7 @@ export default function Finance(){
       }
     } catch (error) {
       if (!signal?.aborted) {
-        handleError(error, String(t('finance.loadingFinancialData')))
+        handleError(error, t('finance.loadingFinancialData'))
         setLoading(false)
       }
     }

@@ -5,7 +5,7 @@ import { CoreInput } from '@/components/ui/CoreInput'
 import Dropdown from '@/components/ui/Dropdown'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { logger } from '@/lib/monitoring'
 
 type Entry = { id: string; amount: number; currency: 'EUR' | 'USD' | 'GEL'; note: string | null; included: boolean; position: number }
@@ -23,7 +23,7 @@ export default function CellEditor({
   year: number
   onApply: (newSum: number) => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<Entry[]>([])
   const [amount, setAmount] = useState<string>('')
@@ -39,18 +39,18 @@ export default function CellEditor({
   }
 
   const monthNames = useMemo(() => [
-    String(t('finance.months.jan')),
-    String(t('finance.months.feb')),
-    String(t('finance.months.mar')),
-    String(t('finance.months.apr')),
-    String(t('finance.months.may')),
-    String(t('finance.months.jun')),
-    String(t('finance.months.jul')),
-    String(t('finance.months.aug')),
-    String(t('finance.months.sep')),
-    String(t('finance.months.oct')),
-    String(t('finance.months.nov')),
-    String(t('finance.months.dec'))
+    t('finance.months.jan'),
+    t('finance.months.feb'),
+    t('finance.months.mar'),
+    t('finance.months.apr'),
+    t('finance.months.may'),
+    t('finance.months.jun'),
+    t('finance.months.jul'),
+    t('finance.months.aug'),
+    t('finance.months.sep'),
+    t('finance.months.oct'),
+    t('finance.months.nov'),
+    t('finance.months.dec')
   ], [t])
   const monthLabel = monthNames[monthIndex]
   const fmt = useMemo(()=> new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }), [])
@@ -293,22 +293,22 @@ export default function CellEditor({
         backgroundColor: 'transparent',
         fontSize: '14px'
       }}>
-        <span style={{ fontWeight: 400 }}>{String(t('finance.total'))}:</span> {fmt.format(sumIncluded(items))}
+        <span style={{ fontWeight: 400 }}>{t('finance.total')}:</span> {fmt.format(sumIncluded(items))}
       </div>
       <button className="btn btn-outline" onClick={onClose}>
-        {String(t('actions.close'))}
+        {t('actions.close')}
       </button>
     </div>
   }
   size="cell"
 >
   <div className="editor-body">
-          {loading && <div className="loading-overlay">{String(t('common.loading'))}</div>}
+          {loading && <div className="loading-overlay">{t('common.loading')}</div>}
           <div className="editor-add">
             <CoreInput 
               ref={amountInputRef}
               type="number" 
-              placeholder={String(t('finance.amount'))} 
+              placeholder={t('finance.amount')} 
               value={amount} 
               onChange={e=>setAmount(e.target.value)} 
               onKeyPress={handleKeyPress}
@@ -326,7 +326,7 @@ export default function CellEditor({
               dropdownClassName="currency-dropdown"
             />
             <CoreInput 
-              placeholder={String(t('finance.descriptionOptional'))} 
+              placeholder={t('finance.descriptionOptional')} 
               value={note} 
               onChange={e=>setNote(e.target.value)} 
               onKeyPress={handleKeyPress}
@@ -406,7 +406,7 @@ export default function CellEditor({
                 </button>
               </div>
             ))}
-            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>{String(t('finance.noEntries'))}</div>)}
+            {!loading && items.length === 0 && (<div style={{ fontSize:13, color:'#64748b' }}>{t('finance.noEntries')}</div>)}
           </div>
         </div>
 

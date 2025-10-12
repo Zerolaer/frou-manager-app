@@ -3,7 +3,7 @@ import { logger } from '@/lib/monitoring'
 import { BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import { useTranslation } from 'react-i18next';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 
 interface DayData {
@@ -14,7 +14,7 @@ interface DayData {
 }
 
 const ProductivityWidget = () => {
-  const { t } = useTranslation();
+  const { t } = useSafeTranslation();
   const { userId } = useSupabaseAuth();
   const [weekData, setWeekData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,9 +34,13 @@ const ProductivityWidget = () => {
       let endDate: Date;
 
       if (selectedPeriod === 'weekly') {
-        // Current week
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+        // Current week - Monday to Sunday
+        const today = new Date(now);
+        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 6 days from Monday
+        
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - daysFromMonday); // Monday
         startOfWeek.setHours(0, 0, 0, 0);
         
         const endOfWeek = new Date(startOfWeek);
@@ -77,8 +81,10 @@ const ProductivityWidget = () => {
       (tasksData || []).forEach(task => {
         const taskDate = new Date(task.date);
         const dayOfWeek = taskDate.getDay(); // 0 = Sunday, 1 = Monday, ...
-        const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-        const dayName = dayNames[dayOfWeek];
+        // Map to Monday-first week: Sunday=6, Monday=0, Tuesday=1, ..., Saturday=5
+        const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+        const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday becomes 6, Monday becomes 0
+        const dayName = dayNames[dayIndex];
         
         // Debug logging
         logger.debug(`Task: date=${task.date}, day=${dayName}, status="${task.status}", project_id=${task.project_id}`);
@@ -138,8 +144,8 @@ const ProductivityWidget = () => {
     <div className="h-full flex flex-col">
       <WidgetHeader
         icon={<BarChart3 className="w-5 h-5" />}
-        title={String(t('dashboard.productivity') || 'Productivity')}
-        subtitle={String(t('dashboard.productivityDescription') || 'Weekly productivity overview')}
+        title={t('dashboard.productivity') || 'Productivity'}
+        subtitle={t('dashboard.productivityDescription') || 'Weekly productivity overview'}
       />
 
 
@@ -154,7 +160,7 @@ const ProductivityWidget = () => {
             <span className="text-base font-medium">+{averageProductivity}%</span>
           </div>
           <p className="text-base text-gray-600">
-            {getTotalCompleted()}/{totalTasks} {String(t('dashboard.tasks') || 'tasks')}
+            {getTotalCompleted()}/{totalTasks} {t('dashboard.tasks') || 'tasks'}
           </p>
         </div>
 
@@ -231,7 +237,7 @@ const ProductivityWidget = () => {
                     )}
                   </div>
                   <div className="text-xs text-gray-600 font-medium">
-                    {String(t(`dashboard.days.${day.day}`) || day.day)}
+                    {t('dashboard.days.' + day.day) || day.day}
                   </div>
                 </div>
               );

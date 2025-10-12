@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useToast } from '@/lib/toast'
 import { Plus, Home, DollarSign, CheckSquare, FileText, Settings, Calendar, ChevronLeft, ChevronRight, MoreVertical, BarChart3, Target, Wallet, ListTodo, StickyNote, Goal } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 // UI Components
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
@@ -68,7 +68,7 @@ import FolderSidebar from '@/components/FolderSidebar'
 import ProjectSidebar from '@/components/ProjectSidebar'
 
 const StorybookPage = () => {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const [activeSection, setActiveSection] = useState('ui')
   const [modalOpen, setModalOpen] = useState(false)
   const [sideModalOpen, setSideModalOpen] = useState(false)
@@ -104,11 +104,11 @@ const StorybookPage = () => {
         {
           name: 'CoreInput',
           description: 'Базовый инпут с корпоративным стилем',
-          usage: String(t('storybook.allTextInputs')),
+          usage: t('storybook.allTextInputs'),
           demo: (
             <div className="space-y-4">
               <CoreInput 
-                placeholder={String(t('storybook.enterText'))}
+                placeholder={t('storybook.enterText')}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
@@ -182,7 +182,7 @@ const StorybookPage = () => {
         {
           name: 'ProjectDropdown',
           description: 'Выбор проекта',
-          usage: String(t('storybook.projectFiltering')),
+          usage: t('storybook.projectFiltering'),
           demo: (
             <div className="w-48">
               <ProjectDropdown
@@ -237,7 +237,7 @@ const StorybookPage = () => {
               <button className="btn" onClick={() => toast({ title: 'Успешно', message: 'Операция выполнена' })}>
                 Показать уведомление
               </button>
-              <button className="btn" onClick={() => toast({ title: String(t('common.error')), message: String(t('storybook.somethingWentWrong')) })}>
+              <button className="btn" onClick={() => toast({ title: t('common.error'), message: t('storybook.somethingWentWrong') })}>
                 Показать ошибку
               </button>
               <Toaster />

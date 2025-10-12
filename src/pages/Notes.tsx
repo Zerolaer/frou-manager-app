@@ -1,6 +1,6 @@
 /* src/pages/Notes.tsx */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
 import FolderSidebar from '@/components/FolderSidebar';
@@ -18,7 +18,7 @@ import '@/notes.css';
 
 function NotesPageContent() {
   const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler();
-  const { t } = useTranslation();
+  const { t } = useSafeTranslation();
   const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
   const [notes, setNotes] = useState<Note[]>([]);
