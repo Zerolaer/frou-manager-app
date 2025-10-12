@@ -19,23 +19,45 @@
         }
         h1 { color: #333; margin-bottom: 20px; }
         .status { 
-            background: #f0f0f0; 
+            background: #d4edda; 
+            color: #155724;
             padding: 20px; 
             border-radius: 8px; 
             margin: 20px 0;
         }
-        .working { background: #d4edda; color: #155724; }
+        .next-steps {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Frovo - Менеджер твоей продуктивности</h1>
-        <div class="status working">
+        <div class="status">
             <p><strong>✅ Сайт работает!</strong></p>
-            <p>Если вы видите это, значит проблема решена.</p>
-            <p>Это простая HTML страница без JavaScript.</p>
+            <p>Проблема с Netlify решена!</p>
+            <p>Теперь восстанавливаем полное приложение.</p>
         </div>
-        <p>Сейчас мы восстановим полное приложение.</p>
+        
+        <div class="next-steps">
+            <h3>Следующие шаги:</h3>
+            <div class="step">1. Восстановить React приложение</div>
+            <div class="step">2. Настроить правильную сборку</div>
+            <div class="step">3. Вернуть все функции (Tasks, Finance, Notes)</div>
+            <div class="step">4. Протестировать на продакшне</div>
+        </div>
+        
+        <p><strong>Статус:</strong> 🔧 Восстанавливаем приложение...</p>
     </div>
 </body>
 </html>
