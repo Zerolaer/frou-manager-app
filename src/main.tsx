@@ -2,6 +2,7 @@ import React, { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './styles.css'
+// import './lib/i18n' // Temporarily disabled
 import App from './App'
 import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
@@ -15,8 +16,6 @@ const LazyPages = {
   Notes: React.lazy(() => import('./pages/Notes')),
   Storybook: React.lazy(() => import('./pages/Storybook')),
 }
-
-// Simple startup - removed complex utilities for now
 
 
 const Protected = ({children}: {children: React.ReactNode}) => {
