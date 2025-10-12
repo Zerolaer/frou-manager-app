@@ -1,4 +1,5 @@
 import React from 'react'
+import { format } from 'date-fns'
 import { useModal } from '@/hooks/useModal'
 import Dropdown, { DropdownOption } from './Dropdown'
 
@@ -137,8 +138,8 @@ export function DateDropdown({
       value={value as string}
       onChange={handleChange}
       placeholder={placeholder}
-      min={minDate?.toISOString().split('T')[0]}
-      max={maxDate?.toISOString().split('T')[0]}
+      min={minDate ? format(minDate, 'yyyy-MM-dd') : undefined}
+      max={maxDate ? format(maxDate, 'yyyy-MM-dd') : undefined}
       disabled={props.disabled}
       className={`w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${props.className || ''}`}
       aria-label={props['aria-label']}

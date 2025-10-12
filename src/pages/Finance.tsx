@@ -12,6 +12,7 @@ import { CoreInput } from '@/components/ui/CoreInput'
 import { YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
 import { LazyComponent, LazyFinanceRow } from '@/components/ui/LazyComponent'
 import { FinanceRowSkeleton } from '@/components/ui/LoadingStates'
+import CellEditor from '@/components/CellEditor'
 import type { Cat, CtxCat, CellCtx, EntryLite, FinanceCellCtx } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'

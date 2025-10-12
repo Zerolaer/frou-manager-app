@@ -6,6 +6,8 @@ import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
 import ModernTaskModal from '@/components/ModernTaskModal'
 import TaskAddModal from '@/components/TaskAddModal'
+import RecurringDeleteModal from '@/components/RecurringDeleteModal'
+import RecurringEditModal from '@/components/RecurringEditModal'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
 import TaskFilterModal, { type TaskFilters } from '@/components/TaskFilterModal'
@@ -16,11 +18,13 @@ import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
+import { RecurringSettings } from '@/types/recurring'
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 import { logger } from '@/lib/monitoring'
+import { Repeat } from 'lucide-react'
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
@@ -185,6 +189,15 @@ export default function Tasks(){
   
   // Search state
   const [showSearch, setShowSearch] = React.useState(false)
+  
+  // Recurring delete modal state
+  const [showRecurringDelete, setShowRecurringDelete] = React.useState(false)
+  const [taskToDelete, setTaskToDelete] = React.useState<{ task: TaskItem; dayKey: string } | null>(null)
+  
+  // Recurring edit modal state
+  const [showRecurringEdit, setShowRecurringEdit] = React.useState(false)
+  const [taskToEdit, setTaskToEdit] = React.useState<{ task: TaskItem; updates: any } | null>(null)
+
 
   // Apply filters to tasks
   const applyFilters = React.useCallback((taskList: TaskItem[]): TaskItem[] => {
@@ -693,7 +706,7 @@ const projectColorById = React.useMemo(() => {
       const endDate = format(end, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date',     { ascending:true })
@@ -725,7 +738,8 @@ const projectColorById = React.useMemo(() => {
           tag: t.tag, 
           todos: (t.todos||[]), 
           status: t.status || TASK_STATUSES.OPEN,
-          project_name: t.tasks_projects?.name || null
+          project_name: t.tasks_projects?.name || null,
+          recurring_task_id: t.recurring_task_id
         })
       })
       
@@ -812,6 +826,27 @@ const projectColorById = React.useMemo(() => {
   }
 
   async function deleteTask(task: TaskItem, dayKey: string){
+    // Check if this is a recurring task
+    if (task.recurring_task_id) {
+      // Count how many tasks have the same recurring_task_id
+      const recurringTasks = Object.values(tasks)
+        .flat()
+        .filter(t => t.recurring_task_id === task.recurring_task_id)
+      
+      if (recurringTasks.length > 1) {
+        // Show recurring delete modal
+        setTaskToDelete({ task, dayKey })
+        setShowRecurringDelete(true)
+        setCtx(c => ({ ...c, open: false }))
+        return
+      }
+    }
+    
+    // Delete single task (either non-recurring or the last recurring task)
+    await deleteSingleTask(task, dayKey)
+  }
+  
+  async function deleteSingleTask(task: TaskItem, dayKey: string) {
     try{
       await supabase.from('tasks_items').delete().eq('id', task.id)
       const map = { ...tasks }
@@ -819,8 +854,123 @@ const projectColorById = React.useMemo(() => {
       const idx = list.findIndex(x => x.id === task.id)
       if (idx >= 0){ list.splice(idx,1); map[dayKey] = list }
       setTasks(map)
+      handleSuccess(t('tasks.taskDeleted') || 'Задача удалена')
+    } catch (error) {
+      handleError(error as any, 'Deleting task...')
     } finally {
       setCtx(c => ({ ...c, open: false }))
+      setShowRecurringDelete(false)
+      setTaskToDelete(null)
+    }
+  }
+  
+  async function deleteAllRecurringTasks(task: TaskItem) {
+    if (!task.recurring_task_id) return
+    
+    try {
+      // Delete all tasks with the same recurring_task_id
+      await supabase
+        .from('tasks_items')
+        .delete()
+        .eq('recurring_task_id', task.recurring_task_id)
+      
+      // Update local state - remove all tasks with this recurring_task_id
+      const map = { ...tasks }
+      Object.keys(map).forEach(date => {
+        map[date] = map[date].filter(t => t.recurring_task_id !== task.recurring_task_id)
+        if (map[date].length === 0) {
+          delete map[date]
+        }
+      })
+      setTasks(map)
+      
+      const recurringTasks = Object.values(tasks)
+        .flat()
+        .filter(t => t.recurring_task_id === task.recurring_task_id)
+      
+      handleSuccess(
+        t('tasks.allRecurringDeleted', { count: recurringTasks.length }) || 
+        `Удалено ${recurringTasks.length} повторяющихся задач`
+      )
+    } catch (error) {
+      handleError(error as any, 'Deleting recurring tasks...')
+    } finally {
+      setShowRecurringDelete(false)
+      setTaskToDelete(null)
+    }
+  }
+
+  async function editSingleTask(task: TaskItem, updates: any) {
+    try {
+      // Remove computed fields that don't exist in database and primary key
+      const { project_name, created_at, updated_at, id, ...dbUpdates } = updates
+      
+      const { error } = await supabase
+        .from('tasks_items')
+        .update(dbUpdates)
+        .eq('id', task.id)
+      
+      if (error) throw error
+      
+      // Update local state
+      const map = { ...tasks }
+      Object.keys(map).forEach(date => {
+        const taskIndex = map[date].findIndex(t => t.id === task.id)
+        if (taskIndex >= 0) {
+          map[date][taskIndex] = { ...map[date][taskIndex], ...updates }
+        }
+      })
+      setTasks(map)
+      
+      handleSuccess(t('tasks.taskUpdated') || 'Task updated successfully')
+    } catch (error) {
+      handleError(error as any, 'Updating task...')
+    } finally {
+      setShowRecurringEdit(false)
+      setTaskToEdit(null)
+    }
+  }
+
+  async function editAllRecurringTasks(task: TaskItem, updates: any) {
+    if (!task.recurring_task_id) return
+    
+    try {
+      // Remove computed fields that don't exist in database, primary key, and date (to preserve individual task dates)
+      const { project_name, created_at, updated_at, id, date, ...dbUpdates } = updates
+      
+      // Update all tasks with the same recurring_task_id
+      const { error } = await supabase
+        .from('tasks_items')
+        .update(dbUpdates)
+        .eq('recurring_task_id', task.recurring_task_id)
+      
+      if (error) throw error
+      
+      // Update local state (preserve individual task dates)
+      const map = { ...tasks }
+      const { date: _, ...updatesWithoutDate } = updates // Remove date from updates
+      Object.keys(map).forEach(date => {
+        map[date] = map[date].map(t => 
+          t.recurring_task_id === task.recurring_task_id 
+            ? { ...t, ...updatesWithoutDate }
+            : t
+        )
+      })
+      setTasks(map)
+      
+      const recurringTasks = Object.values(tasks)
+        .flat()
+        .filter(t => t.recurring_task_id === task.recurring_task_id)
+      
+      handleSuccess(
+        t('tasks.allRecurringUpdated', { count: recurringTasks.length }) || 
+        `Updated ${recurringTasks.length} recurring tasks`
+      )
+    } catch (error) {
+      handleError(error as any, 'Updating recurring tasks...')
+    } finally {
+      setShowRecurringEdit(false)
+      setTaskToEdit(null)
     }
   }
 
@@ -879,8 +1029,133 @@ const projectColorById = React.useMemo(() => {
   const [taskDate, setTaskDate] = React.useState<Date|null>(null)
   const [taskTitle, setTaskTitle] = React.useState('')
   const [taskDesc, setTaskDesc] = React.useState('')
-  async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date){
+
+  // Function to create recurring tasks
+  async function createRecurringTasks(
+    startDate: Date,
+    projectId: string | null,
+    title: string,
+    description: string,
+    priority: string,
+    tag: string,
+    todos: Todo[],
+    recurringSettings: RecurringSettings
+  ) {
     if (!uid) return
+
+    try {
+      // Import the utility function
+      const { generateRecurringTaskInstances } = await import('@/utils/recurringUtils')
+      
+      // Generate all task instances
+      const instances = generateRecurringTaskInstances(startDate, recurringSettings)
+      
+      logger.debug('🔄 Creating recurring tasks:', { 
+        title, 
+        instancesCount: instances.length,
+        startDate: startDate.toISOString().split('T')[0]
+      })
+
+      // First, create a record in recurring_tasks table with the settings
+      const { data: recurringTaskData, error: recurringError } = await supabase
+        .from('recurring_tasks')
+        .insert({
+          user_id: uid,
+          title,
+          description,
+          priority,
+          tag,
+          todos,
+          project_id: projectId,
+          recurrence_type: recurringSettings.recurrenceType,
+          recurrence_interval: recurringSettings.interval,
+          recurrence_day_of_week: recurringSettings.dayOfWeek,
+          recurrence_day_of_month: recurringSettings.dayOfMonth,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: recurringSettings.endDate?.toISOString().split('T')[0],
+          is_active: true
+        })
+        .select()
+        .single()
+
+      if (recurringError) {
+        logger.error('❌ Error creating recurring task record:', recurringError)
+        throw recurringError
+      }
+
+      const recurringTaskId = recurringTaskData.id
+      logger.debug('✅ Created recurring task record:', recurringTaskId)
+
+      // Create tasks for each instance
+      const createdTasks: TaskItem[] = []
+      const taskMap = { ...tasks }
+
+      for (const instance of instances) {
+        const nextPos = (taskMap[instance.date]?.length || 0)
+        
+        const { data, error } = await supabase.from('tasks_items')
+          .insert({ 
+            project_id: projectId, 
+            title, 
+            description, 
+            date: instance.date, 
+            position: nextPos, 
+            priority, 
+            tag, 
+            todos, 
+            user_id: uid,
+            recurring_task_id: recurringTaskId
+          })
+          .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)').single()
+
+        if (!error && data) {
+          const newTask: TaskItem = { 
+            id: data.id, 
+            project_id: data.project_id, 
+            title: data.title, 
+            description: data.description, 
+            date: data.date, 
+            position: data.position, 
+            priority: data.priority, 
+            tag: data.tag, 
+            todos: (data.todos||[]),
+            status: data.status || TASK_STATUSES.OPEN,
+            project_name: (data as any).tasks_projects?.name || null,
+            recurring_task_id: data.recurring_task_id
+          }
+          createdTasks.push(newTask)
+          ;(taskMap[instance.date] ||= []).push(newTask)
+        } else if (error) {
+          logger.error('❌ Error creating recurring task instance:', error)
+        }
+      }
+
+      // Update tasks state
+      setTasks(taskMap)
+      
+      // Show success message
+      const message = createdTasks.length > 1 
+        ? `Создано ${createdTasks.length} повторяющихся задач`
+        : 'Повторяющаяся задача создана'
+      handleSuccess(message)
+      
+      setTaskTitle('')
+      setTaskDesc('')
+      setOpenNewTask(false)
+
+    } catch (error) {
+      logger.error('❌ Error creating recurring tasks:', error)
+      handleError(error as any, 'Creating recurring tasks...')
+    }
+  }
+
+    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringSettings){
+      if (!uid) return
+      
+      // Debug: check if recurring settings are passed correctly
+      if (recurringSettings?.isRecurring) {
+        console.log('🔄 Creating recurring task:', recurringSettings)
+      }
     
     logger.debug('🔧 createTask called with:', {
       projectIdFromModal,
@@ -926,9 +1201,16 @@ const projectColorById = React.useMemo(() => {
     const targetDate = dateFromModal || taskDate || new Date()
     const key = format(targetDate, 'yyyy-MM-dd')
     const nextPos = (tasks[key]?.length || 0)
+
+    // Handle recurring tasks
+    if (recurringSettings?.isRecurring && recurringSettings.recurrenceType) {
+      await createRecurringTasks(targetDate, resolvedProject, title, desc, priority, tag, todos, recurringSettings)
+    } else {
+      // Create single task
     const { data, error } = await supabase.from('tasks_items')
       .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, todos, user_id: uid })
       .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
+      
     if (!error && data){
       const newTask: TaskItem = { 
         id: data.id, 
@@ -951,7 +1233,186 @@ const projectColorById = React.useMemo(() => {
       setOpenNewTask(false)
     } else if (error) {
       handleError(error, 'Creating task...')
+      }
     }
+  }
+
+  // Function to update recurring task settings
+  const updateRecurringTaskSettings = async (taskId: string, settings: RecurringSettings) => {
+    if (!uid) return
+
+    try {
+      // Find the recurring_task_id for this task
+      const task = Object.values(tasks).flat().find(t => t.id === taskId)
+      if (!task?.recurring_task_id) {
+        console.error('Task not found or not a recurring task')
+        return
+      }
+
+      // Update the recurring_tasks record
+      const { error } = await supabase
+        .from('recurring_tasks')
+        .update({
+          recurrence_type: settings.recurrenceType,
+          recurrence_interval: settings.interval,
+          recurrence_day_of_week: settings.dayOfWeek,
+          recurrence_day_of_month: settings.dayOfMonth,
+          end_date: settings.endDate?.toISOString().split('T')[0]
+        })
+        .eq('id', task.recurring_task_id)
+
+      if (error) {
+        console.error('Error updating recurring task settings:', error)
+        throw error
+      }
+
+      console.log('✅ Recurring task settings updated')
+    } catch (error) {
+      console.error('❌ Error updating recurring task settings:', error)
+      throw error
+    }
+  }
+
+  // Handle task updates - check for recurring tasks
+  const handleTaskUpdate = async (updatedTask: TaskItem | null, isSave?: boolean) => {
+    console.log('🔄 handleTaskUpdate called:', { 
+      updatedTask: updatedTask?.title, 
+      isSave, 
+      viewTask: viewTask?.title,
+      viewTaskRecurringId: viewTask?.recurring_task_id
+    })
+    
+    // Handle task deletion (updatedTask is null)
+    if (!updatedTask) {
+      setViewTask(null)
+      return
+    }
+    
+    if (!viewTask) return
+    
+    // Check if there were actual changes (exclude date changes for recurring tasks)
+    const hasChanges = (
+      updatedTask.title !== viewTask.title ||
+      updatedTask.description !== viewTask.description ||
+      updatedTask.priority !== viewTask.priority ||
+      updatedTask.tag !== viewTask.tag ||
+      updatedTask.project_id !== viewTask.project_id ||
+      JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask.todos)
+    )
+    
+    // For recurring tasks, date changes should not trigger the modal
+    const hasRelevantChanges = viewTask.recurring_task_id 
+      ? hasChanges 
+      : hasChanges || (updatedTask.date !== viewTask.date)
+    
+    console.log('🔍 Changes detected:', {
+      hasChanges,
+      hasRelevantChanges,
+      titleChanged: updatedTask.title !== viewTask.title,
+      descriptionChanged: updatedTask.description !== viewTask.description,
+      priorityChanged: updatedTask.priority !== viewTask.priority,
+      tagChanged: updatedTask.tag !== viewTask.tag,
+      dateChanged: updatedTask.date !== viewTask.date,
+      projectChanged: updatedTask.project_id !== viewTask.project_id,
+      todosChanged: JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask.todos)
+    })
+    
+    // Only check for recurring tasks when it's actually a manual save operation AND there are relevant changes
+    if (isSave && viewTask.recurring_task_id && hasRelevantChanges) {
+      console.log('🔍 Checking recurring tasks for save operation with changes')
+      
+      try {
+        // Check database directly for all tasks with this recurring_task_id
+        const { data: dbRecurringTasks, error } = await supabase
+          .from('tasks_items')
+          .select('id, title')
+          .eq('recurring_task_id', viewTask.recurring_task_id)
+        
+        if (error) throw error
+        
+        console.log('📊 Database recurring tasks found:', {
+          recurringTaskId: viewTask.recurring_task_id,
+          dbTasksCount: dbRecurringTasks?.length || 0,
+          dbTaskTitles: dbRecurringTasks?.map(t => t.title) || []
+        })
+        
+        if (dbRecurringTasks && dbRecurringTasks.length > 1) {
+          console.log('✅ Showing recurring edit modal')
+          // Show recurring edit modal
+          setTaskToEdit({ task: viewTask, updates: updatedTask })
+          setShowRecurringEdit(true)
+          return
+        } else {
+          console.log('❌ Not enough recurring tasks in database, updating directly')
+        }
+      } catch (error) {
+        console.error('❌ Error checking recurring tasks:', error)
+        // Fallback to local state check
+        const allTasks = Object.values(tasks).flat()
+        const recurringTasks = allTasks.filter(t => t.recurring_task_id === viewTask.recurring_task_id)
+        
+        if (recurringTasks.length > 1) {
+          console.log('✅ Showing recurring edit modal (fallback)')
+          setTaskToEdit({ task: viewTask, updates: updatedTask })
+          setShowRecurringEdit(true)
+          return
+        }
+      }
+    } else {
+      console.log('❌ Not showing recurring modal:', {
+        isSave,
+        hasRecurringId: !!viewTask.recurring_task_id,
+        hasRelevantChanges
+      })
+    }
+    
+    // Single task or only one instance of recurring task - update directly
+    updateTaskDirectly(updatedTask)
+  }
+
+  const updateTaskDirectly = (updatedTask: TaskItem) => {
+    const map = { ...tasks }
+    const oldDate = viewTask?.date || ""
+    const newDate = updatedTask.date || ""
+    
+    // Find original position of the task
+    let originalPosition = -1
+    if (oldDate && map[oldDate]) {
+      const originalIndex = map[oldDate].findIndex(x => x.id === updatedTask.id)
+      if (originalIndex >= 0) {
+        originalPosition = map[oldDate][originalIndex].position || originalIndex
+      }
+    }
+    
+    // Remove from old date if it exists
+    if (oldDate && map[oldDate]) {
+      map[oldDate] = map[oldDate].filter(x => x.id !== updatedTask.id)
+      if (map[oldDate].length === 0) {
+        delete map[oldDate]
+      }
+    }
+    
+    // Add to new date
+    if (newDate) {
+      if (!map[newDate]) {
+        map[newDate] = []
+      }
+      
+      // If date changed, append to end; otherwise maintain position
+      if (oldDate !== newDate) {
+        map[newDate].push({ ...updatedTask, position: map[newDate].length })
+      } else {
+        // Same date - try to maintain position
+        const insertPosition = Math.max(0, Math.min(originalPosition, map[newDate].length))
+        map[newDate].splice(insertPosition, 0, { ...updatedTask, position: insertPosition })
+        
+        // Recalculate positions
+        map[newDate] = map[newDate].map((task, index) => ({ ...task, position: index }))
+      }
+    }
+    
+    setTasks(map)
+    setViewTask(null)
   }
 
   // Get tasks for mobile date
@@ -1013,7 +1474,7 @@ const projectColorById = React.useMemo(() => {
           onClose={()=>setOpenNewTask(false)} 
           dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE") : ""} 
           initialDate={taskDate || new Date()}
-          onSubmit={async (title, desc, prio, tag, todos, projId, date)=>{ await createTask(title, desc, prio, tag, todos, projId, date) }} 
+          onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
         />
 
         <ModernTaskModal
@@ -1021,56 +1482,8 @@ const projectColorById = React.useMemo(() => {
           open={!!viewTask}
           onClose={()=>setViewTask(null)}
           task={viewTask}
-          onUpdated={(t)=>{
-            if(!t) return
-            logger.debug('🔄 onUpdated called for task:', t.title)
-            const map={...tasks}
-            const oldDate = viewTask?.date || ""
-            const newDate = t.date || ""
-            
-            // Find original position of the task
-            let originalPosition = -1
-            if(oldDate && map[oldDate]) {
-              const originalIndex = map[oldDate].findIndex(x => x.id === t.id)
-              if(originalIndex >= 0) {
-                originalPosition = map[oldDate][originalIndex].position || originalIndex
-                logger.debug('📍 Original position:', { originalPosition, originalIndex })
-              }
-            }
-            
-            // Remove from old date if it exists
-            if(oldDate && map[oldDate]) {
-              const oldList = map[oldDate].filter(x => x.id !== t.id)
-              map[oldDate] = oldList
-            }
-            
-            // Add to new date
-            if(newDate) {
-              const newList = map[newDate] || []
-              const existingIndex = newList.findIndex(x => x.id === t.id)
-              if(existingIndex >= 0) {
-                // Update existing task, preserve position
-                newList[existingIndex] = {...newList[existingIndex], ...t, position: newList[existingIndex].position} as TaskItem
-                logger.debug('✅ Updated existing task at position:', newList[existingIndex].position)
-              } else {
-                // Add new task at original position or at end
-                const taskWithPosition = {...t, position: originalPosition >= 0 ? originalPosition : newList.length} as TaskItem
-                if(originalPosition >= 0 && originalPosition < newList.length) {
-                  // Insert at original position
-                  newList.splice(originalPosition, 0, taskWithPosition)
-                  logger.debug('📍 Inserted at original position:', originalPosition)
-                } else {
-                  // Add to end
-                  newList.push(taskWithPosition)
-                  logger.debug('📍 Added to end, position:', taskWithPosition.position)
-                }
-              }
-              map[newDate] = newList
-            }
-            
-            logger.debug('🔄 Setting new tasks state')
-            setTasks(map)
-          }}
+          onUpdated={handleTaskUpdate}
+          onUpdateRecurrence={updateRecurringTaskSettings}
         />
 
         {/* Context menu */}
@@ -1163,6 +1576,7 @@ const projectColorById = React.useMemo(() => {
                             backgroundColor: '#ffffff',
                             border: '1px solid #e5e7eb',
                             borderRadius: '12px',
+                            overflow: 'visible', // Allow tooltip to show outside card bounds
                             ...(isDragged ? {
                               position: 'fixed',
                               left: dragPosition.x - 10, // Small offset from cursor
@@ -1217,64 +1631,64 @@ const projectColorById = React.useMemo(() => {
                             }
                           }}
                         >
+                          {/* Menu button */}
+                          <button
+                            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const menuWidth = 160
+                              const menuHeight = 120
+                              const { x, y } = clampToViewport(
+                                e.clientX + 10, // Right of cursor
+                                e.clientY - 10, // Above cursor
+                                menuWidth,
+                                menuHeight
+                              );
+                              setCtx({
+                                open: true,
+                                x: e.clientX + 10, // Right of cursor
+                                y: e.clientY - 10, // Above cursor
+                                task: taskItem,
+                                dayKey: key,
+                              });
+                            }}
+                          >
+                            <div className="w-4 h-4 flex items-center justify-center">
+                              <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                              </svg>
+                            </div>
+                          </button>
+
                           <div className="text-sm">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {taskItem.priority && getPriorityText(taskItem.priority) ? (
-                                  <span 
-                                    className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
-                                    style={{
-                                      backgroundColor: getPriorityColor(taskItem.priority).background,
-                                      color: getPriorityColor(taskItem.priority).text,
-                                      borderRadius: '999px !important'
-                                    }}
-                                  >
-                                    {getPriorityText(taskItem.priority)}
-                                  </span>
-                                ) : (
-                                  <div></div>
-                                )}
-                                {taskItem.tag && (
-                                  <span 
-                                    className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
-                                    style={{
-                                      backgroundColor: '#f3f4f6',
-                                      color: '#6b7280',
-                                      borderRadius: '999px !important'
-                                    }}
-                                  >
-                                    {taskItem.tag}
-                                  </span>
-                                )}
-                              </div>
-                              <button
-                                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  const menuWidth = 160
-                                  const menuHeight = 120
-                                  const { x, y } = clampToViewport(
-                                    e.clientX + 10, // Right of cursor
-                                    e.clientY - 10, // Above cursor
-                                    menuWidth,
-                                    menuHeight
-                                  );
-                                  setCtx({
-                                    open: true,
-                                    x: e.clientX + 10, // Right of cursor
-                                    y: e.clientY - 10, // Above cursor
-                                    task: taskItem,
-                                    dayKey: key,
-                                  });
-                                }}
-                              >
-                                <div className="w-4 h-4 flex items-center justify-center">
-                                  <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                  </svg>
-                                </div>
-                              </button>
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                              {taskItem.priority && getPriorityText(taskItem.priority) ? (
+                                <span 
+                                  className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                  style={{
+                                    backgroundColor: getPriorityColor(taskItem.priority).background,
+                                    color: getPriorityColor(taskItem.priority).text,
+                                    borderRadius: '999px !important'
+                                  }}
+                                >
+                                  {getPriorityText(taskItem.priority)}
+                                </span>
+                              ) : (
+                                <div></div>
+                              )}
+                              {taskItem.tag && (
+                                <span 
+                                  className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                  style={{
+                                    backgroundColor: '#f3f4f6',
+                                    color: '#6b7280',
+                                    borderRadius: '999px !important'
+                                  }}
+                                >
+                                  {taskItem.tag}
+                                </span>
+                              )}
                             </div>
                               <div className="leading-tight clamp-2 break-words mb-2">
                                 <span 
@@ -1308,12 +1722,20 @@ const projectColorById = React.useMemo(() => {
                                 );
                               })()}
 
-                              {/* Project name */}
-                              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
-                                {taskItem.project_name || t('tasks.noProject')}
+                              {/* Separator line - full width */}
+                              <div className="border-t border-gray-100 mt-2"></div>
+                              
+                              {/* Project name and recurring icon */}
+                              <div className="flex items-center justify-between text-xs text-gray-500 pt-2">
+                                <span>{taskItem.project_name || t('tasks.noProject')}</span>
+                                {taskItem.recurring_task_id && (
+                                  <div className="transition-colors hover:text-black">
+                                    <Repeat className="w-3 h-3" />
+                                  </div>
+                                )}
                               </div>
                             </div>
-                        </div>
+                          </div>
                         
                         {/* Old card completely removed - only new one used */}
                       </React.Fragment>
@@ -1344,7 +1766,7 @@ const projectColorById = React.useMemo(() => {
         onClose={()=>setOpenNewTask(false)} 
         dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE") : ""} 
         initialDate={taskDate || new Date()}
-        onSubmit={async (title, desc, prio, tag, todos, projId, date)=>{ await createTask(title, desc, prio, tag, todos, projId, date) }} 
+        onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
       />
 
       {/* Task modals */}
@@ -1353,56 +1775,8 @@ const projectColorById = React.useMemo(() => {
         open={!!viewTask}
         onClose={()=>setViewTask(null)}
         task={viewTask}
-        onUpdated={(t)=>{
-          if(!t) return
-          logger.debug('🔄 onUpdated (duplicate) called for task:', t.title)
-          const map={...tasks}
-          const oldDate = viewTask?.date || ""
-          const newDate = t.date || ""
-          
-          // Find original position of the task
-          let originalPosition = -1
-          if(oldDate && map[oldDate]) {
-            const originalIndex = map[oldDate].findIndex(x => x.id === t.id)
-            if(originalIndex >= 0) {
-              originalPosition = map[oldDate][originalIndex].position || originalIndex
-              logger.debug('📍 Original position (duplicate):', { originalPosition, originalIndex })
-            }
-          }
-          
-          // Remove from old date if it exists
-          if(oldDate && map[oldDate]) {
-            const oldList = map[oldDate].filter(x => x.id !== t.id)
-            map[oldDate] = oldList
-          }
-          
-          // Add to new date
-          if(newDate) {
-            const newList = map[newDate] || []
-            const existingIndex = newList.findIndex(x => x.id === t.id)
-            if(existingIndex >= 0) {
-              // Update existing task, preserve position
-              newList[existingIndex] = {...newList[existingIndex], ...t, position: newList[existingIndex].position} as TaskItem
-              logger.debug('✅ Updated existing task (duplicate) at position:', newList[existingIndex].position)
-            } else {
-              // Add new task at original position or at end
-              const taskWithPosition = {...t, position: originalPosition >= 0 ? originalPosition : newList.length} as TaskItem
-              if(originalPosition >= 0 && originalPosition < newList.length) {
-                // Insert at original position
-                newList.splice(originalPosition, 0, taskWithPosition)
-                logger.debug('📍 Inserted at original position (duplicate):', originalPosition)
-              } else {
-                // Add to end
-                newList.push(taskWithPosition)
-                logger.debug('📍 Added to end (duplicate), position:', taskWithPosition.position)
-              }
-            }
-            map[newDate] = newList
-          }
-          
-          logger.debug('🔄 Setting new tasks state (duplicate)')
-          setTasks(map)
-        }}
+        onUpdated={handleTaskUpdate}
+        onUpdateRecurrence={updateRecurringTaskSettings}
       />
 
       {ctx.open && <TaskContextMenu 
@@ -1448,6 +1822,62 @@ const projectColorById = React.useMemo(() => {
         onTaskSelect={(task) => {
           setViewTask(task)
         }}
+      />
+
+      {/* Recurring delete modal */}
+      <RecurringDeleteModal
+        open={showRecurringDelete}
+        onClose={() => {
+          setShowRecurringDelete(false)
+          setTaskToDelete(null)
+        }}
+        onDeleteSingle={() => {
+          if (taskToDelete) {
+            deleteSingleTask(taskToDelete.task, taskToDelete.dayKey)
+          }
+        }}
+        onDeleteAll={() => {
+          if (taskToDelete) {
+            deleteAllRecurringTasks(taskToDelete.task)
+          }
+        }}
+        taskTitle={taskToDelete?.task.title || ''}
+        recurringCount={
+          taskToDelete?.task.recurring_task_id 
+            ? Object.values(tasks)
+                .flat()
+                .filter(t => t.recurring_task_id === taskToDelete.task.recurring_task_id)
+                .length
+            : 0
+        }
+      />
+
+      {/* Recurring edit modal */}
+      <RecurringEditModal
+        open={showRecurringEdit}
+        onClose={() => {
+          setShowRecurringEdit(false)
+          setTaskToEdit(null)
+        }}
+        onEditSingle={() => {
+          if (taskToEdit) {
+            editSingleTask(taskToEdit.task, taskToEdit.updates)
+          }
+        }}
+        onEditAll={() => {
+          if (taskToEdit) {
+            editAllRecurringTasks(taskToEdit.task, taskToEdit.updates)
+          }
+        }}
+        taskTitle={taskToEdit?.task.title || ''}
+        recurringCount={
+          taskToEdit?.task.recurring_task_id 
+            ? Object.values(tasks)
+                .flat()
+                .filter(t => t.recurring_task_id === taskToEdit.task.recurring_task_id)
+                .length
+            : 0
+        }
       />
 
     </div>

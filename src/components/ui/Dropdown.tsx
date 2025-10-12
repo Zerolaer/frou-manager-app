@@ -174,14 +174,16 @@ export default function Dropdown({
         ref={btnRef}
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
-        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 ${buttonClassName}`}
+        className={`inline-flex items-center justify-between px-4 py-2.5 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 ${buttonClassName}`}
         style={buttonStyle}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        {icon}
-        {(selectedOption?.label || placeholder) && <span>{selectedOption?.label || placeholder}</span>}
+        <div className="flex items-center gap-2">
+          {icon}
+          {(selectedOption?.label || placeholder) && <span>{selectedOption?.label || placeholder}</span>}
+        </div>
         {!hideChevron && <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />}
       </button>
 

@@ -9,6 +9,7 @@ import SideModal from '@/components/ui/SideModal'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Todo, Project } from '@/types/shared'
 import { logger } from '@/lib/monitoring'
+import RecurringTaskBlock from './RecurringTaskBlock'
 
 // CSS animations for checkboxes
 const checkboxAnimations = `
@@ -75,10 +76,11 @@ type Props = {
   open: boolean
   onClose: () => void
   task: Task | null
-  onUpdated?: (task: Task | null) => void
+  onUpdated?: (task: Task | null, isSave?: boolean) => void
+  onUpdateRecurrence?: (taskId: string, settings: any) => Promise<void>
 }
 
-export default function ModernTaskModal({ open, onClose, task, onUpdated }: Props) {
+export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence }: Props) {
   const { t } = useSafeTranslation()
   // Add safety check for React context
   if (!React.useState) {
@@ -143,7 +145,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     if (!open || !task) return
     logger.debug('⏱️ Title/description changed, scheduling save in 800ms')
     const timer = setTimeout(() => {
-      save()
+      save(true) // true = auto-save
     }, 800) // 800ms debounce
     return () => clearTimeout(timer)
   }, [title, description, open, task, save])
@@ -153,7 +155,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     if (!open || !task) return
     logger.debug('⏱️ Fields changed, scheduling save in 500ms')
     const timer = setTimeout(() => {
-      save()
+      save(true) // true = auto-save
     }, 500)
     return () => clearTimeout(timer)
   }, [priority, tag, date, status, projectId, open, task, save])
@@ -163,7 +165,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
     if (!open || !task) return
     logger.debug('⏱️ Todos changed, scheduling save in 300ms')
     const timer = setTimeout(() => {
-      save()
+      save(true) // true = auto-save
     }, 300)
     return () => clearTimeout(timer)
   }, [todos, open, task, save])
@@ -185,12 +187,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
   // Handler for closing with save
   const handleClose = async () => {
     logger.debug('🚪 Closing modal, saving first...')
-    await save()
+    await save(false) // false = manual save (user action)
     logger.debug('🚪 Saved, now closing')
     onClose()
   }
 
-  async function save() {
+  async function save(isAutoSave = false) {
     if (!task) {
       logger.debug('❌ Save skipped: no task')
       return
@@ -245,8 +247,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
           ...data,
           project_id: data.project_id || projectId || null
         }
-        logger.debug('📢 Calling onUpdated with:', updatedTask)
-        onUpdated?.(updatedTask)
+        logger.debug('📢 Calling onUpdated with:', { updatedTask: updatedTask.title, isAutoSave, isManualSave: !isAutoSave })
+        
+        // Only call onUpdated for manual saves, not auto-saves
+        if (!isAutoSave) {
+          onUpdated?.(updatedTask, true) // true indicates this is a manual save operation
+        }
       }
     } catch (error) {
       logger.error('❌ Error saving task:', error)
@@ -298,7 +304,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
         .eq('id', task.id)
 
       if (error) throw error
-      onUpdated?.(null)
+      onUpdated?.(null, true) // true indicates this is a save operation
       onClose()
     } catch (error) {
       logger.error('Error deleting task:', error)
@@ -606,6 +612,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated }: Prop
               placeholder={t('tasks.tagExample')}
             />
           </section>
+
+          {/* Recurring Task Block */}
+          <RecurringTaskBlock 
+            task={task} 
+            onUpdateRecurrence={onUpdateRecurrence}
+          />
 
           {/* Task Info */}
           <div className="px-6 pb-6 text-center mt-auto">

@@ -25,6 +25,7 @@ export type TaskItem = {
   status?: string;
   project_id?: string | null;
   project_name?: string | null;
+  recurring_task_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }

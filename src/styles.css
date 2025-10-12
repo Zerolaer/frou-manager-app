@@ -193,16 +193,26 @@ html, body, #root {
 /* Buttons */
 :root button.btn:not(.btn-outline):not(.btn-danger), :root .btn:not(.btn-outline):not(.btn-danger){
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  padding:12px 16px; font-size:13px; line-height:1; border-radius:8px;
+  padding:8px 12px; font-size:12px; line-height:1; border-radius:8px;
   border:1px solid transparent; background-color:var(--primary) !important; color:#fff !important;
   transition:background-color .14s ease, box-shadow .14s ease;
+  min-height:32px;
 }
 :root button.btn:not(.btn-outline):not(.btn-danger):hover, :root .btn:not(.btn-outline):not(.btn-danger):hover{ background-color:var(--primary-hover) !important; }
 :root button.btn:focus, :root .btn:focus { outline:none; box-shadow:0 0 0 3px var(--ring); }
-:root button.btn.btn-outline, :root .btn.btn-outline{ background-color:var(--white) !important; color:#111827 !important; border-color:var(--outline) !important; }
+:root button.btn.btn-outline, :root .btn.btn-outline{ 
+  background-color:var(--white) !important; 
+  color:#111827 !important; 
+  border-color:var(--outline) !important; 
+  padding:8px 12px; 
+  font-size:12px; 
+  line-height:1; 
+  min-height:32px;
+}
 :root button.btn.btn-outline:hover, :root .btn.btn-outline:hover{ background-color:var(--secondary) !important; }
 :root button.btn.btn-danger, :root .btn.btn-danger{ background-color:var(--danger) !important; border-color:var(--danger) !important; color:#fff !important; }
 :root button.btn.btn-danger:hover, :root .btn.btn-danger:hover{ background-color:var(--danger-hover) !important; }
+
 
 /* Modals */
 .modal-backdrop{
@@ -377,24 +387,6 @@ select::-webkit-scrollbar,
 /* transparent when unchecked */
 .entry-disabled { opacity:.5; }
 
-/* footer buttons */
-.btn { 
-  border-radius: 8px; 
-  padding: 8px 12px; 
-  font-size: 14px; 
-  font-weight: 500;
-  line-height: 1.4;
-  border: 1px solid #E5E7EB; 
-  background: #fff; 
-}
-.btn:hover { background: #f8fafc; }
-.btn-primary { 
-  background: #171717; 
-  color: #fff; 
-  border-color: #171717; 
-  font-weight: 500;
-}
-.btn-primary:hover { background: #0d0d0d; }
 
 /* Remove number spinners */
 input[type='number']::-webkit-outer-spin-button,
