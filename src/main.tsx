@@ -2,74 +2,21 @@ import React, { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './styles.css'
-import './lib/i18n'
 import App from './App'
-import { LazyPages } from './utils/codeSplitting'
 import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
 
-import { preloadCriticalResources, analyzeBundleSize, registerServiceWorker } from './utils/performance'
-import { bundleAnalyzer } from './utils/bundleAnalyzer'
-import { isDevelopment } from './lib/env'
-import { clearQueryCache } from './hooks/useSupabaseQuery'
-import { indexedDBCache } from './lib/indexedDbCache'
-import { cacheMonitor } from './lib/cacheMonitor'
-import { logger } from './lib/monitoring'
-
-// Register service worker for caching
-registerServiceWorker()
-
-// Preload critical resources
-preloadCriticalResources()
-
-// Analyze bundle size in development
-if (isDevelopment()) {
-  setTimeout(analyzeBundleSize, 2000)
-  
-  // Advanced bundle analysis
-  setTimeout(() => {
-    bundleAnalyzer.logPerformanceReport()
-  }, 3000) // Wait for all bundles to load
+// Lazy load pages
+const LazyPages = {
+  Login: React.lazy(() => import('./pages/Login')),
+  Home: React.lazy(() => import('./pages/Home')),
+  Finance: React.lazy(() => import('./pages/Finance')),
+  Tasks: React.lazy(() => import('./pages/Tasks')),
+  Notes: React.lazy(() => import('./pages/Notes')),
+  Storybook: React.lazy(() => import('./pages/Storybook')),
 }
 
-// Expose cache utilities globally for debugging
-if (typeof window !== 'undefined') {
-  (window as any).__cache = {
-    // Clear all caches
-    clearAll: async () => {
-      clearQueryCache()
-      const cacheNames = await caches.keys()
-      await Promise.all(cacheNames.map(name => caches.delete(name)))
-      logger.info('✅ All caches cleared')
-    },
-    // Clear query cache only
-    clearQueries: () => {
-      clearQueryCache()
-      logger.info('✅ Query cache cleared')
-    },
-    // Clear IndexedDB only
-    clearDB: async () => {
-      await indexedDBCache.clear()
-      logger.info('✅ IndexedDB cleared')
-    },
-    // Show cache stats
-    stats: () => {
-      cacheMonitor.logReport()
-    },
-    // Show all cache keys
-    keys: async () => {
-      const cacheNames = await caches.keys()
-      logger.info('Cache Names:', cacheNames)
-      for (const name of cacheNames) {
-        const cache = await caches.open(name)
-        const keys = await cache.keys()
-        logger.info(`${name}:`, keys.map(k => k.url))
-      }
-    }
-  }
-  
-  logger.info('💡 Cache utilities available: __cache.clearAll(), __cache.stats(), __cache.keys()')
-}
+// Simple startup - removed complex utilities for now
 
 
 const Protected = ({children}: {children: React.ReactNode}) => {
