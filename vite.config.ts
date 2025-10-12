@@ -27,34 +27,27 @@ export default defineConfig({
     target: 'esnext',
     minify: 'esbuild',
     cssCodeSplit: true,
-    // Enable tree shaking
-    treeshake: true,
-    // Optimize bundle size
-    reportCompressedSize: true,
-    // Enable rollup plugins for better optimization
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
+    cssMinify: true,
     rollupOptions: {
-      treeshake: {
-        moduleSideEffects: false
-      },
       output: {
-        manualChunks: undefined,
-        // Use content hash for better caching
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          // Ensure JS files have .js extension
-          if (assetInfo.name && assetInfo.name.endsWith('.js')) {
-            return 'assets/[name]-[hash].js'
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'vendor-react'
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase'
+            }
+            if (id.includes('date-fns')) {
+              return 'vendor-date'
+            }
+            return 'vendor-other'
           }
-          return 'assets/[name]-[hash].[ext]'
         }
       }
-    },
-    chunkSizeWarningLimit: 1000,
-    // Enable source maps for better debugging in production
-    sourcemap: false,
-    // Optimize CSS
-    cssMinify: true
+    }
   },
   optimizeDeps: {
     include: [
