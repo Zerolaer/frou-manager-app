@@ -76,12 +76,14 @@ export function useForm<T extends Record<string, any>>(
   // Initialize form fields
   const initializeFields = useCallback(() => {
     const fields = {} as { [K in keyof T]: FormField<T[K]> }
-    for (const key in initialValues) {
-      fields[key] = {
-        value: initialValues[key],
-        error: undefined,
-        touched: false,
-        required: validation[key] !== undefined
+    if (initialValues && typeof initialValues === 'object') {
+      for (const key in initialValues) {
+        fields[key] = {
+          value: initialValues[key],
+          error: undefined,
+          touched: false,
+          required: validation && validation[key] !== undefined
+        }
       }
     }
     return fields
@@ -111,9 +113,12 @@ export function useForm<T extends Record<string, any>>(
         values[key] = fields[key].value
       }
       
-      autoSave.onSave(values).catch(error => {
-        logger.error('Auto-save failed:', error)
-      })
+      const result = autoSave.onSave(values)
+      if (result && typeof result.catch === 'function') {
+        result.catch((error: any) => {
+          logger.error('Auto-save failed:', error)
+        })
+      }
     }, autoSave.delay)
 
     return () => {
@@ -127,11 +132,11 @@ export function useForm<T extends Record<string, any>>(
   const setField = useCallback((field: keyof T, value: T[keyof T]) => {
     setFields(prev => {
       const newFields = { ...prev }
-      const validator = validation[field]
+      const validator = validation && validation[field]
       const error = validator ? validator(value) : undefined
       
       newFields[field] = {
-        ...newFields[field],
+        ...(newFields[field] || {}),
         value,
         error,
         touched: true
@@ -160,11 +165,11 @@ export function useForm<T extends Record<string, any>>(
     const newFields = { ...fields }
 
     for (const key in fields) {
-      const validator = validation[key]
-      if (validator) {
+      const validator = validation && validation[key]
+      if (validator && fields[key]) {
         const error = validator(fields[key].value)
         if (error) {
-          newFields[key] = { ...newFields[key], error, touched: true }
+          newFields[key] = { ...(newFields[key] || {}), error, touched: true }
           isValid = false
         } else {
           newFields[key] = { ...newFields[key], error: undefined }

@@ -442,12 +442,6 @@
       "low": "Low"
     }
   },
-  "storybook": {
-    "allTextInputs": "All text input forms",
-    "enterText": "Enter text",
-    "projectFiltering": "Project filtering",
-    "somethingWentWrong": "Something went wrong"
-  },
   "language": {
     "selectLanguage": "Select Language",
     "english": "English",

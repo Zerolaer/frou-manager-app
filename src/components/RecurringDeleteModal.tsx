@@ -33,8 +33,7 @@ export default function RecurringDeleteModal({
       footer={createStandardFooter(
         { 
           label: t('actions.cancel') || 'Отмена', 
-          onClick: onClose, 
-          variant: 'secondary'
+          onClick: onClose
         }
       )}
     >

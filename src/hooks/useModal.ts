@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { logger } from '@/lib/monitoring'
+import { useForm } from './useForm'
 
 export interface ModalState {
   isOpen: boolean
@@ -142,8 +143,8 @@ export function useModal(options: UseModalOptions = {}): ModalState & ModalActio
     }
   }, [isOpen, open, close])
 
-  const setOpen = useCallback((open: boolean) => {
-    if (open) {
+  const setOpen = useCallback((shouldOpen: boolean) => {
+    if (shouldOpen) {
       open()
     } else {
       close()

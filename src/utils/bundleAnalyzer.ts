@@ -71,7 +71,7 @@ export class BundleAnalyzer {
             this.performanceMetrics.firstInputDelay = entry.processingStart - entry.startTime
             break
           case 'layout-shift':
-            if (!entry.hadRecentInput) {
+            if (!(entry as any).hadRecentInput) {
               this.performanceMetrics.cumulativeLayoutShift = 
                 (this.performanceMetrics.cumulativeLayoutShift || 0) + (entry as any).value
             }

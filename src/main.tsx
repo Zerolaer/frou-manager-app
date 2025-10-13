@@ -14,7 +14,6 @@ const LazyPages = {
   Finance: React.lazy(() => import('./pages/Finance')),
   Tasks: React.lazy(() => import('./pages/Tasks')),
   Notes: React.lazy(() => import('./pages/Notes')),
-  Storybook: React.lazy(() => import('./pages/Storybook')),
 }
 
 
@@ -84,15 +83,6 @@ const router = createBrowserRouter([
           </Suspense>
         )
       },
-      // Storybook route only available in development
-      ...(import.meta.env.DEV ? [{
-        path: 'storybook', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Storybook />
-          </Suspense>
-        )
-      }] : []),
     ]
   },
 ])

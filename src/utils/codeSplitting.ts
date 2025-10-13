@@ -56,7 +56,6 @@ export const LazyPages = {
   Tasks: lazy(() => import('@/pages/Tasks')),
   Notes: lazy(() => import('@/pages/Notes')),
   Login: lazy(() => import('@/pages/Login')),
-  Storybook: lazy(() => import('@/pages/Storybook'))
 }
 
 // Feature-based code splitting
@@ -72,7 +71,7 @@ export const LazyFeatures = {
 
 // Component-based code splitting
 export const LazyComponents = {
-  VirtualizedList: lazy(() => import('@/components/VirtualizedList')),
+  VirtualizedList: lazy(() => import('@/components/VirtualizedList').then(module => ({ default: module.VirtualizedList }))),
   AppLoader: lazy(() => import('@/components/AppLoader')),
   Sidebar: lazy(() => import('@/components/Sidebar')),
   WeekTimeline: lazy(() => import('@/components/WeekTimeline')),

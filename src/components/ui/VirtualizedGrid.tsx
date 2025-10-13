@@ -100,9 +100,9 @@ export function VirtualizedGrid<T>({
       for (let col = visibleRange.startCol; col <= visibleRange.endCol; col++) {
         const index = row * dimensions.cols + col
         
-        if (index < data.length) {
-          items.push({
-            item: data[index],
+        if (index < items.length) {
+          visibleItems.push({
+            item: items[index],
             index,
             row,
             col,
@@ -260,14 +260,14 @@ export function VirtualizedList<T>({
   }, [scrollTop, itemHeight, height, items.length, overscan])
 
   const visibleItems = useMemo(() => {
-    const items: Array<{
+    const visibleItems: Array<{
       item: T
       index: number
       style: React.CSSProperties
     }> = []
 
     for (let i = visibleRange.start; i <= visibleRange.end; i++) {
-      items.push({
+      visibleItems.push({
         item: items[i],
         index: i,
         style: {
@@ -280,7 +280,7 @@ export function VirtualizedList<T>({
       })
     }
 
-    return items
+    return visibleItems
   }, [visibleRange, items, itemHeight])
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {

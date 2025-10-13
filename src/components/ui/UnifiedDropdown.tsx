@@ -119,7 +119,7 @@ export interface DateDropdownProps extends UnifiedDropdownProps {
 }
 
 export function DateDropdown({ 
-  format = 'date',
+  format: formatType = 'date',
   minDate,
   maxDate,
   value, 
@@ -134,7 +134,7 @@ export function DateDropdown({
 
   return (
     <input
-      type={format === 'date' ? 'date' : format === 'time' ? 'time' : 'datetime-local'}
+      type={formatType === 'date' ? 'date' : formatType === 'time' ? 'time' : 'datetime-local'}
       value={value as string}
       onChange={handleChange}
       placeholder={placeholder}
