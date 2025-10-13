@@ -21,9 +21,9 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
   const [settings, setSettings] = useState<RecurringTaskSettings>({
     isRecurring: true,
     recurrenceType: 'daily',
-    interval: 1,
-    dayOfWeek: undefined,
-    dayOfMonth: undefined,
+    recurrenceInterval: 1,
+    recurrenceDayOfWeek: undefined,
+    recurrenceDayOfMonth: undefined,
     endDate: undefined
   })
 
@@ -41,9 +41,9 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
       setSettings({
         isRecurring: true,
         recurrenceType: 'daily',
-        interval: 1,
-        dayOfWeek: undefined,
-        dayOfMonth: undefined,
+        recurrenceInterval: 1,
+        recurrenceDayOfWeek: undefined,
+        recurrenceDayOfMonth: undefined,
         endDate: undefined
       })
     }
@@ -87,10 +87,10 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
     // Clear dependent fields when recurrence type changes
     if (newSettings.recurrenceType) {
       if (newSettings.recurrenceType !== 'weekly') {
-        updated.dayOfWeek = undefined
+        updated.recurrenceDayOfWeek = undefined
       }
       if (newSettings.recurrenceType !== 'monthly') {
-        updated.dayOfMonth = undefined
+        updated.recurrenceDayOfMonth = undefined
       }
     }
     
@@ -113,13 +113,11 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
       footer={createStandardFooter(
         { 
           label: t('common.save') || 'Сохранить', 
-          onClick: handleSave, 
-          variant: 'primary' 
+          onClick: handleSave
         },
         { 
           label: t('common.cancel') || 'Отмена', 
-          onClick: onClose, 
-          variant: 'secondary' 
+          onClick: onClose
         }
       )}
     >
@@ -131,7 +129,7 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
           </label>
           <Dropdown
             options={RECURRENCE_TYPES}
-            value={settings.recurrenceType}
+            value={settings.recurrenceType || ''}
             onChange={(value) => updateSettings({ recurrenceType: value as RecurrenceType })}
             placeholder={t('tasks.recurring.repeat') || 'Повторять'}
             buttonClassName="w-full"
@@ -148,8 +146,8 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
               type="number"
               min="1"
               max="31"
-              value={settings.interval.toString()}
-              onChange={(value) => updateSettings({ interval: parseInt(value) || 1 })}
+              value={settings.recurrenceInterval?.toString() || '1'}
+              onChange={(e) => updateSettings({ recurrenceInterval: parseInt(e.target.value) || 1 })}
               className="w-20"
             />
             <span className="text-sm text-gray-600">
@@ -169,8 +167,8 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
             </label>
             <Dropdown
               options={WEEKDAYS}
-              value={settings.dayOfWeek?.toString() || ''}
-              onChange={(value) => updateSettings({ dayOfWeek: value ? parseInt(value) : undefined })}
+              value={settings.recurrenceDayOfWeek?.toString() || ''}
+              onChange={(value) => updateSettings({ recurrenceDayOfWeek: value ? parseInt(String(value)) : undefined })}
               placeholder={t('tasks.recurring.selectDay') || 'Выберите день'}
               buttonClassName="w-full"
             />
@@ -187,8 +185,8 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
               type="number"
               min="1"
               max="31"
-              value={settings.dayOfMonth?.toString() || ''}
-              onChange={(value) => updateSettings({ dayOfMonth: value ? parseInt(value) : undefined })}
+              value={settings.recurrenceDayOfMonth?.toString() || ''}
+              onChange={(e) => updateSettings({ recurrenceDayOfMonth: e.target.value ? parseInt(e.target.value) : undefined })}
               className="w-full"
               placeholder={t('tasks.recurring.selectDay') || 'Выберите день'}
             />
@@ -206,14 +204,12 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
               if (import.meta.env.DEV) {
                 console.log('Date input value calculation:', {
                   endDate: settings.endDate,
-                  isDate: settings.endDate instanceof Date,
-                  isValid: settings.endDate && !isNaN(settings.endDate.getTime()),
-                  formatted: settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
+                  formatted: settings.endDate || ''
                 })
               }
-              return settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
+              return settings.endDate || ''
             })()}
-            onChange={(e) => updateSettings({ endDate: e.target.value ? new Date(e.target.value) : undefined })}
+            onChange={(e) => updateSettings({ endDate: e.target.value || undefined })}
             className="w-full inline-flex items-center px-4 py-2.5 rounded-xl bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 border outline-none"
             style={{ borderColor: '#E5E7EB' }}
           />

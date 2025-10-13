@@ -128,7 +128,6 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
               projects={projects}
               value={form.fields.projectId.value}
               onChange={(value) => form.setField('projectId', String(value))}
-              buttonClassName="w-full"
             />
           </div>
           
@@ -139,7 +138,6 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <DateDropdown
               value={form.fields.selectedDate.value}
               onChange={(date) => form.setField('selectedDate', String(date))}
-              buttonClassName="w-full"
             />
           </div>
         </div>
@@ -183,7 +181,6 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <PriorityDropdown
               value={form.fields.priority.value}
               onChange={(value) => form.setField('priority', String(value))}
-              buttonClassName="w-full"
             />
           </div>
           

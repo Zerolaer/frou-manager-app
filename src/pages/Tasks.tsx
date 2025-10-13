@@ -18,7 +18,7 @@ import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
-import { RecurringSettings } from '@/types/recurring'
+import { RecurringTaskSettings } from '@/types/recurring'
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
@@ -1039,7 +1039,7 @@ const projectColorById = React.useMemo(() => {
     priority: string,
     tag: string,
     todos: Todo[],
-    recurringSettings: RecurringSettings
+    recurringSettings: RecurringTaskSettings
   ) {
     if (!uid) return
 
@@ -1068,11 +1068,11 @@ const projectColorById = React.useMemo(() => {
           todos,
           project_id: projectId,
           recurrence_type: recurringSettings.recurrenceType,
-          recurrence_interval: recurringSettings.interval,
-          recurrence_day_of_week: recurringSettings.dayOfWeek,
-          recurrence_day_of_month: recurringSettings.dayOfMonth,
+          recurrence_interval: recurringSettings.recurrenceInterval,
+          recurrence_day_of_week: recurringSettings.recurrenceDayOfWeek,
+          recurrence_day_of_month: recurringSettings.recurrenceDayOfMonth,
           start_date: startDate.toISOString().split('T')[0],
-          end_date: recurringSettings.endDate?.toISOString().split('T')[0],
+          end_date: recurringSettings.endDate,
           is_active: true
         })
         .select()
@@ -1149,7 +1149,7 @@ const projectColorById = React.useMemo(() => {
     }
   }
 
-    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringSettings){
+    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringTaskSettings){
       if (!uid) return
       
       // Debug: check if recurring settings are passed correctly
@@ -1238,7 +1238,7 @@ const projectColorById = React.useMemo(() => {
   }
 
   // Function to update recurring task settings
-  const updateRecurringTaskSettings = async (taskId: string, settings: RecurringSettings) => {
+  const updateRecurringTaskSettings = async (taskId: string, settings: RecurringTaskSettings) => {
     if (!uid) return
 
     try {
@@ -1254,10 +1254,10 @@ const projectColorById = React.useMemo(() => {
         .from('recurring_tasks')
         .update({
           recurrence_type: settings.recurrenceType,
-          recurrence_interval: settings.interval,
-          recurrence_day_of_week: settings.dayOfWeek,
-          recurrence_day_of_month: settings.dayOfMonth,
-          end_date: settings.endDate?.toISOString().split('T')[0]
+          recurrence_interval: settings.recurrenceInterval,
+          recurrence_day_of_week: settings.recurrenceDayOfWeek,
+          recurrence_day_of_month: settings.recurrenceDayOfMonth,
+          end_date: settings.endDate
         })
         .eq('id', task.recurring_task_id)
 
@@ -1274,7 +1274,7 @@ const projectColorById = React.useMemo(() => {
   }
 
   // Handle task updates - check for recurring tasks
-  const handleTaskUpdate = async (updatedTask: TaskItem | null, isSave?: boolean) => {
+  const handleTaskUpdate = async (updatedTask: any, isSave?: boolean) => {
     if (import.meta.env.DEV) {
       console.log('🔄 handleTaskUpdate called:', { 
         updatedTask: updatedTask?.title, 

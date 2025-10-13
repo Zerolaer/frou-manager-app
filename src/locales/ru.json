@@ -442,12 +442,6 @@
       "low": "Низкий"
     }
   },
-  "storybook": {
-    "allTextInputs": "Все формы ввода текста",
-    "enterText": "Введите текст",
-    "projectFiltering": "Фильтрация по проектам",
-    "somethingWentWrong": "Что-то пошло не так"
-  },
   "language": {
     "selectLanguage": "Выбор языка",
     "english": "English",

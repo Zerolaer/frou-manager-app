@@ -13,6 +13,8 @@ import { YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
 import { LazyComponent, LazyFinanceRow } from '@/components/ui/LazyComponent'
 import { FinanceRowSkeleton } from '@/components/ui/LoadingStates'
 import CellEditor from '@/components/CellEditor'
+import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
+import NewCellMenu from '@/components/finance/NewCellMenu'
 import type { Cat, CtxCat, CellCtx, EntryLite, FinanceCellCtx } from '@/types/shared'
 function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
@@ -618,7 +620,7 @@ export default function Finance(){
         >
           <div className="flex items-center gap-3">
             <label className="text-label text-gray-600 w-28">{t('finance.type')}</label>
-            <div className="flex-1"><TypeDropdown value={newType} onChange={setNewType} fullWidth /></div>
+            <div className="flex-1"><TypeDropdown value={newType} onChange={(value) => setNewType(value as 'income' | 'expense')} fullWidth /></div>
           </div>
           <div className="flex items-center gap-3 mt-3">
             <label className="text-label text-gray-600 w-28">{t('finance.name')}</label>
@@ -891,7 +893,7 @@ export default function Finance(){
       >
         <div className="flex items-center gap-3">
           <label className="text-label text-gray-600 w-28">{t('finance.type')}</label>
-          <div className="flex-1"><TypeDropdown value={newType} onChange={setNewType} fullWidth /></div>
+          <div className="flex-1"><TypeDropdown value={newType} onChange={(value) => setNewType(value as 'income' | 'expense')} fullWidth /></div>
         </div>
         <div className="flex items-center gap-3 mt-3">
           <label className="text-label text-gray-600 w-28">{t('finance.name')}</label>

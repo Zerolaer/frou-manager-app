@@ -15,7 +15,7 @@ type Props = {
 export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) {
   const { t } = useSafeTranslation()
   const [showEditModal, setShowEditModal] = useState(false)
-  const [recurringSettings, setRecurringSettings] = useState<RecurringTaskSettings | null>(null)
+  const [recurringSettings, setRecurringSettings] = useState<RecurringTaskSettings | undefined>(undefined)
   const [loading, setLoading] = useState(false)
 
   if (!task.recurring_task_id) {
@@ -49,14 +49,10 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
           const settings: RecurringTaskSettings = {
             isRecurring: true,
             recurrenceType: data.recurrence_type,
-            interval: data.recurrence_interval,
-            dayOfWeek: data.recurrence_day_of_week,
-            dayOfMonth: data.recurrence_day_of_month,
-            endDate: data.end_date ? (() => {
-              const date = new Date(data.end_date)
-              if (import.meta.env.DEV) console.log('Created date from end_date:', date, 'isValid:', !isNaN(date.getTime()))
-              return isNaN(date.getTime()) ? undefined : date
-            })() : undefined
+            recurrenceInterval: data.recurrence_interval,
+            recurrenceDayOfWeek: data.recurrence_day_of_week,
+            recurrenceDayOfMonth: data.recurrence_day_of_month,
+            endDate: data.end_date || undefined
           }
           if (import.meta.env.DEV) console.log('Final settings with endDate:', settings)
           setRecurringSettings(settings)
@@ -79,10 +75,10 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
     
     if (recurringSettings) {
       return getRecurrenceDescriptionUtil(
-        recurringSettings.recurrenceType,
-        recurringSettings.interval,
-        recurringSettings.dayOfWeek,
-        recurringSettings.dayOfMonth
+        recurringSettings.recurrenceType!,
+        recurringSettings.recurrenceInterval!,
+        recurringSettings.recurrenceDayOfWeek,
+        recurringSettings.recurrenceDayOfMonth
       )
     }
     

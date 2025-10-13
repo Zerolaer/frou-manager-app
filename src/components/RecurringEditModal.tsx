@@ -45,13 +45,11 @@ export default function RecurringEditModal({
       footer={createStandardFooter(
         { 
           label: t('common.confirm') || 'Подтвердить', 
-          onClick: handleConfirm, 
-          variant: 'primary' 
+          onClick: handleConfirm
         },
         { 
           label: t('common.cancel') || 'Отмена', 
-          onClick: onClose, 
-          variant: 'secondary' 
+          onClick: onClose
         }
       )}
     >
