@@ -50,14 +50,18 @@ export function ModalButton({
 
   return (
     <button
-      className={classes}
+      className={`${classes} relative`}
       disabled={disabled || loading}
       onClick={onClick}
     >
       {loading && (
-        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent mr-2" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+        </div>
       )}
-      {children}
+      <span className={loading ? 'invisible' : ''}>
+        {children}
+      </span>
     </button>
   )
 }

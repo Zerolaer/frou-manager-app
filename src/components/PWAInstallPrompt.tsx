@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react'
 import { X, Download } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useModal } from '@/hooks/useModal'
-import { Notification } from './ui/Notification'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -18,7 +17,6 @@ export default function PWAInstallPrompt() {
   const { t } = useSafeTranslation()
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
-  const [showNotification, setShowNotification] = useState(false)
   
   const bannerModal = useModal({
     closeOnEscape: false,
@@ -40,7 +38,7 @@ export default function PWAInstallPrompt() {
       setInstallPrompt(e as BeforeInstallPromptEvent)
       
       // Show notification first
-      setShowNotification(true)
+      console.log('PWA install available')
       
       // Show banner after 10 seconds of usage
       setTimeout(() => {
@@ -69,7 +67,7 @@ export default function PWAInstallPrompt() {
 
       if (outcome === 'accepted') {
         logger.debug('✅ User accepted PWA install')
-        setShowNotification(true)
+        console.log('PWA install accepted')
       } else {
         logger.debug('❌ User dismissed PWA install')
       }
@@ -84,22 +82,13 @@ export default function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     bannerModal.close()
-    setShowNotification(false)
+    console.log('PWA install dismissed')
     setDismissed(true)
     localStorage.setItem('pwa_install_dismissed', 'true')
   }
 
   return (
     <>
-      {/* Notification */}
-      {showNotification && (
-        <Notification
-          message={t('pwa.installAvailable') || 'Приложение можно установить!'}
-          type="info"
-          duration={5000}
-          onClose={() => setShowNotification(false)}
-        />
-      )}
 
       {/* Install Banner */}
       {!dismissed && bannerModal.isOpen && installPrompt && (

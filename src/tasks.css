@@ -294,9 +294,7 @@ body.tasks-mode #main-content {
 }
 
 .task-card.is-dragging {
-  opacity: 0.5;
-  transform: rotate(5deg);
-  z-index: 1000;
+  /* Dragging styles are handled inline to preserve original appearance */
 }
 
 /* Completed/closed task styles - только 30% opacity */

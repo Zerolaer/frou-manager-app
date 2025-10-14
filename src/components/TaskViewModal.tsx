@@ -10,6 +10,7 @@ import CoreMenu from '@/components/ui/CoreMenu'
 import Dropdown from '@/components/ui/Dropdown'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { logger } from '@/lib/monitoring'
+import CustomDatePicker from '@/components/ui/CustomDatePicker'
 
 import type { Todo, Project } from '@/types/shared'
 
@@ -34,7 +35,7 @@ type Props = {
 }
 
 export default function TaskViewModal({ open, onClose, task, onUpdated }: Props) {
-  const { t } = useSafeTranslation()
+  const { t, i18n } = useSafeTranslation()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'' | 'low' | 'medium' | 'high'>('')
@@ -243,8 +244,8 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
           <div ref={menuRef}>
             <CoreMenu
               options={[
-                { value: 'duplicate', label: t('common.duplicate') },
-                { value: 'delete', label: t('common.delete'), destructive: true },
+                { value: 'duplicate', label: i18n?.language === 'ru' ? 'Дублировать' : 'Duplicate' },
+                { value: 'delete', label: i18n?.language === 'ru' ? 'Удалить' : 'Delete', destructive: true },
               ]}
               onSelect={(value) => {
                 if (value === 'duplicate') duplicateTask()
@@ -256,7 +257,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       }
       footer={createDangerFooter(
         { 
-          label: t('common.delete'), 
+          label: i18n?.language === 'ru' ? 'Удалить' : 'Delete', 
           onClick: deleteTask,
           loading: deleteLoading
         },
@@ -313,7 +314,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
                   />
                   <button className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50 flex items-center gap-1" onClick={() => removeTodo(item.id)}>
                     <Trash2 className="w-4 h-4" />
-                    {t('common.delete')}
+                    {i18n?.language === 'ru' ? 'Удалить' : 'Delete'}
                   </button>
                 </li>
               ))}
@@ -496,30 +497,12 @@ function DateQuick({
   onChange: (v: string) => void
   t: (key: string) => string
 }) {
-  function toISO(d: Date) {
-    return d.toISOString().slice(0, 10)
-  }
-  const today = new Date()
-  const tomorrow = new Date(Date.now() + 86400000)
   return (
-    <div className="space-y-2">
-      <input
-        type="date"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full rounded-xl border border-gray-200 px-3"
-      />
-      <div className="flex gap-2">
-        <button type="button" className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50"
-          onClick={() => onChange(toISO(today))}>
-          {t('common.today')}
-        </button>
-        <button type="button" className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50"
-          onClick={() => onChange(toISO(tomorrow))}>
-          {t('common.tomorrow')}
-        </button>
-      </div>
-    </div>
+    <CustomDatePicker
+      value={value || ''}
+      onChange={onChange}
+      placeholder={t('tasks.selectDate') || 'Выбрать дату'}
+    />
   )
 }
 

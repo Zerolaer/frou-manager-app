@@ -7,7 +7,6 @@ import MobileLayout from '@/components/mobile/MobileLayout'
 import MobileFinanceAddModal from '@/components/mobile/MobileFinanceAddModal'
 import MobileCellEditor from '@/components/mobile/MobileCellEditor'
 import { FINANCE_TYPES, MONTHS_IN_YEAR } from '@/lib/constants'
-import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
 
 interface Category {
@@ -21,7 +20,6 @@ interface Category {
 export default function FinanceMobile() {
   const { t } = useSafeTranslation()
   const { userId } = useSupabaseAuth()
-  const { handleError, handleSuccess } = useEnhancedErrorHandler()
   const { writeCache } = useFinanceCache()
   const now = new Date()
   
@@ -148,9 +146,9 @@ export default function FinanceMobile() {
         setExpenses([...expenses, newCat])
       }
       
-      handleSuccess(t('finance.categoryCreated', { name }))
+      console.log(`Category created: ${name}`)
     } catch (error) {
-      handleError(error, t('finance.creatingCategory'))
+      console.error('Error creating category:', error)
     }
   }
   

@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { useToast } from '@/lib/toast'
 import { Plus, Home, DollarSign, CheckSquare, FileText, Settings, Calendar, ChevronLeft, ChevronRight, MoreVertical, BarChart3, Target, Wallet, ListTodo, StickyNote, Goal } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 
@@ -60,7 +59,6 @@ import WeekBoard from '@/components/tasks/WeekBoard'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
 
 // Other Components
-import Toaster from '@/components/Toaster'
 import AppLoader from '@/components/AppLoader'
 import AuthCard from '@/components/AuthCard'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
@@ -74,7 +72,6 @@ const StorybookPage = () => {
   const [sideModalOpen, setSideModalOpen] = useState(false)
   const [dropdownValue, setDropdownValue] = useState('EUR')
   const [inputValue, setInputValue] = useState('')
-  const { push: toast } = useToast()
 
   const sections = {
     ui: {
@@ -229,22 +226,6 @@ const StorybookPage = () => {
       description: 'Компоненты обратной связи',
       components: [
         {
-          name: 'Toaster',
-          description: 'Система уведомлений',
-          usage: 'Показ сообщений пользователю',
-          demo: (
-            <div className="space-y-2">
-              <button className="btn" onClick={() => toast({ title: 'Успешно', message: 'Операция выполнена' })}>
-                Показать уведомление
-              </button>
-              <button className="btn" onClick={() => toast({ title: t('common.error'), message: t('storybook.somethingWentWrong') })}>
-                Показать ошибку
-              </button>
-              <Toaster />
-            </div>
-          )
-        },
-        {
           name: 'Check',
           description: 'Чекбокс',
           usage: 'Выбор опций, включение/выключение',
@@ -396,7 +377,7 @@ const StorybookPage = () => {
             <div>
               <button 
                 className="btn" 
-                onClick={() => toast({ title: 'Информация', message: 'CellEditor откроется здесь' })}
+                onClick={() => console.log('CellEditor would open here')}
               >
                 Открыть CellEditor
               </button>
@@ -411,7 +392,7 @@ const StorybookPage = () => {
             <div>
               <button 
                 className="btn" 
-                onClick={() => toast({ title: 'Информация', message: 'AnnualStatsModal откроется здесь' })}
+                onClick={() => console.log('AnnualStatsModal would open here')}
               >
                 Открыть AnnualStatsModal
               </button>

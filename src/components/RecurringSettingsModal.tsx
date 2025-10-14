@@ -6,6 +6,7 @@ import { RecurringTaskSettings, RecurrenceType } from '@/types/recurring'
 import { format } from 'date-fns'
 import Dropdown from '@/components/ui/Dropdown'
 import { CoreInput } from '@/components/ui/CoreInput'
+import CustomDatePicker from '@/components/ui/CustomDatePicker'
 
 type Props = {
   open: boolean
@@ -200,22 +201,10 @@ export default function RecurringEditModal({ open, onClose, onSave, currentSetti
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('tasks.recurring.endDate') || 'Дата окончания'} {t('tasks.recurring.optional') && `(${t('tasks.recurring.optional')})`}
           </label>
-          <input
-            type="date"
-            value={(() => {
-              if (import.meta.env.DEV) {
-                console.log('Date input value calculation:', {
-                  endDate: settings.endDate,
-                  isDate: settings.endDate instanceof Date,
-                  isValid: settings.endDate && !isNaN(settings.endDate.getTime()),
-                  formatted: settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
-                })
-              }
-              return settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''
-            })()}
-            onChange={(e) => updateSettings({ endDate: e.target.value ? new Date(e.target.value) : undefined })}
-            className="w-full inline-flex items-center px-4 py-2.5 rounded-xl bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 border outline-none"
-            style={{ borderColor: '#E5E7EB' }}
+          <CustomDatePicker
+            value={settings.endDate && settings.endDate instanceof Date && !isNaN(settings.endDate.getTime()) ? format(settings.endDate, 'yyyy-MM-dd') : ''}
+            onChange={(value) => updateSettings({ endDate: value ? new Date(value) : undefined })}
+            placeholder={t('tasks.selectDate') || 'Выбрать дату'}
           />
         </div>
       </div>

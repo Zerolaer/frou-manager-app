@@ -64,7 +64,6 @@ export const LazyFeatures = {
   TaskModal: lazy(() => import('@/components/TaskViewModal')),
   TaskAddModal: lazy(() => import('@/components/TaskAddModal')),
   ModernTaskModal: lazy(() => import('@/components/ModernTaskModal')),
-  TaskFilterModal: lazy(() => import('@/components/TaskFilterModal')),
   NoteEditor: lazy(() => import('@/components/notes/NoteEditorModal')),
   CellEditor: lazy(() => import('@/components/CellEditor')),
   AnnualStatsModal: lazy(() => import('@/components/AnnualStatsModal'))

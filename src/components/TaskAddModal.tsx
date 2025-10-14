@@ -5,7 +5,6 @@ import { useSafeTranslation } from '@/utils/safeTranslation'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { useForm } from '@/hooks/useForm'
 import { useTodoManager } from '@/hooks/useTodoManager'
-import { useNotificationContext } from './NotificationProvider'
 import { ProjectDropdown, DateDropdown, PriorityDropdown } from './ui/UnifiedDropdown'
 import { CoreInput, CoreTextarea } from './ui/CoreInput'
 import { Plus, Trash2, Check } from 'lucide-react'
@@ -27,7 +26,6 @@ type Props = {
 export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, projects = [], activeProject, initialDate }: Props){
   const { t } = useSafeTranslation()
   const { createStandardFooter } = useModalActions()
-  const notifications = useNotificationContext()
   const [recurringSettings, setRecurringSettings] = useState<RecurringSettings>({ isRecurring: false })
 
   // Initialize form with validation
@@ -86,7 +84,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             )
         
         // Show success notification
-        notifications.showSuccess(t('tasks.taskCreated') || 'Задача создана!')
+        console.log('Task created successfully')
         
         // Reset and close
         form.reset()
@@ -94,7 +92,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         onClose()
       } catch (error) {
         logger.error('Failed to create task:', error)
-        notifications.showError(t('tasks.createError') || 'Ошибка при создании задачи')
+        console.error('Error creating task:', error)
       }
     })
   }

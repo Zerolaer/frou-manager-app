@@ -1,6 +1,5 @@
 import { logger } from '@/lib/monitoring'
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { useErrorHandler } from '@/lib/errorHandler'
 import { AccessibleButton } from './AccessibleComponents'
 import { ARIA_LABELS } from '@/lib/accessibility'
 import { isDevelopment } from '../lib/env'

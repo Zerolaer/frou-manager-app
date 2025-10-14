@@ -180,7 +180,7 @@ export default function Dropdown({
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center ${(selectedOption?.label || placeholder) ? 'gap-2' : ''}`}>
           {icon}
           {(selectedOption?.label || placeholder) && <span>{selectedOption?.label || placeholder}</span>}
         </div>

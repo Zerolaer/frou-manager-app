@@ -10,7 +10,8 @@ import CategoryRow from '@/components/finance/CategoryRow'
 import AnnualStatsModal from '@/components/AnnualStatsModal'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
-import { YearDropdown, TypeDropdown } from '@/components/ui/UnifiedDropdown'
+import { YearDropdown } from '@/components/ui/UnifiedDropdown'
+import TypeDropdown from '@/components/TypeDropdown'
 import { LazyComponent, LazyFinanceRow } from '@/components/ui/LazyComponent'
 import { FinanceRowSkeleton } from '@/components/ui/LoadingStates'
 import CellEditor from '@/components/CellEditor'
@@ -19,7 +20,6 @@ function findCatById(id: string, list: Cat[]): Cat | undefined { return list.fin
 import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
-import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { exportToJSON, exportToCSV, downloadFile, parseJSONImport } from '@/lib/financeExport'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
@@ -62,7 +62,6 @@ const fmtEUR = (n:number) => EURNoDecimals.format(n)
 
 export default function Finance(){
   const { t } = useSafeTranslation()
-  const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler()
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
   const { createSimpleFooter, createDangerFooter } = useModalActions()
@@ -201,7 +200,7 @@ export default function Finance(){
       if (signal?.aborted) return
       
       if (catsRes.error || entriesRes.error) { 
-        handleError(catsRes.error || entriesRes.error, t('finance.loadingFinancialData')); 
+        console.error('Error loading financial data:', catsRes.error || entriesRes.error); 
         setLoading(false); 
         return 
       }
@@ -235,7 +234,7 @@ export default function Finance(){
       }
     } catch (error) {
       if (!signal?.aborted) {
-        handleError(error, t('finance.loadingFinancialData'))
+        console.error('Error loading financial data:', error)
         setLoading(false)
       }
     }
@@ -306,7 +305,7 @@ export default function Finance(){
     const payload: { user_id: string; type: 'income' | 'expense'; name: string; parent_id?: string } = { user_id: userId, type, name }
     if (newParent) payload.parent_id = newParent.id
     const { data, error } = await supabase.from('finance_categories').insert(payload).select('id,name,type,parent_id').single()
-    if (error) { handleError(error, t('finance.creatingCategory')); return }
+    if (error) { console.error('Error creating category:', error); return }
     const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(MONTHS_IN_YEAR).fill(0) }
     if (type === FINANCE_TYPES.INCOME) {
       const raw = [...incomeRaw, cat]; setIncomeRaw(raw)
@@ -315,7 +314,7 @@ export default function Finance(){
       const raw = [...expenseRaw, cat]; setExpenseRaw(raw)
       writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     }
-    handleSuccess(t('finance.categoryCreated', { name }))
+    console.log(`Category created: ${name}`)
     setShowAdd(false); setNewName(''); setNewType(FINANCE_TYPES.INCOME); setNewParent(null)
   }
 
@@ -338,7 +337,7 @@ export default function Finance(){
     const name = renameValue.trim()
     if (!name || !ctxCat) { setRenameOpen(false); return }
     const { error } = await supabase.from('finance_categories').update({ name }).eq('id', ctxCat.id)
-    if (error) { handleError(error, t('finance.creatingCategory')); return }
+    if (error) { console.error('Error creating category:', error); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -352,7 +351,7 @@ export default function Finance(){
   async function confirmDelete(){
     if (!ctxCat) return
     const { error } = await supabase.from('finance_categories').delete().eq('id', ctxCat.id)
-    if (error) { handleError(error, t('finance.creatingCategory')); return }
+    if (error) { console.error('Error creating category:', error); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.filter(c => c.id !== ctxCat.id); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -469,9 +468,9 @@ export default function Finance(){
         })
       }
       
-      handleSuccess(t('finance.dataInserted'))
+      console.log('Data inserted successfully')
     } catch (error) {
-      handleError(t('finance.errorInsertingData'))
+      console.error('Error inserting data')
       logger.error('Paste error:', error)
     }
     
@@ -491,12 +490,12 @@ export default function Finance(){
       // Export as JSON
       const jsonData = exportToJSON(incomeRaw, expenseRaw, year)
       downloadFile(jsonData, `finance-${year}-${timestamp}.json`, 'application/json')
-      handleSuccess(t('finance.exportedJSON') || 'Экспортировано в JSON')
+      console.log('Exported to JSON')
     } else {
       // Export as CSV
       const csvData = exportToCSV(incomeRaw, expenseRaw, year)
       downloadFile(csvData, `finance-${year}-${timestamp}.csv`, 'text/csv')
-      handleSuccess(t('finance.exportedCSV') || 'Экспортировано в CSV')
+      console.log('Exported to CSV')
     }
   }
 
@@ -515,7 +514,7 @@ export default function Finance(){
         const data = parseJSONImport(text)
         
         if (!data) {
-          handleError(t('finance.invalidImportFile') || 'Неверный формат файла')
+          console.error('Invalid import file format')
           return
         }
         
@@ -540,9 +539,9 @@ export default function Finance(){
           })
         }
         
-        handleSuccess(t('finance.importedSuccessfully') || 'Данные успешно импортированы')
+        console.log('Data imported successfully')
       } catch (error) {
-        handleError(error, t('finance.importFailed') || 'Ошибка импорта')
+        console.error('Import failed:', error)
       }
     }
     

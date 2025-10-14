@@ -2,6 +2,9 @@ import React, { useState, useMemo } from 'react'
 import { X, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns'
+import ModalHeader from '@/components/ui/ModalHeader'
+import ModalFooter from '@/components/ui/ModalFooter'
+import { ModalButton } from '@/components/ui/ModalSystem'
 import type { TaskItem } from '@/types/shared'
 
 interface TaskCalendarModalProps {
@@ -26,13 +29,19 @@ export default function TaskCalendarModal({
     return eachDayOfInterval({ start, end })
   }, [currentMonth])
 
-  // Group tasks by date
-  const taskCountByDate = useMemo(() => {
-    const counts: Record<string, number> = {}
+  // Group tasks by date and status
+  const taskStatusByDate = useMemo(() => {
+    const statusByDate: Record<string, { total: number, open: number, closed: number }> = {}
     Object.entries(tasks).forEach(([dateKey, taskList]) => {
-      counts[dateKey] = taskList.length
+      const openTasks = taskList.filter(task => task.status === 'open').length
+      const closedTasks = taskList.filter(task => task.status === 'closed').length
+      statusByDate[dateKey] = {
+        total: taskList.length,
+        open: openTasks,
+        closed: closedTasks
+      }
     })
-    return counts
+    return statusByDate
   }, [tasks])
 
   const handleDateClick = (date: Date) => {
@@ -55,21 +64,15 @@ export default function TaskCalendarModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-gray-700" />
-            <h2 className="text-lg font-semibold text-gray-900">
+        <ModalHeader
+          title={
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-gray-700" />
               {t('tasks.calendar')}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label={t('common.close')}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            </div>
+          }
+          onClose={onClose}
+        />
 
         {/* Month navigation */}
         <div className="flex items-center justify-between p-4 border-b bg-gray-50">
@@ -115,8 +118,11 @@ export default function TaskCalendarModal({
             {/* Month days */}
             {monthDays.map(day => {
               const dateKey = format(day, 'yyyy-MM-dd')
-              const taskCount = taskCountByDate[dateKey] || 0
+              const taskStatus = taskStatusByDate[dateKey] || { total: 0, open: 0, closed: 0 }
               const isCurrentDay = isToday(day)
+              const hasTasks = taskStatus.total > 0
+              const hasOpenTasks = taskStatus.open > 0
+              const allTasksClosed = hasTasks && taskStatus.open === 0
 
               return (
                 <button
@@ -125,19 +131,25 @@ export default function TaskCalendarModal({
                   className={`
                     relative aspect-square p-2 rounded-lg border transition-all
                     ${isCurrentDay 
-                      ? 'bg-blue-50 border-blue-500 font-semibold' 
+                      ? 'border-black font-semibold' 
                       : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                     }
-                    ${taskCount > 0 ? 'bg-green-50' : ''}
                   `}
+                  style={isCurrentDay ? { backgroundColor: '#F2F7FA' } : {}}
                 >
                   <div className="text-sm text-gray-900">
                     {day.getDate()}
                   </div>
                   
-                  {taskCount > 0 && (
-                    <div className="absolute bottom-1 right-1 bg-blue-600 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-medium">
-                      {taskCount > 99 ? '99+' : taskCount}
+                  {hasTasks && (
+                    <div className={`absolute bottom-1 right-1 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-medium ${
+                      hasOpenTasks 
+                        ? 'bg-black' 
+                        : allTasksClosed 
+                          ? 'bg-gray-400' 
+                          : 'bg-blue-600'
+                    }`}>
+                      {taskStatus.total > 99 ? '99+' : taskStatus.total}
                     </div>
                   )}
                 </button>
@@ -147,14 +159,11 @@ export default function TaskCalendarModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50">
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors font-medium"
-          >
+        <ModalFooter>
+          <ModalButton variant="secondary" onClick={onClose}>
             {t('common.close')}
-          </button>
-        </div>
+          </ModalButton>
+        </ModalFooter>
       </div>
     </div>
   )

@@ -54,10 +54,13 @@ export default function MobileTasksDay({
     return (
       <div
         key={task.id}
-        className={`bg-white rounded-xl border-l-4 p-4 shadow-sm group transition-all duration-150 hover:border-black ${
+        className={`rounded-xl border-l-4 p-4 shadow-sm group transition-all duration-150 hover:border-black ${
           isCompleted ? 'opacity-60' : ''
         }`}
-        style={{ borderLeftColor: projectColor }}
+        style={{ 
+          borderLeftColor: projectColor,
+          backgroundColor: isCompleted ? '#F2F7FA' : '#ffffff'
+        }}
         onClick={() => onEditTask(task)}
       >
         <div className="flex items-start gap-3">

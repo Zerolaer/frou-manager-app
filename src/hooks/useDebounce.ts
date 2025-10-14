@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 
 /**
  * Debounce hook - delays updating value until user stops typing
@@ -20,6 +20,12 @@ import { useState, useEffect } from 'react'
  * @param delay - Delay in milliseconds (default: 500)
  */
 export function useDebounce<T>(value: T, delay: number = 500): T {
+  // Safety check to ensure React is available
+  if (typeof React === 'undefined' || !React.useState) {
+    console.warn('React hooks not available, returning original value')
+    return value
+  }
+
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
   useEffect(() => {
@@ -54,6 +60,12 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number = 500
 ): (...args: Parameters<T>) => void {
+  // Safety check to ensure React is available
+  if (typeof React === 'undefined' || !React.useState) {
+    console.warn('React hooks not available, returning callback directly')
+    return callback
+  }
+
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
   return (...args: Parameters<T>) => {

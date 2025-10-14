@@ -1,7 +1,9 @@
 import React from 'react'
-import { format } from 'date-fns'
+import { format as formatDate } from 'date-fns'
 import { useModal } from '@/hooks/useModal'
 import Dropdown, { DropdownOption } from './Dropdown'
+import { useSafeTranslation } from '@/utils/safeTranslation'
+import CustomDatePicker from './CustomDatePicker'
 
 export interface UnifiedDropdownProps {
   value: string | number
@@ -26,11 +28,13 @@ export function ProjectDropdown({
   projects, 
   value, 
   onChange, 
-  placeholder = 'Выберите проект...',
+  placeholder,
   ...props 
 }: ProjectDropdownProps) {
+  const { t } = useSafeTranslation()
+  
   const options: DropdownOption[] = [
-    { value: '', label: 'Без проекта' },
+    { value: '', label: t('projects.noProject') },
     ...projects.map(project => ({
       value: project.id,
       label: project.name
@@ -42,7 +46,7 @@ export function ProjectDropdown({
       options={options}
       value={value}
       onChange={onChange}
-      placeholder={placeholder}
+      placeholder={placeholder || t('projects.selectProject')}
       {...props}
     />
   )
@@ -127,22 +131,35 @@ export function DateDropdown({
   placeholder = 'Выберите дату...',
   ...props 
 }: DateDropdownProps) {
-  // For now, return a simple input. In a real app, you'd integrate with a date picker
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
+  // Use custom date picker for 'date' format, fallback to native input for time/datetime
+  if (format !== 'date') {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange(e.target.value)
+    }
+    
+    return (
+      <input
+        type={format === 'time' ? 'time' : 'datetime-local'}
+        value={value as string}
+        onChange={handleChange}
+        placeholder={placeholder}
+        min={minDate ? formatDate(minDate, 'yyyy-MM-dd') : undefined}
+        max={maxDate ? formatDate(maxDate, 'yyyy-MM-dd') : undefined}
+        disabled={props.disabled}
+        className={`w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${props.className || ''}`}
+        aria-label={props['aria-label']}
+      />
+    )
   }
 
   return (
-    <input
-      type={format === 'date' ? 'date' : format === 'time' ? 'time' : 'datetime-local'}
+    <CustomDatePicker
       value={value as string}
-      onChange={handleChange}
+      onChange={(newValue) => onChange(newValue)}
       placeholder={placeholder}
-      min={minDate ? format(minDate, 'yyyy-MM-dd') : undefined}
-      max={maxDate ? format(maxDate, 'yyyy-MM-dd') : undefined}
       disabled={props.disabled}
-      className={`w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${props.className || ''}`}
-      aria-label={props['aria-label']}
+      className={props.className}
+      buttonClassName={props.buttonClassName}
     />
   )
 }

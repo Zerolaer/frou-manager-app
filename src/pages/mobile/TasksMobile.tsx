@@ -8,13 +8,11 @@ import MobileLayout from '@/components/mobile/MobileLayout'
 import MobileTaskAddModal from '@/components/mobile/MobileTaskAddModal'
 import MobileTaskModal from '@/components/mobile/MobileTaskModal'
 import { TASK_STATUSES } from '@/lib/constants'
-import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import type { TaskItem } from '@/types/shared'
 
 export default function TasksMobile() {
   const { t } = useSafeTranslation()
   const { userId } = useSupabaseAuth()
-  const { handleSuccess } = useEnhancedErrorHandler()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,7 +96,7 @@ export default function TasksMobile() {
         project_name: (data as any).tasks_projects?.name || null
       }
       setTasks([...tasks, newTask])
-      handleSuccess(t('tasks.taskCreatedWithTitle', { title }))
+      console.log(`Task created: ${title}`)
       setShowAddModal(false)
     }
   }

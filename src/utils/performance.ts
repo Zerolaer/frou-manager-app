@@ -171,7 +171,6 @@ export function preloadCriticalResources() {
   // Preload critical UI components
   const criticalComponents = [
     () => import('../components/ui/LoadingStates'),
-    () => import('../components/NotificationProvider'),
     () => import('../components/AppLoader')
   ]
   

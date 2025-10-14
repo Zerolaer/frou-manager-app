@@ -1,8 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
-import { ToastProvider } from './lib/toast'
-import { NotificationProvider } from './components/NotificationProvider'
 import { SkipLinks } from './components/AccessibleComponents'
 import AppLoader from './components/AppLoader'
 import { useMobileDetection } from './hooks/useMobileDetection'
@@ -11,7 +9,6 @@ import { useMobileDetection } from './hooks/useMobileDetection'
 
 // Lazy load heavy components
 const Header = lazy(() => import('./components/Header'))
-const Toaster = lazy(() => import('./components/Toaster'))
 const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
 const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
@@ -106,53 +103,46 @@ export default function App(){
 
   // Handle preloader completion
   return (
-    <ToastProvider>
-      <NotificationProvider>
-        <AppErrorBoundary>
-        <SkipLinks />
-        <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
-          {!isMobile && (
-            <Suspense fallback={<AppLoader />}>
-              <Header 
-                currentYear={currentYear}
-                onAction={(action) => {
-                  // Dispatch action to current page
-                  window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
-                }}
-                onYearChange={(year) => {
-                  setCurrentYear(year)
-                  // Dispatch year change to current page
-                  window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
-                }}
-              />
-            </Suspense>
-          )}
-          <main 
-            id="main-content"
-            className={`flex-1 overflow-x-hidden flex flex-col ${isMobile ? 'p-0' : 'p-4'}`}
-            style={{ backgroundColor: isMobile ? '#ffffff' : '#F2F7FA' }}
-            role="main"
-            aria-label="Основное содержимое"
-          >
-            <Suspense fallback={<AppLoader />}>
-              <Outlet />
-            </Suspense>
-          </main>
-        </div>
-        <Suspense fallback={null}>
-          <Toaster />
-        </Suspense>
-        <Suspense fallback={null}>
-          <KeyboardShortcuts />
-        </Suspense>
-        <Suspense fallback={null}>
-          <OfflineSupport />
-        </Suspense>
-        <Suspense fallback={null}>
-          <PWAInstallPrompt />
-        </Suspense>
-        </AppErrorBoundary>
-      </NotificationProvider>
-    </ToastProvider>
+    <AppErrorBoundary>
+      <SkipLinks />
+      <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
+        {!isMobile && (
+          <Suspense fallback={<AppLoader />}>
+            <Header 
+              currentYear={currentYear}
+              onAction={(action) => {
+                // Dispatch action to current page
+                window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
+              }}
+              onYearChange={(year) => {
+                setCurrentYear(year)
+                // Dispatch year change to current page
+                window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
+              }}
+            />
+          </Suspense>
+        )}
+        <main 
+          id="main-content"
+          className={`flex-1 overflow-x-hidden flex flex-col ${isMobile ? 'p-0' : 'p-4'}`}
+          style={{ backgroundColor: isMobile ? '#ffffff' : '#F2F7FA' }}
+          role="main"
+          aria-label="Основное содержимое"
+        >
+          <Suspense fallback={<AppLoader />}>
+            <Outlet />
+          </Suspense>
+        </main>
+      </div>
+      <Suspense fallback={null}>
+        <KeyboardShortcuts />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OfflineSupport />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PWAInstallPrompt />
+      </Suspense>
+    </AppErrorBoundary>
   )
 }

@@ -4,7 +4,6 @@ import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import MobileModal from '@/components/ui/MobileModal'
 import { ModalButton } from '@/components/ui/ModalSystem'
-import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { FINANCE_TYPES, MONTHS_IN_YEAR } from '@/lib/constants'
 
 type Props = {
@@ -29,7 +28,6 @@ export default function MobileCellEditor({
   onApply 
 }: Props) {
   const { t } = useSafeTranslation()
-  const { handleError } = useEnhancedErrorHandler()
   const [sum, setSum] = useState(0)
   const [loading, setLoading] = useState(false)
   const [entries, setEntries] = useState<any[]>([])
@@ -64,7 +62,7 @@ export default function MobileCellEditor({
       const total = (data || []).reduce((acc, entry) => acc + (Number(entry.amount) || 0), 0)
       setSum(total)
     } catch (error) {
-      handleError(error, 'Loading finance entries')
+      console.error('Error loading finance entries:', error)
     }
   }
 
@@ -95,7 +93,7 @@ export default function MobileCellEditor({
       onApply(sum)
       onClose()
     } catch (error) {
-      handleError(error, 'Saving finance entry')
+      console.error('Error saving finance entry:', error)
     } finally {
       setLoading(false)
     }

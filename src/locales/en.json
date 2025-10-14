@@ -155,6 +155,20 @@
     "noEntries": "No entries yet."
   },
   "tasks": {
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb", 
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    },
     "newTask": "New Task",
     "title": "Task Title",
     "taskTitle": "Task title",
@@ -163,6 +177,7 @@
     "taskDetails": "Add task details...",
     "date": "Date",
     "dueDate": "Due Date",
+    "selectDate": "Select date",
     "priority": "Priority",
     "high": "High",
     "normal": "Normal",

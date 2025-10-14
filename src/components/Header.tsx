@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Filter, Search, Download, Upload, Settings, Calendar, BookOpen } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Download, Upload, Settings, Calendar, BookOpen } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
@@ -31,7 +31,6 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
         return {
           title: t('pages.overview'),
           actions: [
-            { id: 'refresh', label: t('actions.refresh'), icon: Download, variant: 'secondary' },
             { id: 'settings', label: t('actions.settings'), icon: Settings, variant: 'secondary' }
           ]
         }
@@ -52,9 +51,7 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
           title: t('pages.tasks'),
           actions: [
             { id: 'add-task', label: t('actions.newTask'), icon: Plus, variant: 'primary' },
-            { id: 'filter', label: t('actions.filter'), icon: Filter, variant: 'secondary' },
-            { id: 'calendar', label: t('actions.calendar'), icon: Calendar, variant: 'secondary' },
-            { id: 'search', label: t('actions.search'), icon: Search, variant: 'secondary' }
+            { id: 'calendar', label: t('actions.calendar'), icon: Calendar, variant: 'secondary' }
           ]
         }
 
@@ -63,8 +60,6 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
           title: t('pages.notes'),
           actions: [
             { id: 'add-note', label: t('actions.newNote'), icon: Plus, variant: 'primary' },
-            { id: 'search', label: t('actions.search'), icon: Search, variant: 'secondary' },
-            { id: 'filter', label: t('actions.filter'), icon: Filter, variant: 'secondary' },
             { id: 'export', label: t('actions.export'), icon: Download, variant: 'secondary' }
           ]
         }

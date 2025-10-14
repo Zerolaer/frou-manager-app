@@ -1,6 +1,5 @@
 import React from 'react'
 import Dropdown, { type DropdownOption } from './Dropdown'
-import { MoreVertical } from 'lucide-react'
 
 export type CoreMenuOption = DropdownOption & {
   destructive?: boolean
@@ -44,11 +43,35 @@ const CoreMenu: React.FC<CoreMenuProps> = ({
       aria-label={ariaLabel}
       className={className}
       buttonClassName={
-        `h-[34px] w-[34px] px-0 justify-center items-center hover:bg-gray-100 transition-colors !gap-0 ${buttonClassName || ''}`
+        `relative flex h-[34px] w-[34px] px-0 justify-center items-center hover:bg-gray-100 transition-colors ${buttonClassName || ''}`
       }
       buttonStyle={{ borderRadius: '12px', backgroundColor: 'transparent', border: '1px solid #e5e7eb', color: '#000000', ...buttonStyle }}
       dropdownClassName={`min-w-48 ${dropdownClassName || ''}`}
-      icon={<MoreVertical className="w-[18px] h-[18px]" style={{ color: '#000000', width: '18px', height: '18px', minWidth: '18px', minHeight: '18px' }} />}
+      icon={
+        <div style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '18px',
+          height: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <svg 
+            width="16" 
+            height="16" 
+            viewBox="0 0 24 24" 
+            fill="currentColor"
+            style={{ color: '#000000' }}
+          >
+            <circle cx="12" cy="6" r="1.5"/>
+            <circle cx="12" cy="12" r="1.5"/>
+            <circle cx="12" cy="18" r="1.5"/>
+          </svg>
+        </div>
+      }
       hideChevron={true}
     />
   )

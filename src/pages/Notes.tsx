@@ -7,7 +7,7 @@ import FolderSidebar from '@/components/FolderSidebar';
 import NotesFilterModal, { type NotesFilters } from '@/components/NotesFilterModal';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
-import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler';
+;
 import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
@@ -17,7 +17,6 @@ import { logger } from '@/lib/monitoring';
 import '@/notes.css';
 
 function NotesPageContent() {
-  const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler();
   const { t } = useSafeTranslation();
   const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
@@ -86,7 +85,7 @@ function NotesPageContent() {
         const error = err instanceof Error ? err : new Error(t('errors.unknownError'));
         setError(error);
         setIsLoading(false);
-        handleError(err, t('notes.loading') || 'Loading notes');
+        console.error('Error loading notes:', err);
       }
     }
   }
@@ -105,16 +104,16 @@ function NotesPageContent() {
         // При создании используем folder_id из draft (выбранный в модальном окне)
         const created = await createNote(draft);
         setNotes((prev) => [created, ...prev]);
-        handleSuccess('Заметка создана');
+        console.log('Note created');
       } else {
         const updated = await updateNote(id, draft);
         setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
-        handleSuccess('Заметка обновлена');
+        console.log('Note updated');
       }
     } catch (error) {
-      handleError(error, id ? 'Обновление заметки' : 'Создание заметки');
+      console.error('Error saving note:', error);
     }
-  }, [handleError, handleSuccess]);
+  }, []);
 
   // Автосохранение без уведомлений
   const handleAutoSave = useCallback(async (draft: Partial<Note>, id?: string) => {
@@ -123,7 +122,7 @@ function NotesPageContent() {
         // При создании используем folder_id из draft (выбранный в модальном окне)
         const created = await createNote(draft);
         setNotes((prev) => [created, ...prev]);
-        handleSuccess('Заметка создана');
+        console.log('Note created');
       } else {
         const updated = await updateNote(id, draft);
         setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
@@ -133,27 +132,27 @@ function NotesPageContent() {
       // Только логируем ошибку автосохранения, не показываем пользователю
       logger.error('Auto-save failed:', error);
     }
-  }, [handleSuccess]);
+  }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
       await deleteNote(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
-      handleSuccess('Заметка удалена');
+      console.log('Note deleted');
     } catch (error) {
-      handleError(error, 'Удаление заметки');
+      console.error('Error deleting note:', error);
     }
-  }, [handleError, handleSuccess]);
+  }, []);
 
   const handleTogglePin = useCallback(async (n: Note) => {
     try {
       const updated = await togglePin(n.id, !n.pinned);
       setNotes((prev) => prev.map((x) => (x.id === n.id ? updated : x)));
-      handleSuccess(n.pinned ? 'Закрепление снято' : 'Заметка закреплена');
+      console.log(n.pinned ? 'Pin removed' : 'Note pinned');
     } catch (error) {
-      handleError(error, 'Изменение закрепления');
+      console.error('Error toggling pin:', error);
     }
-  }, [handleError, handleSuccess]);
+  }, []);
 
 
   const handleEditNote = useCallback((note: Note) => {
@@ -172,12 +171,12 @@ function NotesPageContent() {
       : notes.filter(n => n.folder_id === activeFolder)
     
     downloadNotes(notesToExport, exportFormat ? 'json' : 'markdown')
-    handleSuccess(
+    console.log(
       exportFormat 
         ? (t('notes.exportedJSON') || 'Экспортировано в JSON')
         : (t('notes.exportedMarkdown') || 'Экспортировано в Markdown')
     )
-  }, [notes, activeFolder, handleSuccess, t])
+  }, [notes, activeFolder, t])
 
   // Apply filters to notes
   const applyNotesFilters = useCallback((notesList: Note[]): Note[] => {

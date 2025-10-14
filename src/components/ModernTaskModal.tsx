@@ -6,6 +6,7 @@ import CoreMenu from '@/components/ui/CoreMenu'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
+import { ModalButton } from '@/components/ui/ModalSystem'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Todo, Project } from '@/types/shared'
 import { logger } from '@/lib/monitoring'
@@ -81,7 +82,8 @@ type Props = {
 }
 
 export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence }: Props) {
-  const { t } = useSafeTranslation()
+  const { t, i18n } = useSafeTranslation()
+  
   // Add safety check for React context
   if (!React.useState) {
     return null
@@ -249,14 +251,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         }
         logger.debug('📢 Calling onUpdated with:', { updatedTask: updatedTask.title, isAutoSave, isManualSave: !isAutoSave })
         
-        // Only call onUpdated for manual saves, not auto-saves
-        if (!isAutoSave) {
-          onUpdated?.(updatedTask, true) // true indicates this is a manual save operation
-        }
+        // Call onUpdated for both manual saves and auto-saves to update the UI
+        onUpdated?.(updatedTask, !isAutoSave) // false for auto-save, true for manual save
       }
     } catch (error) {
       logger.error('❌ Error saving task:', error)
-      alert(t('tasks.saveError') + ': ' + (error as any).message)
+      console.error('Error saving task:', error)
     }
   }
 
@@ -328,8 +328,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         <div ref={menuRef}>
           <CoreMenu
             options={[
-              { value: 'duplicate', label: t('common.duplicate') },
-              { value: 'delete', label: t('common.delete'), destructive: true },
+              { value: 'duplicate', label: i18n?.language === 'ru' ? 'Дублировать' : 'Duplicate' },
+              { value: 'delete', label: i18n?.language === 'ru' ? 'Удалить' : 'Delete', destructive: true },
             ]}
             onSelect={(value) => {
               if (value === 'duplicate') {
@@ -344,13 +344,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         </div>
       }
       footer={
-        <button
-          onClick={handleClose}
-          className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors leading-none h-10"
-          style={{ borderRadius: '12px', fontSize: '13px' }}
-        >
+        <ModalButton variant="secondary" onClick={handleClose}>
           {t('actions.close')}
-        </button>
+        </ModalButton>
       }
     >
       {isLoading ? (
@@ -619,15 +615,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             onUpdateRecurrence={onUpdateRecurrence}
           />
 
-          {/* Task Info */}
-          <div className="px-6 pb-6 text-center mt-auto">
-            <div className="text-xs text-gray-600 mb-1">
-              {t('tasks.taskCreated')}: {task?.created_at ? new Date(task.created_at).toLocaleDateString() : t('common.notSpecified')}
-            </div>
-            <div className="text-xs text-gray-600">
-              {t('tasks.lastEdited')}: {task?.updated_at ? new Date(task.updated_at).toLocaleDateString() : t('common.notSpecified')}
-            </div>
-          </div>
         </aside>
       </div>
       )}

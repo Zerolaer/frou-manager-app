@@ -5,6 +5,7 @@ import { getRecurrenceDescription, validateRecurrenceSettings } from '@/utils/re
 import { Calendar, Repeat, X } from 'lucide-react'
 import Dropdown, { DropdownOption } from './ui/Dropdown'
 import { CoreInput } from './ui/CoreInput'
+import CustomDatePicker from './ui/CustomDatePicker'
 
 interface Props {
   settings: RecurringSettings
@@ -244,10 +245,10 @@ export default function RecurringTaskSettings({ settings, onChange, startDate }:
           <label className="block text-sm font-medium text-gray-700 mb-1">
 {t('tasks.recurring.endDate') || 'End date (optional)'}
           </label>
-          <CoreInput
-            type="date"
+          <CustomDatePicker
             value={localSettings.endDate || ''}
-            onChange={(e) => updateSettings({ endDate: e.target.value || undefined })}
+            onChange={(value) => updateSettings({ endDate: value || undefined })}
+            placeholder={t('tasks.selectDate') || 'Выбрать дату'}
           />
         </div>
 

@@ -11,15 +11,12 @@ import RecurringDeleteModal from '@/components/RecurringDeleteModal'
 import RecurringEditModal from '@/components/RecurringEditModal'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
-import TaskFilterModal, { type TaskFilters } from '@/components/TaskFilterModal'
 import TaskCalendarModal from '@/components/TaskCalendarModal'
-import TaskSearchModal from '@/components/TaskSearchModal'
 import '@/tasks.css'
-import { useEnhancedErrorHandler } from '@/lib/enhancedErrorHandler'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
-import { RecurringSettings } from '@/types/recurring'
+import { RecurringTaskSettings } from '@/types/recurring'
 import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
@@ -172,24 +169,15 @@ import type { Project, Todo, TaskItem } from '@/types/shared'
 
 export default function Tasks(){
   const { t } = useSafeTranslation()
-  const { handleError, handleSuccess, handleWarning, handleInfo } = useEnhancedErrorHandler()
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const { isMobile } = useMobileDetection()
   const [viewTask, setViewTask] = React.useState<TaskItem|null>(null)
   const [mobileDate, setMobileDate] = React.useState(new Date())
   
-  // Filter state
-  const [showFilters, setShowFilters] = React.useState(false)
-  const [filters, setFilters] = React.useState<TaskFilters>({
-    status: 'all',
-    priority: 'all'
-  })
   
   // Calendar state
   const [showCalendar, setShowCalendar] = React.useState(false)
   
-  // Search state
-  const [showSearch, setShowSearch] = React.useState(false)
   
   // Recurring delete modal state
   const [showRecurringDelete, setShowRecurringDelete] = React.useState(false)
@@ -200,31 +188,6 @@ export default function Tasks(){
   const [taskToEdit, setTaskToEdit] = React.useState<{ task: TaskItem; updates: any } | null>(null)
 
 
-  // Apply filters to tasks
-  const applyFilters = React.useCallback((taskList: TaskItem[]): TaskItem[] => {
-    return taskList.filter(task => {
-      // Project filter (already handled by activeProject)
-      
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        if (filters.status === 'open' && task.status !== TASK_STATUSES.OPEN) return false
-        if (filters.status === 'closed' && task.status !== TASK_STATUSES.CLOSED) return false
-      }
-      
-      // Priority filter
-      if (filters.priority && filters.priority !== 'all') {
-        if (task.priority !== filters.priority) return false
-      }
-      
-      // Has description filter
-      if (filters.hasDescription && !task.description?.trim()) return false
-      
-      // Has todos filter
-      if (filters.hasTodos && (!task.todos || task.todos.length === 0)) return false
-      
-      return true
-    })
-  }, [filters])
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -232,14 +195,8 @@ export default function Tasks(){
       case 'add-task':
         setOpenNewTask(true)
         break
-      case 'filter':
-        setShowFilters(true)
-        break
       case 'calendar':
         setShowCalendar(true)
-        break
-      case 'search':
-        setShowSearch(true)
         break
       default:
         // Unknown action
@@ -256,6 +213,7 @@ export default function Tasks(){
   const [dragStartTimer, setDragStartTimer] = React.useState<NodeJS.Timeout | null>(null)
   const [mouseDownPos, setMouseDownPos] = React.useState({ x: 0, y: 0 })
   const [hasMoved, setHasMoved] = React.useState(false)
+  const [draggedCardWidth, setDraggedCardWidth] = React.useState<number | null>(null)
   
   // Use ref to track dragging state for click handler
   const hasMovedRef = React.useRef(false)
@@ -299,6 +257,18 @@ export default function Tasks(){
         
         // Use saved task info from handleMouseDown
         const { task, dayKey, index } = pendingDrag
+        
+        // Find the original card element and save its width
+        const dayCol = document.querySelector(`[data-day-key="${dayKey}"]`)
+        if (dayCol) {
+          const taskCards = dayCol.querySelectorAll('.task-card')
+          const originalCard = taskCards[index] as HTMLElement
+          if (originalCard) {
+            const rect = originalCard.getBoundingClientRect()
+            setDraggedCardWidth(rect.width)
+            logger.debug('📏 Saved card width:', rect.width)
+          }
+        }
         
         setDraggedTask(task)
         setDragSource({ dayKey, index })
@@ -430,6 +400,7 @@ export default function Tasks(){
       setDropTarget(null)
       setIsDragging(false)
       isDraggingRef.current = false
+      setDraggedCardWidth(null)
       
       // Reset movement flag with small delay so onClick doesn't fire
       setTimeout(() => {
@@ -530,6 +501,7 @@ export default function Tasks(){
     setIsDragging(false)
     isDraggingRef.current = false
     setHasMoved(false)
+    setDraggedCardWidth(null)
     hasMovedRef.current = false
   }
 
@@ -602,7 +574,7 @@ export default function Tasks(){
       }
     } catch (error) {
       logger.error('Error updating task positions:', error)
-      handleError(error, 'Error moving task')
+      console.error('Error moving task:', error)
     }
   }
 
@@ -685,6 +657,8 @@ const projectColorById = React.useMemo(() => {
 
   // tasks for the week of active project
   const [tasks, setTasks] = React.useState<Record<string, TaskItem[]>>({})
+  // All tasks for calendar (entire month)
+  const [allTasks, setAllTasks] = React.useState<Record<string, TaskItem[]>>({})
   // Track last active project to clear cache on project switch
   const lastActiveProject = React.useRef(activeProject)
   
@@ -773,6 +747,69 @@ const projectColorById = React.useMemo(() => {
     }
   }, [uid, activeProject, start, end])
 
+  // Load all tasks for calendar (current month)
+  React.useEffect(() => {
+    if (!uid || !activeProject) { 
+      setAllTasks({})
+      return
+    }
+    
+    let cancelled = false
+    
+    const fetchAllTasks = async () => {
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      
+      const startDate = format(startOfMonth, 'yyyy-MM-dd')
+      const endDate = format(endOfMonth, 'yyyy-MM-dd')
+      
+      const q = supabase.from('tasks_items')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true })
+        .order('position', { ascending: true })
+      
+      if (activeProject !== TASK_PROJECT_ALL) {
+        q.eq('project_id', activeProject)
+      }
+      
+      const { data, error } = await q
+      
+      if (cancelled) return
+      
+      if (error) {
+        console.error('Error fetching all tasks:', error)
+        return
+      }
+      
+      if (data) {
+        const taskMap: Record<string, TaskItem[]> = {}
+        
+        data.forEach((task: any) => {
+          const dayKey = task.date
+          if (!taskMap[dayKey]) {
+            taskMap[dayKey] = []
+          }
+          
+          taskMap[dayKey].push({
+            ...task,
+            project_name: task.tasks_projects?.name || 'No Project'
+          })
+        })
+        
+        setAllTasks(taskMap)
+      }
+    }
+    
+    fetchAllTasks()
+    
+    return () => {
+      cancelled = true
+    }
+  }, [uid, activeProject])
+
 // context menu state for task cards
   const [ctx, setCtx] = React.useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
     open: false, x: 0, y: 0, task: null, dayKey: undefined
@@ -855,9 +892,9 @@ const projectColorById = React.useMemo(() => {
       const idx = list.findIndex(x => x.id === task.id)
       if (idx >= 0){ list.splice(idx,1); map[dayKey] = list }
       setTasks(map)
-      handleSuccess(t('tasks.taskDeleted') || 'Задача удалена')
+      console.log('Task deleted successfully')
     } catch (error) {
-      handleError(error as any, 'Deleting task...')
+      console.error('Error deleting task:', error)
     } finally {
       setCtx(c => ({ ...c, open: false }))
       setShowRecurringDelete(false)
@@ -889,12 +926,9 @@ const projectColorById = React.useMemo(() => {
         .flat()
         .filter(t => t.recurring_task_id === task.recurring_task_id)
       
-      handleSuccess(
-        t('tasks.allRecurringDeleted', { count: recurringTasks.length }) || 
-        `Удалено ${recurringTasks.length} повторяющихся задач`
-      )
+      console.log(`Deleted ${recurringTasks.length} recurring tasks`)
     } catch (error) {
-      handleError(error as any, 'Deleting recurring tasks...')
+      console.error('Error deleting recurring tasks:', error)
     } finally {
       setShowRecurringDelete(false)
       setTaskToDelete(null)
@@ -923,9 +957,9 @@ const projectColorById = React.useMemo(() => {
       })
       setTasks(map)
       
-      handleSuccess(t('tasks.taskUpdated') || 'Task updated successfully')
+      console.log('Task updated successfully')
     } catch (error) {
-      handleError(error as any, 'Updating task...')
+      console.error('Error updating task:', error)
     } finally {
       setShowRecurringEdit(false)
       setTaskToEdit(null)
@@ -963,12 +997,9 @@ const projectColorById = React.useMemo(() => {
         .flat()
         .filter(t => t.recurring_task_id === task.recurring_task_id)
       
-      handleSuccess(
-        t('tasks.allRecurringUpdated', { count: recurringTasks.length }) || 
-        `Updated ${recurringTasks.length} recurring tasks`
-      )
+      console.log(`Updated ${recurringTasks.length} recurring tasks`)
     } catch (error) {
-      handleError(error as any, 'Updating recurring tasks...')
+      console.error('Error updating recurring tasks:', error)
     } finally {
       setShowRecurringEdit(false)
       setTaskToEdit(null)
@@ -1017,11 +1048,11 @@ const projectColorById = React.useMemo(() => {
       const next = [...projects, { id:data.id, name:data.name }]
       setProjects(next)
       if (!activeProject) setActiveProject(data.id)
-      handleSuccess(t('projects.projectCreated', { name }))
+      console.log(`Project created: ${name}`)
       setProjectName('')
       setOpenNewProject(false)
     } else if (error) {
-      handleError(error, 'Creating project...')
+      console.error('Error creating project:', error)
     }
   }
 
@@ -1040,7 +1071,7 @@ const projectColorById = React.useMemo(() => {
     priority: string,
     tag: string,
     todos: Todo[],
-    recurringSettings: RecurringSettings
+    recurringSettings: RecurringTaskSettings
   ) {
     if (!uid) return
 
@@ -1138,7 +1169,7 @@ const projectColorById = React.useMemo(() => {
       const message = createdTasks.length > 1 
         ? `Создано ${createdTasks.length} повторяющихся задач`
         : 'Повторяющаяся задача создана'
-      handleSuccess(message)
+      console.log(message)
       
       setTaskTitle('')
       setTaskDesc('')
@@ -1146,11 +1177,11 @@ const projectColorById = React.useMemo(() => {
 
     } catch (error) {
       logger.error('❌ Error creating recurring tasks:', error)
-      handleError(error as any, 'Creating recurring tasks...')
+      console.error('Error creating recurring tasks:', error)
     }
   }
 
-    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringSettings){
+    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringTaskSettings){
       if (!uid) return
       
       // Debug: check if recurring settings are passed correctly
@@ -1229,17 +1260,17 @@ const projectColorById = React.useMemo(() => {
       const map = { ...tasks }
       ;(map[key] ||= []).push(newTask)
       setTasks(map)
-      handleSuccess(t('tasks.taskCreatedWithTitle', { title }))
+      console.log(`Task created: ${title}`)
       setTaskTitle(''); setTaskDesc('')
       setOpenNewTask(false)
     } else if (error) {
-      handleError(error, 'Creating task...')
+      console.error('Error creating task:', error)
       }
     }
   }
 
   // Function to update recurring task settings
-  const updateRecurringTaskSettings = async (taskId: string, settings: RecurringSettings) => {
+  const updateRecurringTaskSettings = async (taskId: string, settings: RecurringTaskSettings) => {
     if (!uid) return
 
     try {
@@ -1275,7 +1306,7 @@ const projectColorById = React.useMemo(() => {
   }
 
   // Handle task updates - check for recurring tasks
-  const handleTaskUpdate = async (updatedTask: TaskItem | null, isSave?: boolean) => {
+  const handleTaskUpdate = async (updatedTask: any | null, isSave?: boolean) => {
     if (import.meta.env.DEV) {
       console.log('🔄 handleTaskUpdate called:', { 
         updatedTask: updatedTask?.title, 
@@ -1372,13 +1403,24 @@ const projectColorById = React.useMemo(() => {
     }
     
     // Single task or only one instance of recurring task - update directly
-    updateTaskDirectly(updatedTask)
+    updateTaskDirectly(updatedTask, isSave)
   }
 
-  const updateTaskDirectly = (updatedTask: TaskItem) => {
+  const updateTaskDirectly = (updatedTask: TaskItem, shouldCloseModal: boolean = true) => {
     const map = { ...tasks }
     const oldDate = viewTask?.date || ""
     const newDate = updatedTask.date || ""
+    
+    // Find the project name for the updated project_id
+    const projectName = updatedTask.project_id 
+      ? projects.find(p => p.id === updatedTask.project_id)?.name || null
+      : null
+    
+    // Create updated task with correct project_name
+    const taskWithProjectName = {
+      ...updatedTask,
+      project_name: projectName
+    }
     
     // Find original position of the task
     let originalPosition = -1
@@ -1405,11 +1447,11 @@ const projectColorById = React.useMemo(() => {
       
       // If date changed, append to end; otherwise maintain position
       if (oldDate !== newDate) {
-        map[newDate].push({ ...updatedTask, position: map[newDate].length })
+        map[newDate].push({ ...taskWithProjectName, position: map[newDate].length })
       } else {
         // Same date - try to maintain position
         const insertPosition = Math.max(0, Math.min(originalPosition, map[newDate].length))
-        map[newDate].splice(insertPosition, 0, { ...updatedTask, position: insertPosition })
+        map[newDate].splice(insertPosition, 0, { ...taskWithProjectName, position: insertPosition })
         
         // Recalculate positions
         map[newDate] = map[newDate].map((task, index) => ({ ...task, position: index }))
@@ -1417,14 +1459,18 @@ const projectColorById = React.useMemo(() => {
     }
     
     setTasks(map)
-    setViewTask(null)
+    
+    // Only close modal for manual saves, not auto-saves
+    if (shouldCloseModal) {
+      setViewTask(null)
+    }
   }
 
   // Get tasks for mobile date
   const mobileTasks = React.useMemo(() => {
     const dayKey = format(mobileDate, 'yyyy-MM-dd')
-    return applyFilters(tasks[dayKey] || [])
-  }, [tasks, mobileDate, applyFilters])
+    return tasks[dayKey] || []
+  }, [tasks, mobileDate])
 
   // Mobile view
   if (isMobile) {
@@ -1476,7 +1522,7 @@ const projectColorById = React.useMemo(() => {
                 </div>
                 <div className="day-body">
                   
-                  {applyFilters(tasks[key] || []).map((taskItem, index) => {
+                  {(tasks[key] || []).map((taskItem, index) => {
                     const isDragged = isDragging && draggedTask?.id === taskItem.id
                     const isDropTarget = dropTarget?.dayKey === key && dropTarget?.index === index
                     const isGhost = isDragging && dragSource?.dayKey === key && dragSource?.index === index
@@ -1502,7 +1548,7 @@ const projectColorById = React.useMemo(() => {
                         <div
                           className={`task-card group transition-all duration-150 hover:border-black ${taskItem.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
                           style={{
-                            backgroundColor: '#ffffff',
+                            backgroundColor: taskItem.status === TASK_STATUSES.CLOSED ? '#F2F7FA' : '#ffffff',
                             border: '1px solid #e5e7eb',
                             borderRadius: '12px',
                             overflow: 'visible', // Allow tooltip to show outside card bounds
@@ -1515,7 +1561,12 @@ const projectColorById = React.useMemo(() => {
                               transform: 'none',
                               boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
                               opacity: 0.8, // Transparency
-                              // DON'T change dimensions - keep original
+                              // Keep exact original width and text formatting
+                              width: draggedCardWidth ? `${draggedCardWidth}px` : 'auto',
+                              minWidth: draggedCardWidth ? `${draggedCardWidth}px` : '280px',
+                              maxWidth: draggedCardWidth ? `${draggedCardWidth}px` : 'none',
+                              whiteSpace: 'normal', // Allow text wrapping
+                              wordWrap: 'break-word', // Break long words
                             } : {})
                           }}
                           onContextMenu={(e) => {
@@ -1720,20 +1771,12 @@ const projectColorById = React.useMemo(() => {
         t={t}
       />}
 
-      {/* Filter modal */}
-      <TaskFilterModal
-        open={showFilters}
-        onClose={() => setShowFilters(false)}
-        filters={filters}
-        onFiltersChange={setFilters}
-        projects={projects}
-      />
 
       {/* Calendar modal */}
       <TaskCalendarModal
         open={showCalendar}
         onClose={() => setShowCalendar(false)}
-        tasks={tasks}
+        tasks={allTasks}
         onDateSelect={(date) => {
           if (isMobile) {
             setMobileDate(date)
@@ -1743,15 +1786,6 @@ const projectColorById = React.useMemo(() => {
         }}
       />
 
-      {/* Search modal */}
-      <TaskSearchModal
-        open={showSearch}
-        onClose={() => setShowSearch(false)}
-        tasks={tasks}
-        onTaskSelect={(task) => {
-          setViewTask(task)
-        }}
-      />
 
       {/* Recurring delete modal */}
       <RecurringDeleteModal

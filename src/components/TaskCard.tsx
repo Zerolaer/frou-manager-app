@@ -88,7 +88,7 @@ export function TaskCard({
         className
       )}
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: isCompleted ? '#F2F7FA' : '#ffffff',
         border: '1px solid #e5e7eb',
         borderRadius: '12px',
         ...style

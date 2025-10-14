@@ -1,11 +1,9 @@
 import { logger } from '@/lib/monitoring'
 import { useState, useCallback, useRef } from 'react'
 import { retry, retryStrategies, RetryOptions, RetryResult } from '@/lib/retryLogic'
-import { useErrorHandler } from '@/lib/errorHandler'
 
 // Hook for retry functionality
 export function useRetry() {
-  const { handleError } = useErrorHandler()
   const [isRetrying, setIsRetrying] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
 
@@ -29,10 +27,10 @@ export function useRetry() {
     if (result.success) {
       return result.data
     } else {
-      handleError(result.error, 'Операция завершилась с ошибкой')
+      console.error('Operation failed:', result.error)
       return null
     }
-  }, [handleError])
+  }, [])
 
   return {
     executeWithRetry,
@@ -43,7 +41,6 @@ export function useRetry() {
 
 // Hook for specific retry strategies
 export function useRetryStrategies() {
-  const { handleError } = useErrorHandler()
 
   const executeWithStrategy = useCallback(async <T>(
     operation: () => Promise<T>,
@@ -54,10 +51,10 @@ export function useRetryStrategies() {
       const result = await retryStrategies[strategy](operation, maxRetries)
       return result.data
     } catch (error) {
-      handleError(error, `Ошибка при выполнении операции (стратегия: ${strategy})`)
+      console.error(`Error executing operation (strategy: ${strategy}):`, error)
       return null
     }
-  }, [handleError])
+  }, [])
 
   return {
     immediate: (operation: () => Promise<any>, maxRetries = 3) => 
