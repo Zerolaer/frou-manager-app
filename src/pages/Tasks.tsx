@@ -1,6 +1,7 @@
 // Tasks.tsx — Tag tint tweak (alpha 0.2) + UPPERCASE — 2025-08-27T11:57:52.457526Z
 import React from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import TasksMobile from './mobile/TasksMobile'
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, format } from 'date-fns'
 import ProjectSidebar from '@/components/ProjectSidebar'
 import WeekTimeline from '@/components/WeekTimeline'
@@ -1425,85 +1426,9 @@ const projectColorById = React.useMemo(() => {
     return applyFilters(tasks[dayKey] || [])
   }, [tasks, mobileDate, applyFilters])
 
-  // Mobile view - single day display
+  // Mobile view
   if (isMobile) {
-    return (
-      <div className="mobile-tasks-page">
-        <MobileDayNavigator
-          currentDate={mobileDate}
-          onDateChange={setMobileDate}
-          className="sticky top-0 z-10"
-        />
-        
-        <div className="overflow-y-auto flex-1">
-          <MobileTasksDay
-            date={mobileDate}
-            tasks={mobileTasks}
-            projects={projects}
-            onAddTask={() => {
-              setTaskDate(mobileDate)
-              setOpenNewTask(true)
-            }}
-            onEditTask={(task) => setViewTask(task)}
-            onToggleTaskStatus={(task) => {
-              const dayKey = format(mobileDate, 'yyyy-MM-dd')
-              toggleTaskStatus(task, dayKey)
-            }}
-            onDeleteTask={(task) => {
-              const dayKey = format(mobileDate, 'yyyy-MM-dd')
-              deleteTask(task, dayKey)
-            }}
-            onDuplicateTask={(task) => {
-              const dayKey = format(mobileDate, 'yyyy-MM-dd')
-              duplicateTask(task, dayKey)
-            }}
-            onContextMenu={(e, task) => {
-              // Use mouse coordinates like in finance, with small offset
-              setCtx({
-                open: true,
-                x: e.clientX + 10, // Right of cursor
-                y: e.clientY - 10, // Above cursor
-                task: task,
-                dayKey: format(mobileDate, 'yyyy-MM-dd'),
-              })
-            }}
-          />
-        </div>
-
-        {/* Mobile modals */}
-        <TaskAddModal 
-          open={openNewTask} 
-          projects={projects} 
-          activeProject={activeProject} 
-          onClose={()=>setOpenNewTask(false)} 
-          dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE") : ""} 
-          initialDate={taskDate || new Date()}
-          onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
-        />
-
-        <ModernTaskModal
-          key={viewTask?.id || 'new'}
-          open={!!viewTask}
-          onClose={()=>setViewTask(null)}
-          task={viewTask}
-          onUpdated={handleTaskUpdate}
-          onUpdateRecurrence={updateRecurringTaskSettings}
-        />
-
-        {/* Context menu */}
-        {ctx.open && <TaskContextMenu 
-          x={ctx.x} 
-          y={ctx.y} 
-          task={ctx.task}
-          dayKey={ctx.dayKey}
-          onClose={()=>setCtx(c=>({...c, open:false}))}
-          onDuplicate={()=> ctx.task && ctx.dayKey && duplicateTask(ctx.task, ctx.dayKey)}
-          onToggleStatus={()=> ctx.task && ctx.dayKey && toggleTaskStatus(ctx.task, ctx.dayKey)}
-          onDelete={()=> ctx.task && ctx.dayKey && deleteTask(ctx.task, ctx.dayKey)}
-          t={t}
-        />}
-      </div>
-    )
+    return <TasksMobile />
   }
 
   // Desktop view - original week grid layout

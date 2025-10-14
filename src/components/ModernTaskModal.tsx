@@ -217,7 +217,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       description: description.trim() || '',
       priority: priority || 'normal',
       tag: tag.trim() || '',
-      date: date || null,
+      date: date || new Date().toISOString().split('T')[0], // Default to today if no date
       todos,
       status,
       project_id: projectId || null,

@@ -5,6 +5,7 @@ import { ToastProvider } from './lib/toast'
 import { NotificationProvider } from './components/NotificationProvider'
 import { SkipLinks } from './components/AccessibleComponents'
 import AppLoader from './components/AppLoader'
+import { useMobileDetection } from './hooks/useMobileDetection'
 
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
@@ -16,6 +17,7 @@ const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
 const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 
 export default function App(){
+  const { isMobile } = useMobileDetection()
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
 
   // Redirect to last visited page on app load (only once)
@@ -109,24 +111,26 @@ export default function App(){
         <AppErrorBoundary>
         <SkipLinks />
         <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
-          <Suspense fallback={<AppLoader />}>
-            <Header 
-              currentYear={currentYear}
-              onAction={(action) => {
-                // Dispatch action to current page
-                window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
-              }}
-              onYearChange={(year) => {
-                setCurrentYear(year)
-                // Dispatch year change to current page
-                window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
-              }}
-            />
-          </Suspense>
+          {!isMobile && (
+            <Suspense fallback={<AppLoader />}>
+              <Header 
+                currentYear={currentYear}
+                onAction={(action) => {
+                  // Dispatch action to current page
+                  window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
+                }}
+                onYearChange={(year) => {
+                  setCurrentYear(year)
+                  // Dispatch year change to current page
+                  window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
+                }}
+              />
+            </Suspense>
+          )}
           <main 
             id="main-content"
-            className="flex-1 p-4 overflow-x-hidden flex flex-col"
-            style={{ backgroundColor: '#F2F7FA' }}
+            className={`flex-1 overflow-x-hidden flex flex-col ${isMobile ? 'p-0' : 'p-4'}`}
+            style={{ backgroundColor: isMobile ? '#ffffff' : '#F2F7FA' }}
             role="main"
             aria-label="Основное содержимое"
           >

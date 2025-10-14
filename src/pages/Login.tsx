@@ -46,8 +46,8 @@ if (!authChecked) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Левая часть - форма (50%) */}
-      <div className="w-1/2 bg-white flex flex-col justify-center px-16">
+      {/* Левая часть - форма (100% на мобильных, 50% на десктопе) */}
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-6 md:px-16">
         <div className="max-w-md mx-auto w-full">
           {/* Логотип FROVO */}
           <div className="mb-[120px]">
@@ -154,8 +154,8 @@ if (!authChecked) {
         </div>
       </div>
 
-      {/* Правая часть - картинка (50%) */}
-      <div className="w-1/2 relative h-screen overflow-hidden">
+      {/* Правая часть - картинка (скрыта на мобильных, видна на десктопе) */}
+      <div className="hidden md:block md:w-1/2 relative h-screen overflow-hidden">
         <img 
           src="/images/login-hero.webp"
           alt="FROVO Hero"
