@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
@@ -17,6 +17,7 @@ interface HeaderProps {
 
 export default function Header({ onAction, currentYear, onYearChange, selectedWeek, onWeekChange }: HeaderProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const { signOut } = useSupabaseAuth()
   const { t } = useSafeTranslation()
 
@@ -72,11 +73,43 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
 
 
   const handleSignOut = async () => {
-    // Clear first visit flag so next login starts at home
-    localStorage.removeItem('frovo_has_visited')
-    localStorage.removeItem('frovo_last_page')
-    await signOut()
-    window.location.href = '/login'
+    try {
+      // Clear first visit flag so next login starts at home
+      localStorage.removeItem('frovo_has_visited')
+      localStorage.removeItem('frovo_last_page')
+      
+      // Clear all localStorage items related to the app
+      const localStorageKeysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) {
+          localStorageKeysToRemove.push(key)
+        }
+      }
+      localStorageKeysToRemove.forEach(key => localStorage.removeItem(key))
+      
+      // Clear all sessionStorage items related to the app
+      const sessionStorageKeysToRemove = []
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) {
+          sessionStorageKeysToRemove.push(key)
+        }
+      }
+      sessionStorageKeysToRemove.forEach(key => sessionStorage.removeItem(key))
+      
+      // Navigate to login page immediately (don't wait for signOut)
+      navigate('/login', { replace: true })
+      
+      // Sign out from Supabase in background (non-blocking)
+      signOut().catch(error => {
+        console.error('Background signOut error:', error)
+      })
+    } catch (error) {
+      console.error('Error during logout:', error)
+      // Even if there's an error, navigate to login
+      navigate('/login', { replace: true })
+    }
   }
 
   const handleAction = (actionId: string) => {

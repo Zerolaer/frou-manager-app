@@ -25,7 +25,17 @@ export function useSupabaseAuth() {
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      // Сначала очищаем локальное состояние
+      setUser(null)
+      setLoading(false)
+      
+      // Затем пытаемся выйти из Supabase (не критично если не получится)
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Error signing out from Supabase:', error)
+      // Локальное состояние уже очищено, продолжаем
+    }
   }
 
   return { 

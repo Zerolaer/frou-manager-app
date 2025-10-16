@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
+import { CoreInput } from '@/components/ui/CoreInput'
 import AuthCard from '@/components/AuthCard'
 
 export default function Login() {
@@ -45,7 +46,7 @@ if (!authChecked) {
 }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-white">
       {/* Левая часть - форма (100% на мобильных, 50% на десктопе) */}
       <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-6 md:px-16">
         <div className="max-w-md mx-auto w-full">
@@ -62,7 +63,9 @@ if (!authChecked) {
 
           {/* Заголовок */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('login.title')}</h1>
+            <h1 className="text-3xl text-gray-900 mb-2">
+              Hello, <span className="font-light">Welcome back!</span>
+            </h1>
             <p className="text-gray-600">{t('login.subtitle')}</p>
           </div>
 
@@ -100,37 +103,27 @@ if (!authChecked) {
           <form onSubmit={onSubmit} className="space-y-4">
               {/* Email */}
               <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.email')}</label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.email')}</label>
+                <CoreInput
                   type="email"
-                placeholder={t('login.emailPlaceholder')}
+                  placeholder={t('login.emailPlaceholder')}
                   value={email}
                   onChange={(e)=>setEmail(e.target.value)}
                   required
-                className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all"
                 />
               </div>
 
               {/* Password */}
               <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.password')}</label>
-              <div className="relative">
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('login.password')}</label>
+                <CoreInput
                   type="password"
                   placeholder={t('login.passwordPlaceholder')}
                   value={password}
                   onChange={(e)=>setPassword(e.target.value)}
                   required
-                  className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-400 transition-all"
                 />
-                <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
               </div>
-            </div>
 
             {/* Forgot Password */}
             <div className="flex justify-end">
@@ -155,15 +148,17 @@ if (!authChecked) {
       </div>
 
       {/* Правая часть - картинка (скрыта на мобильных, видна на десктопе) */}
-      <div className="hidden md:block md:w-1/2 relative h-screen overflow-hidden">
-        <img 
-          src="/images/login-hero.webp"
-          alt="FROVO Hero"
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover"
-          style={{ objectPosition: 'center calc(50% + 200px)' }}
-        />
+      <div className="hidden md:block md:w-1/2 p-4 h-screen">
+        <div className="relative w-full h-full rounded-[32px] overflow-hidden">
+          <img 
+            src="/images/login-hero.webp"
+            alt="FROVO Hero"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center calc(50% + 200px)' }}
+          />
+        </div>
       </div>
     </div>
   )
