@@ -96,7 +96,12 @@ const Modal = ({
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape') {
+        onClose() 
+      }
+    }
+    // Use bubble phase (default) - will be called after capture phase listeners
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
@@ -128,7 +133,7 @@ const Modal = ({
   
   // БЕЗ вложенных бэктиков — безопасно для esbuild/Netlify
   const panelClasses = [
-    actualSize === 'cell' ? 'w-[680px]' : 'w-[500px]',
+    actualSize === 'cell' ? 'w-[680px]' : actualSize === 'large' ? 'w-[800px]' : 'w-[500px]',
     'max-w-[95vw]',
     'rounded-2xl',
     'bg-white',

@@ -113,6 +113,7 @@ interface UnifiedModalProps {
   headerRight?: React.ReactNode
   closeOnOverlay?: boolean
   bodyClassName?: string
+  contentClassName?: string
   variant?: 'center' | 'side' // Новый параметр для выбора типа модалки
 }
 
@@ -127,6 +128,7 @@ export function UnifiedModal({
   headerRight,
   closeOnOverlay = true,
   bodyClassName,
+  contentClassName,
   variant = 'center'
 }: UnifiedModalProps) {
   // Для side-модалок используем SideModal
@@ -167,6 +169,7 @@ export function UnifiedModal({
       size={sizeMap[size]}
       closeOnOverlay={closeOnOverlay}
       bodyClassName={bodyClassName}
+      contentClassName={contentClassName}
     >
       {children}
     </Modal>

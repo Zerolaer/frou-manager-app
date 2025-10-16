@@ -82,7 +82,12 @@ const MobileModal = ({
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape') {
+        onClose() 
+      }
+    }
+    // Use bubble phase (default) - will be called after capture phase listeners
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])

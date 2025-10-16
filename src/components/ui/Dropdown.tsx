@@ -153,14 +153,15 @@ export default function Dropdown({
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && open) {
-        event.stopPropagation()
+        event.stopImmediatePropagation()
         setOpen(false)
       }
     }
 
     if (open) {
-      document.addEventListener('keydown', handleKeyDown)
-      return () => document.removeEventListener('keydown', handleKeyDown)
+      // Add listener with higher priority (capture phase)
+      window.addEventListener('keydown', handleKeyDown, { capture: true })
+      return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
     }
   }, [open])
 

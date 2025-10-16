@@ -8,11 +8,12 @@ interface ModalFieldProps {
   error?: string
   helpText?: string
   children: React.ReactNode
+  className?: string
 }
 
-export function ModalField({ label, required, error, helpText, children }: ModalFieldProps) {
+export function ModalField({ label, required, error, helpText, children, className = '' }: ModalFieldProps) {
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${className}`}>
       <label className="block text-sm font-medium text-gray-700">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}

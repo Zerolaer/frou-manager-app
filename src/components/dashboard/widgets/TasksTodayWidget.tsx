@@ -92,7 +92,7 @@ const TasksTodayWidget = () => {
             </div>
           ) : (
             tasks.slice(0, 5).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+              <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 {/* Custom round checkbox like in subtasks */}
                 <div
                   onClick={(e) => {
@@ -100,8 +100,8 @@ const TasksTodayWidget = () => {
                     // TODO: Handle task status toggle
                   }}
                   style={{ 
-                    width: '20px', 
-                    height: '20px',
+                    width: '24px', 
+                    height: '24px',
                     borderRadius: '999px',
                     backgroundColor: task.status === 'closed' ? '#000000' : '#ffffff',
                     border: '2px solid #000000',
@@ -115,8 +115,8 @@ const TasksTodayWidget = () => {
                 >
                   {task.status === 'closed' && (
                     <svg 
-                      width="10" 
-                      height="10" 
+                      width="12" 
+                      height="12" 
                       viewBox="0 0 24 24" 
                       fill="none" 
                       stroke="white" 
@@ -129,12 +129,12 @@ const TasksTodayWidget = () => {
                   )}
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm truncate ${task.status === 'closed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                <div className="flex-1 min-w-0 flex items-center">
+                  <p className={`text-sm truncate m-0 ${task.status === 'closed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                     {task.title}
                   </p>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-center">
                   <span className="px-2 py-1 rounded-full text-xs font-medium text-gray-900 bg-gray-100">
                     {getPriorityText(task.priority) || 'Normal'}
                   </span>

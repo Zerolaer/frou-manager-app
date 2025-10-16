@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Download, Upload, Settings, Calendar } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
@@ -42,9 +42,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
           title: t('pages.finance'),
           actions: [
             { id: 'add-category', label: t('actions.addCategory'), icon: Plus, variant: 'primary' },
-            { id: 'annual-stats', label: t('actions.annualStats'), icon: Target, variant: 'secondary' },
-            { id: 'export', label: t('actions.export'), icon: Download, variant: 'secondary' },
-            { id: 'import', label: t('actions.import'), icon: Upload, variant: 'secondary' }
+            { id: 'annual-stats', label: t('actions.annualStats'), icon: Target, variant: 'secondary' }
           ]
         }
 
@@ -61,8 +59,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
         return {
           title: t('pages.notes'),
           actions: [
-            { id: 'add-note', label: t('actions.newNote'), icon: Plus, variant: 'primary' },
-            { id: 'export', label: t('actions.export'), icon: Download, variant: 'secondary' }
+            { id: 'add-note', label: t('actions.newNote'), icon: Plus, variant: 'primary' }
           ]
         }
 

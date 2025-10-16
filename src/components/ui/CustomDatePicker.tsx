@@ -52,14 +52,15 @@ export default function CustomDatePicker({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
-        event.stopPropagation()
+        event.stopImmediatePropagation()
         setIsOpen(false)
       }
     }
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
+      // Add listener with higher priority (capture phase)
+      window.addEventListener('keydown', handleEscape, { capture: true })
+      return () => window.removeEventListener('keydown', handleEscape, { capture: true })
     }
   }, [isOpen])
 

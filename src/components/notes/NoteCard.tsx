@@ -9,7 +9,16 @@ type Props = {
 };
 
 const NoteCard = ({ note, onEdit, onTogglePin }: Props) => {
-  const preview = useMemo(() => note.content?.slice(0, 160) ?? '', [note.content]);
+  // Strip HTML tags for preview
+  const preview = useMemo(() => {
+    const content = note.content ?? '';
+    // Create a temporary element to parse HTML
+    const temp = document.createElement('div');
+    temp.innerHTML = content;
+    // Get text content without HTML tags
+    const text = temp.textContent || temp.innerText || '';
+    return text.slice(0, 160);
+  }, [note.content]);
   
   const handleEdit = useCallback(() => {
     onEdit(note);

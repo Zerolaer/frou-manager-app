@@ -27,6 +27,12 @@ const SideModal = ({
   const panelRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
+  const onCloseRef = useRef(onClose)
+  
+  // Keep ref up to date
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (open) {
@@ -50,10 +56,15 @@ const SideModal = ({
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape') {
+        onCloseRef.current() 
+      }
+    }
+    // Use bubble phase (default) - will be called after capture phase listeners
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open])
 
   useEffect(() => {
     if (open) {

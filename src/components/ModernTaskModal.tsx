@@ -188,12 +188,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   }, [menuOpen])
 
   // Handler for closing with save
-  const handleClose = async () => {
+  const handleClose = React.useCallback(async () => {
     logger.debug('🚪 Closing modal, saving first...')
     await save(false) // false = manual save (user action)
     logger.debug('🚪 Saved, now closing')
     onClose()
-  }
+  }, [save, onClose])
 
   async function save(isAutoSave = false) {
     if (!task) {

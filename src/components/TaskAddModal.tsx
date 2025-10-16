@@ -126,7 +126,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
               projects={projects}
               value={form.fields.projectId.value}
               onChange={(value) => form.setField('projectId', String(value))}
-              buttonClassName="w-full"
+              className="w-full"
             />
           </div>
           
@@ -137,7 +137,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <DateDropdown
               value={form.fields.selectedDate.value}
               onChange={(date) => form.setField('selectedDate', String(date))}
-              buttonClassName="w-full"
+              className="w-full"
             />
           </div>
         </div>
@@ -181,7 +181,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <PriorityDropdown
               value={form.fields.priority.value}
               onChange={(value) => form.setField('priority', String(value))}
-              buttonClassName="w-full"
+              className="w-full"
             />
           </div>
           
@@ -198,44 +198,24 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         </div>
 
         {/* Todo список */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('tasks.todos') || 'Подзадачи'}
-          </label>
-          
-          <div className="space-y-2">
-            {todoManager.todos.map(todo => (
-              <div key={todo.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                <button
-                  onClick={() => todoManager.toggleTodo(todo.id)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    todo.done 
-                      ? 'bg-green-500 border-green-500 text-white' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  {todo.done && <Check className="w-3 h-3" />}
-                </button>
-                
-                <span className={`flex-1 text-sm ${todo.done ? 'line-through text-gray-500' : ''}`}>
-                  {todo.text}
-                </span>
-                
-                <button
-                  onClick={() => todoManager.removeTodo(todo.id)}
-                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">
+              {t('tasks.todos') || 'Подзадачи'}
+            </label>
+            {todoManager.todos.length > 0 && (
+              <span className="text-sm text-gray-500">
+                {todoManager.todos.filter(t => t.done).length}/{todoManager.todos.length}
+              </span>
+            )}
           </div>
           
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2">
             <CoreInput
               value={todoManager.newTodo || ''}
               onChange={(e) => todoManager.setNewTodo(e.target.value)}
               placeholder={t('tasks.addTodo') || 'Добавить подзадачу'}
+              className="flex-1"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -246,10 +226,101 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <button
               onClick={() => todoManager.addTodo()}
               disabled={!todoManager.newTodo?.trim()}
-              className="px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-10 h-10 flex-shrink-0 bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200"
+              style={{ borderRadius: '12px' }}
             >
               <Plus className="w-4 h-4" />
             </button>
+          </div>
+          
+          <div className="space-y-3">
+            {todoManager.todos.map(todo => {
+              const isHovered = todoManager.hoveredTodoId === todo.id
+              return (
+                <div 
+                  key={todo.id} 
+                  className="flex items-center gap-3 border border-gray-200 p-3 hover:border-gray-300 transition-all duration-200 cursor-pointer" 
+                  style={{ 
+                    borderRadius: '12px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backgroundColor: isHovered && !todo.done ? '#F2F7FA' : 'transparent'
+                  }}
+                  onMouseEnter={() => todoManager.setHoveredTodoId?.(todo.id)}
+                  onMouseLeave={() => todoManager.setHoveredTodoId?.(null)}
+                >
+                  {/* Animated background fill */}
+                  {todo.done && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        height: '100%',
+                        backgroundColor: '#f3f4f6',
+                        width: '100%',
+                        zIndex: 0
+                      }}
+                    />
+                  )}
+                  
+                  <div
+                    onClick={() => todoManager.toggleTodo(todo.id)}
+                    style={{ 
+                      width: '24px', 
+                      height: '24px',
+                      borderRadius: '999px',
+                      backgroundColor: todo.done ? '#000000' : '#ffffff',
+                      border: '2px solid #000000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'background-color 0.2s ease',
+                      position: 'relative',
+                      zIndex: 1
+                    }}
+                  >
+                    {todo.done && (
+                      <svg 
+                        width="12" 
+                        height="12" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="white" 
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20,6 9,17 4,12"></polyline>
+                      </svg>
+                    )}
+                  </div>
+                  <span
+                    className="flex-1 bg-transparent text-sm"
+                    style={{ 
+                      textDecoration: todo.done ? 'line-through' : 'none', 
+                      opacity: todo.done ? 0.6 : 1,
+                      position: 'relative',
+                      zIndex: 1
+                    }}
+                  >
+                    {todo.text}
+                  </span>
+                  <button
+                    onClick={() => todoManager.removeTodo(todo.id)}
+                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    style={{
+                      position: 'relative',
+                      zIndex: 1
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
 

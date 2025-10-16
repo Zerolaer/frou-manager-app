@@ -171,5 +171,28 @@ body.notes-mode #main-content {
   color: #94a3b8;
 }
 
+/* Placeholder for contenteditable */
+.note-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
 
+/* Styles for lists in note editor */
+.note-editor ul,
+.note-editor ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+}
 
+.note-editor li {
+  margin: 0.25em 0;
+}
+
+.note-editor ul {
+  list-style-type: disc;
+}
+
+.note-editor ol {
+  list-style-type: decimal;
+}

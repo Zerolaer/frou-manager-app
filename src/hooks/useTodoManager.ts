@@ -4,12 +4,14 @@ import type { Todo } from '@/types/shared'
 interface UseTodoManagerReturn {
   todos: Todo[]
   newTodo: string
+  hoveredTodoId: string | null
   addTodo: (text?: string) => void
   toggleTodo: (id: string) => void
   removeTodo: (id: string) => void
   updateTodoText: (id: string, text: string) => void
   setTodos: (todos: Todo[]) => void
   setNewTodo: (text: string) => void
+  setHoveredTodoId: (id: string | null) => void
   clearTodos: () => void
   completedCount: number
   totalCount: number
@@ -41,6 +43,7 @@ interface UseTodoManagerReturn {
 export function useTodoManager(initialTodos: Todo[] = []): UseTodoManagerReturn {
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
   const [newTodo, setNewTodo] = useState('')
+  const [hoveredTodoId, setHoveredTodoId] = useState<string | null>(null)
 
   const addTodo = useCallback((text?: string) => {
     const todoText = text || newTodo
@@ -98,12 +101,14 @@ export function useTodoManager(initialTodos: Todo[] = []): UseTodoManagerReturn 
   return {
     todos,
     newTodo,
+    hoveredTodoId,
     addTodo,
     toggleTodo,
     removeTodo,
     updateTodoText,
     setTodos,
     setNewTodo,
+    setHoveredTodoId,
     clearTodos,
     completedCount,
     totalCount,

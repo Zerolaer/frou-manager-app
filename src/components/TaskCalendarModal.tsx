@@ -1,10 +1,8 @@
 import React, { useState, useMemo } from 'react'
-import { X, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns'
-import ModalHeader from '@/components/ui/ModalHeader'
-import ModalFooter from '@/components/ui/ModalFooter'
-import { ModalButton } from '@/components/ui/ModalSystem'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from 'date-fns'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import type { TaskItem } from '@/types/shared'
 
 interface TaskCalendarModalProps {
@@ -23,6 +21,7 @@ export default function TaskCalendarModal({
   onMonthChange
 }: TaskCalendarModalProps) {
   const { t } = useTranslation()
+  const { createSimpleFooter } = useModalActions()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   
   // Reset to current month when modal opens
@@ -38,20 +37,6 @@ export default function TaskCalendarModal({
       onMonthChange(currentMonth)
     }
   }, [currentMonth, open, onMonthChange])
-
-  // Close on Escape key
-  React.useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    if (open) {
-      document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
-    }
-  }, [open, onClose])
 
   const monthDays = useMemo(() => {
     const start = startOfMonth(currentMonth)
@@ -79,56 +64,47 @@ export default function TaskCalendarModal({
     onClose()
   }
 
-  if (!open) return null
-
   // Get day names
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
   // Calculate offset for first day (Monday = 0)
-  const firstDayOffset = (monthDays[0].getDay() + 6) % 7
+  const firstDayOffset = monthDays.length > 0 ? (monthDays[0].getDay() + 6) % 7 : 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div 
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <ModalHeader
-          title={
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-gray-700" />
-              {t('tasks.calendar')}
-            </div>
-          }
-          onClose={onClose}
-        />
+    <UnifiedModal
+      open={open}
+      onClose={onClose}
+      title={t('actions.calendar')}
+      size="xl"
+      variant="center"
+      footer={createSimpleFooter({ label: t('common.close'), onClick: onClose })}
+      bodyClassName="p-0"
+    >
+      {/* Month navigation */}
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+        <button
+          onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+          aria-label="Previous month"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        
+        <h3 className="text-lg font-semibold text-gray-900">
+          {format(currentMonth, 'MMMM yyyy')}
+        </h3>
+        
+        <button
+          onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+          aria-label="Next month"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
 
-        {/* Month navigation */}
-        <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-          <button
-            onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
-            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          
-          <h3 className="text-lg font-semibold text-gray-900">
-            {format(currentMonth, 'MMMM yyyy')}
-          </h3>
-          
-          <button
-            onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
-            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-            aria-label="Next month"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Calendar grid */}
-        <div className="p-6 overflow-y-auto flex-1">
+      {/* Calendar grid */}
+      <div className="p-6">
           {/* Day names */}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {dayNames.map(day => (
@@ -187,15 +163,7 @@ export default function TaskCalendarModal({
             })}
           </div>
         </div>
-
-        {/* Footer */}
-        <ModalFooter>
-          <ModalButton variant="secondary" onClick={onClose}>
-            {t('common.close')}
-          </ModalButton>
-        </ModalFooter>
-      </div>
-    </div>
+    </UnifiedModal>
   )
 }
 
