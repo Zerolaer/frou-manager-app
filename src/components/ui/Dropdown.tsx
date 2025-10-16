@@ -152,7 +152,8 @@ export default function Dropdown({
   // Close on Escape key
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && open) {
+        event.stopPropagation()
         setOpen(false)
       }
     }

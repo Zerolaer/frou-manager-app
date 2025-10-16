@@ -16,6 +16,7 @@ const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 export default function App(){
   const { isMobile } = useMobileDetection()
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
+  const [selectedWeek, setSelectedWeek] = useState<Date>(new Date())
 
   // Redirect to last visited page on app load (only once)
   useEffect(() => {
@@ -110,6 +111,7 @@ export default function App(){
           <Suspense fallback={<AppLoader />}>
             <Header 
               currentYear={currentYear}
+              selectedWeek={selectedWeek}
               onAction={(action) => {
                 // Dispatch action to current page
                 window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
@@ -118,6 +120,11 @@ export default function App(){
                 setCurrentYear(year)
                 // Dispatch year change to current page
                 window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
+              }}
+              onWeekChange={(week) => {
+                setSelectedWeek(week)
+                // Dispatch week change to current page
+                window.dispatchEvent(new CustomEvent('subheader-week-change', { detail: week }))
               }}
             />
           </Suspense>

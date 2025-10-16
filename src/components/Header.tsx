@@ -1,18 +1,21 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Download, Upload, Settings, Calendar, BookOpen } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Download, Upload, Settings, Calendar } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
 import LanguageSwitcher from './LanguageSwitcher'
+import WeekSelector from './WeekSelector'
 
 interface HeaderProps {
   onAction?: (action: string) => void
   currentYear?: number
   onYearChange?: (year: number) => void
+  selectedWeek?: Date
+  onWeekChange?: (week: Date) => void
 }
 
-export default function Header({ onAction, currentYear, onYearChange }: HeaderProps) {
+export default function Header({ onAction, currentYear, onYearChange, selectedWeek, onWeekChange }: HeaderProps) {
   const location = useLocation()
   const { signOut } = useSupabaseAuth()
   const { t } = useSafeTranslation()
@@ -22,7 +25,6 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
     { to: '/finance', icon: DollarSign, label: t('nav.finance') },
     { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
     { to: '/notes', icon: FileText, label: t('nav.notes') },
-    { to: '/storybook', icon: BookOpen, label: t('nav.storybook') },
   ]
 
   const getSubHeaderContent = () => {
@@ -151,6 +153,15 @@ export default function Header({ onAction, currentYear, onYearChange }: HeaderPr
               <h1 className="text-h2 text-gray-900 leading-none !mb-0">{subHeaderContent.title}</h1>
               
         <div className="flex items-center gap-2">
+                {/* Week selector for Home page */}
+                {location.pathname === '/' && selectedWeek && onWeekChange && (
+                  <WeekSelector 
+                    selectedWeek={selectedWeek} 
+                    onWeekChange={onWeekChange}
+                    maxWeeksBack={3}
+                  />
+                )}
+                
                 {/* Year selector for Finance page */}
                 {location.pathname === '/finance' && currentYear && onYearChange && (
                   <YearSelector currentYear={currentYear} onYearChange={onYearChange} />

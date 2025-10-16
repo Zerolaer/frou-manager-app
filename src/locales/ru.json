@@ -369,6 +369,10 @@
     "emailPlaceholder": "Введите email",
     "passwordPlaceholder": "Введите пароль"
   },
+  "validation": {
+    "titleRequired": "Название обязательно",
+    "invalidPriority": "Неверный приоритет"
+  },
   "errors": {
     "required": "Это поле обязательно",
     "invalidEmail": "Неверный email адрес",
@@ -391,6 +395,7 @@
     "month": "Месяц",
     "year": "Год",
     "of": "из",
+    "completed": "выполнено",
     "duplicate": "Дублировать",
     "close": "Закрыть",
     "all": "Все",
@@ -421,6 +426,7 @@
     "mediumPriority": "Средний приоритет",
     "lowPriority": "Низкий приоритет",
     "noTasks": "Нет задач на сегодня",
+    "addTaskToStart": "Добавьте задачу, чтобы начать",
     "noData": "Нет данных",
     "loading": "Загрузка...",
     "error": "Ошибка загрузки данных",
@@ -433,6 +439,7 @@
     "moreThan": "больше",
     "lessThan": "меньше",
     "thanLastMonth": "чем в прошлом месяце",
+    "thanLastWeek": "чем на прошлой неделе",
     "noProjectData": "Нет данных по проектам",
     "productivityDescription": "Показывает эффективность работы",
     "tasks": "задач",
@@ -467,5 +474,10 @@
     "selectLanguage": "Выбор языка",
     "english": "English",
     "russian": "Русский"
+  },
+  "weekSelector": {
+    "selectWeek": "Выбрать неделю",
+    "currentWeek": "Текущая неделя",
+    "current": "Текущая"
   }
 }

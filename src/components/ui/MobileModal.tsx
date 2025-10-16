@@ -87,6 +87,26 @@ const MobileModal = ({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  useEffect(() => {
+    if (open) {
+      // Вычисляем ширину скроллбара
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      
+      // Скрываем скроллбар и компенсируем сдвиг контента
+      document.body.style.overflow = 'hidden'
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`
+      }
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
+    }
+  }, [open])
+
   if (!isVisible) return null
 
   const content = (

@@ -102,6 +102,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const [animatingTodos, setAnimatingTodos] = useState<Set<string>>(new Set())
+  const [hoveredTodoId, setHoveredTodoId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Load task data when modal opens (with key prop, component is recreated on task change)
@@ -415,15 +416,19 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             <div className="space-y-3">
               {todos.map((todo) => {
                 const isAnimating = animatingTodos.has(todo.id)
+                const isHovered = hoveredTodoId === todo.id
                 return (
                 <div 
                   key={todo.id} 
-                  className="flex items-center gap-3 border border-gray-200 p-3 hover:border-gray-300 transition-colors" 
+                  className="flex items-center gap-3 border border-gray-200 p-3 hover:border-gray-300 transition-all duration-200 cursor-pointer" 
                   style={{ 
                     borderRadius: '12px',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    backgroundColor: isHovered && !todo.done ? '#F2F7FA' : 'transparent'
                   }}
+                  onMouseEnter={() => setHoveredTodoId(todo.id)}
+                  onMouseLeave={() => setHoveredTodoId(null)}
                 >
                   {/* Animated background fill */}
                   {todo.done && (
@@ -561,8 +566,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   priority === 'low'
                     ? 'bg-black text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'text-gray-700 hover:bg-gray-200'
                 }`}
+                style={priority !== 'low' ? { backgroundColor: '#F2F7FA' } : {}}
               >
                 {t('tasks.lowPriority')}
               </button>
@@ -571,8 +577,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   priority === 'normal'
                     ? 'bg-black text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'text-gray-700 hover:bg-gray-200'
                 }`}
+                style={priority !== 'normal' ? { backgroundColor: '#F2F7FA' } : {}}
               >
                 {t('tasks.normalPriority')}
               </button>
@@ -581,8 +588,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   priority === 'high'
                     ? 'bg-black text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'text-gray-700 hover:bg-gray-200'
                 }`}
+                style={priority !== 'high' ? { backgroundColor: '#F2F7FA' } : {}}
               >
                 {t('tasks.highPriority')}
               </button>

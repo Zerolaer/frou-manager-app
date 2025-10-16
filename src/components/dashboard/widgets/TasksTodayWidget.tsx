@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarCheck, CheckCircle, Circle, Clock } from 'lucide-react';
+import { CalendarCheck, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
@@ -92,14 +92,43 @@ const TasksTodayWidget = () => {
             </div>
           ) : (
             tasks.slice(0, 5).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                <div className="flex-shrink-0">
-                  {task.status === 'closed' ? (
-                    <CheckCircle className="w-5 h-5 text-gray-900" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-gray-400" />
+              <div key={task.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                {/* Custom round checkbox like in subtasks */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // TODO: Handle task status toggle
+                  }}
+                  style={{ 
+                    width: '20px', 
+                    height: '20px',
+                    borderRadius: '999px',
+                    backgroundColor: task.status === 'closed' ? '#000000' : '#ffffff',
+                    border: '2px solid #000000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'background-color 0.2s ease'
+                  }}
+                >
+                  {task.status === 'closed' && (
+                    <svg 
+                      width="10" 
+                      height="10" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="white" 
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
                   )}
                 </div>
+                
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm truncate ${task.status === 'closed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                     {task.title}

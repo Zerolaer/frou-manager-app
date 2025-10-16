@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
+import { startOfWeek, endOfWeek, format, eachDayOfInterval } from 'date-fns';
 
 interface DayData {
   day: string;
@@ -13,7 +14,11 @@ interface DayData {
   productivity: number; // completion percentage
 }
 
-const ProductivityWidget = () => {
+interface ProductivityWidgetProps {
+  selectedWeek?: Date;
+}
+
+const ProductivityWidget = ({ selectedWeek = new Date() }: ProductivityWidgetProps) => {
   const { t } = useSafeTranslation();
   const { userId } = useSupabaseAuth();
   const [weekData, setWeekData] = useState<DayData[]>([]);
@@ -22,39 +27,17 @@ const ProductivityWidget = () => {
 
   useEffect(() => {
     if (!userId) return;
-    loadProductivityData();
-  }, [userId]);
-
-  const loadProductivityData = async () => {
+    
+    const loadProductivityData = async () => {
     try {
       setLoading(true);
       
-      const now = new Date();
-      let startDate: Date;
-      let endDate: Date;
-
-      if (selectedPeriod === 'weekly') {
-        // Current week - Monday to Sunday
-        const today = new Date(now);
-        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 6 days from Monday
-        
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - daysFromMonday); // Monday
-        startOfWeek.setHours(0, 0, 0, 0);
-        
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
-        endOfWeek.setHours(23, 59, 59, 999);
-        
-        startDate = startOfWeek;
-        endDate = endOfWeek;
-      } else {
-        // Current month
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        endDate.setHours(23, 59, 59, 999);
-      }
+      // Use selected week
+      const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 }); // Monday
+      const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 }); // Sunday
+      
+      const startDate = weekStart;
+      const endDate = weekEnd;
 
       const { data: tasksData, error } = await supabase
         .from('tasks_items')
@@ -120,7 +103,10 @@ const ProductivityWidget = () => {
     } finally {
       setLoading(false);
     }
-  };
+    };
+    
+    loadProductivityData();
+  }, [userId, selectedWeek]);
 
   const getTotalTasks = () => weekData.reduce((sum, day) => sum + day.tasks, 0);
   const getTotalCompleted = () => weekData.reduce((sum, day) => sum + day.completed, 0);

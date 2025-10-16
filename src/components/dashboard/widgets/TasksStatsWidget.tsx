@@ -4,9 +4,11 @@ import { CheckSquare, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
+import { startOfWeek, endOfWeek, subWeeks, isSameWeek } from 'date-fns';
 
 interface TasksStatsWidgetProps {
   type: 'total' | 'completed';
+  selectedWeek?: Date;
 }
 
 interface ProjectStats {
@@ -15,7 +17,7 @@ interface ProjectStats {
   percentage: number;
 }
 
-const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
+const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetProps) => {
   const { t } = useSafeTranslation();
   const [stats, setStats] = useState({
     current: 0,
@@ -27,42 +29,36 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadStats();
-  }, [type]);
-
-  const loadStats = async () => {
+    const loadStats = async () => {
     try {
       setLoading(true);
       
-      // Get current and previous month
-      const now = new Date();
-      const currentMonth = now.getMonth(); // 0-11
-      const currentYear = now.getFullYear();
+      // Get selected week and previous week
+      const selectedWeekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 }); // Monday
+      const selectedWeekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 }); // Sunday
+      const previousWeekStart = startOfWeek(subWeeks(selectedWeek, 1), { weekStartsOn: 1 });
+      const previousWeekEnd = endOfWeek(subWeeks(selectedWeek, 1), { weekStartsOn: 1 });
 
-      const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      // Format dates for query
+      const currentWeekStart = selectedWeekStart.toISOString().split('T')[0];
+      const currentWeekEnd = selectedWeekEnd.toISOString().split('T')[0];
+      const previousWeekStartStr = previousWeekStart.toISOString().split('T')[0];
+      const previousWeekEndStr = previousWeekEnd.toISOString().split('T')[0];
 
-      // Format dates for query - WITHOUT TIMEZONE ISSUES!
-      const currentMonthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-      const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Last day of month
-      
-      const previousMonthStart = new Date(previousYear, previousMonth, 1).toISOString().split('T')[0];
-      const previousMonthEnd = new Date(previousYear, previousMonth + 1, 0).toISOString().split('T')[0];
-
-      // Query for current month - strict date filter
+      // Query for selected week - strict date filter
       const { data: currentData, error: currentError } = await supabase
         .from('tasks_items')
         .select('id, title, status, project_id, date')
-        .gte('date', currentMonthStart)
-        .lte('date', currentMonthEnd)
+        .gte('date', currentWeekStart)
+        .lte('date', currentWeekEnd)
         .order('date', { ascending: false });
 
-      // Query for previous month
+      // Query for previous week
       const { data: previousData } = await supabase
         .from('tasks_items')
         .select('id, status, project_id')
-        .gte('date', previousMonthStart)
-        .lte('date', previousMonthEnd);
+        .gte('date', previousWeekStartStr)
+        .lte('date', previousWeekEndStr);
 
       let currentCount = 0;
       let previousCount = 0;
@@ -163,7 +159,10 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
     } finally {
       setLoading(false);
     }
-  };
+    };
+    
+    loadStats();
+  }, [type, selectedWeek]);
 
   const isPositive = stats.change >= 0;
   const title = type === 'total' ? t('dashboard.createdTasks') || 'Created Tasks' : t('dashboard.completedTasks') || 'Completed Tasks';
@@ -198,7 +197,7 @@ const TasksStatsWidget = ({ type }: TasksStatsWidgetProps) => {
             </>
           )}
           <span className="text-xs text-gray-500">
-            {isPositive ? t('dashboard.moreThan') || 'More than' : t('dashboard.lessThan') || 'Less than'} {t('dashboard.thanLastMonth') || 'than last month'}
+            {isPositive ? t('dashboard.moreThan') || 'More than' : t('dashboard.lessThan') || 'Less than'} {t('dashboard.thanLastWeek') || 'than last week'}
           </span>
         </div>
 

@@ -48,6 +48,21 @@ export default function CustomDatePicker({
     }
   }, [isOpen])
 
+  // Закрываем календарь при нажатии Esc
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        event.stopPropagation()
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen])
+
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return placeholder || t('tasks.selectDate') || 'Выбрать дату'
     const date = new Date(dateStr)
@@ -141,7 +156,8 @@ export default function CustomDatePicker({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full h-10 rounded-xl px-4 text-sm border border-gray-200 bg-white outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${buttonClassName}`}
+        className={`w-full h-10 rounded-xl px-4 text-sm border bg-white outline-none hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${buttonClassName}`}
+        style={{ borderColor: '#E5E7EB' }}
       >
         <span className={value ? 'text-gray-900' : 'text-gray-400'}>
           {formatDisplayDate(value)}

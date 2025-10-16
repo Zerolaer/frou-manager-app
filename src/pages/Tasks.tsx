@@ -661,6 +661,8 @@ const projectColorById = React.useMemo(() => {
   const [allTasks, setAllTasks] = React.useState<Record<string, TaskItem[]>>({})
   // Track last active project to clear cache on project switch
   const lastActiveProject = React.useRef(activeProject)
+  // Track current month for calendar
+  const [calendarMonth, setCalendarMonth] = React.useState(new Date())
   
   React.useEffect(() => {
     if (!uid || !activeProject) { 
@@ -747,7 +749,7 @@ const projectColorById = React.useMemo(() => {
     }
   }, [uid, activeProject, start, end])
 
-  // Load all tasks for calendar (current month)
+  // Load all tasks for calendar (based on calendar month)
   React.useEffect(() => {
     if (!uid || !activeProject) { 
       setAllTasks({})
@@ -757,12 +759,11 @@ const projectColorById = React.useMemo(() => {
     let cancelled = false
     
     const fetchAllTasks = async () => {
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      const startOfMonthDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+      const endOfMonthDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)
       
-      const startDate = format(startOfMonth, 'yyyy-MM-dd')
-      const endDate = format(endOfMonth, 'yyyy-MM-dd')
+      const startDate = format(startOfMonthDate, 'yyyy-MM-dd')
+      const endDate = format(endOfMonthDate, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
         .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
@@ -808,7 +809,7 @@ const projectColorById = React.useMemo(() => {
     return () => {
       cancelled = true
     }
-  }, [uid, activeProject])
+  }, [uid, activeProject, calendarMonth])
 
 // context menu state for task cards
   const [ctx, setCtx] = React.useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
@@ -1784,6 +1785,7 @@ const projectColorById = React.useMemo(() => {
             setStart(startOfWeek(date, { weekStartsOn: 1 }))
           }
         }}
+        onMonthChange={setCalendarMonth}
       />
 
 

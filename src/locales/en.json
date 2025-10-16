@@ -369,6 +369,10 @@
     "emailPlaceholder": "Enter your email",
     "passwordPlaceholder": "Enter your password"
   },
+  "validation": {
+    "titleRequired": "Title is required",
+    "invalidPriority": "Invalid priority"
+  },
   "errors": {
     "required": "This field is required",
     "invalidEmail": "Invalid email address",
@@ -391,6 +395,7 @@
     "month": "Month",
     "year": "Year",
     "of": "of",
+    "completed": "completed",
     "duplicate": "Duplicate",
     "close": "Close",
     "all": "All",
@@ -421,6 +426,7 @@
     "mediumPriority": "Medium Priority",
     "lowPriority": "Low Priority",
     "noTasks": "No tasks for today",
+    "addTaskToStart": "Add a task to get started",
     "noData": "No data available",
     "loading": "Loading...",
     "error": "Error loading data",
@@ -433,6 +439,7 @@
     "moreThan": "more",
     "lessThan": "less",
     "thanLastMonth": "than last month",
+    "thanLastWeek": "than last week",
     "noProjectData": "No project data",
     "productivityDescription": "Shows work efficiency",
     "tasks": "tasks",
@@ -467,5 +474,10 @@
     "selectLanguage": "Select Language",
     "english": "English",
     "russian": "Russian"
+  },
+  "weekSelector": {
+    "selectWeek": "Select week",
+    "currentWeek": "Current week",
+    "current": "Current"
   }
 }

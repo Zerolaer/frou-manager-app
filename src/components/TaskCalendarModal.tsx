@@ -12,16 +12,46 @@ interface TaskCalendarModalProps {
   onClose: () => void
   tasks: Record<string, TaskItem[]>
   onDateSelect: (date: Date) => void
+  onMonthChange?: (month: Date) => void
 }
 
 export default function TaskCalendarModal({
   open,
   onClose,
   tasks,
-  onDateSelect
+  onDateSelect,
+  onMonthChange
 }: TaskCalendarModalProps) {
   const { t } = useTranslation()
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  
+  // Reset to current month when modal opens
+  React.useEffect(() => {
+    if (open) {
+      setCurrentMonth(new Date())
+    }
+  }, [open])
+  
+  // Notify parent when month changes
+  React.useEffect(() => {
+    if (open && onMonthChange) {
+      onMonthChange(currentMonth)
+    }
+  }, [currentMonth, open, onMonthChange])
+
+  // Close on Escape key
+  React.useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    if (open) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [open, onClose])
 
   const monthDays = useMemo(() => {
     const start = startOfMonth(currentMonth)
