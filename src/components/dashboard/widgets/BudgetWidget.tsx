@@ -156,14 +156,22 @@ const BudgetWidget = () => {
 
   // Use formatCurrencyEUR for euros
 
-  // Get responsive font size based on text length
-  const getResponsiveFontSize = (value: number) => {
-    const text = formatCurrencyEUR(value)
-    const length = text.length
-    if (length > 12) return 'text-xs'
-    if (length > 10) return 'text-sm'
-    if (length > 8) return 'text-base'
-    return 'text-lg'
+  // Get responsive font size based on the longest text among all values
+  const getResponsiveFontSize = () => {
+    const texts = [
+      formatCurrencyEUR(budget.balance),
+      formatCurrencyEUR(budget.earned),
+      formatCurrencyEUR(budget.spent)
+    ]
+    const maxLength = Math.max(...texts.map(text => text.length))
+    
+    // Start with larger sizes and only reduce when absolutely necessary
+    // Minimum font size is 16px (text-base)
+    if (maxLength > 15) return 'text-xs' // 12px - only for very long numbers
+    if (maxLength > 12) return 'text-sm' // 14px - for long numbers
+    if (maxLength > 9) return 'text-base' // 16px - default minimum
+    if (maxLength > 6) return 'text-lg' // 18px - good size
+    return 'text-xl' // 20px - largest size for short numbers
   }
 
   return (
@@ -180,7 +188,7 @@ const BudgetWidget = () => {
           {/* Balance */}
           <div className="bg-black rounded-lg p-3 text-center">
             <div className="text-xs text-gray-300 mb-1">{t('dashboard.balance') || 'Balance'}</div>
-            <div className={`${getResponsiveFontSize(budget.balance)} font-bold text-white`}>
+            <div className={`${getResponsiveFontSize()} font-bold text-white`}>
               {formatCurrencyEUR(budget.balance)}
             </div>
             {budget.previousBalance !== 0 && (
@@ -193,7 +201,7 @@ const BudgetWidget = () => {
           {/* Income */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-1">{t('dashboard.earned') || 'Earned'}</div>
-            <div className={`${getResponsiveFontSize(budget.earned)} font-bold text-gray-900`}>
+            <div className={`${getResponsiveFontSize()} font-bold text-gray-900`}>
               {formatCurrencyEUR(budget.earned)}
             </div>
             {budget.previousEarned !== 0 && (
@@ -206,7 +214,7 @@ const BudgetWidget = () => {
           {/* Expenses */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-1">{t('dashboard.spent') || 'Spent'}</div>
-            <div className={`${getResponsiveFontSize(budget.spent)} font-bold text-gray-900`}>
+            <div className={`${getResponsiveFontSize()} font-bold text-gray-900`}>
               {formatCurrencyEUR(budget.spent)}
             </div>
             {budget.previousSpent !== 0 && (

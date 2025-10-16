@@ -19,7 +19,7 @@ useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     if (!mounted) return;
     if (data.session) {
-      navigate('/finance', { replace: true }); // уже залогинен — сразу на Финансы
+      navigate('/', { replace: true }); // уже залогинен — сразу на Главную
     } else {
       setAuthChecked(true); // не залогинен — можно показывать Login
     }
@@ -33,7 +33,7 @@ useEffect(() => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      navigate('/finance', { replace: true })
+      navigate('/', { replace: true })
     } catch (err: any) {
       setError(err?.message || t('errors.networkError'))
     } finally {
