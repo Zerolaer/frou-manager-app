@@ -298,6 +298,7 @@
     "total": "Всего",
     "active": "Активные",
     "addTask": "Добавить задачу",
+    "createTask": "Создать задачу",
     "activeTasks": "Активные задачи",
     "completedTasks": "Выполненные задачи",
     "noTasksThisDay": "Нет задач на этот день",

@@ -102,7 +102,7 @@ td { @apply text-xs md:text-sm text-gray-800 border-b px-3 md:px-4 py-2; white-s
 tr:hover td { @apply bg-gray-50; }
 
 /* Buttons */
-button { @apply rounded-lg px-3 py-1.5 transition font-medium; }
+button { @apply rounded-xl px-3 py-1.5 transition font-medium; }
 .btn-accent { @apply bg-blue-600 text-white; }
 .btn-accent:hover { @apply bg-blue-700; }
 .btn-outline { @apply border text-gray-700 bg-white; border-color: #E5E7EB; }
@@ -123,7 +123,7 @@ input[type='number'] { -moz-appearance: textfield; }
   margin-left:auto;
   width:24px; height:24px;
   display:inline-flex; align-items:center; justify-content:center;
-  border-radius:6px; cursor:pointer;
+  border-radius:12px; cursor:pointer;
   color:#64748b;
 }
 .cell-name .chev:hover{ background:#f3f4f6; color:#111827; }
@@ -193,10 +193,10 @@ html, body, #root {
 /* Buttons */
 :root button.btn:not(.btn-outline):not(.btn-danger), :root .btn:not(.btn-outline):not(.btn-danger){
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  padding:8px 12px; font-size:12px; line-height:1; border-radius:8px;
+  padding:8px 12px; font-size:12px; line-height:1; border-radius:12px;
   border:1px solid transparent; background-color:var(--primary) !important; color:#fff !important;
   transition:background-color .14s ease, box-shadow .14s ease;
-  min-height:32px;
+  min-height:40px; width:auto; white-space:nowrap;
 }
 :root button.btn:not(.btn-outline):not(.btn-danger):hover, :root .btn:not(.btn-outline):not(.btn-danger):hover{ background-color:var(--primary-hover) !important; }
 :root button.btn:focus, :root .btn:focus { outline:none; box-shadow:0 0 0 3px var(--ring); }
@@ -207,7 +207,7 @@ html, body, #root {
   padding:8px 12px; 
   font-size:12px; 
   line-height:1; 
-  min-height:32px;
+  min-height:40px; width:auto; white-space:nowrap;
 }
 :root button.btn.btn-outline:hover, :root .btn.btn-outline:hover{ background-color:var(--secondary) !important; }
 :root button.btn.btn-danger, :root .btn.btn-danger{ background-color:var(--danger) !important; border-color:var(--danger) !important; color:#fff !important; }
@@ -298,9 +298,9 @@ html, body, #root {
 
 /* Form controls */
 .label{display:block;font-weight:600;margin-bottom:6px;color:#0f172a;}
-.input{display:block;width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#0f172a;outline:none;}
+.input{display:block;width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;color:#0f172a;outline:none;}
 .input:focus{border-color:var(--primary); box-shadow:0 0 0 4px var(--ring);}
-.textarea{display:block;width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#0f172a;outline:none;resize:vertical;}
+.textarea{display:block;width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;color:#0f172a;outline:none;resize:vertical;}
 .textarea:focus{border-color:var(--primary); box-shadow:0 0 0 4px var(--ring);}
 .btn-sm{padding:8px 12px; font-size:12px}
 .btn-lg{padding:14px 18px; font-size:14px}

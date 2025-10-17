@@ -130,21 +130,21 @@ function TaskContextMenu({
         <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
           <button
             onClick={onDuplicate}
-            className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
+            className="w-full px-2 py-3 text-left transition-colors rounded-xl text-gray-700 hover:bg-gray-100"
             style={{ fontSize: '13px' }}
           >
             {t('common.duplicate')}
           </button>
           <button
             onClick={onToggleStatus}
-            className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
+            className="w-full px-2 py-3 text-left transition-colors rounded-xl text-gray-700 hover:bg-gray-100"
             style={{ fontSize: '13px' }}
           >
             {task?.status === TASK_STATUSES.CLOSED ? t('tasks.open') : t('tasks.markComplete')}
           </button>
           <button
             onClick={onDelete}
-            className="w-full px-2 py-3 text-left transition-colors rounded-lg text-red-600 hover:bg-red-50"
+            className="w-full px-2 py-3 text-left transition-colors rounded-xl text-red-600 hover:bg-red-50"
             style={{ fontSize: '13px' }}
           >
             {t('actions.delete')}
@@ -1519,7 +1519,7 @@ const projectColorById = React.useMemo(() => {
                   <button
                     className="btn btn-outline btn-xs add-on-hover"
                     onClick={()=>{ setTaskDate(d); setOpenNewTask(true) }}
-                  >+ {t('tasks.task')}</button>
+                  >+ {t('tasks.createTask')}</button>
                 </div>
                 <div className="day-body">
                   

@@ -9,7 +9,7 @@ export const CoreInput = React.forwardRef<HTMLInputElement, CoreInputProps>(
     return (
       <input
         ref={ref}
-        className={`w-full inline-flex items-center px-4 py-2.5 rounded-xl bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 border outline-none ${className}`}
+        className={`w-full h-10 flex items-center px-4 py-2.5 rounded-xl bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 border outline-none ${className}`}
         style={{ borderColor: '#E5E7EB' }}
         {...props}
       />

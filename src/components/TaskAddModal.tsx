@@ -107,7 +107,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       variant="side"
       footer={createStandardFooter(
         { 
-          label: t('actions.add'), 
+          label: t('actions.create'), 
           onClick: handleSubmit, 
           loading: form.isSubmitting, 
           disabled: !form.isValid || !form.fields.title.value.trim()
@@ -310,7 +310,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                   </span>
                   <button
                     onClick={() => todoManager.removeTodo(todo.id)}
-                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-1 hover:bg-gray-100 rounded-xl transition-colors"
                     style={{
                       position: 'relative',
                       zIndex: 1

@@ -298,6 +298,7 @@
     "total": "Total",
     "active": "Active",
     "addTask": "Add task",
+    "createTask": "Create task",
     "activeTasks": "Active tasks",
     "completedTasks": "Completed tasks",
     "noTasksThisDay": "No tasks for this day",

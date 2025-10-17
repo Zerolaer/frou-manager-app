@@ -152,7 +152,7 @@ export default function CustomDatePicker({
   const adjustedStartDay = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative w-full ${className}`} ref={dropdownRef}>
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -173,7 +173,7 @@ export default function CustomDatePicker({
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -185,7 +185,7 @@ export default function CustomDatePicker({
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -223,7 +223,7 @@ export default function CustomDatePicker({
                   type="button"
                   onClick={() => handleDateSelect(day)}
                   className={`
-                    aspect-square flex items-center justify-center text-sm rounded-lg transition-all
+                    aspect-square flex items-center justify-center text-sm rounded-xl transition-all
                     ${selected 
                       ? 'bg-black text-white font-semibold' 
                       : today 
