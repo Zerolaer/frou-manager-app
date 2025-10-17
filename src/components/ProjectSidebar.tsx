@@ -198,7 +198,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
         height: '34px'
       }}>
         <button 
-          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          className="sidebar-btn btn-outline" 
           onClick={onToggleCollapse} 
           aria-label={collapsed ? t('aria.expand') : t('aria.collapse')}
           style={{ 
@@ -232,7 +232,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
         </div>
         
         <button 
-          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          className="sidebar-btn btn-outline" 
           onClick={()=>setShowCreate(true)} 
           aria-label={t('projects.addProject')} 
           style={{ 

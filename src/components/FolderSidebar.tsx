@@ -190,7 +190,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
         height: '34px'
       }}>
         <button 
-          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          className="sidebar-btn btn-outline" 
           onClick={onToggleCollapse} 
           aria-label={collapsed ? "Развернуть" : "Свернуть"}
           style={{ 
@@ -224,7 +224,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
         </div>
         
         <button 
-          className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" 
+          className="sidebar-btn btn-outline" 
           onClick={()=>setShowCreate(true)} 
           aria-label="Добавить папку" 
           style={{ 

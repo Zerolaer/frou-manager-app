@@ -205,7 +205,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
           <button
                       key={action.id}
                       onClick={() => handleAction(action.id)}
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-button transition-all duration-200 flex-shrink-0 whitespace-nowrap ${
+                      className={`subheader-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex-shrink-0 whitespace-nowrap ${
                         isPrimary
                           ? 'bg-black text-white hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'

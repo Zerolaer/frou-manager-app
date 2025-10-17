@@ -25,11 +25,11 @@ export default function WeekTimeline({ anchor, onPrev, onNext }: Props){
   
   return (
     <div className="timeline">
-      <button className="nav-left btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" onClick={onPrev} aria-label="Предыдущая неделя">
+      <button className="nav-left sidebar-btn btn-outline" onClick={onPrev} aria-label="Предыдущая неделя">
         <ChevronLeft size={16} />
       </button>
       <div className="range">{formatDate(start)} — {formatDate(end)}, {end.getFullYear()}</div>
-      <button className="nav-right btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center week-nav" onClick={onNext} aria-label="Следующая неделя">
+      <button className="nav-right sidebar-btn btn-outline" onClick={onNext} aria-label="Следующая неделя">
         <ChevronRight size={16} />
       </button>
     </div>

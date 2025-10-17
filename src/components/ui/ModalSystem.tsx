@@ -50,7 +50,7 @@ export function ModalButton({
 
   return (
     <button
-      className={`${classes} relative`}
+      className={`${classes} modal-btn relative`}
       disabled={disabled || loading}
       onClick={onClick}
     >
