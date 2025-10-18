@@ -100,18 +100,25 @@ function NotesPageContent() {
 
   const handleSave = useCallback(async (draft: Partial<Note>, id?: string) => {
     try {
+      console.log('📝 Notes.tsx handleSave called:', { 
+        id, 
+        hasContent: !!draft.content,
+        contentLength: draft.content?.length,
+        title: draft.title 
+      });
+      
       if (!id) {
         // При создании используем folder_id из draft (выбранный в модальном окне)
         const created = await createNote(draft);
         setNotes((prev) => [created, ...prev]);
-        console.log('Note created');
+        console.log('✅ Note created:', created.id);
       } else {
         const updated = await updateNote(id, draft);
         setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
-        console.log('Note updated');
+        console.log('✅ Note updated:', id);
       }
     } catch (error) {
-      console.error('Error saving note:', error);
+      console.error('❌ Error saving note:', error);
     }
   }, []);
 
@@ -156,6 +163,13 @@ function NotesPageContent() {
 
 
   const handleEditNote = useCallback((note: Note) => {
+    console.log('✏️ Opening note for editing:', { 
+      id: note.id, 
+      title: note.title,
+      hasContent: !!note.content,
+      contentLength: note.content?.length,
+      content: note.content?.substring(0, 100)
+    });
     setEditing(note);
     setModalOpen(true);
   }, []);

@@ -22,7 +22,7 @@ import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 import { logger } from '@/lib/monitoring'
-import { Repeat } from 'lucide-react'
+import { Repeat, Plus } from 'lucide-react'
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
@@ -1311,8 +1311,10 @@ const projectColorById = React.useMemo(() => {
     if (import.meta.env.DEV) {
       console.log('🔄 handleTaskUpdate called:', { 
         updatedTask: updatedTask?.title, 
+        updatedTaskDate: updatedTask?.date,
         isSave, 
         viewTask: viewTask?.title,
+        viewTaskDate: viewTask?.date,
         viewTaskRecurringId: viewTask?.recurring_task_id
       })
     }
@@ -1408,9 +1410,18 @@ const projectColorById = React.useMemo(() => {
   }
 
   const updateTaskDirectly = (updatedTask: TaskItem, shouldCloseModal: boolean = true) => {
+    console.log('🔄 updateTaskDirectly called:', { 
+      updatedTaskTitle: updatedTask.title,
+      updatedTaskDate: updatedTask.date,
+      viewTaskTitle: viewTask?.title,
+      viewTaskDate: viewTask?.date
+    })
+    
     const map = { ...tasks }
     const oldDate = viewTask?.date || ""
     const newDate = updatedTask.date || ""
+    
+    console.log('📅 Date change:', { oldDate, newDate, isDateChange: oldDate !== newDate })
     
     // Find the project name for the updated project_id
     const projectName = updatedTask.project_id 
@@ -1445,6 +1456,9 @@ const projectColorById = React.useMemo(() => {
       if (!map[newDate]) {
         map[newDate] = []
       }
+      
+      // Always remove the task from new date first to prevent duplicates
+      map[newDate] = map[newDate].filter(x => x.id !== updatedTask.id)
       
       // If date changed, append to end; otherwise maintain position
       if (oldDate !== newDate) {
@@ -1517,9 +1531,12 @@ const projectColorById = React.useMemo(() => {
                 <div className="day-head">
                   <span>{format(d,'EEE, d MMM')}</span>
                   <button
-                    className="btn btn-outline btn-xs add-on-hover"
+                    className="btn btn-outline btn-xs add-on-hover flex items-center gap-1"
                     onClick={()=>{ setTaskDate(d); setOpenNewTask(true) }}
-                  >+ {t('tasks.createTask')}</button>
+                  >
+                    <Plus className="w-3 h-3" />
+                    {t('tasks.task')}
+                  </button>
                 </div>
                 <div className="day-body">
                   

@@ -70,6 +70,8 @@ export default function App(){
     const isNotes = pathname.includes('notes')
     const isHome = pathname === '/'
 
+    console.log('🎨 Applying mode class:', { pathname, isFinance, isTasks, isNotes, isHome })
+
     // Remove all mode classes
     document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'home-mode')
     
@@ -78,6 +80,7 @@ export default function App(){
       document.body.classList.add('tasks-mode')
     } else if (isFinance) {
       document.body.classList.add('finance-mode')
+      console.log('✅ Added finance-mode class')
     } else if (isNotes) {
       document.body.classList.add('notes-mode')
     } else if (isHome) {

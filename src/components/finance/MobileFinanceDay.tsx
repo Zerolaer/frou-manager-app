@@ -50,18 +50,24 @@ export default function MobileFinanceDay({
     const amount = category.values?.[monthIndex] || 0
     const hasValue = amount !== 0
     const isHighlighted = ctxCatHighlight === category.id
+    const isSubcategory = !!category.parent_id
 
     return (
       <div
         key={category.id}
         className={`flex items-center justify-between p-3 bg-white rounded-lg border ${
           isHighlighted ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
-        }`}
+        } ${isSubcategory ? 'ml-4 border-l-2 border-l-gray-300' : ''}`}
       >
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-gray-900 truncate">{category.name}</div>
-          {category.parent_id && (
-            <div className="text-xs text-gray-500">{t('finance.subcategory')}</div>
+          <div className={`truncate ${isSubcategory ? 'text-sm text-gray-700' : 'font-medium text-gray-900'}`}>
+            {isSubcategory && (
+              <span className="text-gray-400 mr-2">└</span>
+            )}
+            {category.name}
+          </div>
+          {isSubcategory && (
+            <div className="text-xs text-gray-500 mt-0.5">{t('finance.subcategory')}</div>
           )}
         </div>
         
@@ -167,7 +173,11 @@ export default function MobileFinanceDay({
               <div className="text-sm">{t('finance.addFirstCategory')}</div>
             </div>
           ) : (
-            incomeCategories.map(category => renderCategoryRow(category, 'income'))
+            incomeCategories.map(category => (
+              <div key={category.id} className={category.parent_id ? 'mt-1' : 'mt-2'}>
+                {renderCategoryRow(category, 'income')}
+              </div>
+            ))
           )}
         </div>
       </div>
@@ -193,7 +203,11 @@ export default function MobileFinanceDay({
               <div className="text-sm">{t('finance.addFirstCategory')}</div>
             </div>
           ) : (
-            expenseCategories.map(category => renderCategoryRow(category, 'expense'))
+            expenseCategories.map(category => (
+              <div key={category.id} className={category.parent_id ? 'mt-1' : 'mt-2'}>
+                {renderCategoryRow(category, 'expense')}
+              </div>
+            ))
           )}
         </div>
       </div>

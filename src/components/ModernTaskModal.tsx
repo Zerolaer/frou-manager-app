@@ -156,8 +156,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   // Auto-save other fields with small delay
   useEffect(() => {
     if (!open || !task) return
-    logger.debug('⏱️ Fields changed, scheduling save in 500ms')
+    logger.debug('⏱️ Fields changed, scheduling save in 500ms', { date, priority, tag, status, projectId })
     const timer = setTimeout(() => {
+      logger.debug('💾 Executing auto-save for fields')
       save(true) // true = auto-save
     }, 500)
     return () => clearTimeout(timer)
@@ -212,7 +213,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       tag: tag.trim(), 
       date, 
       projectId,
-      todos: todos.length 
+      todos: todos.length,
+      originalDate: task.date
     })
 
     const updates = {
@@ -220,7 +222,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       description: description.trim() || '',
       priority: priority || 'normal',
       tag: tag.trim() || '',
-      date: date || new Date().toISOString().split('T')[0], // Default to today if no date
+      date: date || null, // Allow null dates
       todos,
       status,
       project_id: projectId || null,
@@ -361,7 +363,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       ) : (
       <div className="flex h-full">
         {/* Left Column */}
-        <div className="flex-1 space-y-6 overflow-y-auto p-6">
+        <div className="w-[60%] space-y-6 overflow-y-auto p-6">
           {/* Title */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">{t('tasks.taskTitle')}</label>
@@ -514,7 +516,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         </div>
 
         {/* Right Panel */}
-        <aside className="w-[300px] bg-[#F2F7FA] p-0 flex flex-col flex-1 space-y-4 pt-6">
+        <aside className="w-[40%] bg-[#F2F7FA] p-0 flex flex-col space-y-4 pt-6">
           {/* Project */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
             <div className="text-sm font-medium text-gray-700">{t('tasks.project')}</div>
@@ -602,7 +604,10 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             <div className="text-sm font-medium text-gray-700">{t('tasks.date')}</div>
             <DateDropdown
               value={date}
-              onChange={setDate}
+              onChange={(newDate) => {
+                console.log('📅 Date changed in modal:', { oldDate: date, newDate })
+                setDate(newDate)
+              }}
             />
           </section>
 

@@ -98,14 +98,22 @@ export default function CustomDatePicker({
 
   const handleDateSelect = (day: number) => {
     const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-    const isoDate = selectedDate.toISOString().split('T')[0]
+    // Use local date formatting to avoid timezone issues
+    const year = selectedDate.getFullYear()
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
+    const dayStr = String(selectedDate.getDate()).padStart(2, '0')
+    const isoDate = `${year}-${month}-${dayStr}`
+    console.log('🗓️ CustomDatePicker handleDateSelect:', { day, selectedDate, isoDate, currentValue: value })
     onChange(isoDate)
     setIsOpen(false)
   }
 
   const handleToday = () => {
     const today = new Date()
-    const isoDate = today.toISOString().split('T')[0]
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    const isoDate = `${year}-${month}-${day}`
     onChange(isoDate)
     setCurrentMonth(today)
   }
@@ -113,7 +121,10 @@ export default function CustomDatePicker({
   const handleTomorrow = () => {
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
-    const isoDate = tomorrow.toISOString().split('T')[0]
+    const year = tomorrow.getFullYear()
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
+    const day = String(tomorrow.getDate()).padStart(2, '0')
+    const isoDate = `${year}-${month}-${day}`
     onChange(isoDate)
     setCurrentMonth(tomorrow)
   }

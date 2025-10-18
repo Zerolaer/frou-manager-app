@@ -104,10 +104,31 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   useEffect(() => {
     if (!open) return;
     
+    console.log('📖 Loading note into editor:', { 
+      noteId: note?.id, 
+      hasContent: !!note?.content,
+      contentLength: note?.content?.length,
+      content: note?.content?.substring(0, 100)
+    });
+    
     setTitle(note?.title ?? '');
     const noteContent = note?.content ?? '';
     setContent(noteContent);
     setFolderId(note?.folder_id ?? '');
+    
+    // Устанавливаем контент в contenteditable элемент с небольшой задержкой
+    // чтобы убедиться что DOM элемент уже существует
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.innerHTML = noteContent;
+        console.log('✅ Content set to contenteditable:', { 
+          refExists: !!textareaRef.current,
+          innerHTML: textareaRef.current.innerHTML.substring(0, 100)
+        });
+      } else {
+        console.warn('⚠️ textareaRef.current is null!');
+      }
+    }, 0);
     
     // Сохраняем изначальные значения для сравнения
     setInitialValues({
@@ -120,9 +141,19 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   async function handleSave() {
     setLoading(true);
     try {
+      // Получаем актуальное значение из contenteditable
+      const currentContent = textareaRef.current?.innerHTML || content;
+      
+      console.log('💾 Saving note:', { 
+        title, 
+        contentLength: currentContent.length, 
+        content: currentContent.substring(0, 100),
+        noteId: note?.id 
+      });
+      
       await onSave({ 
         title, 
-        content, 
+        content: currentContent, 
         folder_id: folderId || null 
       }, note?.id);
       onClose();
@@ -147,9 +178,12 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
     if (!note) return;
     
     try {
+      // Получаем актуальное значение из contenteditable
+      const currentContent = textareaRef.current?.innerHTML || content;
+      
       await onSave({
         title: `${note.title} (${t('notes.copy')})`,
-        content: note.content,
+        content: currentContent,
         folder_id: note.folder_id,
         pinned: false
       });
@@ -163,10 +197,13 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   const autoSave = useCallback(async () => {
     if (!note?.id || saving) return;
     
+    // Получаем актуальное значение из contenteditable
+    const currentContent = textareaRef.current?.innerHTML || content;
+    
     // Проверяем, есть ли реальные изменения
     const hasChanges = 
       title !== initialValues.title ||
-      content !== initialValues.content ||
+      currentContent !== initialValues.content ||
       folderId !== initialValues.folderId;
     
     if (!hasChanges) return; // Нет изменений - не сохраняем
@@ -177,7 +214,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
       const saveFunction = onAutoSave || onSave;
       await saveFunction({ 
         title, 
-        content, 
+        content: currentContent, 
         folder_id: folderId || null 
       }, note.id);
     } catch (error) {
@@ -349,8 +386,14 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
               key={note?.id || 'new'}
               ref={textareaRef}
               contentEditable
-              dangerouslySetInnerHTML={{ __html: content }}
-              onInput={(e) => setContent(e.currentTarget.innerHTML)}
+              onInput={(e) => {
+                const newContent = e.currentTarget.innerHTML;
+                console.log('⌨️ Content changed:', { 
+                  length: newContent.length, 
+                  preview: newContent.substring(0, 50) 
+                });
+                setContent(newContent);
+              }}
               onBlur={(e) => setContent(e.currentTarget.innerHTML)}
               onClick={(e) => {
                 // If empty, ensure cursor is placed in the editor

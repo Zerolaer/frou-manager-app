@@ -382,9 +382,9 @@ body.tasks-mode #main-content {
   font-weight: 700; /* Bold weight for current day */
 }
 
-/* Weekend days - 60% opacity */
-.day-col.is-weekend .day-head {
-  opacity: 0.6; /* 60% visibility for weekends */
+/* Weekend days - 60% opacity only for date text */
+.day-col.is-weekend .day-head > span {
+  opacity: 0.6; /* 60% visibility for weekend date text only */
 }
 
 .week-nav{ width:32px; height:32px; padding:0 !important; display:inline-flex; align-items:center; justify-content:center; border-radius: 12px; }

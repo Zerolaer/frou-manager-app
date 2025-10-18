@@ -1,5 +1,6 @@
 /* src/components/notes/NoteCard.tsx */
 import React, { useCallback, useMemo } from 'react';
+import { Pin } from 'lucide-react';
 import type { Note } from '@/features/notes/types';
 
 type Props = {
@@ -38,11 +39,15 @@ const NoteCard = ({ note, onEdit, onTogglePin }: Props) => {
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold line-clamp-2">{note.title || 'Без заголовка'}</h3>
         <button
-          className="text-xs px-2 py-1 rounded-full border hover:bg-gray-50"
+          className={`p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 ${
+            note.pinned 
+              ? 'bg-gray-900 text-white hover:bg-gray-800' 
+              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+          }`}
           onClick={handleTogglePin}
           title={note.pinned ? 'Открепить' : 'Закрепить'}
         >
-          {note.pinned ? '📌' : '📍'}
+          <Pin className={`w-4 h-4 transition-transform ${note.pinned ? 'rotate-45' : ''}`} />
         </button>
       </div>
       <p className="text-xs text-gray-600 line-clamp-4 whitespace-pre-wrap">{preview}</p>

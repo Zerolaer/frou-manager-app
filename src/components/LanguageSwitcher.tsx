@@ -8,7 +8,14 @@ export default function LanguageSwitcher() {
   const toggleLanguage = () => {
     if (!i18n || !i18n.language) return;
     const newLang = i18n.language === 'en' ? 'ru' : 'en';
+    
+    // Save to localStorage before changing
+    localStorage.setItem('frovo_language', newLang);
+    
+    // Change language
     i18n.changeLanguage(newLang);
+    
+    console.log('🌐 Language changed to:', newLang);
   };
 
   return (

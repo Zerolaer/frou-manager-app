@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from 'date-fns'
-import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { UnifiedModal, ModalFooter, ModalButton } from '@/components/ui/ModalSystem'
 import type { TaskItem } from '@/types/shared'
 
 interface TaskCalendarModalProps {
@@ -21,7 +21,6 @@ export default function TaskCalendarModal({
   onMonthChange
 }: TaskCalendarModalProps) {
   const { t } = useTranslation()
-  const { createSimpleFooter } = useModalActions()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   
   // Reset to current month when modal opens
@@ -77,7 +76,15 @@ export default function TaskCalendarModal({
       title={t('actions.calendar')}
       size="xl"
       variant="center"
-      footer={createSimpleFooter({ label: t('common.close'), onClick: onClose })}
+      footer={
+        <ModalFooter
+          right={
+            <ModalButton variant="secondary" onClick={onClose}>
+              {t('common.close')}
+            </ModalButton>
+          }
+        />
+      }
       bodyClassName="p-0"
     >
       {/* Month navigation */}

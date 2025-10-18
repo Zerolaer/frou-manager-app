@@ -103,7 +103,7 @@ const SideModal = ({
       >
         <div
           ref={panelRef}
-          className={`w-[40vw] h-[calc(100vh-32px)] my-4 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
+          className={`w-[50vw] h-[calc(100vh-32px)] my-4 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
             !isAnimating 
               ? 'opacity-100 translate-x-0' 
               : 'opacity-0 translate-x-full'

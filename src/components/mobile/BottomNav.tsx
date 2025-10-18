@@ -15,8 +15,8 @@ export default function BottomNav() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="flex items-center justify-around h-16 max-w-screen-sm mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="flex items-center justify-around h-14 max-w-screen-sm mx-auto px-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path
           const Icon = item.icon
@@ -25,12 +25,19 @@ export default function BottomNav() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors ${
-                isActive ? 'text-black' : 'text-gray-500'
-              }`}
+              className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-w-[60px] relative transition-all duration-200"
             >
-              <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
-              <span className={`text-xs ${isActive ? 'font-semibold' : 'font-medium'}`}>
+              {/* Active indicator */}
+              {isActive && (
+                <div className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-10 h-0.5 bg-black rounded-full" />
+              )}
+              
+              <Icon className={`w-5 h-5 transition-all duration-200 ${
+                isActive ? 'text-black stroke-[2.5]' : 'text-gray-400 stroke-2'
+              }`} />
+              <span className={`text-[10px] leading-tight transition-all duration-200 ${
+                isActive ? 'text-black font-semibold' : 'text-gray-500 font-medium'
+              }`}>
                 {item.label}
               </span>
             </Link>

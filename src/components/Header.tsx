@@ -178,8 +178,8 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
         
         {/* Sub-Header */}
         {subHeaderContent && (
-          <div className="px-4 py-4 bg-white">
-            <div className="flex items-center justify-between">
+          <div className="px-4 h-16 bg-white flex items-center">
+            <div className="flex items-center justify-between w-full">
               <h1 className="text-h2 text-gray-900 leading-none !mb-0">{subHeaderContent.title}</h1>
               
         <div className="flex items-center gap-2 min-w-0">
@@ -201,6 +201,10 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
                   const Icon = action.icon
                   const isPrimary = action.variant === 'primary'
                   
+                  if (import.meta.env.DEV) {
+                    console.log('🔘 Button:', action.label, '| variant:', action.variant, '| isPrimary:', isPrimary)
+                  }
+                  
                   return (
           <button
                       key={action.id}
@@ -218,8 +222,8 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
                   )
                 })}
               </div>
-        </div>
-      </div>
+            </div>
+          </div>
         )}
       </header>
       

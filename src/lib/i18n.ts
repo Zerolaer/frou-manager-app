@@ -16,7 +16,8 @@ i18n
         translation: ruTranslations
       }
     },
-    lng: 'en', // Default language (always start with English)
+    // Don't set lng here - let LanguageDetector handle it from localStorage
+    // lng: 'en', // This would override localStorage
     fallbackLng: 'en',
     debug: false,
     interpolation: {
