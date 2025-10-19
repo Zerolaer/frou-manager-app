@@ -15,7 +15,9 @@
     "test:security": "npm audit && npm run test:xss",
     "test:xss": "echo 'Running XSS validation tests...' && vitest run src/tests/unit/validation.test.ts",
     "lint": "tsc --noEmit",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "seed:demo": "node scripts/seed-demo-data.mjs",
+    "setup:demo": "node scripts/setup-demo.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

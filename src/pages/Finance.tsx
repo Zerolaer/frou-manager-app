@@ -105,6 +105,20 @@ export default function Finance(){
 
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorCat, setEditorCat] = useState<CtxCat|null>(null)
+
+  // Force apply finance scroll styles when component mounts
+  useEffect(() => {
+    if (!isMobile) {
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.style.height = 'calc(100vh - 172px)'
+        mainContent.style.overflowY = 'auto'
+        mainContent.style.overflowX = 'auto'
+        mainContent.style.maxHeight = 'calc(100vh - 172px)'
+        console.log('🔧 Finance: Applied scroll styles to #main-content')
+      }
+    }
+  }, [isMobile])
   const [editorMonth, setEditorMonth] = useState<number>(0)
 
   const [ctxOpen, setCtxOpen] = useState(false)

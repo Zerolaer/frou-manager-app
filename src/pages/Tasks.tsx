@@ -172,6 +172,8 @@ export default function Tasks(){
   const { userId: uid, loading: authLoading } = useSupabaseAuth()
   const { isMobile } = useMobileDetection()
   const [viewTask, setViewTask] = React.useState<TaskItem|null>(null)
+  const [taskStack, setTaskStack] = React.useState<TaskItem[]>([]) // Stack of opened tasks
+  const [isSubtaskOpen, setIsSubtaskOpen] = React.useState(false) // Flag for subtask modal
   const [mobileDate, setMobileDate] = React.useState(new Date())
   
   
@@ -1451,8 +1453,8 @@ const projectColorById = React.useMemo(() => {
       }
     }
     
-    // Add to new date
-    if (newDate) {
+    // Add to new date (but not for subtasks - they should not appear on board)
+    if (newDate && !updatedTask.parent_task_id) {
       if (!map[newDate]) {
         map[newDate] = []
       }
@@ -1767,15 +1769,65 @@ const projectColorById = React.useMemo(() => {
         onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
       />
 
-      {/* Task modals */}
-      <ModernTaskModal
-        key={viewTask?.id || 'new'}
-        open={!!viewTask}
-        onClose={()=>setViewTask(null)}
-        task={viewTask}
-        onUpdated={handleTaskUpdate}
-        onUpdateRecurrence={updateRecurringTaskSettings}
-      />
+      {/* Main task modal - right side - always has backdrop */}
+      {viewTask && (
+        <ModernTaskModal
+          key={`main-${viewTask.id || 'new'}`}
+          open={true}
+          onClose={() => {
+            // Close main task (and subtask if open)
+            console.log('🚪 Closing main modal')
+            setViewTask(null)
+            setTaskStack([])
+            setIsSubtaskOpen(false)
+          }}
+          task={viewTask}
+          onUpdated={handleTaskUpdate}
+          onUpdateRecurrence={updateRecurringTaskSettings}
+          position="right"
+          customZIndex={100}
+          noBackdrop={false} // Always has backdrop
+          disableBackdropClick={isSubtaskOpen} // Don't close on backdrop click when subtask is open
+          splitView={isSubtaskOpen} // Enable split view when subtask is open
+          onOpenTask={(task) => {
+            console.log('🎯 Opening subtask:', task.title, task.id)
+            setTaskStack(prev => [...prev, task as TaskItem])
+            setIsSubtaskOpen(true)
+            console.log('✅ Subtask opened on the left')
+          }}
+        />
+      )}
+      
+      {/* Subtask modal - left side without backdrop */}
+      {isSubtaskOpen && taskStack.length > 0 && (
+        <ModernTaskModal
+          key={`subtask-${taskStack[taskStack.length - 1]?.id}`}
+          open={true}
+          onClose={() => {
+            console.log('🚪 Closing subtask - closing all')
+            // Close all subtasks at once
+            setTaskStack([])
+            setIsSubtaskOpen(false)
+          }}
+          onCancel={() => {
+            console.log('🚪 Canceling subtask - closing all')
+            // Close all subtasks at once
+            setTaskStack([])
+            setIsSubtaskOpen(false)
+          }}
+          task={taskStack[taskStack.length - 1]}
+          onUpdated={handleTaskUpdate}
+          onUpdateRecurrence={updateRecurringTaskSettings}
+          position="left"
+          noBackdrop={true} // No backdrop - don't block main task
+          customZIndex={110}
+          splitView={true} // Enable split view for subtask
+          onOpenTask={(task) => {
+            console.log('🎯 Opening nested subtask:', task.title)
+            setTaskStack(prev => [...prev, task as TaskItem])
+          }}
+        />
+      )}
 
       {ctx.open && <TaskContextMenu 
         x={ctx.x} 

@@ -79,9 +79,16 @@ type Props = {
   task: Task | null
   onUpdated?: (task: Task | null, isSave?: boolean) => void
   onUpdateRecurrence?: (taskId: string, settings: any) => Promise<void>
+  onOpenTask?: (task: Task) => void
+  onCancel?: () => void // New prop for subtask cancel behavior
+  noBackdrop?: boolean // Don't render backdrop
+  position?: 'left' | 'right' // Position of modal
+  customZIndex?: number // Custom z-index
+  disableBackdropClick?: boolean // Don't close on backdrop click
+  splitView?: boolean // Enable 50/50 split view mode
 }
 
-export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence }: Props) {
+export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence, onOpenTask, onCancel, noBackdrop, position, customZIndex, disableBackdropClick, splitView }: Props) {
   const { t, i18n } = useSafeTranslation()
   
   // Add safety check for React context
@@ -196,7 +203,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     onClose()
   }, [save, onClose])
 
-  async function save(isAutoSave = false) {
+  async function save(isAutoSave = false, skipOnUpdated = false) {
     if (!task) {
       logger.debug('❌ Save skipped: no task')
       return
@@ -214,7 +221,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       date, 
       projectId,
       todos: todos.length,
-      originalDate: task.date
+      originalDate: task.date,
+      skipOnUpdated
     })
 
     const updates = {
@@ -246,7 +254,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       logger.debug('✅ Task saved successfully:', data)
       
       // Update local task with actual data from database
-      if (data) {
+      if (data && !skipOnUpdated) {
         const updatedTask = { 
           ...task, 
           ...data,
@@ -256,6 +264,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         
         // Call onUpdated for both manual saves and auto-saves to update the UI
         onUpdated?.(updatedTask, !isAutoSave) // false for auto-save, true for manual save
+      } else if (skipOnUpdated) {
+        logger.debug('⏭️ Skipped onUpdated call')
       }
     } catch (error) {
       logger.error('❌ Error saving task:', error)
@@ -298,6 +308,70 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     setTodos(prev => prev.filter(t => t.id !== id))
   }
 
+  async function convertToTask(todo: Todo) {
+    if (!task) return
+    
+    try {
+      console.log('🚀 Converting subtask to task:', todo.text)
+      
+      // Create a new task from the subtask (without date to keep it off the board)
+      const { data: newTask, error } = await supabase
+        .from('tasks_items')
+        .insert({
+          title: todo.text,
+          description: '',
+          date: null, // No date = not shown on board
+          project_id: projectId || null,
+          priority: priority || 'normal',
+          status: 'open',
+          parent_task_id: task.id,
+          todos: []
+        })
+        .select()
+        .single()
+      
+         if (error) {
+           console.error('❌ Error creating task:', error)
+           console.error('❌ Error details:', {
+             message: error.message,
+             details: error.details,
+             hint: error.hint,
+             code: error.code
+           })
+           throw error
+         }
+      
+      console.log('✅ Created new task from subtask:', newTask)
+      logger.debug('✅ Created new task from subtask (no date):', newTask)
+      
+      // Mark subtask with taskId so we know it's now a separate task
+      // Update the todo item in the list to mark it as opened
+      setTodos(prev => prev.map(t => 
+        t.id === todo.id 
+          ? { ...t, isTask: true, taskId: newTask.id } 
+          : t
+      ))
+      
+      // Save immediately with skipOnUpdated to avoid triggering rerender
+      await save(false, true) // skipOnUpdated = true
+      console.log('💾 Saved parent task with updated subtask (skipped onUpdated)')
+      
+      // Open the new task using the callback
+      if (onOpenTask) {
+        console.log('📂 Calling onOpenTask callback')
+        logger.debug('📂 Opening new task via callback')
+        onOpenTask(newTask as Task)
+      } else {
+        console.warn('⚠️ onOpenTask callback not provided')
+        logger.warn('⚠️ onOpenTask callback not provided')
+      }
+      
+    } catch (error) {
+      logger.error('Error converting subtask to task:', error)
+      console.error('Error converting subtask to task:', error)
+    }
+  }
+
   async function deleteTask() {
     if (!task) return
     try {
@@ -323,10 +397,15 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   return (
     <SideModal
       open={open}
-      onClose={handleClose}
+      onClose={onCancel || handleClose}
       showCloseButton={false}
       noPadding={true}
       title={headerTitle}
+      noBackdrop={noBackdrop}
+      position={position}
+      customZIndex={customZIndex}
+      disableBackdropClick={disableBackdropClick}
+      splitView={splitView}
       rightContent={
         <div ref={menuRef}>
           <CoreMenu
@@ -347,7 +426,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         </div>
       }
       footer={
-        <ModalButton variant="secondary" onClick={handleClose}>
+        <ModalButton variant="secondary" onClick={onCancel || handleClose}>
           {t('actions.close')}
         </ModalButton>
       }
@@ -385,7 +464,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             />
           </div>
 
-          {/* Subtasks */}
+          {/* Subtasks - только если это не подзадача */}
+          {!(task as any)?.parent_task_id && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">{t('tasks.subtasks')}</label>
@@ -431,6 +511,38 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   }}
                   onMouseEnter={() => setHoveredTodoId(todo.id)}
                   onMouseLeave={() => setHoveredTodoId(null)}
+               onClick={async () => {
+                 console.log('🔘 Subtask clicked:', todo.text, 'isTask:', todo.isTask, 'taskId:', todo.taskId)
+                 
+                 if (!todo.isTask) {
+                   // First time - convert to task
+                   convertToTask(todo)
+                 } else if (todo.taskId) {
+                   // Already converted - open existing task
+                   console.log('📂 Opening existing task:', todo.taskId)
+                   try {
+                     const { data, error } = await supabase
+                       .from('tasks_items')
+                       .select('*')
+                       .eq('id', todo.taskId)
+                       .single()
+                     
+                     if (error) {
+                       console.error('❌ Error loading task:', error)
+                       return
+                     }
+                     
+                     if (data && onOpenTask) {
+                       console.log('✅ Loaded task, opening:', data.title)
+                       onOpenTask(data as Task)
+                     }
+                   } catch (err) {
+                     console.error('❌ Error:', err)
+                   }
+                 } else {
+                   console.log('⚠️ Subtask marked as task but no taskId')
+                 }
+               }}
                 >
                   {/* Animated background fill */}
                   {todo.done && (
@@ -449,7 +561,10 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   )}
                   
                   <div
-                    onClick={() => toggleTodo(todo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleTodo(todo.id)
+                    }}
                     style={{ 
                       width: '24px', 
                       height: '24px',
@@ -484,23 +599,23 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                         <polyline points="20,6 9,17 4,12"></polyline>
                       </svg>
                     )}
-                  </div>
-                  <input
-                    type="text"
-                    value={todo.text}
-                    onChange={(e) => setTodos(prev => prev.map(t => 
-                      t.id === todo.id ? { ...t, text: e.target.value } : t
-                    ))}
-                    className="flex-1 bg-transparent border-none outline-none text-sm"
+                  </div>                  
+                  <div
+                    className="flex-1 text-sm cursor-pointer"
                     style={{ 
                       textDecoration: todo.done ? 'line-through' : 'none', 
                       opacity: todo.done ? 0.6 : 1,
                       position: 'relative',
                       zIndex: 1
                     }}
-                  />
+                  >
+                    {todo.text}
+                  </div>
                   <button
-                    onClick={() => removeTodo(todo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeTodo(todo.id)
+                    }}
                     className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                     style={{
                       position: 'relative',
@@ -513,10 +628,21 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
               )})}
             </div>
           </div>
+          )}
         </div>
 
         {/* Right Panel */}
         <aside className="w-[40%] bg-[#F2F7FA] p-0 flex flex-col space-y-4 pt-6">
+          {/* Parent Task Info - only show if this is a subtask */}
+          {(task as any)?.parent_task_id && (
+            <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
+              <div className="text-sm font-medium text-gray-700">{i18n?.language === 'ru' ? 'Подзадача' : 'Subtask'}</div>
+              <div className="text-sm text-gray-600">
+                {i18n?.language === 'ru' ? 'Эта задача является подзадачей другой задачи' : 'This task is a subtask of another task'}
+              </div>
+            </section>
+          )}
+          
           {/* Project */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
             <div className="text-sm font-medium text-gray-700">{t('tasks.project')}</div>

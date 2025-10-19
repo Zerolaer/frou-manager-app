@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { SkipLinks } from './components/AccessibleComponents'
@@ -15,6 +15,7 @@ const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 
 export default function App(){
   const { isMobile } = useMobileDetection()
+  const location = useLocation()
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date())
 
@@ -78,13 +79,49 @@ export default function App(){
     // Add appropriate mode class
     if (isTasks) {
       document.body.classList.add('tasks-mode')
+      // Reset finance styles
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.style.height = ''
+        mainContent.style.overflowY = ''
+        mainContent.style.overflowX = ''
+        mainContent.style.maxHeight = ''
+      }
     } else if (isFinance) {
       document.body.classList.add('finance-mode')
       console.log('✅ Added finance-mode class')
+      
+      // Force apply finance scroll styles after a small delay
+      setTimeout(() => {
+        const mainContent = document.getElementById('main-content')
+        if (mainContent) {
+          mainContent.style.height = 'calc(100vh - 172px)'
+          mainContent.style.overflowY = 'auto'
+          mainContent.style.overflowX = 'auto'
+          mainContent.style.maxHeight = 'calc(100vh - 172px)'
+          console.log('🔧 Applied finance scroll styles to #main-content')
+        }
+      }, 100)
     } else if (isNotes) {
       document.body.classList.add('notes-mode')
+      // Reset finance styles
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.style.height = ''
+        mainContent.style.overflowY = ''
+        mainContent.style.overflowX = ''
+        mainContent.style.maxHeight = ''
+      }
     } else if (isHome) {
       document.body.classList.add('home-mode')
+      // Reset finance styles
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.style.height = ''
+        mainContent.style.overflowY = ''
+        mainContent.style.overflowX = ''
+        mainContent.style.maxHeight = ''
+      }
     }
   }, [])
 
@@ -96,14 +133,26 @@ export default function App(){
   // Listen for route changes
   React.useEffect(() => {
     const handleRouteChange = () => {
-      applyModeClass()
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        applyModeClass()
+      }, 0)
     }
     
+    // Listen to both popstate and custom route change events
     window.addEventListener('popstate', handleRouteChange)
+    window.addEventListener('route-change', handleRouteChange)
+    
     return () => {
       window.removeEventListener('popstate', handleRouteChange)
+      window.removeEventListener('route-change', handleRouteChange)
     }
   }, [applyModeClass])
+
+  // Also apply mode class when location changes (for React Router)
+  React.useEffect(() => {
+    applyModeClass()
+  }, [applyModeClass, location.pathname])
 
   // Handle preloader completion
   return (

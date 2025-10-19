@@ -11,6 +11,9 @@ export type Todo = {
   id: string;
   text: string;
   done: boolean;
+  // For subtasks that can be opened as separate tasks
+  isTask?: boolean;
+  taskId?: string;
 }
 
 export type TaskItem = {
@@ -26,6 +29,7 @@ export type TaskItem = {
   project_id?: string | null;
   project_name?: string | null;
   recurring_task_id?: string | null;
+  parent_task_id?: string | null; // For subtasks opened as tasks
   created_at?: string;
   updated_at?: string;
 }

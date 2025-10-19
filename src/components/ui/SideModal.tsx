@@ -12,6 +12,11 @@ type SideModalProps = {
   showCloseButton?: boolean
   rightContent?: React.ReactNode
   noPadding?: boolean
+  noBackdrop?: boolean // Don't render backdrop
+  position?: 'left' | 'right' // Position of modal
+  customZIndex?: number // Custom z-index
+  disableBackdropClick?: boolean // Don't close on backdrop click
+  splitView?: boolean // Enable 50/50 split view mode
 }
 
 const SideModal = ({
@@ -23,6 +28,11 @@ const SideModal = ({
   showCloseButton = true,
   rightContent,
   noPadding = false,
+  noBackdrop = false,
+  position = 'right',
+  customZIndex,
+  disableBackdropClick = false,
+  splitView = false,
 }: SideModalProps) => {
   const panelRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
@@ -67,6 +77,9 @@ const SideModal = ({
   }, [open])
 
   useEffect(() => {
+    // Don't lock body scroll if noBackdrop - let other modals handle it
+    if (noBackdrop) return
+    
     if (open) {
       // Вычисляем ширину скроллбара
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
@@ -84,29 +97,43 @@ const SideModal = ({
       document.body.style.overflow = ''
       document.body.style.paddingRight = ''
     }
-  }, [open])
+  }, [open, noBackdrop])
 
   if (!isVisible) return null
 
+  const zIndex = customZIndex || 100
+  const isLeft = position === 'left'
+  
   const content = (
     <div
-      className="fixed inset-0 z-[100] opacity-100"
-      onMouseDown={onClose}
+      className={`fixed inset-0 opacity-100`}
+      style={{ 
+        zIndex,
+        pointerEvents: noBackdrop ? 'none' : 'auto' // Don't capture clicks when no backdrop
+      }}
+      onMouseDown={noBackdrop || disableBackdropClick ? undefined : onClose}
     >
-      {/* Overlay with backdrop blur */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      {/* Overlay with backdrop blur - только если не noBackdrop */}
+      {!noBackdrop && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      )}
       
       {/* Side panel */}
       <div 
-        className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-4"
+        className={`absolute top-0 bottom-0 flex items-center ${
+          isLeft ? 'left-0 justify-start pl-4' : 'right-0 justify-end pr-4'
+        }`}
+        style={{ pointerEvents: 'auto' }} // Always capture clicks on the panel itself
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div
           ref={panelRef}
-          className={`w-[50vw] h-[calc(100vh-32px)] my-4 rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
+          className={`${splitView ? 'w-[calc(50vw-24px)] h-[calc(100vh-32px)] my-4 rounded-2xl' : 'w-[50vw] h-[calc(100vh-32px)] my-4 rounded-2xl'} bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
             !isAnimating 
               ? 'opacity-100 translate-x-0' 
-              : 'opacity-0 translate-x-full'
+              : isLeft
+                ? 'opacity-0 -translate-x-full'
+                : 'opacity-0 translate-x-full'
           }`}
           tabIndex={-1}
         >

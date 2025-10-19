@@ -5,7 +5,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   background: #ffffff;
-  overflow: hidden;
+  overflow: visible !important;
   width: 100%;
   max-width: 100%;
 }
@@ -54,6 +54,7 @@
   max-width: 100%;
   box-sizing: border-box;
   position: relative;
+  overflow: visible !important;
 }
 
 .finance-mode .finance-page * {
