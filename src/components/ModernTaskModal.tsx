@@ -138,6 +138,13 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     return () => clearTimeout(timer)
   }, [open, task])
 
+  // Update todos when task.todos changes (for subtask sync)
+  useEffect(() => {
+    if (task?.todos && Array.isArray(task.todos)) {
+      setTodos(task.todos as Todo[])
+    }
+  }, [task?.todos])
+
   // Load projects
   useEffect(() => {
     if (!open) return
@@ -262,8 +269,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         }
         logger.debug('📢 Calling onUpdated with:', { updatedTask: updatedTask.title, isAutoSave, isManualSave: !isAutoSave })
         
-        // Call onUpdated for both manual saves and auto-saves to update the UI
-        onUpdated?.(updatedTask, !isAutoSave) // false for auto-save, true for manual save
+      // Call onUpdated for both manual saves and auto-saves to update the UI
+      onUpdated?.(updatedTask, !isAutoSave) // false for auto-save, true for manual save
       } else if (skipOnUpdated) {
         logger.debug('⏭️ Skipped onUpdated call')
       }
@@ -285,7 +292,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     setNewTodo('')
   }
 
-  function toggleTodo(id: string) {
+  async function toggleTodo(id: string) {
     // Trigger animation
     setAnimatingTodos(prev => new Set(prev).add(id))
     
@@ -298,10 +305,33 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       })
     }, 400)
     
-    // Toggle todo state
+    // Find the todo being toggled
+    const todo = todos.find(t => t.id === id)
+    if (!todo) return
+    
+    const newDoneState = !todo.done
+    
+    // Toggle todo state locally
     setTodos(prev => prev.map(t => 
-      t.id === id ? { ...t, done: !t.done } : t
+      t.id === id ? { ...t, done: newDoneState } : t
     ))
+    
+    // If this todo is linked to a subtask (has taskId), update the subtask's status
+    if (todo.taskId && todo.isTask) {
+      try {
+        // Update the subtask's status in database
+        const { error } = await supabase
+          .from('tasks_items')
+          .update({ status: newDoneState ? 'closed' : 'open' })
+          .eq('id', todo.taskId)
+        
+        if (error) {
+          console.error('❌ Error updating subtask status:', error)
+        }
+      } catch (err) {
+        console.error('❌ Error:', err)
+      }
+    }
   }
 
   function removeTodo(id: string) {
@@ -312,7 +342,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     if (!task) return
     
     try {
-      console.log('🚀 Converting subtask to task:', todo.text)
       
       // Create a new task from the subtask (without date to keep it off the board)
       const { data: newTask, error } = await supabase
@@ -341,7 +370,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
            throw error
          }
       
-      console.log('✅ Created new task from subtask:', newTask)
       logger.debug('✅ Created new task from subtask (no date):', newTask)
       
       // Mark subtask with taskId so we know it's now a separate task
@@ -354,11 +382,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       
       // Save immediately with skipOnUpdated to avoid triggering rerender
       await save(false, true) // skipOnUpdated = true
-      console.log('💾 Saved parent task with updated subtask (skipped onUpdated)')
-      
       // Open the new task using the callback
       if (onOpenTask) {
-        console.log('📂 Calling onOpenTask callback')
         logger.debug('📂 Opening new task via callback')
         onOpenTask(newTask as Task)
       } else {
@@ -512,14 +537,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   onMouseEnter={() => setHoveredTodoId(todo.id)}
                   onMouseLeave={() => setHoveredTodoId(null)}
                onClick={async () => {
-                 console.log('🔘 Subtask clicked:', todo.text, 'isTask:', todo.isTask, 'taskId:', todo.taskId)
-                 
-                 if (!todo.isTask) {
-                   // First time - convert to task
-                   convertToTask(todo)
-                 } else if (todo.taskId) {
-                   // Already converted - open existing task
-                   console.log('📂 Opening existing task:', todo.taskId)
+                if (!todo.isTask) {
+                  // First time - convert to task
+                  convertToTask(todo)
+                } else if (todo.taskId) {
+                  // Already converted - open existing task
                    try {
                      const { data, error } = await supabase
                        .from('tasks_items')
@@ -533,15 +555,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                      }
                      
                      if (data && onOpenTask) {
-                       console.log('✅ Loaded task, opening:', data.title)
-                       onOpenTask(data as Task)
-                     }
-                   } catch (err) {
-                     console.error('❌ Error:', err)
-                   }
-                 } else {
-                   console.log('⚠️ Subtask marked as task but no taskId')
-                 }
+                      onOpenTask(data as Task)
+                    }
+                  } catch (err) {
+                    console.error('❌ Error loading subtask:', err)
+                  }
+                }
                }}
                 >
                   {/* Animated background fill */}
@@ -731,7 +750,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             <DateDropdown
               value={date}
               onChange={(newDate) => {
-                console.log('📅 Date changed in modal:', { oldDate: date, newDate })
                 setDate(newDate)
               }}
             />

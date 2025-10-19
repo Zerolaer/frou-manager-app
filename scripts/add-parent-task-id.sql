@@ -12,3 +12,4 @@ CREATE INDEX IF NOT EXISTS idx_tasks_parent_task_id ON public.tasks_items(parent
 COMMENT ON COLUMN public.tasks_items.parent_task_id IS 'ID родительской задачи, если эта задача является подзадачей';
 
 SELECT 'parent_task_id column added successfully!' as status;
+

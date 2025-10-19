@@ -75,3 +75,4 @@ SELECT
     count(*) as count 
 FROM public.finance_data 
 WHERE user_id = (SELECT id FROM auth.users WHERE email = 'demo@frovo.com');
+

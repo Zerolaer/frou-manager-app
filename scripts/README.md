@@ -106,3 +106,4 @@ DELETE FROM tasks WHERE user_id = (SELECT id FROM auth.users WHERE email = 'demo
 DELETE FROM projects WHERE user_id = (SELECT id FROM auth.users WHERE email = 'demo@frovo.com');
 DELETE FROM auth.users WHERE email = 'demo@frovo.com';
 ```
+

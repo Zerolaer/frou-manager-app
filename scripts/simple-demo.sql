@@ -148,3 +148,4 @@ CREATE POLICY "Enable all for users" ON public.finance_categories FOR ALL USING 
 CREATE POLICY "Enable all for users" ON public.finance_data FOR ALL USING (auth.uid() = user_id);
 
 SELECT 'Demo data created successfully!' as status;
+

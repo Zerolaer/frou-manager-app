@@ -175,6 +175,8 @@ export default function Tasks(){
   const [taskStack, setTaskStack] = React.useState<TaskItem[]>([]) // Stack of opened tasks
   const [isSubtaskOpen, setIsSubtaskOpen] = React.useState(false) // Flag for subtask modal
   const [mobileDate, setMobileDate] = React.useState(new Date())
+  const lastParentUpdateRef = React.useRef<string>('') // Track last parent update to prevent loops
+  const isSyncingRef = React.useRef<boolean>(false) // Prevent double sync calls
   
   
   // Calendar state
@@ -1308,9 +1310,73 @@ const projectColorById = React.useMemo(() => {
     }
   }
 
+  // Handle subtask updates - sync checkbox with status
+  const handleSubtaskUpdate = async (updatedSubtask: any | null, isSave?: boolean) => {
+    if (!updatedSubtask) return
+    
+    // Prevent double sync calls
+    if (isSyncingRef.current) return
+    isSyncingRef.current = true
+    
+    try {
+      // If this subtask has a parent_task_id AND the parent is currently open
+      if (updatedSubtask?.parent_task_id && viewTask?.id === updatedSubtask.parent_task_id) {
+        // Check if we need to sync by comparing current checkbox state with subtask status
+        const currentTodo = viewTask.todos?.find((todo: Todo) => todo.taskId === updatedSubtask.id)
+        if (!currentTodo) return
+        
+        const shouldBeDone = updatedSubtask.status === 'closed'
+        if (currentTodo.done === shouldBeDone) {
+          // No change needed, skip sync to prevent infinite loop
+          return
+        }
+        
+        // Reload parent task from database
+        const { data: parentTask, error } = await supabase
+          .from('tasks_items')
+          .select('*')
+          .eq('id', updatedSubtask.parent_task_id)
+          .single()
+        
+        if (error) return
+        
+        if (parentTask?.todos) {
+          // Update the corresponding todo item's done status based on subtask status
+          const updatedTodos = parentTask.todos.map((todo: Todo) => {
+            if (todo.taskId === updatedSubtask.id) {
+              return { ...todo, done: updatedSubtask.status === 'closed' }
+            }
+            return todo
+          })
+          
+          // Check if todos actually changed
+          const todosChanged = JSON.stringify(parentTask.todos) !== JSON.stringify(updatedTodos)
+          
+          if (todosChanged) {
+            // Update parent task in database
+            await supabase
+              .from('tasks_items')
+              .update({ todos: updatedTodos })
+              .eq('id', parentTask.id)
+            
+            // Update viewTask with new todos
+            setViewTask({ ...parentTask, todos: updatedTodos } as TaskItem)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error syncing subtask:', err)
+    } finally {
+      // Reset sync flag after a short delay
+      setTimeout(() => {
+        isSyncingRef.current = false
+      }, 100)
+    }
+  }
+
   // Handle task updates - check for recurring tasks
   const handleTaskUpdate = async (updatedTask: any | null, isSave?: boolean) => {
-    if (import.meta.env.DEV) {
+    if (false) {
       console.log('🔄 handleTaskUpdate called:', { 
         updatedTask: updatedTask?.title, 
         updatedTaskDate: updatedTask?.date,
@@ -1344,7 +1410,7 @@ const projectColorById = React.useMemo(() => {
       ? hasChanges 
       : hasChanges || (updatedTask.date !== viewTask.date)
     
-    if (import.meta.env.DEV) {
+    if (false) {
       console.log('🔍 Changes detected:', {
         hasChanges,
         hasRelevantChanges,
@@ -1360,7 +1426,6 @@ const projectColorById = React.useMemo(() => {
     
     // Only check for recurring tasks when it's actually a manual save operation AND there are relevant changes
     if (isSave && viewTask.recurring_task_id && hasRelevantChanges) {
-      if (import.meta.env.DEV) console.log('🔍 Checking recurring tasks for save operation with changes')
       
       try {
         // Check database directly for all tasks with this recurring_task_id
@@ -1371,20 +1436,11 @@ const projectColorById = React.useMemo(() => {
         
         if (error) throw error
         
-        console.log('📊 Database recurring tasks found:', {
-          recurringTaskId: viewTask.recurring_task_id,
-          dbTasksCount: dbRecurringTasks?.length || 0,
-          dbTaskTitles: dbRecurringTasks?.map(t => t.title) || []
-        })
-        
         if (dbRecurringTasks && dbRecurringTasks.length > 1) {
-          console.log('✅ Showing recurring edit modal')
           // Show recurring edit modal
           setTaskToEdit({ task: viewTask, updates: updatedTask })
           setShowRecurringEdit(true)
           return
-        } else {
-          console.log('❌ Not enough recurring tasks in database, updating directly')
         }
       } catch (error) {
         console.error('❌ Error checking recurring tasks:', error)
@@ -1393,18 +1449,11 @@ const projectColorById = React.useMemo(() => {
         const recurringTasks = allTasks.filter(t => t.recurring_task_id === viewTask.recurring_task_id)
         
         if (recurringTasks.length > 1) {
-          console.log('✅ Showing recurring edit modal (fallback)')
           setTaskToEdit({ task: viewTask, updates: updatedTask })
           setShowRecurringEdit(true)
           return
         }
       }
-    } else {
-      console.log('❌ Not showing recurring modal:', {
-        isSave,
-        hasRecurringId: !!viewTask.recurring_task_id,
-        hasRelevantChanges
-      })
     }
     
     // Single task or only one instance of recurring task - update directly
@@ -1412,18 +1461,9 @@ const projectColorById = React.useMemo(() => {
   }
 
   const updateTaskDirectly = (updatedTask: TaskItem, shouldCloseModal: boolean = true) => {
-    console.log('🔄 updateTaskDirectly called:', { 
-      updatedTaskTitle: updatedTask.title,
-      updatedTaskDate: updatedTask.date,
-      viewTaskTitle: viewTask?.title,
-      viewTaskDate: viewTask?.date
-    })
-    
     const map = { ...tasks }
     const oldDate = viewTask?.date || ""
     const newDate = updatedTask.date || ""
-    
-    console.log('📅 Date change:', { oldDate, newDate, isDateChange: oldDate !== newDate })
     
     // Find the project name for the updated project_id
     const projectName = updatedTask.project_id 
@@ -1776,7 +1816,6 @@ const projectColorById = React.useMemo(() => {
           open={true}
           onClose={() => {
             // Close main task (and subtask if open)
-            console.log('🚪 Closing main modal')
             setViewTask(null)
             setTaskStack([])
             setIsSubtaskOpen(false)
@@ -1790,10 +1829,8 @@ const projectColorById = React.useMemo(() => {
           disableBackdropClick={isSubtaskOpen} // Don't close on backdrop click when subtask is open
           splitView={isSubtaskOpen} // Enable split view when subtask is open
           onOpenTask={(task) => {
-            console.log('🎯 Opening subtask:', task.title, task.id)
             setTaskStack(prev => [...prev, task as TaskItem])
             setIsSubtaskOpen(true)
-            console.log('✅ Subtask opened on the left')
           }}
         />
       )}
@@ -1804,26 +1841,23 @@ const projectColorById = React.useMemo(() => {
           key={`subtask-${taskStack[taskStack.length - 1]?.id}`}
           open={true}
           onClose={() => {
-            console.log('🚪 Closing subtask - closing all')
             // Close all subtasks at once
             setTaskStack([])
             setIsSubtaskOpen(false)
           }}
           onCancel={() => {
-            console.log('🚪 Canceling subtask - closing all')
             // Close all subtasks at once
             setTaskStack([])
             setIsSubtaskOpen(false)
           }}
           task={taskStack[taskStack.length - 1]}
-          onUpdated={handleTaskUpdate}
+          onUpdated={handleSubtaskUpdate}
           onUpdateRecurrence={updateRecurringTaskSettings}
           position="left"
           noBackdrop={true} // No backdrop - don't block main task
           customZIndex={110}
           splitView={true} // Enable split view for subtask
           onOpenTask={(task) => {
-            console.log('🎯 Opening nested subtask:', task.title)
             setTaskStack(prev => [...prev, task as TaskItem])
           }}
         />

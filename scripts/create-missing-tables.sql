@@ -64,3 +64,4 @@ UNION ALL
 SELECT 'finance_categories' as table_name, count(*) as count FROM public.finance_categories
 UNION ALL
 SELECT 'finance_data' as table_name, count(*) as count FROM public.finance_data;
+

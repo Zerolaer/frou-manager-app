@@ -43,3 +43,4 @@ CREATE POLICY "Enable all operations for users on their own finance_data" ON pub
 
 -- 9. Проверяем результат
 SELECT 'RLS policies created successfully' as status;
+

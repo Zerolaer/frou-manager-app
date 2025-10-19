@@ -95,3 +95,4 @@ FROM information_schema.columns
 WHERE table_schema = 'public' 
 AND table_name IN ('tasks', 'finance_categories', 'finance_data', 'notes', 'projects', 'folders')
 ORDER BY table_name, ordinal_position;
+

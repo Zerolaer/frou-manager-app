@@ -52,3 +52,4 @@ CREATE POLICY "Enable all operations for users on their own finance_data" ON pub
 
 -- 6. Проверяем результат
 SELECT 'Tables fixed successfully' as status;
+

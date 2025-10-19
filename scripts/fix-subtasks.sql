@@ -18,3 +18,4 @@ COMMENT ON COLUMN public.tasks_items.parent_task_id IS 'ID родительск�
 
 -- 5. Проверяем результат
 SELECT 'Subtask support enabled successfully!' as status;
+
