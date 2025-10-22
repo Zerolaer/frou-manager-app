@@ -418,6 +418,9 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   
   // Dynamic header - "Task \ Project \ Status" format
   const headerTitle = `${t('tasks.task')} \\ ${projectName} \\ ${statusText}`
+  
+  // Check if this is a subtask
+  const isSubtask = !!(task as any)?.parent_task_id
 
   return (
     <SideModal
@@ -662,7 +665,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             </section>
           )}
           
-          {/* Project */}
+          {/* Project - hide for subtasks */}
+          {!isSubtask && (
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
             <div className="text-sm font-medium text-gray-700">{t('tasks.project')}</div>
             <ProjectDropdown
@@ -671,6 +675,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
               onChange={setProjectId}
             />
           </section>
+          )}
 
           {/* Status */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
@@ -705,7 +710,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
           </section>
 
           {/* Priority */}
-          <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
+          <section className={`space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6 ${isSubtask ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="text-sm font-medium text-gray-700">{t('tasks.priority')}</div>
             <div className="flex gap-2">
               <button
@@ -745,7 +750,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
           </section>
 
           {/* Date */}
-          <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
+          <section className={`space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6 ${isSubtask ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="text-sm font-medium text-gray-700">{t('tasks.date')}</div>
             <DateDropdown
               value={date}
@@ -756,7 +761,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
           </section>
 
           {/* Tag */}
-          <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
+          <section className={`space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6 ${isSubtask ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="text-sm font-medium text-gray-700">{t('tasks.tag')}</div>
             <CoreInput
               type="text"

@@ -25,6 +25,7 @@ import { exportToJSON, exportToCSV, downloadFile, parseJSONImport } from '@/lib/
 import { useFinanceCache } from '@/hooks/useFinanceCache'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { logger } from '@/lib/monitoring'
+import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
 import { 
   CACHE_VERSION, 
   MONTHS_IN_YEAR, 
@@ -206,9 +207,12 @@ export default function Finance(){
     setLoading(true)
     
     try {
+      // Initialize exchange rates before loading data
+      await initializeExchangeRates()
+      
       const [catsRes, entriesRes] = await Promise.all([
         supabase.from('finance_categories').select('id,name,type,parent_id').order('created_at', { ascending: true }),
-        supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', year),
+        supabase.from('finance_entries').select('category_id,month,amount,currency,included').eq('year', year),
       ])
       
       if (signal?.aborted) return
@@ -229,7 +233,10 @@ export default function Finance(){
         const i = Math.min(11, Math.max(0, (e.month as number) - 1))
         const id = e.category_id as string
         if (!byId[id]) byId[id] = Array(MONTHS_IN_YEAR).fill(0)
-        byId[id][i] += Number(e.amount) || 0
+        // Convert to EUR before adding
+        const currency = (e.currency || 'EUR') as 'EUR' | 'USD' | 'GEL'
+        const amountInEUR = convertToEUR(Number(e.amount) || 0, currency)
+        byId[id][i] += amountInEUR
       }
       
       const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, type: 'income' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))

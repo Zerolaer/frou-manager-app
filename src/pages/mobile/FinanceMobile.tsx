@@ -8,6 +8,7 @@ import MobileFinanceAddModal from '@/components/mobile/MobileFinanceAddModal'
 import MobileCellEditor from '@/components/mobile/MobileCellEditor'
 import { FINANCE_TYPES, MONTHS_IN_YEAR } from '@/lib/constants'
 import { useFinanceCache } from '@/hooks/useFinanceCache'
+import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
 
 interface Category {
   id: string
@@ -48,9 +49,12 @@ export default function FinanceMobile() {
     const loadData = async () => {
       setLoading(true)
       try {
+        // Initialize exchange rates before loading data
+        await initializeExchangeRates()
+        
         const [catsRes, entriesRes] = await Promise.all([
           supabase.from('finance_categories').select('id,name,type,parent_id').order('created_at'),
-          supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', currentYear)
+          supabase.from('finance_entries').select('category_id,month,amount,currency,included').eq('year', currentYear)
         ])
 
         if (catsRes.error || entriesRes.error) {
@@ -68,7 +72,10 @@ export default function FinanceMobile() {
           const idx = Math.min(11, Math.max(0, (e.month as number) - 1))
           const id = e.category_id as string
           if (!byId[id]) byId[id] = Array(MONTHS_IN_YEAR).fill(0)
-          byId[id][idx] += Number(e.amount) || 0
+          // Convert to EUR before adding
+          const currency = (e.currency || 'EUR') as 'EUR' | 'USD' | 'GEL'
+          const amountInEUR = convertToEUR(Number(e.amount) || 0, currency)
+          byId[id][idx] += amountInEUR
         })
 
         setIncome(cats.filter(c => c.type === FINANCE_TYPES.INCOME).map(c => ({ 

@@ -6,6 +6,7 @@ import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { logger } from '@/lib/monitoring'
+import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
 
 interface BudgetData {
   balance: number;
@@ -48,6 +49,9 @@ const BudgetWidget = () => {
     try {
       setLoading(true);
       
+      // Initialize exchange rates before loading data
+      await initializeExchangeRates();
+      
       const now = new Date();
       const currentMonth = now.getMonth(); // 0-11 for array indexing
       const currentYear = now.getFullYear();
@@ -57,8 +61,8 @@ const BudgetWidget = () => {
       // Load data for current and previous year
       const [catsRes, currentEntriesRes, previousEntriesRes] = await Promise.all([
         supabase.from('finance_categories').select('id,name,type,parent_id').order('created_at', { ascending: true }),
-        supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', currentYear),
-        supabase.from('finance_entries').select('category_id,month,amount,included').eq('year', previousYear),
+        supabase.from('finance_entries').select('category_id,month,amount,currency,included').eq('year', currentYear),
+        supabase.from('finance_entries').select('category_id,month,amount,currency,included').eq('year', previousYear),
       ]);
       
       if (catsRes.error || currentEntriesRes.error || previousEntriesRes.error) { 
@@ -88,7 +92,10 @@ const BudgetWidget = () => {
           const i = Math.min(11, Math.max(0, (e.month as number) - 1));
           const id = e.category_id as string;
           if (!byId[id]) byId[id] = Array(12).fill(0);
-          byId[id][i] += Number(e.amount) || 0;
+          // Convert to EUR before adding
+          const currency = (e.currency || 'EUR') as 'EUR' | 'USD' | 'GEL';
+          const amountInEUR = convertToEUR(Number(e.amount) || 0, currency);
+          byId[id][i] += amountInEUR;
         }
         
         // Filter by types and create final arrays
