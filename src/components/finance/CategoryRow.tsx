@@ -127,7 +127,6 @@ export default function CategoryRow({
           <span className={`flex-1 truncate ${row.parent_id ? '' : 'font-medium'}`}>{row.name}</span>
           <button
             className="icon-btn menu-btn"
-            onClick={(e) => onNameContext(e, info)}
             onContextMenu={(e) => onNameContext(e, info)}
             aria-label="Category actions"
           >

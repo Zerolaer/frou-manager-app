@@ -7,6 +7,8 @@ import { LazyFeatures, LazyFinance, LazyComponents } from '@/utils/codeSplitting
 import SectionHeader from '@/components/finance/SectionHeader'
 import FinanceMobile from './mobile/FinanceMobile'
 import CategoryRow from '@/components/finance/CategoryRow'
+import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
+import NewCellMenu from '@/components/finance/NewCellMenu'
 import AnnualStatsModal from '@/components/AnnualStatsModal'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
