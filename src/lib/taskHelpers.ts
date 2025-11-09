@@ -18,7 +18,26 @@ export function getPriorityColor(priority?: string | null): { background: string
 }
 
 /**
- * Get priority display text
+ * Get priority display text key for i18n
+ */
+export function getPriorityTextKey(priority?: string | null): string | null {
+  switch (priority) {
+    case TASK_PRIORITIES.HIGH:
+      return 'tasks.highPriority'
+    case TASK_PRIORITIES.MEDIUM:
+      return 'tasks.mediumPriority'
+    case TASK_PRIORITIES.LOW:
+      return 'tasks.lowPriority'
+    case TASK_PRIORITIES.NORMAL:
+      return 'tasks.normalPriority'
+    default:
+      return null
+  }
+}
+
+/**
+ * Get priority display text (legacy - returns English only)
+ * @deprecated Use getPriorityTextKey with t() function instead
  */
 export function getPriorityText(priority?: string | null): string | null {
   switch (priority) {

@@ -772,10 +772,12 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
           </section>
 
           {/* Recurring Task Block */}
-          <RecurringTaskBlock 
-            task={task} 
-            onUpdateRecurrence={onUpdateRecurrence}
-          />
+          {task && (
+            <RecurringTaskBlock 
+              task={task} 
+              onUpdateRecurrence={onUpdateRecurrence || (() => Promise.resolve())}
+            />
+          )}
 
         </aside>
       </div>

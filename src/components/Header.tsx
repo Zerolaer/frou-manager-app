@@ -6,6 +6,9 @@ import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
 import LanguageSwitcher from './LanguageSwitcher'
 import WeekSelector from './WeekSelector'
+import ProjectFilterDropdown from './ProjectFilterDropdown'
+import { TASK_PROJECT_ALL } from '@/lib/constants'
+import type { Project } from '@/types/shared'
 
 interface HeaderProps {
   onAction?: (action: string) => void
@@ -13,9 +16,15 @@ interface HeaderProps {
   onYearChange?: (year: number) => void
   selectedWeek?: Date
   onWeekChange?: (week: Date) => void
+  tasksProjectsData?: {
+    projects: Project[]
+    selectedProjectIds: string[]
+    activeProject: string | null
+  } | null
+  onProjectsFilterChange?: (projectIds: string[]) => void
 }
 
-export default function Header({ onAction, currentYear, onYearChange, selectedWeek, onWeekChange }: HeaderProps) {
+export default function Header({ onAction, currentYear, onYearChange, selectedWeek, onWeekChange, tasksProjectsData, onProjectsFilterChange }: HeaderProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut } = useSupabaseAuth()
@@ -195,6 +204,19 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
                 {/* Year selector for Finance page */}
                 {location.pathname === '/finance' && currentYear && onYearChange && (
                   <YearSelector currentYear={currentYear} onYearChange={onYearChange} />
+                )}
+                
+                {/* Project filter dropdown for Tasks page when in "All Projects" mode */}
+                {location.pathname === '/tasks' && tasksProjectsData && tasksProjectsData.activeProject === TASK_PROJECT_ALL && (
+                  <ProjectFilterDropdown
+                    projects={tasksProjectsData.projects}
+                    selectedProjectIds={tasksProjectsData.selectedProjectIds}
+                    onSelectionChange={(projectIds) => {
+                      if (onProjectsFilterChange) {
+                        onProjectsFilterChange(projectIds)
+                      }
+                    }}
+                  />
                 )}
                 
                 {subHeaderContent.actions.map((action) => {

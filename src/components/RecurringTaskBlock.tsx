@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { Repeat, Edit3, Calendar } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
-import { TaskItem } from '@/types/shared'
 import { RecurringTaskSettings } from '@/types/recurring'
 import { getRecurrenceDescription as getRecurrenceDescriptionUtil } from '@/utils/recurringUtils'
 import RecurringEditModal from './RecurringSettingsModal'
 import { supabase } from '@/lib/supabaseClient'
 
+type Task = {
+  id: string
+  title: string
+  recurring_task_id?: string | null
+}
+
 type Props = {
-  task: TaskItem
+  task: Task
   onUpdateRecurrence: (taskId: string, settings: RecurringTaskSettings) => void
 }
 
@@ -77,7 +82,7 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
       return t('common.loading') || 'Загрузка...'
     }
     
-    if (recurringSettings) {
+    if (recurringSettings && recurringSettings.recurrenceType) {
       return getRecurrenceDescriptionUtil(
         recurringSettings.recurrenceType,
         recurringSettings.interval,
@@ -130,7 +135,7 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSave={handleSaveRecurrence}
-        currentSettings={recurringSettings}
+        currentSettings={recurringSettings || undefined}
         taskTitle={task.title}
       />
     </>

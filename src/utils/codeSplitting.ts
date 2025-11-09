@@ -71,7 +71,7 @@ export const LazyFeatures = {
 
 // Component-based code splitting
 export const LazyComponents = {
-  VirtualizedList: lazy(() => import('@/components/VirtualizedList')),
+  VirtualizedList: lazy(() => import('@/components/VirtualizedList').then(m => ({ default: m.VirtualizedList }))),
   AppLoader: lazy(() => import('@/components/AppLoader')),
   Sidebar: lazy(() => import('@/components/Sidebar')),
   WeekTimeline: lazy(() => import('@/components/WeekTimeline')),

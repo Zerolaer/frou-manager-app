@@ -59,7 +59,7 @@ export default function MobileFinanceAddModal({ open, onClose, onAddCategory }: 
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('finance.type')}
           </label>
-          <TypeDropdown value={newType} onChange={setNewType} fullWidth />
+          <TypeDropdown value={newType} onChange={(value) => setNewType(value as 'income' | 'expense')} fullWidth />
         </div>
         
         <div>

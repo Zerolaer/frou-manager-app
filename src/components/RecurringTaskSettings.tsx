@@ -69,7 +69,7 @@ export default function RecurringTaskSettings({ settings, onChange, startDate }:
         dayOfWeek: newSettings.recurrenceDayOfWeek,
         dayOfMonth: newSettings.recurrenceDayOfMonth,
         monthOfYear: newSettings.recurrenceMonthOfYear,
-        endDate: newSettings.endDate || undefined
+        endDate: typeof newSettings.endDate === 'string' ? newSettings.endDate : undefined
       })
       
       if (validation.isValid) {
@@ -246,7 +246,7 @@ export default function RecurringTaskSettings({ settings, onChange, startDate }:
 {t('tasks.recurring.endDate') || 'End date (optional)'}
           </label>
           <CustomDatePicker
-            value={localSettings.endDate || ''}
+            value={typeof localSettings.endDate === 'string' ? localSettings.endDate : ''}
             onChange={(value) => updateSettings({ endDate: value || undefined })}
             placeholder={t('tasks.selectDate') || 'Выбрать дату'}
           />

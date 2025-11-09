@@ -4,6 +4,9 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import enTranslations from '../locales/en.json'
 import ruTranslations from '../locales/ru.json'
 
+// Get saved language or default to 'en'
+const savedLanguage = localStorage.getItem('frovo_language') || 'en'
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -16,8 +19,7 @@ i18n
         translation: ruTranslations
       }
     },
-    // Don't set lng here - let LanguageDetector handle it from localStorage
-    // lng: 'en', // This would override localStorage
+    lng: savedLanguage, // Set language immediately
     fallbackLng: 'en',
     debug: false,
     interpolation: {
@@ -27,6 +29,9 @@ i18n
       order: ['localStorage'], // Only use localStorage, ignore browser language
       caches: ['localStorage'],
       lookupLocalStorage: 'frovo_language'
+    },
+    react: {
+      useSuspense: false // Disable Suspense to avoid issues with lazy loading
     }
   })
 

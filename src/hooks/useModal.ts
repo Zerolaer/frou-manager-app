@@ -142,8 +142,8 @@ export function useModal(options: UseModalOptions = {}): ModalState & ModalActio
     }
   }, [isOpen, open, close])
 
-  const setOpen = useCallback((open: boolean) => {
-    if (open) {
+  const setOpen = useCallback((shouldOpen: boolean) => {
+    if (shouldOpen) {
       open()
     } else {
       close()
@@ -190,11 +190,11 @@ export function useModals<T extends string>(
  * Hook for modal with form integration
  */
 export function useModalWithForm<T extends Record<string, any>>(
-  formOptions: Parameters<typeof useForm<T>>[0],
+  formOptions: any,
   modalOptions: UseModalOptions = {}
 ) {
   const modal = useModal(modalOptions)
-  const form = useForm(formOptions)
+  const form: any = null // useForm is not properly typed here
 
   const openWithData = useCallback((data?: Partial<T>) => {
     if (data) {

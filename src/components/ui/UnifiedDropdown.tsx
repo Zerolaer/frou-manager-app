@@ -11,6 +11,7 @@ export interface UnifiedDropdownProps {
   placeholder?: string
   disabled?: boolean
   className?: string
+  buttonClassName?: string
   variant?: 'default' | 'compact' | 'large'
   size?: 'sm' | 'md' | 'lg'
   searchable?: boolean
@@ -58,17 +59,23 @@ export interface PriorityDropdownProps extends UnifiedDropdownProps {
 }
 
 export function PriorityDropdown({ 
-  priorities = [
-    { value: 'low', label: 'Низкий', color: '#10b981' },
-    { value: 'normal', label: 'Обычный', color: '#3b82f6' },
-    { value: 'high', label: 'Высокий', color: '#ef4444' }
-  ],
+  priorities,
   value, 
   onChange, 
-  placeholder = 'Выберите приоритет...',
+  placeholder,
   ...props 
 }: PriorityDropdownProps) {
-  const options: DropdownOption[] = priorities.map(priority => ({
+  const { t } = useSafeTranslation()
+  
+  // Use provided priorities or default with translations
+  const defaultPriorities = [
+    { value: 'low', label: t('tasks.lowPriority'), color: '#10b981' },
+    { value: 'normal', label: t('tasks.normalPriority'), color: '#3b82f6' },
+    { value: 'high', label: t('tasks.highPriority'), color: '#ef4444' }
+  ]
+  
+  const prioritiesToUse = priorities || defaultPriorities
+  const options: DropdownOption[] = prioritiesToUse.map(priority => ({
     value: priority.value,
     label: priority.label
   }))
@@ -78,7 +85,7 @@ export function PriorityDropdown({
       options={options}
       value={value}
       onChange={onChange}
-      placeholder={placeholder}
+      placeholder={placeholder || t('tasks.priority')}
       {...props}
     />
   )
@@ -90,16 +97,22 @@ export interface StatusDropdownProps extends UnifiedDropdownProps {
 }
 
 export function StatusDropdown({ 
-  statuses = [
-    { value: 'open', label: 'Открыто', color: '#3b82f6' },
-    { value: 'closed', label: 'Закрыто', color: '#10b981' }
-  ],
+  statuses,
   value, 
   onChange, 
-  placeholder = 'Выберите статус...',
+  placeholder,
   ...props 
 }: StatusDropdownProps) {
-  const options: DropdownOption[] = statuses.map(status => ({
+  const { t } = useSafeTranslation()
+  
+  // Use provided statuses or default with translations
+  const defaultStatuses = [
+    { value: 'open', label: t('tasks.open'), color: '#3b82f6' },
+    { value: 'closed', label: t('tasks.closed'), color: '#10b981' }
+  ]
+  
+  const statusesToUse = statuses || defaultStatuses
+  const options: DropdownOption[] = statusesToUse.map(status => ({
     value: status.value,
     label: status.label
   }))
@@ -109,7 +122,7 @@ export function StatusDropdown({
       options={options}
       value={value}
       onChange={onChange}
-      placeholder={placeholder}
+      placeholder={placeholder || t('tasks.status')}
       {...props}
     />
   )

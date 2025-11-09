@@ -1,3 +1,4 @@
+import React from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/lib/monitoring'
 import { requestBatcher, requestQueue } from './requestDeduplication'
@@ -127,7 +128,7 @@ class SupabaseOptimizer {
     const cacheKey = this.generateQueryKey(query)
     
     try {
-      let supabaseQuery = supabase.from(query.table)
+      let supabaseQuery: any = supabase.from(query.table)
       
       if (query.select) {
         supabaseQuery = supabaseQuery.select(query.select)

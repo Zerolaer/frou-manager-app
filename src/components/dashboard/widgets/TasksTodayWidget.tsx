@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
-import { getPriorityText } from '@/lib/taskHelpers';
+import { getPriorityTextKey } from '@/lib/taskHelpers';
 import { logger } from '@/lib/monitoring';
 
 interface Task {
@@ -136,7 +136,7 @@ const TasksTodayWidget = () => {
                 </div>
                 <div className="flex-shrink-0 flex items-center">
                   <span className="px-2 py-1 rounded-full text-xs font-medium text-gray-900 bg-gray-100">
-                    {getPriorityText(task.priority) || 'Normal'}
+                    {getPriorityTextKey(task.priority) ? t(getPriorityTextKey(task.priority)!) : t('tasks.normalPriority')}
                   </span>
                 </div>
               </div>

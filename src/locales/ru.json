@@ -221,6 +221,12 @@
     "created": "Создана",
     "tag": "Тег",
     "date": "Дата",
+    "filterProjects": "Фильтр проектов",
+    "noProjectsSelected": "Нет выбранных проектов",
+    "allProjectsSelected": "Все проекты",
+    "projectsSelected": "Проектов: {{count}}",
+    "selectProjects": "Выбор проектов",
+    "noProjects": "Нет проектов",
     "recurring": {
       "title": "Повторяющаяся задача",
       "repeat": "Повторять",
@@ -403,7 +409,8 @@
     "add": "Добавить",
     "save": "Сохранить",
     "cancel": "Отмена",
-    "loading": "Загрузка..."
+    "selectAll": "Выбрать все",
+    "deselectAll": "Снять все"
   },
   "dashboard": {
     "tasksToday": "Задачи на сегодня",

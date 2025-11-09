@@ -16,7 +16,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-    }
+    },
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime']
   },
   define: {
     global: 'globalThis',
@@ -59,6 +60,7 @@ export default defineConfig({
       'date-fns',
       'react-i18next',
       'i18next',
+      'i18next-browser-languagedetector',
       '@radix-ui/react-icons'
     ],
     exclude: [
@@ -66,7 +68,7 @@ export default defineConfig({
       '@monaco-editor/react',
       'chart.js'
     ],
-    force: false,
+    force: true,
     esbuildOptions: {
       target: 'esnext',
       supported: {

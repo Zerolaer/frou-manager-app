@@ -342,17 +342,24 @@ export default function Finance(){
   }
 
   function onContextCategory(e: React.MouseEvent, cat: {id:string,name:string,type:'income'|'expense'}) {
-    e.preventDefault(); 
-    e.stopPropagation()
-    if (cellCtxOpen) setCellCtxOpen(false)
-    setCtxCellHighlight(null)
-    setCtxCatHighlight(cat.id)
-    
-    // COMPLETE SCROLL INDEPENDENCE - only mouse coordinates
-    setCtxMouseX(e.clientX + 10) // Right of cursor
-    setCtxMouseY(e.clientY - 10) // Above cursor
-    setCtxCat(cat)
-    setCtxOpen(true)
+    try {
+      e.preventDefault(); 
+      e.stopPropagation()
+      if (cellCtxOpen) setCellCtxOpen(false)
+      setCtxCellHighlight(null)
+      setCtxCatHighlight(cat.id)
+      
+      // COMPLETE SCROLL INDEPENDENCE - only mouse coordinates
+      const x = e.clientX ?? 0
+      const y = e.clientY ?? 0
+      setCtxMouseX(x + 10) // Right of cursor
+      setCtxMouseY(y - 10) // Above cursor
+      setCtxCat(cat)
+      setCtxOpen(true)
+    } catch (error) {
+      console.error('Error in onContextCategory:', error)
+      logger.error('Error opening category context menu:', error)
+    }
   }
   function closeCtx(){ setCtxOpen(false); setCtxCat(null); setCtxCatHighlight(null) }
 
@@ -717,7 +724,7 @@ export default function Finance(){
         <NewCategoryMenu
           x={ctxMouseX}
           y={ctxMouseY}
-          canAddSub={!Boolean((findCatById(ctxCat.id, incomeRaw) || findCatById(ctxCat.id, expenseRaw))?.parent_id)}
+          canAddSub={!Boolean((ctxCat.type === 'income' ? findCatById(ctxCat.id, incomeRaw) : findCatById(ctxCat.id, expenseRaw))?.parent_id)}
           onClose={closeCtx}
           onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
           onAddSub={()=>{ setNewType(ctxCat.type as 'income' | 'expense'); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}

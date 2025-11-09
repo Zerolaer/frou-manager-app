@@ -221,6 +221,12 @@
     "created": "Created",
     "tag": "Tag",
     "date": "Date",
+    "filterProjects": "Filter Projects",
+    "noProjectsSelected": "No projects selected",
+    "allProjectsSelected": "All projects",
+    "projectsSelected": "Projects: {{count}}",
+    "selectProjects": "Select Projects",
+    "noProjects": "No projects",
     "recurring": {
       "title": "Recurring Task",
       "repeat": "Repeat",
@@ -403,7 +409,8 @@
     "add": "Add",
     "save": "Save",
     "cancel": "Cancel",
-    "loading": "Loading..."
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All"
   },
   "dashboard": {
     "tasksToday": "Tasks Today",

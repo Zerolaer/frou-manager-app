@@ -18,6 +18,11 @@ export default function App(){
   const location = useLocation()
   const [currentYear, setCurrentYear] = useState<number | undefined>(undefined)
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date())
+  const [tasksProjectsData, setTasksProjectsData] = useState<{
+    projects: any[]
+    selectedProjectIds: string[]
+    activeProject: string | null
+  } | null>(null)
 
   // Redirect to last visited page on app load (only once)
   useEffect(() => {
@@ -60,6 +65,18 @@ export default function App(){
     window.addEventListener('finance-year-changed', handleFinanceYearChanged as EventListener)
     return () => {
       window.removeEventListener('finance-year-changed', handleFinanceYearChanged as EventListener)
+    }
+  }, [])
+
+  // Listen for tasks projects data from Tasks page
+  React.useEffect(() => {
+    const handleTasksProjectsData = (event: CustomEvent) => {
+      setTasksProjectsData(event.detail)
+    }
+    
+    window.addEventListener('tasks-projects-data', handleTasksProjectsData as EventListener)
+    return () => {
+      window.removeEventListener('tasks-projects-data', handleTasksProjectsData as EventListener)
     }
   }, [])
 
@@ -164,6 +181,7 @@ export default function App(){
             <Header 
               currentYear={currentYear}
               selectedWeek={selectedWeek}
+              tasksProjectsData={tasksProjectsData}
               onAction={(action) => {
                 // Dispatch action to current page
                 window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
@@ -177,6 +195,10 @@ export default function App(){
                 setSelectedWeek(week)
                 // Dispatch week change to current page
                 window.dispatchEvent(new CustomEvent('subheader-week-change', { detail: week }))
+              }}
+              onProjectsFilterChange={(projectIds) => {
+                // Dispatch project filter change to Tasks page
+                window.dispatchEvent(new CustomEvent('tasks-projects-filter-change', { detail: projectIds }))
               }}
             />
           </Suspense>

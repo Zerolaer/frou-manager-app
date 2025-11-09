@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { getPriorityColor } from '@/lib/taskHelpers'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 // Функция для затемнения цвета (делает цвет темнее)
 function darkenColor(hex: string, factor: number = 0.3): string {
@@ -67,15 +68,19 @@ export function TaskCard({
   style,
   className
 }: TaskCardProps) {
-  const priorityText = {
-    high: 'High',
-    medium: 'Medium', 
-    low: 'Low',
-    normal: 'Normal',
-    default: ''
+  const { t } = useSafeTranslation()
+  
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'high': return t('tasks.highPriority')
+      case 'medium': return t('tasks.mediumPriority')
+      case 'low': return t('tasks.lowPriority')
+      case 'normal': return t('tasks.normalPriority')
+      default: return ''
+    }
   }
 
-  const priorityLabel = priorityText[task.priority as keyof typeof priorityText] || priorityText.default
+  const priorityLabel = getPriorityLabel(task.priority as string)
   const isCompleted = task.status === 'closed'
 
   return (

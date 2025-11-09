@@ -10,6 +10,19 @@ import MobileTaskModal from '@/components/mobile/MobileTaskModal'
 import { TASK_STATUSES } from '@/lib/constants'
 import type { TaskItem } from '@/types/shared'
 
+type Task = {
+  id: string
+  title: string
+  description?: string | null
+  priority?: string | null
+  tag?: string | null
+  date?: string | null
+  todos?: any[]
+  status?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export default function TasksMobile() {
   const { t } = useSafeTranslation()
   const { userId } = useSupabaseAuth()
@@ -31,7 +44,7 @@ export default function TasksMobile() {
       try {
         const { data, error } = await supabase
           .from('tasks_items')
-          .select('id,title,description,status,priority,tag,todos,tasks_projects(name)')
+          .select('id,title,description,status,priority,tag,todos,date,position,tasks_projects(name)')
           .eq('date', dateKey)
           .order('position')
 
@@ -101,14 +114,18 @@ export default function TasksMobile() {
     }
   }
   
-  const handleTaskUpdate = async (updatedTask: TaskItem | null, isSave?: boolean) => {
+  const handleTaskUpdate = async (updatedTask: Task | null, isSave?: boolean) => {
     if (!updatedTask) {
       setViewTask(null)
       return
     }
     
-    // Update local state immediately
-    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t))
+    // Update local state immediately - map Task to TaskItem
+    setTasks(tasks.map(t => 
+      t.id === updatedTask.id 
+        ? { ...t, ...updatedTask }
+        : t
+    ))
     
     // Only close modal on explicit save, not on auto-save
     if (isSave) {
@@ -261,7 +278,7 @@ export default function TasksMobile() {
         dateLabel={format(currentDate, 'd MMMM, EEEE')}
         initialDate={currentDate}
         onSubmit={async (title, desc, prio, tag, todos, projId, date) => {
-          await createTask(title, desc, prio, tag, todos, projId, date)
+          await createTask(title, desc, prio, tag, todos, projId || '', date)
         }}
       />
       

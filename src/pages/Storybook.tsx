@@ -10,7 +10,7 @@ import SideModal from '@/components/ui/SideModal'
 import { UnifiedModal } from '@/components/ui/ModalSystem'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import LoadingButton from '@/components/ui/LoadingButton'
+import { LoadingButton } from '@/components/ui/LoadingButton'
 import CoreMenu from '@/components/ui/CoreMenu'
 
 // Finance Components
@@ -41,7 +41,7 @@ import WeekTimeline from '@/components/WeekTimeline'
 // Form Components
 import Check from '@/components/Check'
 import CheckFinance from '@/components/CheckFinance'
-import VirtualizedList from '@/components/VirtualizedList'
+import { VirtualizedList } from '@/components/VirtualizedList'
 
 // Modal Components
 import ProjectCreateModal from '@/components/ProjectCreateModal'
@@ -53,9 +53,9 @@ import NoteCard from '@/components/notes/NoteCard'
 import NoteEditorModal from '@/components/notes/NoteEditorModal'
 
 // Tasks Components
-import CardItem from '@/components/tasks/CardItem'
-import DayColumn from '@/components/tasks/DayColumn'
-import WeekBoard from '@/components/tasks/WeekBoard'
+import { CardItem } from '@/components/tasks/CardItem'
+import { DayColumn } from '@/components/tasks/DayColumn'
+import { WeekBoard } from '@/components/tasks/WeekBoard'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
 
 // Other Components
@@ -122,7 +122,7 @@ const StorybookPage = () => {
             <div className="w-48">
               <Dropdown
                 value={dropdownValue}
-                onChange={setDropdownValue}
+                onChange={(value) => setDropdownValue(value as string)}
                 options={[
                   { value: 'EUR', label: 'EUR' },
                   { value: 'USD', label: 'USD' },
@@ -213,8 +213,8 @@ const StorybookPage = () => {
           demo: (
             <div className="w-32">
               <YearSelector
-                year={2025}
-                onChange={() => {}}
+                currentYear={2025}
+                onYearChange={() => {}}
               />
             </div>
           )
@@ -231,8 +231,8 @@ const StorybookPage = () => {
           usage: 'Выбор опций, включение/выключение',
           demo: (
             <div className="space-y-2">
-              <Check checked={false} onChange={() => {}} label="Не выбрано" />
-              <Check checked={true} onChange={() => {}} label="Выбрано" />
+              <Check checked={false} onToggle={() => {}} />
+              <Check checked={true} onToggle={() => {}} />
             </div>
           )
         }
@@ -250,19 +250,26 @@ const StorybookPage = () => {
             <div className="border rounded-lg p-4 bg-white max-w-4xl overflow-x-auto">
               <div className="text-sm text-gray-500 mb-2">Пример строки категории:</div>
               <CategoryRow
+                type="expense"
                 row={{
                   id: '1',
                   name: 'Продукты',
                   isCollapsed: false,
-                  children: [],
-                  data: [100, 200, 150, 300, 250, 180, 220, 190, 160, 210, 240, 280]
+                  parent_id: null
                 }}
-                onToggleCollapse={() => {}}
-                onCellClick={() => {}}
+                values={[100, 200, 150, 300, 250, 180, 220, 190, 160, 210, 240, 280]}
+                isCurrentYear={true}
+                currentMonth={new Date().getMonth()}
+                hasChildren={false}
+                collapsed={false}
                 childIndex={0}
-                months={['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн']}
-                year={2025}
-                userId="demo"
+                onToggleCollapse={() => {}}
+                onNameContext={() => {}}
+                onCellContext={() => {}}
+                onCellEdit={() => {}}
+                fmt={(n: number) => n.toFixed(2)}
+                ctxCatHighlight={null}
+                ctxCellHighlight={null}
               />
             </div>
           )
@@ -275,8 +282,10 @@ const StorybookPage = () => {
             <div className="border rounded-lg p-4 bg-white max-w-4xl overflow-x-auto">
               <SummaryRow
                 title="Доходы"
-                data={[1000, 1200, 800, 1500, 900, 1100, 1300, 1000, 1200, 1400, 1600, 1800]}
-                months={['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн']}
+                values={[1000, 1200, 800, 1500, 900, 1100, 1300, 1000, 1200, 1400, 1600, 1800]}
+                isCurrentYear={true}
+                currentMonth={new Date().getMonth()}
+                fmt={(n: number) => n.toFixed(2)}
               />
             </div>
           )
@@ -289,6 +298,8 @@ const StorybookPage = () => {
             <div className="border rounded-lg p-4 bg-white">
               <YearToolbar
                 year={2025}
+                years={[2023, 2024, 2025]}
+                onYearChange={() => {}}
                 onAddCategory={() => {}}
                 onShowStats={() => {}}
               />
@@ -357,8 +368,6 @@ const StorybookPage = () => {
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
                 }}
-                onUpdate={() => {}}
-                onDelete={() => {}}
               />
             </div>
           )

@@ -35,7 +35,11 @@ export type RecurringTaskSettings = {
   recurrenceDayOfWeek?: number
   recurrenceDayOfMonth?: number
   recurrenceMonthOfYear?: number
-  endDate?: string | null
+  endDate?: string | null | Date
+  // Aliases for backward compatibility
+  interval?: number
+  dayOfWeek?: number
+  dayOfMonth?: number
 }
 
 export type RecurringTaskInstance = {

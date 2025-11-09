@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Edit, Trash2, Plus } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 type Props = {
   x: number
@@ -14,8 +14,12 @@ type Props = {
 }
 
 export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onDelete, canAddSub }: Props) {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const menuRef = useRef<HTMLDivElement>(null)
+  
+  // Validate coordinates
+  const validX = typeof x === 'number' && !isNaN(x) ? x : 0
+  const validY = typeof y === 'number' && !isNaN(y) ? y : 0
 
   // Close on Escape
   useEffect(() => {

@@ -116,7 +116,7 @@ export default function MobileTaskAddModal({
         <div>
           <CoreInput
             value={form.fields.title.value}
-            onChange={(e) => form.fields.title.setValue(e.target.value)}
+            onChange={(e) => form.setField('title', e.target.value)}
             placeholder={t('tasks.taskTitle')}
             className="text-base"
             autoFocus
@@ -130,7 +130,7 @@ export default function MobileTaskAddModal({
         <div>
           <CoreTextarea
             value={form.fields.description.value}
-            onChange={(e) => form.fields.description.setValue(e.target.value)}
+            onChange={(e) => form.setField('description', e.target.value)}
             placeholder={t('tasks.taskDescription')}
             rows={3}
           />
@@ -144,7 +144,7 @@ export default function MobileTaskAddModal({
             </label>
             <ProjectDropdown
               value={form.fields.projectId.value}
-              onChange={form.fields.projectId.setValue}
+              onChange={(value) => form.setField('projectId', value as string)}
               projects={projects}
               placeholder={t('tasks.selectProject')}
             />
@@ -155,7 +155,7 @@ export default function MobileTaskAddModal({
             </label>
             <DateDropdown
               value={form.fields.selectedDate.value}
-              onChange={form.fields.selectedDate.setValue}
+              onChange={(value) => form.setField('selectedDate', value as string)}
               placeholder={dateLabel}
             />
           </div>
@@ -169,7 +169,7 @@ export default function MobileTaskAddModal({
             </label>
             <PriorityDropdown
               value={form.fields.priority.value}
-              onChange={form.fields.priority.setValue}
+              onChange={(value) => form.setField('priority', value as 'low' | 'normal' | 'high')}
             />
           </div>
           <div>
@@ -178,7 +178,7 @@ export default function MobileTaskAddModal({
             </label>
             <CoreInput
               value={form.fields.tag.value}
-              onChange={(e) => form.fields.tag.setValue(e.target.value)}
+              onChange={(e) => form.setField('tag', e.target.value)}
               placeholder={t('tasks.tagPlaceholder')}
             />
           </div>
@@ -192,7 +192,7 @@ export default function MobileTaskAddModal({
             </label>
             <button
               type="button"
-              onClick={todoManager.addTodo}
+              onClick={() => todoManager.addTodo()}
               className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -217,7 +217,7 @@ export default function MobileTaskAddModal({
                 <input
                   type="text"
                   value={todo.text}
-                  onChange={(e) => todoManager.updateTodo(todo.id, e.target.value)}
+                  onChange={(e) => todoManager.updateTodoText(todo.id, e.target.value)}
                   placeholder={t('tasks.subtaskPlaceholder')}
                   className="flex-1 bg-transparent border-none outline-none text-sm"
                 />

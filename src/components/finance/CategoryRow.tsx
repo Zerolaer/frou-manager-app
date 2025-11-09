@@ -127,7 +127,24 @@ export default function CategoryRow({
           <span className={`flex-1 truncate ${row.parent_id ? '' : 'font-medium'}`}>{row.name}</span>
           <button
             className="icon-btn menu-btn"
-            onContextMenu={(e) => onNameContext(e, info)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              try {
+                onNameContext(e, info)
+              } catch (error) {
+                console.error('Error opening category menu:', error)
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              try {
+                onNameContext(e, info)
+              } catch (error) {
+                console.error('Error opening category menu:', error)
+              }
+            }}
             aria-label="Category actions"
           >
             <MoreVertical size={16} />

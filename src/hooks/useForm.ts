@@ -81,7 +81,7 @@ export function useForm<T extends Record<string, any>>(
         value: initialValues[key],
         error: undefined,
         touched: false,
-        required: validation[key] !== undefined
+        required: (validation as any)[key] !== undefined
       }
     }
     return fields
@@ -108,12 +108,15 @@ export function useForm<T extends Record<string, any>>(
     autoSaveTimeoutRef.current = setTimeout(() => {
       const values = {} as T
       for (const key in fields) {
-        values[key] = fields[key].value
+        (values as any)[key] = fields[key].value
       }
       
-      autoSave.onSave(values).catch(error => {
-        logger.error('Auto-save failed:', error)
-      })
+      const saveResult = autoSave.onSave(values)
+      if (saveResult && typeof saveResult.catch === 'function') {
+        saveResult.catch((error: any) => {
+          logger.error('Auto-save failed:', error)
+        })
+      }
     }, autoSave.delay)
 
     return () => {
@@ -127,7 +130,7 @@ export function useForm<T extends Record<string, any>>(
   const setField = useCallback((field: keyof T, value: T[keyof T]) => {
     setFields(prev => {
       const newFields = { ...prev }
-      const validator = validation[field]
+      const validator = (validation as any)[field]
       const error = validator ? validator(value) : undefined
       
       newFields[field] = {
@@ -160,11 +163,11 @@ export function useForm<T extends Record<string, any>>(
     const newFields = { ...fields }
 
     for (const key in fields) {
-      const validator = validation[key]
+      const validator = (validation as any)[key]
       if (validator) {
         const error = validator(fields[key].value)
         if (error) {
-          newFields[key] = { ...newFields[key], error, touched: true }
+          (newFields as any)[key] = { ...newFields[key], error, touched: true }
           isValid = false
         } else {
           newFields[key] = { ...newFields[key], error: undefined }

@@ -68,10 +68,10 @@ export class BundleAnalyzer {
             this.performanceMetrics.largestContentfulPaint = entry.startTime
             break
           case 'first-input':
-            this.performanceMetrics.firstInputDelay = entry.processingStart - entry.startTime
+            this.performanceMetrics.firstInputDelay = (entry as any).processingStart - entry.startTime
             break
           case 'layout-shift':
-            if (!entry.hadRecentInput) {
+            if (!(entry as any).hadRecentInput) {
               this.performanceMetrics.cumulativeLayoutShift = 
                 (this.performanceMetrics.cumulativeLayoutShift || 0) + (entry as any).value
             }

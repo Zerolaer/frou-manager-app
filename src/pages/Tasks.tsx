@@ -627,6 +627,7 @@ export default function Tasks(){
   // projects
   const [projects, setProjects] = React.useState<Project[]>([])
   const [activeProject, setActiveProject] = React.useState<string|null>(TASK_PROJECT_ALL)
+  const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>([])
   const [projectsCollapsed, setProjectsCollapsed] = React.useState(() => {
     const saved = localStorage.getItem('frovo_projects_collapsed')
     return saved === 'true'
@@ -646,6 +647,8 @@ const projectColorById = React.useMemo(() => {
       if (!ext.error){
         const list = (ext.data || []) as Project[]
         setProjects(list)
+        // Initialize with all projects selected
+        setSelectedProjectIds(list.map(p => p.id))
         if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
         return
       }
@@ -654,6 +657,8 @@ const projectColorById = React.useMemo(() => {
       if (!basic.error){
         const list = (basic.data || []) as Project[]
         setProjects(list)
+        // Initialize with all projects selected
+        setSelectedProjectIds(list.map(p => p.id))
         if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
       }
     })()
@@ -693,8 +698,19 @@ const projectColorById = React.useMemo(() => {
         .order('date',     { ascending:true })
         .order('position', { ascending:true })
       
-      // Filter: 'ALL' shows ALL tasks from all projects, specific project shows only that project's tasks
-      const query = (activeProject===TASK_PROJECT_ALL) ? q : q.eq('project_id', activeProject)
+      // Filter: 'ALL' shows tasks from selected projects, specific project shows only that project's tasks
+      let query = q
+      if (activeProject === TASK_PROJECT_ALL) {
+        // If in "All Projects" mode, filter by selected projects
+        if (selectedProjectIds.length > 0) {
+          query = q.in('project_id', selectedProjectIds)
+        }
+        // If no projects selected, we'll get empty result (which is correct)
+      } else {
+        // Specific project selected
+        query = q.eq('project_id', activeProject)
+      }
+      
       const { data, error } = await query
       
       
@@ -751,7 +767,7 @@ const projectColorById = React.useMemo(() => {
     return () => {
       cancelled = true
     }
-  }, [uid, activeProject, start, end])
+  }, [uid, activeProject, start, end, selectedProjectIds])
 
   // Load all tasks for calendar (based on calendar month)
   React.useEffect(() => {
@@ -776,11 +792,17 @@ const projectColorById = React.useMemo(() => {
         .order('date', { ascending: true })
         .order('position', { ascending: true })
       
-      if (activeProject !== TASK_PROJECT_ALL) {
-        q.eq('project_id', activeProject)
+      // Filter logic similar to main tasks fetch
+      let query = q
+      if (activeProject === TASK_PROJECT_ALL) {
+        if (selectedProjectIds.length > 0) {
+          query = q.in('project_id', selectedProjectIds)
+        }
+      } else {
+        query = q.eq('project_id', activeProject)
       }
       
-      const { data, error } = await q
+      const { data, error } = await query
       
       if (cancelled) return
       
@@ -813,7 +835,7 @@ const projectColorById = React.useMemo(() => {
     return () => {
       cancelled = true
     }
-  }, [uid, activeProject, calendarMonth])
+  }, [uid, activeProject, calendarMonth, selectedProjectIds])
 
 // context menu state for task cards
   const [ctx, setCtx] = React.useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
@@ -1067,6 +1089,31 @@ const projectColorById = React.useMemo(() => {
   const [taskTitle, setTaskTitle] = React.useState('')
   const [taskDesc, setTaskDesc] = React.useState('')
 
+  // Send projects data to App/Header whenever they change
+  React.useEffect(() => {
+    if (projects.length > 0) {
+      window.dispatchEvent(new CustomEvent('tasks-projects-data', { 
+        detail: {
+          projects,
+          selectedProjectIds,
+          activeProject
+        }
+      }))
+    }
+  }, [projects, selectedProjectIds, activeProject])
+
+  // Listen for project filter changes from Header
+  React.useEffect(() => {
+    const handleProjectsFilterChange = (event: CustomEvent) => {
+      setSelectedProjectIds(event.detail)
+    }
+    
+    window.addEventListener('tasks-projects-filter-change', handleProjectsFilterChange as EventListener)
+    return () => {
+      window.removeEventListener('tasks-projects-filter-change', handleProjectsFilterChange as EventListener)
+    }
+  }, [])
+
   // Function to create recurring tasks
   async function createRecurringTasks(
     startDate: Date,
@@ -1105,11 +1152,11 @@ const projectColorById = React.useMemo(() => {
           todos,
           project_id: projectId,
           recurrence_type: recurringSettings.recurrenceType,
-          recurrence_interval: recurringSettings.interval,
-          recurrence_day_of_week: recurringSettings.dayOfWeek,
-          recurrence_day_of_month: recurringSettings.dayOfMonth,
+          recurrence_interval: recurringSettings.interval || recurringSettings.recurrenceInterval || 1,
+          recurrence_day_of_week: recurringSettings.dayOfWeek || recurringSettings.recurrenceDayOfWeek,
+          recurrence_day_of_month: recurringSettings.dayOfMonth || recurringSettings.recurrenceDayOfMonth,
           start_date: startDate.toISOString().split('T')[0],
-          end_date: recurringSettings.endDate?.toISOString().split('T')[0],
+          end_date: typeof recurringSettings.endDate === 'string' ? recurringSettings.endDate : recurringSettings.endDate?.toISOString().split('T')[0],
           is_active: true
         })
         .select()
@@ -1291,10 +1338,10 @@ const projectColorById = React.useMemo(() => {
         .from('recurring_tasks')
         .update({
           recurrence_type: settings.recurrenceType,
-          recurrence_interval: settings.interval,
-          recurrence_day_of_week: settings.dayOfWeek,
-          recurrence_day_of_month: settings.dayOfMonth,
-          end_date: settings.endDate?.toISOString().split('T')[0]
+          recurrence_interval: settings.interval || settings.recurrenceInterval || 1,
+          recurrence_day_of_week: settings.dayOfWeek || settings.recurrenceDayOfWeek,
+          recurrence_day_of_month: settings.dayOfMonth || settings.recurrenceDayOfMonth,
+          end_date: typeof settings.endDate === 'string' ? settings.endDate : settings.endDate?.toISOString().split('T')[0]
         })
         .eq('id', task.recurring_task_id)
 
@@ -1320,7 +1367,7 @@ const projectColorById = React.useMemo(() => {
     
     try {
       // If this subtask has a parent_task_id AND the parent is currently open
-      if (updatedSubtask?.parent_task_id && viewTask?.id === updatedSubtask.parent_task_id) {
+      if (updatedSubtask?.parent_task_id && viewTask?.id === updatedSubtask.parent_task_id && viewTask) {
         // Check if we need to sync by comparing current checkbox state with subtask status
         const currentTodo = viewTask.todos?.find((todo: Todo) => todo.taskId === updatedSubtask.id)
         if (!currentTodo) return
@@ -1411,16 +1458,17 @@ const projectColorById = React.useMemo(() => {
       : hasChanges || (updatedTask.date !== viewTask.date)
     
     if (false) {
+      // Debug logging disabled
       console.log('🔍 Changes detected:', {
         hasChanges,
         hasRelevantChanges,
-        titleChanged: updatedTask.title !== viewTask.title,
-        descriptionChanged: updatedTask.description !== viewTask.description,
-        priorityChanged: updatedTask.priority !== viewTask.priority,
-        tagChanged: updatedTask.tag !== viewTask.tag,
-        dateChanged: updatedTask.date !== viewTask.date,
-        projectChanged: updatedTask.project_id !== viewTask.project_id,
-        todosChanged: JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask.todos)
+        titleChanged: updatedTask.title !== viewTask?.title,
+        descriptionChanged: updatedTask.description !== viewTask?.description,
+        priorityChanged: updatedTask.priority !== viewTask?.priority,
+        tagChanged: updatedTask.tag !== viewTask?.tag,
+        dateChanged: updatedTask.date !== viewTask?.date,
+        projectChanged: updatedTask.project_id !== viewTask?.project_id,
+        todosChanged: JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask?.todos)
       })
     }
     

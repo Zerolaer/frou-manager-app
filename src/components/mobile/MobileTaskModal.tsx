@@ -265,7 +265,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
             </label>
             <ProjectDropdown
               value={projectId}
-              onChange={setProjectId}
+              onChange={(value) => setProjectId(value as string)}
               projects={projects}
               placeholder={t('tasks.selectProject')}
             />
@@ -276,7 +276,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
             </label>
             <DateDropdown
               value={date}
-              onChange={setDate}
+              onChange={(value) => setDate(value as string)}
               placeholder={t('tasks.selectDate')}
             />
           </div>
@@ -290,7 +290,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
             </label>
             <PriorityDropdown
               value={priority}
-              onChange={setPriority}
+              onChange={(value) => setPriority(value as string)}
             />
           </div>
           <div>
