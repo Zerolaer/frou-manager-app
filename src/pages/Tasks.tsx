@@ -1357,29 +1357,132 @@ const projectColorById = React.useMemo(() => {
   const updateRecurringTaskSettings = async (taskId: string, settings: RecurringTaskSettings) => {
     if (!uid) return
 
+    console.log('📋 updateRecurringTaskSettings called with:', { taskId, settings })
+
     try {
-      // Find the recurring_task_id for this task
+      // Find the task
       const task = Object.values(tasks).flat().find(t => t.id === taskId)
-      if (!task?.recurring_task_id) {
-        console.error('Task not found or not a recurring task')
+      if (!task) {
+        console.error('❌ Task not found:', taskId)
         return
       }
+      
+      console.log('✅ Task found:', task)
 
-      // Update the recurring_tasks record
-      const { error } = await supabase
-        .from('recurring_tasks')
-        .update({
-          recurrence_type: settings.recurrenceType,
-          recurrence_interval: settings.interval || settings.recurrenceInterval || 1,
-          recurrence_day_of_week: settings.dayOfWeek || settings.recurrenceDayOfWeek,
-          recurrence_day_of_month: settings.dayOfMonth || settings.recurrenceDayOfMonth,
-          end_date: typeof settings.endDate === 'string' ? settings.endDate : settings.endDate?.toISOString().split('T')[0]
-        })
-        .eq('id', task.recurring_task_id)
+      if (task.recurring_task_id) {
+        // Task is already recurring - just update settings
+        const { error } = await supabase
+          .from('recurring_tasks')
+          .update({
+            recurrence_type: settings.recurrenceType,
+            recurrence_interval: settings.interval || settings.recurrenceInterval || 1,
+            recurrence_day_of_week: settings.dayOfWeek || settings.recurrenceDayOfWeek,
+            recurrence_day_of_month: settings.dayOfMonth || settings.recurrenceDayOfMonth,
+            end_date: typeof settings.endDate === 'string' ? settings.endDate : settings.endDate?.toISOString().split('T')[0]
+          })
+          .eq('id', task.recurring_task_id)
 
-      if (error) {
-        console.error('Error updating recurring task settings:', error)
-        throw error
+        if (error) {
+          console.error('Error updating recurring task settings:', error)
+          throw error
+        }
+
+        console.log('✅ Recurring task settings updated')
+      } else {
+        // Task is not recurring yet - create recurring task
+        console.log('🔄 Creating recurring task from existing task')
+        
+        // Import the utility function
+        const { generateRecurringTaskInstances } = await import('@/utils/recurringUtils')
+        
+        // Get task date
+        const taskDate = task.date ? new Date(task.date) : new Date()
+        console.log('📅 Task date:', taskDate, 'Task date string:', task.date)
+        
+        // Generate instances
+        const instances = generateRecurringTaskInstances(taskDate, settings)
+        console.log('📊 Generated instances:', instances.length, instances)
+        
+        // Create recurring_tasks record
+        const { data: recurringTaskData, error: recurringError } = await supabase
+          .from('recurring_tasks')
+          .insert({
+            user_id: uid,
+            title: task.title,
+            description: task.description || '',
+            priority: task.priority || 'normal',
+            tag: task.tag || '',
+            todos: task.todos || [],
+            project_id: task.project_id,
+            recurrence_type: settings.recurrenceType,
+            recurrence_interval: settings.interval || settings.recurrenceInterval || 1,
+            recurrence_day_of_week: settings.dayOfWeek || settings.recurrenceDayOfWeek,
+            recurrence_day_of_month: settings.dayOfMonth || settings.recurrenceDayOfMonth,
+            start_date: taskDate.toISOString().split('T')[0],
+            end_date: typeof settings.endDate === 'string' ? settings.endDate : settings.endDate?.toISOString().split('T')[0],
+            is_active: true
+          })
+          .select()
+          .single()
+
+        if (recurringError) {
+          console.error('❌ Error creating recurring task:', recurringError)
+          throw recurringError
+        }
+
+        const recurringTaskId = recurringTaskData.id
+        console.log('✅ Created recurring_task record:', recurringTaskId)
+
+        // Update current task with recurring_task_id
+        await supabase
+          .from('tasks_items')
+          .update({ recurring_task_id: recurringTaskId })
+          .eq('id', task.id)
+
+        // Create task instances
+        console.log('🔍 Filtering instances. Original task date:', task.date)
+        const tasksToCreate = instances
+          .filter(inst => {
+            console.log('  Checking instance:', inst.date, 'vs', task.date, '=', inst.date !== task.date)
+            return inst.date !== task.date
+          })
+          .map(inst => ({
+            user_id: uid,
+            project_id: task.project_id,
+            title: task.title,
+            description: task.description || '',
+            priority: task.priority || 'normal',
+            tag: task.tag || '',
+            date: inst.date,
+            position: 0,
+            todos: task.todos || [],
+            status: 'open',
+            recurring_task_id: recurringTaskId
+          }))
+
+        console.log('📝 Tasks to create:', tasksToCreate.length, tasksToCreate)
+
+        if (tasksToCreate.length > 0) {
+          const { data: insertedData, error: insertError } = await supabase
+            .from('tasks_items')
+            .insert(tasksToCreate)
+            .select()
+
+          if (insertError) {
+            console.error('❌ Error creating task instances:', insertError)
+            throw insertError
+          }
+          
+          console.log('✅ Inserted tasks:', insertedData)
+        } else {
+          console.log('⚠️ No new tasks to create (all filtered out)')
+        }
+
+        console.log(`✅ Created ${tasksToCreate.length} recurring task instances`)
+        
+        // Reload tasks to show new instances
+        await new Promise(resolve => setTimeout(resolve, 500))
+        window.location.reload()
       }
 
       if (import.meta.env.DEV) console.log('✅ Recurring task settings updated')

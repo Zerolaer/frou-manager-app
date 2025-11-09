@@ -262,6 +262,7 @@
       "december": "December",
       "editSettings": "Recurrence Settings",
       "active": "Active",
+      "makeRecurring": "Make Recurring",
       "editHint": "Click the edit icon to change recurrence settings",
       "optional": "optional",
       "selectDay": "Select day"

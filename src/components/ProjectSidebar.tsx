@@ -4,7 +4,7 @@ import ProjectCreateModal from '@/components/ProjectCreateModal'
 import Modal from '@/components/ui/Modal'
 import { CoreInput } from '@/components/ui/CoreInput'
 import { ChevronLeft, Plus } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 
 import type { Project } from '@/types/shared'
 
@@ -19,7 +19,7 @@ type Props = {
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
 
 const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props) => {
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
   const [items, setItems] = React.useState<Project[]>([])
   const [showCreate, setShowCreate] = React.useState(false)
   const [hasColor, setHasColor] = React.useState(false)
