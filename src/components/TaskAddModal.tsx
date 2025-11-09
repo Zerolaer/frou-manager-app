@@ -47,19 +47,69 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   // Todo management
   const todoManager = useTodoManager()
 
-  // Reset form when modal opens
+  // Load saved draft from localStorage
   useEffect(() => {
     if (open) {
-      form.reset()
-      todoManager.clearTodos()
-      setRecurringSettings({ isRecurring: false })
-      // Set initial values
-      form.setField('projectId', (activeProject && activeProject !== 'ALL') ? activeProject : '')
-      if (initialDate) {
-        form.setField('selectedDate', format(initialDate, 'yyyy-MM-dd'))
+      const saved = localStorage.getItem('frovo_task_draft')
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved)
+          // Restore form fields
+          form.setField('title', draft.title || '')
+          form.setField('description', draft.description || '')
+          form.setField('priority', draft.priority || 'normal')
+          form.setField('tag', draft.tag || '')
+          form.setField('projectId', draft.projectId || ((activeProject && activeProject !== 'ALL') ? activeProject : ''))
+          form.setField('selectedDate', draft.selectedDate || (initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')))
+          // Restore todos
+          if (draft.todos && Array.isArray(draft.todos)) {
+            todoManager.clearTodos()
+            draft.todos.forEach((todo: Todo) => todoManager.addTodo(todo.text, todo.done))
+          }
+          // Restore recurring settings
+          if (draft.recurringSettings) {
+            setRecurringSettings(draft.recurringSettings)
+          }
+        } catch (e) {
+          console.error('Failed to load draft:', e)
+          // If loading fails, reset to defaults
+          form.reset()
+          todoManager.clearTodos()
+          setRecurringSettings({ isRecurring: false })
+          form.setField('projectId', (activeProject && activeProject !== 'ALL') ? activeProject : '')
+          if (initialDate) {
+            form.setField('selectedDate', format(initialDate, 'yyyy-MM-dd'))
+          }
+        }
+      } else {
+        // No saved draft, reset to defaults
+        form.reset()
+        todoManager.clearTodos()
+        setRecurringSettings({ isRecurring: false })
+        form.setField('projectId', (activeProject && activeProject !== 'ALL') ? activeProject : '')
+        if (initialDate) {
+          form.setField('selectedDate', format(initialDate, 'yyyy-MM-dd'))
+        }
       }
     }
   }, [open, activeProject, initialDate])
+
+  // Save draft to localStorage whenever form changes
+  useEffect(() => {
+    if (open) {
+      const draft = {
+        title: form.fields.title.value,
+        description: form.fields.description.value,
+        priority: form.fields.priority.value,
+        tag: form.fields.tag.value,
+        projectId: form.fields.projectId.value,
+        selectedDate: form.fields.selectedDate.value,
+        todos: todoManager.todos,
+        recurringSettings
+      }
+      localStorage.setItem('frovo_task_draft', JSON.stringify(draft))
+    }
+  }, [open, form.fields.title.value, form.fields.description.value, form.fields.priority.value, form.fields.tag.value, form.fields.projectId.value, form.fields.selectedDate.value, todoManager.todos, recurringSettings])
 
   // Submit handler
       const handleSubmit = async () => {
@@ -89,6 +139,9 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         // Reset and close
         form.reset()
         todoManager.clearTodos()
+        setRecurringSettings({ isRecurring: false })
+        // Clear draft from localStorage after successful submission
+        localStorage.removeItem('frovo_task_draft')
         onClose()
       } catch (error) {
         logger.error('Failed to create task:', error)

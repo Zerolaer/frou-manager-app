@@ -627,7 +627,10 @@ export default function Tasks(){
   // projects
   const [projects, setProjects] = React.useState<Project[]>([])
   const [activeProject, setActiveProject] = React.useState<string|null>(TASK_PROJECT_ALL)
-  const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>([])
+  const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>(() => {
+    const saved = localStorage.getItem('frovo_selected_projects')
+    return saved ? JSON.parse(saved) : []
+  })
   const [projectsCollapsed, setProjectsCollapsed] = React.useState(() => {
     const saved = localStorage.getItem('frovo_projects_collapsed')
     return saved === 'true'
@@ -647,8 +650,19 @@ const projectColorById = React.useMemo(() => {
       if (!ext.error){
         const list = (ext.data || []) as Project[]
         setProjects(list)
-        // Initialize with all projects selected
-        setSelectedProjectIds(list.map(p => p.id))
+        
+        // Check if we have saved selection in localStorage
+        const saved = localStorage.getItem('frovo_selected_projects')
+        if (saved) {
+          const savedIds = JSON.parse(saved)
+          // Filter to only include projects that still exist
+          const validIds = savedIds.filter((id: string) => list.some(p => p.id === id))
+          setSelectedProjectIds(validIds.length > 0 ? validIds : list.map(p => p.id))
+        } else {
+          // First time - select all projects
+          setSelectedProjectIds(list.map(p => p.id))
+        }
+        
         if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
         return
       }
@@ -657,8 +671,19 @@ const projectColorById = React.useMemo(() => {
       if (!basic.error){
         const list = (basic.data || []) as Project[]
         setProjects(list)
-        // Initialize with all projects selected
-        setSelectedProjectIds(list.map(p => p.id))
+        
+        // Check if we have saved selection in localStorage
+        const saved = localStorage.getItem('frovo_selected_projects')
+        if (saved) {
+          const savedIds = JSON.parse(saved)
+          // Filter to only include projects that still exist
+          const validIds = savedIds.filter((id: string) => list.some(p => p.id === id))
+          setSelectedProjectIds(validIds.length > 0 ? validIds : list.map(p => p.id))
+        } else {
+          // First time - select all projects
+          setSelectedProjectIds(list.map(p => p.id))
+        }
+        
         if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
       }
     })()
@@ -1101,6 +1126,13 @@ const projectColorById = React.useMemo(() => {
       }))
     }
   }, [projects, selectedProjectIds, activeProject])
+
+  // Save selected projects to localStorage
+  React.useEffect(() => {
+    if (selectedProjectIds.length > 0) {
+      localStorage.setItem('frovo_selected_projects', JSON.stringify(selectedProjectIds))
+    }
+  }, [selectedProjectIds])
 
   // Listen for project filter changes from Header
   React.useEffect(() => {
