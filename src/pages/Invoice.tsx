@@ -2,11 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { Plus, Trash2, Edit2, FileText, Download, Save, X } from 'lucide-react'
+import { Plus, Trash2, Edit2, FileText, Download } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrencyEUR } from '@/lib/format'
 import { exportInvoiceToPDF } from '@/utils/invoicePdf'
 
@@ -295,6 +293,21 @@ export default function Invoice() {
 
   const { subtotal, taxAmount, total } = useMemo(() => calculateTotals(items), [items, taxRate])
 
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      if (event.detail === 'add-invoice') {
+        resetForm()
+        setShowCreateModal(true)
+      }
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    }
+  }, [])
+
   const handleExportPDF = async (invoice: Invoice) => {
     try {
       await exportInvoiceToPDF(invoice)
@@ -314,77 +327,66 @@ export default function Invoice() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('invoice.title')}</h1>
-        <Button onClick={() => { resetForm(); setShowCreateModal(true) }}>
-          <Plus className="w-4 h-4 mr-2" />
-          {t('invoice.newInvoice')}
-        </Button>
-      </div>
 
       {invoices.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('invoice.noInvoices')}</h3>
-            <p className="text-gray-500 mb-4">{t('invoice.noInvoicesDescription')}</p>
-            <Button onClick={() => { resetForm(); setShowCreateModal(true) }}>
-              <Plus className="w-4 h-4 mr-2" />
-              {t('invoice.createFirst')}
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="card py-12 text-center">
+          <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-h2 text-gray-900 mb-2">{t('invoice.noInvoices')}</h3>
+          <p className="text-gray-500 mb-4">{t('invoice.noInvoicesDescription')}</p>
+          <button className="btn" onClick={() => { resetForm(); setShowCreateModal(true) }}>
+            <Plus className="w-4 h-4" />
+            {t('invoice.createFirst')}
+          </button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {invoices.map((invoice) => (
-            <Card key={invoice.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleViewInvoice(invoice)}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{invoice.invoice_number}</CardTitle>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleEditInvoice(invoice) }}
-                      className="p-2 hover:bg-gray-100 rounded"
-                    >
-                      <Edit2 className="w-4 h-4 text-gray-600" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id) }}
-                      className="p-2 hover:bg-red-100 rounded"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-500">{t('invoice.client')}: </span>
-                    <span className="text-sm font-medium">{invoice.client_name}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">{t('invoice.date')}: </span>
-                    <span className="text-sm">{new Date(invoice.date).toLocaleDateString('ru-RU')}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">{t('invoice.total')}: </span>
-                    <span className="text-sm font-semibold">{formatCurrencyEUR(invoice.total)}</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleExportPDF(invoice) }}
-                    className="flex-1"
+            <div 
+              key={invoice.id} 
+              className="card hover:shadow-lg transition-shadow cursor-pointer" 
+              onClick={() => handleViewInvoice(invoice)}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-h2 text-gray-900">{invoice.invoice_number}</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleEditInvoice(invoice) }}
+                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                    aria-label={t('actions.edit')}
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    {t('invoice.exportPDF')}
-                  </Button>
+                    <Edit2 className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id) }}
+                    className="p-2 hover:bg-red-100 rounded-xl transition-colors"
+                    aria-label={t('actions.delete')}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div>
+                  <span className="text-sm text-gray-500">{t('invoice.client')}: </span>
+                  <span className="text-sm font-medium text-gray-900">{invoice.client_name}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">{t('invoice.date')}: </span>
+                  <span className="text-sm text-gray-900">{new Date(invoice.date).toLocaleDateString('ru-RU')}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">{t('invoice.total')}: </span>
+                  <span className="text-sm font-semibold text-gray-900">{formatCurrencyEUR(invoice.total)}</span>
+                </div>
+              </div>
+              <button
+                className="btn btn-outline w-full"
+                onClick={(e) => { e.stopPropagation(); handleExportPDF(invoice) }}
+              >
+                <Download className="w-4 h-4" />
+                {t('invoice.exportPDF')}
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -486,14 +488,14 @@ export default function Invoice() {
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
-              <Button variant="outline" size="sm" onClick={addItem}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('invoice.addItem')}
-              </Button>
-            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
+                <button className="btn btn-outline" onClick={addItem}>
+                  <Plus className="w-4 h-4" />
+                  {t('invoice.addItem')}
+                </button>
+              </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {items.map((item, index) => (
                 <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
@@ -580,27 +582,27 @@ export default function Invoice() {
           size="xl"
           footer={
             <div className="flex justify-between">
-              <Button
-                variant="outline"
+              <button
+                className="btn btn-outline"
                 onClick={() => handleExportPDF(selectedInvoice)}
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4" />
                 {t('invoice.exportPDF')}
-              </Button>
+              </button>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
+                <button
+                  className="btn btn-outline"
                   onClick={() => {
                     setIsEditing(false)
                     setSelectedInvoice(null)
                   }}
                 >
                   {t('actions.close')}
-                </Button>
-                <Button onClick={() => handleEditInvoice(selectedInvoice)}>
-                  <Edit2 className="w-4 h-4 mr-2" />
+                </button>
+                <button className="btn" onClick={() => handleEditInvoice(selectedInvoice)}>
+                  <Edit2 className="w-4 h-4" />
                   {t('actions.edit')}
-                </Button>
+                </button>
               </div>
             </div>
           }

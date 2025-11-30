@@ -33,7 +33,8 @@
     "overview": "Overview",
     "finance": "Finance",
     "tasks": "Tasks",
-    "notes": "Notes"
+    "notes": "Notes",
+    "invoice": "Invoices"
   },
   "actions": {
     "refresh": "Refresh",

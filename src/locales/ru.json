@@ -33,7 +33,8 @@
     "overview": "Обзор",
     "finance": "Финансы",
     "tasks": "Задачи",
-    "notes": "Заметки"
+    "notes": "Заметки",
+    "invoice": "Инвойсы"
   },
   "actions": {
     "refresh": "Обновить",

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar, Receipt } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
@@ -35,6 +35,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
     { to: '/finance', icon: DollarSign, label: t('nav.finance') },
     { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
     { to: '/notes', icon: FileText, label: t('nav.notes') },
+    { to: '/invoice', icon: Receipt, label: t('nav.invoice') },
   ]
 
   const getSubHeaderContent = () => {
@@ -70,6 +71,14 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
           title: t('pages.notes'),
           actions: [
             { id: 'add-note', label: t('actions.newNote'), icon: Plus, variant: 'primary' }
+          ]
+        }
+
+      case '/invoice':
+        return {
+          title: t('pages.invoice'),
+          actions: [
+            { id: 'add-invoice', label: t('invoice.newInvoice'), icon: Plus, variant: 'primary' }
           ]
         }
 
