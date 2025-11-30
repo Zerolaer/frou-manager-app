@@ -230,7 +230,9 @@ function InvoicePageContent() {
               price_per_hour: item.price_per_hour || 0,
               hours: item.hours || 0,
               item_type: item.item_type || 'product',
-              total: item.quantity * item.price
+              total: (item.item_type === 'hourly' && item.hours && item.price_per_hour) 
+                ? item.hours * item.price_per_hour 
+                : (item.item_type === 'service_period' ? item.price : item.quantity * item.price)
             }))
           } as Invoice
         })
@@ -313,17 +315,23 @@ function InvoicePageContent() {
 
       // Insert items
       if (items.length > 0) {
-        const itemsToInsert = items.map((item, index) => ({
-          invoice_id: invoiceData.id,
-          description: item.description,
-          period: item.period || null,
-          quantity: item.quantity,
-          price: item.price,
-          price_per_hour: item.price_per_hour || null,
-          hours: item.hours || null,
-          item_type: item.item_type || 'product',
-          position: index
-        }))
+        const itemsToInsert = items.map((item, index) => {
+          const itemData: any = {
+            invoice_id: invoiceData.id,
+            description: item.description,
+            period: item.period || null,
+            quantity: item.quantity,
+            price: item.price,
+            price_per_hour: item.price_per_hour || null,
+            hours: item.hours || null,
+            position: index
+          }
+          // Only add item_type if it exists (for backward compatibility)
+          if (item.item_type) {
+            itemData.item_type = item.item_type
+          }
+          return itemData
+        })
 
         const { error: itemsError } = await supabase
           .from('invoice_items')
@@ -399,17 +407,23 @@ function InvoicePageContent() {
       }
 
       if (items.length > 0) {
-        const itemsToInsert = items.map((item, index) => ({
-          invoice_id: selectedInvoice.id,
-          description: item.description,
-          period: item.period || null,
-          quantity: item.quantity,
-          price: item.price,
-          price_per_hour: item.price_per_hour || null,
-          hours: item.hours || null,
-          item_type: item.item_type || 'product',
-          position: index
-        }))
+        const itemsToInsert = items.map((item, index) => {
+          const itemData: any = {
+            invoice_id: selectedInvoice.id,
+            description: item.description,
+            period: item.period || null,
+            quantity: item.quantity,
+            price: item.price,
+            price_per_hour: item.price_per_hour || null,
+            hours: item.hours || null,
+            position: index
+          }
+          // Only add item_type if it exists (for backward compatibility)
+          if (item.item_type) {
+            itemData.item_type = item.item_type
+          }
+          return itemData
+        })
 
         const { error: itemsError } = await supabase
           .from('invoice_items')
@@ -417,7 +431,11 @@ function InvoicePageContent() {
 
         if (itemsError) {
           console.error('Error updating invoice items:', itemsError)
-          alert(`Ошибка обновления позиций: ${itemsError.message}`)
+          if (itemsError.message.includes('item_type')) {
+            alert('Ошибка: колонка item_type не найдена в таблице invoice_items.\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor')
+          } else {
+            alert(`Ошибка обновления позиций: ${itemsError.message}`)
+          }
           return
         }
       }
@@ -643,15 +661,19 @@ function InvoicePageContent() {
     
     // Recalculate total based on item type
     const itemType = updatedItem.item_type || 'product'
+    
     if (itemType === 'product') {
+      // For product: total = quantity * price
       updatedItem.total = updatedItem.quantity * updatedItem.price
     } else if (itemType === 'service_period') {
+      // For service period: total = price (period is just a description)
       updatedItem.total = updatedItem.price
     } else if (itemType === 'hourly') {
-      if (updatedItem.hours && updatedItem.price_per_hour) {
-        updatedItem.total = updatedItem.hours * updatedItem.price_per_hour
-        updatedItem.price = updatedItem.total
-      }
+      // For hourly: total = hours * price_per_hour, and price = total
+      const hours = updatedItem.hours || 0
+      const pricePerHour = updatedItem.price_per_hour || 0
+      updatedItem.total = hours * pricePerHour
+      updatedItem.price = updatedItem.total
     }
     
     newItems[index] = updatedItem
@@ -1006,11 +1028,11 @@ function InvoicePageContent() {
                                 <CoreInput
                                   type="number"
                                   step="0.01"
-                                  value={item.quantity}
+                                  min="0"
+                                  value={item.quantity || ''}
                                   onChange={(e) => {
-                                    const qty = Number(e.target.value)
+                                    const qty = e.target.value === '' ? 0 : Number(e.target.value)
                                     updateItem(index, 'quantity', qty)
-                                    updateItem(index, 'total', qty * item.price)
                                   }}
                                   placeholder={t('invoice.quantity')}
                                 />
@@ -1020,11 +1042,11 @@ function InvoicePageContent() {
                                 <CoreInput
                                   type="number"
                                   step="0.01"
-                                  value={item.price}
+                                  min="0"
+                                  value={item.price || ''}
                                   onChange={(e) => {
-                                    const price = Number(e.target.value)
+                                    const price = e.target.value === '' ? 0 : Number(e.target.value)
                                     updateItem(index, 'price', price)
-                                    updateItem(index, 'total', item.quantity * price)
                                   }}
                                   placeholder={t('invoice.price')}
                                 />
@@ -1047,11 +1069,11 @@ function InvoicePageContent() {
                                 <CoreInput
                                   type="number"
                                   step="0.01"
-                                  value={item.price}
+                                  min="0"
+                                  value={item.price || ''}
                                   onChange={(e) => {
-                                    const price = Number(e.target.value)
+                                    const price = e.target.value === '' ? 0 : Number(e.target.value)
                                     updateItem(index, 'price', price)
-                                    updateItem(index, 'total', price)
                                   }}
                                   placeholder={t('invoice.price')}
                                 />
@@ -1066,15 +1088,11 @@ function InvoicePageContent() {
                                 <CoreInput
                                   type="number"
                                   step="0.01"
-                                  value={item.hours || 0}
+                                  min="0"
+                                  value={item.hours || ''}
                                   onChange={(e) => {
-                                    const hours = Number(e.target.value)
+                                    const hours = e.target.value === '' ? 0 : Number(e.target.value)
                                     updateItem(index, 'hours', hours)
-                                    if (item.price_per_hour) {
-                                      const total = hours * item.price_per_hour
-                                      updateItem(index, 'price', total)
-                                      updateItem(index, 'total', total)
-                                    }
                                   }}
                                   placeholder={t('invoice.hours')}
                                 />
@@ -1084,15 +1102,11 @@ function InvoicePageContent() {
                                 <CoreInput
                                   type="number"
                                   step="0.01"
-                                  value={item.price_per_hour || 0}
+                                  min="0"
+                                  value={item.price_per_hour || ''}
                                   onChange={(e) => {
-                                    const pricePerHour = Number(e.target.value)
+                                    const pricePerHour = e.target.value === '' ? 0 : Number(e.target.value)
                                     updateItem(index, 'price_per_hour', pricePerHour)
-                                    if (item.hours) {
-                                      const total = item.hours * pricePerHour
-                                      updateItem(index, 'price', total)
-                                      updateItem(index, 'total', total)
-                                    }
                                   }}
                                   placeholder={t('invoice.pricePerHour')}
                                 />
@@ -1102,9 +1116,9 @@ function InvoicePageContent() {
                                 <CoreInput
                                   type="number"
                                   step="0.01"
-                                  value={item.price}
+                                  value={item.total || 0}
                                   readOnly
-                                  className="bg-gray-100"
+                                  className="bg-gray-100 cursor-not-allowed"
                                   placeholder={t('invoice.total')}
                                 />
                               </div>
