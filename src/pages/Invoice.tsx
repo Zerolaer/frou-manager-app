@@ -15,6 +15,8 @@ import Dropdown from '@/components/ui/Dropdown'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import '@/invoice.css'
 
+type ItemType = 'product' | 'service_period' | 'hourly'
+
 interface InvoiceItem {
   id: string
   description: string
@@ -24,6 +26,7 @@ interface InvoiceItem {
   price_per_hour?: number
   hours?: number
   total: number
+  item_type?: ItemType
 }
 
 interface Invoice {
@@ -226,6 +229,7 @@ function InvoicePageContent() {
               price: item.price,
               price_per_hour: item.price_per_hour || 0,
               hours: item.hours || 0,
+              item_type: item.item_type || 'product',
               total: item.quantity * item.price
             }))
           } as Invoice
@@ -317,6 +321,7 @@ function InvoicePageContent() {
           price: item.price,
           price_per_hour: item.price_per_hour || null,
           hours: item.hours || null,
+          item_type: item.item_type || 'product',
           position: index
         }))
 
@@ -402,6 +407,7 @@ function InvoicePageContent() {
           price: item.price,
           price_per_hour: item.price_per_hour || null,
           hours: item.hours || null,
+          item_type: item.item_type || 'product',
           position: index
         }))
 
@@ -621,7 +627,7 @@ function InvoicePageContent() {
   }
 
   const addItem = () => {
-    setItems([...items, { description: '', period: '', quantity: 1, price: 0, price_per_hour: 0, hours: 0, total: 0 }])
+    setItems([...items, { description: '', period: '', quantity: 1, price: 0, price_per_hour: 0, hours: 0, total: 0, item_type: 'product' }])
   }
 
   const removeItem = (index: number) => {
@@ -634,9 +640,20 @@ function InvoicePageContent() {
       ...newItems[index],
       [field]: value
     }
-    if (field === 'quantity' || field === 'price' || field === 'hours' || field === 'price_per_hour') {
+    
+    // Recalculate total based on item type
+    const itemType = updatedItem.item_type || 'product'
+    if (itemType === 'product') {
       updatedItem.total = updatedItem.quantity * updatedItem.price
+    } else if (itemType === 'service_period') {
+      updatedItem.total = updatedItem.price
+    } else if (itemType === 'hourly') {
+      if (updatedItem.hours && updatedItem.price_per_hour) {
+        updatedItem.total = updatedItem.hours * updatedItem.price_per_hour
+        updatedItem.price = updatedItem.total
+      }
     }
+    
     newItems[index] = updatedItem
     setItems(newItems)
   }
@@ -954,68 +971,159 @@ function InvoicePageContent() {
                   </button>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {items.map((item, index) => (
-                    <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
-                      <div className="flex-1 space-y-2">
-                        <CoreInput
-                          value={item.description}
-                          onChange={(e) => updateItem(index, 'description', e.target.value)}
-                          placeholder={t('invoice.itemDescription')}
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <CoreInput
-                            value={item.period || ''}
-                            onChange={(e) => updateItem(index, 'period', e.target.value)}
-                            placeholder={t('invoice.period')}
-                          />
-                          <div className="grid grid-cols-3 gap-2">
-                            <CoreInput
-                              type="number"
-                              step="0.01"
-                              value={item.hours || 0}
-                              onChange={(e) => {
-                                const hours = Number(e.target.value)
-                                updateItem(index, 'hours', hours)
-                                if (item.price_per_hour) {
-                                  updateItem(index, 'price', hours * item.price_per_hour)
-                                }
-                              }}
-                              placeholder={t('invoice.hours')}
-                            />
-                            <CoreInput
-                              type="number"
-                              step="0.01"
-                              value={item.price_per_hour || 0}
-                              onChange={(e) => {
-                                const pricePerHour = Number(e.target.value)
-                                updateItem(index, 'price_per_hour', pricePerHour)
-                                if (item.hours) {
-                                  updateItem(index, 'price', item.hours * pricePerHour)
-                                }
-                              }}
-                              placeholder={t('invoice.pricePerHour')}
-                            />
-                            <CoreInput
-                              type="number"
-                              step="0.01"
-                              value={item.price}
-                              onChange={(e) => updateItem(index, 'price', Number(e.target.value))}
-                              placeholder={t('invoice.price')}
+                  {items.map((item, index) => {
+                    const itemType = item.item_type || 'product'
+                    return (
+                      <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
+                        <div className="flex-1 space-y-2">
+                          {/* Item Type Selector */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.itemType')}</label>
+                            <Dropdown
+                              value={itemType}
+                              onChange={(value) => updateItem(index, 'item_type', value as ItemType)}
+                              options={[
+                                { value: 'product', label: t('invoice.itemTypeProduct') },
+                                { value: 'service_period', label: t('invoice.itemTypeServicePeriod') },
+                                { value: 'hourly', label: t('invoice.itemTypeHourly') }
+                              ]}
+                              buttonClassName="text-xs"
                             />
                           </div>
+                          
+                          {/* Description */}
+                          <CoreInput
+                            value={item.description}
+                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            placeholder={t('invoice.itemDescription')}
+                          />
+                          
+                          {/* Fields based on item type */}
+                          {itemType === 'product' && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.quantity')}</label>
+                                <CoreInput
+                                  type="number"
+                                  step="0.01"
+                                  value={item.quantity}
+                                  onChange={(e) => {
+                                    const qty = Number(e.target.value)
+                                    updateItem(index, 'quantity', qty)
+                                    updateItem(index, 'total', qty * item.price)
+                                  }}
+                                  placeholder={t('invoice.quantity')}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.price')}</label>
+                                <CoreInput
+                                  type="number"
+                                  step="0.01"
+                                  value={item.price}
+                                  onChange={(e) => {
+                                    const price = Number(e.target.value)
+                                    updateItem(index, 'price', price)
+                                    updateItem(index, 'total', item.quantity * price)
+                                  }}
+                                  placeholder={t('invoice.price')}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {itemType === 'service_period' && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.period')}</label>
+                                <CoreInput
+                                  value={item.period || ''}
+                                  onChange={(e) => updateItem(index, 'period', e.target.value)}
+                                  placeholder="01.02.2025 - 30.02.2025"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.price')}</label>
+                                <CoreInput
+                                  type="number"
+                                  step="0.01"
+                                  value={item.price}
+                                  onChange={(e) => {
+                                    const price = Number(e.target.value)
+                                    updateItem(index, 'price', price)
+                                    updateItem(index, 'total', price)
+                                  }}
+                                  placeholder={t('invoice.price')}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {itemType === 'hourly' && (
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.hours')}</label>
+                                <CoreInput
+                                  type="number"
+                                  step="0.01"
+                                  value={item.hours || 0}
+                                  onChange={(e) => {
+                                    const hours = Number(e.target.value)
+                                    updateItem(index, 'hours', hours)
+                                    if (item.price_per_hour) {
+                                      const total = hours * item.price_per_hour
+                                      updateItem(index, 'price', total)
+                                      updateItem(index, 'total', total)
+                                    }
+                                  }}
+                                  placeholder={t('invoice.hours')}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.pricePerHour')}</label>
+                                <CoreInput
+                                  type="number"
+                                  step="0.01"
+                                  value={item.price_per_hour || 0}
+                                  onChange={(e) => {
+                                    const pricePerHour = Number(e.target.value)
+                                    updateItem(index, 'price_per_hour', pricePerHour)
+                                    if (item.hours) {
+                                      const total = item.hours * pricePerHour
+                                      updateItem(index, 'price', total)
+                                      updateItem(index, 'total', total)
+                                    }
+                                  }}
+                                  placeholder={t('invoice.pricePerHour')}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.total')}</label>
+                                <CoreInput
+                                  type="number"
+                                  step="0.01"
+                                  value={item.price}
+                                  readOnly
+                                  className="bg-gray-100"
+                                  placeholder={t('invoice.total')}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="mt-2 text-sm font-medium text-gray-700">
+                            {t('invoice.total')}: {formatCurrencyEUR(item.total || item.quantity * item.price)}
+                          </div>
                         </div>
-                        <div className="mt-2 text-sm font-medium text-gray-700">
-                          {t('invoice.total')}: {formatCurrencyEUR(item.quantity * item.price)}
-                        </div>
+                        <button
+                          onClick={() => removeItem(index)}
+                          className="p-2 hover:bg-red-100 rounded self-start"
+                        >
+                          <X className="w-4 h-4 text-red-600" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removeItem(index)}
-                        className="p-2 hover:bg-red-100 rounded self-start"
-                      >
-                        <X className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {items.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       {t('invoice.noItems')}

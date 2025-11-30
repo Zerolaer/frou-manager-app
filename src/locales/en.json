@@ -569,6 +569,10 @@
     "clients": "Clients",
     "clientsCount": "clients",
     "noClients": "No clients",
-    "invoices": "invoices"
+    "invoices": "invoices",
+    "itemType": "Item Type",
+    "itemTypeProduct": "Product/Service",
+    "itemTypeServicePeriod": "Service Period",
+    "itemTypeHourly": "Hourly Rate"
   }
 }

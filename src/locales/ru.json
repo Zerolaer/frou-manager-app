@@ -569,6 +569,10 @@
     "clients": "Клиенты",
     "clientsCount": "клиентов",
     "noClients": "Нет клиентов",
-    "invoices": "инвойсов"
+    "invoices": "инвойсов",
+    "itemType": "Тип записи",
+    "itemTypeProduct": "Товар/услуга",
+    "itemTypeServicePeriod": "Период обслуживания",
+    "itemTypeHourly": "Почасовая оплата"
   }
 }

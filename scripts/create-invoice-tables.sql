@@ -131,6 +131,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoice_items' AND column_name = 'hours') THEN
         ALTER TABLE public.invoice_items ADD COLUMN hours NUMERIC(10, 2);
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoice_items' AND column_name = 'item_type') THEN
+        ALTER TABLE public.invoice_items ADD COLUMN item_type TEXT DEFAULT 'product';
+    END IF;
 END $$;
 
 -- Создаем таблицу invoice_items

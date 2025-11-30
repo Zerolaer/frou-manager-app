@@ -2,6 +2,8 @@ import React from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { formatCurrencyEUR } from '@/lib/format'
 
+type ItemType = 'product' | 'service_period' | 'hourly'
+
 interface InvoiceItem {
   description: string
   period?: string
@@ -10,6 +12,7 @@ interface InvoiceItem {
   price_per_hour?: number
   hours?: number
   total: number
+  item_type?: ItemType
 }
 
 interface InvoicePreviewProps {
@@ -73,11 +76,11 @@ export default function InvoicePreview({
 
   const formatDate = (dateString: string) => {
     if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    })
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}.${month}.${year}`
   }
 
   const hasFromData = fromName || fromCountry || fromCity
@@ -101,12 +104,12 @@ export default function InvoicePreview({
               <div className="invoice-preview-section-title">{t('invoice.from')}</div>
               {fromName && <div className="invoice-preview-name">{fromName}</div>}
               <div className="invoice-preview-address">
-                {fromCountry && <div>{fromCountry}</div>}
-                {fromCity && <div>{fromCity}</div>}
-                {fromProvince && <div>{fromProvince}</div>}
                 {fromAddressLine1 && <div>{fromAddressLine1}</div>}
                 {fromAddressLine2 && <div>{fromAddressLine2}</div>}
-                {fromPostalCode && <div>{fromPostalCode}</div>}
+                {(fromCity || fromProvince || fromPostalCode) && (
+                  <div>{[fromCity, fromProvince, fromPostalCode].filter(Boolean).join(', ')}</div>
+                )}
+                {fromCountry && <div>{fromCountry}</div>}
               </div>
               {(fromAccountNumber || fromRoutingNumber || fromSwiftBic || fromBankName) && (
                 <div className="invoice-preview-banking">
@@ -158,11 +161,14 @@ export default function InvoicePreview({
             <thead>
               <tr>
                 <th className="invoice-preview-th">{t('invoice.itemDescription')}</th>
-                {items.some(item => item.period) && (
+                {items.some(item => item.item_type === 'service_period' || item.period) && (
                   <th className="invoice-preview-th">{t('invoice.period')}</th>
                 )}
-                {items.some(item => item.hours) && (
-                  <th className="invoice-preview-th">{t('invoice.hours')}</th>
+                {items.some(item => item.item_type === 'product' || (!item.item_type && item.quantity > 1)) && (
+                  <th className="invoice-preview-th text-right">{t('invoice.quantity')}</th>
+                )}
+                {items.some(item => item.item_type === 'hourly' || item.hours) && (
+                  <th className="invoice-preview-th text-right">{t('invoice.hours')}</th>
                 )}
                 <th className="invoice-preview-th text-right">{t('invoice.price')}</th>
                 <th className="invoice-preview-th text-right">{t('invoice.total')}</th>
@@ -170,26 +176,42 @@ export default function InvoicePreview({
             </thead>
             <tbody>
               {items.length > 0 ? (
-                items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="invoice-preview-td">{item.description || '-'}</td>
-                    {items.some(i => i.period) && (
-                      <td className="invoice-preview-td">{item.period || '-'}</td>
-                    )}
-                    {items.some(i => i.hours) && (
-                      <td className="invoice-preview-td">{item.hours || '-'}</td>
-                    )}
-                    <td className="invoice-preview-td text-right">
-                      {formatCurrencyEUR(item.price)}
-                    </td>
-                    <td className="invoice-preview-td text-right font-semibold">
-                      {formatCurrencyEUR(item.quantity * item.price)}
-                    </td>
-                  </tr>
-                ))
+                items.map((item, index) => {
+                  const itemType = item.item_type || 'product'
+                  const hasPeriod = items.some(i => i.item_type === 'service_period' || i.period)
+                  const hasQuantity = items.some(i => i.item_type === 'product' || (!i.item_type && i.quantity > 1))
+                  const hasHours = items.some(i => i.item_type === 'hourly' || i.hours)
+                  
+                  return (
+                    <tr key={index}>
+                      <td className="invoice-preview-td">{item.description || '-'}</td>
+                      {hasPeriod && (
+                        <td className="invoice-preview-td">
+                          {itemType === 'service_period' && item.period ? item.period : (item.period || '-')}
+                        </td>
+                      )}
+                      {hasQuantity && (
+                        <td className="invoice-preview-td text-right">
+                          {itemType === 'product' ? item.quantity : '-'}
+                        </td>
+                      )}
+                      {hasHours && (
+                        <td className="invoice-preview-td text-right">
+                          {itemType === 'hourly' && item.hours ? item.hours : (item.hours || '-')}
+                        </td>
+                      )}
+                      <td className="invoice-preview-td text-right">
+                        {formatCurrencyEUR(item.price)}
+                      </td>
+                      <td className="invoice-preview-td text-right font-semibold">
+                        {formatCurrencyEUR(item.total || item.quantity * item.price)}
+                      </td>
+                    </tr>
+                  )
+                })
               ) : (
                 <tr>
-                  <td colSpan={5} className="invoice-preview-td text-center text-gray-400">
+                  <td colSpan={6} className="invoice-preview-td text-center text-gray-400">
                     {t('invoice.noItems')}
                   </td>
                 </tr>
