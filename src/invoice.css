@@ -511,9 +511,16 @@ body.invoice-mode #main-content {
   line-height: 1.6;
 }
 
+/* Override modal width for invoice creation */
+.invoice-create-modal {
+  width: 95vw !important;
+  max-width: 1400px !important;
+}
+
 /* Mobile responsiveness for modal */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .invoice-modal-split {
+    min-width: auto;
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }

@@ -728,7 +728,7 @@ function InvoicePageContent() {
         title={isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
         size="xl"
         bodyClassName="p-0"
-        contentClassName="max-h-[90vh]"
+        contentClassName="max-h-[90vh] !w-[95vw] !max-w-[1400px] invoice-create-modal"
         footer={createSimpleFooter(
           {
             label: isEditing ? t('actions.save') : t('invoice.create'),
@@ -1081,7 +1081,7 @@ function InvoicePageContent() {
           size="xl"
           bodyClassName="px-5 py-4"
           footer={
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between w-full">
               <button
                 className="btn btn-outline"
                 onClick={() => handleExportPDF(selectedInvoice)}
@@ -1089,7 +1089,7 @@ function InvoicePageContent() {
                 <Download className="w-4 h-4" />
                 {t('invoice.exportPDF')}
               </button>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   className="btn btn-outline"
                   onClick={() => {
