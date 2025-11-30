@@ -9,7 +9,9 @@ import { formatCurrencyEUR } from '@/lib/format'
 import { exportInvoiceToPDF } from '@/utils/invoicePdf'
 import InvoiceFolderSidebar from '@/components/invoice/InvoiceFolderSidebar'
 import InvoiceCard from '@/components/invoice/InvoiceCard'
+import InvoiceClientsPanel from '@/components/invoice/InvoiceClientsPanel'
 import Dropdown from '@/components/ui/Dropdown'
+import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import '@/invoice.css'
 
 interface InvoiceItem {
@@ -675,7 +677,7 @@ function InvoicePageContent() {
         />
       )}
       
-      {/* Правая область: инвойсы */}
+      {/* Центральная область: инвойсы */}
       <div className="invoice-content">
         {loading ? null : filteredInvoices.length === 0 ? (
           <div className="invoice-empty">
@@ -698,6 +700,20 @@ function InvoicePageContent() {
           </div>
         )}
       </div>
+
+      {/* Правая область: клиенты */}
+      {userId && (
+        <InvoiceClientsPanel
+          userId={userId}
+          onSelectClient={(clientName) => {
+            setClientName(clientName)
+            if (!showCreateModal && !isEditing) {
+              resetForm()
+              setShowCreateModal(true)
+            }
+          }}
+        />
+      )}
 
       {/* Create/Edit Modal */}
       <UnifiedModal
@@ -908,18 +924,18 @@ function InvoicePageContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.date')}</label>
-              <CoreInput
-                type="date"
+              <CustomDatePicker
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={setDate}
+                placeholder={t('invoice.date')}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.dueDate')}</label>
-              <CoreInput
-                type="date"
+              <CustomDatePicker
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={setDueDate}
+                placeholder={t('invoice.dueDate')}
               />
             </div>
           </div>

@@ -565,6 +565,10 @@
     "saveClientTemplate": "Сохранить шаблон клиента",
     "loadClientTemplate": "Загрузить шаблон",
     "deleteClientTemplate": "Удалить шаблон",
-    "saved": "сохранено"
+    "saved": "сохранено",
+    "clients": "Клиенты",
+    "clientsCount": "клиентов",
+    "noClients": "Нет клиентов",
+    "invoices": "инвойсов"
   }
 }

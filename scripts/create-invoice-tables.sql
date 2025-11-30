@@ -72,6 +72,67 @@ BEGIN
     END IF;
 END $$;
 
+-- Добавляем все новые колонки для FROM и TO, если их нет
+DO $$ 
+BEGIN
+    -- FROM columns
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_name') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_name TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_country') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_country TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_city') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_city TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_province') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_province TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_address_line1') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_address_line1 TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_address_line2') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_address_line2 TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_postal_code') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_postal_code TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_account_number') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_account_number TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_routing_number') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_routing_number TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_swift_bic') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_swift_bic TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_bank_name') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_bank_name TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'from_bank_address') THEN
+        ALTER TABLE public.invoices ADD COLUMN from_bank_address TEXT;
+    END IF;
+    
+    -- TO columns (client_phone)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'client_phone') THEN
+        ALTER TABLE public.invoices ADD COLUMN client_phone TEXT;
+    END IF;
+END $$;
+
+-- Добавляем новые колонки для invoice_items, если их нет
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoice_items' AND column_name = 'period') THEN
+        ALTER TABLE public.invoice_items ADD COLUMN period TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoice_items' AND column_name = 'price_per_hour') THEN
+        ALTER TABLE public.invoice_items ADD COLUMN price_per_hour NUMERIC(10, 2);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoice_items' AND column_name = 'hours') THEN
+        ALTER TABLE public.invoice_items ADD COLUMN hours NUMERIC(10, 2);
+    END IF;
+END $$;
+
 -- Создаем таблицу invoice_items
 CREATE TABLE IF NOT EXISTS public.invoice_items (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

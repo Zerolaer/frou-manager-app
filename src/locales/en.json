@@ -565,6 +565,10 @@
     "saveClientTemplate": "Save Client Template",
     "loadClientTemplate": "Load Template",
     "deleteClientTemplate": "Delete Template",
-    "saved": "saved"
+    "saved": "saved",
+    "clients": "Clients",
+    "clientsCount": "clients",
+    "noClients": "No clients",
+    "invoices": "invoices"
   }
 }
