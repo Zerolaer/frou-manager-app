@@ -750,292 +750,290 @@ function InvoicePageContent() {
           {/* Left: Form */}
           <div className="invoice-modal-form">
             <div className="space-y-6 p-5 overflow-y-auto">
-          {/* Basic Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.invoiceNumber')}</label>
-              <CoreInput
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="INV-001"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.taxRate')} (%)</label>
-              <CoreInput
-                type="number"
-                value={taxRate}
-                onChange={(e) => setTaxRate(Number(e.target.value))}
-                placeholder="0"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.folder')}</label>
-            <Dropdown
-              value={selectedFolderId || ''}
-              onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
-              options={[
-                { value: '', label: t('invoice.noFolder') },
-                ...folders.map(f => ({ value: f.id, label: f.name }))
-              ]}
-              placeholder={t('invoice.noFolder')}
-            />
-          </div>
-
-          {/* FROM Section */}
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-outline text-xs"
-                  onClick={loadFromTemplate}
-                >
-                  {t('invoice.loadFromTemplate')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline text-xs"
-                  onClick={saveFromTemplate}
-                >
-                  {t('invoice.saveFromTemplate')}
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromName')}</label>
-                <CoreInput value={fromName} onChange={(e) => setFromName(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCountry')}</label>
-                <CoreInput value={fromCountry} onChange={(e) => setFromCountry(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCity')}</label>
-                <CoreInput value={fromCity} onChange={(e) => setFromCity(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromProvince')}</label>
-                <CoreInput value={fromProvince} onChange={(e) => setFromProvince(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine1')}</label>
-                <CoreInput value={fromAddressLine1} onChange={(e) => setFromAddressLine1(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine2')}</label>
-                <CoreInput value={fromAddressLine2} onChange={(e) => setFromAddressLine2(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromPostalCode')}</label>
-                <CoreInput value={fromPostalCode} onChange={(e) => setFromPostalCode(e.target.value)} />
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Банковские данные</h4>
+              {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
-                  <CoreInput value={fromAccountNumber} onChange={(e) => setFromAccountNumber(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromRoutingNumber')}</label>
-                  <CoreInput value={fromRoutingNumber} onChange={(e) => setFromRoutingNumber(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromSwiftBic')}</label>
-                  <CoreInput value={fromSwiftBic} onChange={(e) => setFromSwiftBic(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankName')}</label>
-                  <CoreInput value={fromBankName} onChange={(e) => setFromBankName(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankAddress')}</label>
-                  <CoreTextarea value={fromBankAddress} onChange={(e) => setFromBankAddress(e.target.value)} rows={2} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* TO Section */}
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-700">{t('invoice.to')}</h3>
-              <div className="flex gap-2">
-                {clientTemplates.length > 0 && (
-                  <Dropdown
-                    value=""
-                    onChange={(value) => {
-                      const template = clientTemplates.find(t => t.id === value)
-                      if (template) loadClientTemplate(template)
-                    }}
-                    options={clientTemplates.map(t => ({ value: t.id, label: t.name }))}
-                    placeholder={t('invoice.loadClientTemplate')}
-                    buttonClassName="text-xs"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.invoiceNumber')}</label>
+                  <CoreInput
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    placeholder="INV-001"
                   />
-                )}
-                <button
-                  type="button"
-                  className="btn btn-outline text-xs"
-                  onClick={() => setShowClientTemplateModal(true)}
-                >
-                  {t('invoice.saveClientTemplate')}
-                </button>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.taxRate')} (%)</label>
+                  <CoreInput
+                    type="number"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(Number(e.target.value))}
+                    placeholder="0"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
-                <CoreInput
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder={t('invoice.clientNamePlaceholder')}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.folder')}</label>
+                <Dropdown
+                  value={selectedFolderId || ''}
+                  onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
+                  options={[
+                    { value: '', label: t('invoice.noFolder') },
+                    ...folders.map(f => ({ value: f.id, label: f.name }))
+                  ]}
+                  placeholder={t('invoice.noFolder')}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
-                <CoreInput
-                  type="email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder={t('invoice.clientEmailPlaceholder')}
-                />
+
+              {/* FROM Section */}
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline text-xs"
+                      onClick={loadFromTemplate}
+                    >
+                      {t('invoice.loadFromTemplate')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline text-xs"
+                      onClick={saveFromTemplate}
+                    >
+                      {t('invoice.saveFromTemplate')}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromName')}</label>
+                    <CoreInput value={fromName} onChange={(e) => setFromName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCountry')}</label>
+                    <CoreInput value={fromCountry} onChange={(e) => setFromCountry(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCity')}</label>
+                    <CoreInput value={fromCity} onChange={(e) => setFromCity(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromProvince')}</label>
+                    <CoreInput value={fromProvince} onChange={(e) => setFromProvince(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine1')}</label>
+                    <CoreInput value={fromAddressLine1} onChange={(e) => setFromAddressLine1(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine2')}</label>
+                    <CoreInput value={fromAddressLine2} onChange={(e) => setFromAddressLine2(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromPostalCode')}</label>
+                    <CoreInput value={fromPostalCode} onChange={(e) => setFromPostalCode(e.target.value)} />
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Банковские данные</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
+                      <CoreInput value={fromAccountNumber} onChange={(e) => setFromAccountNumber(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromRoutingNumber')}</label>
+                      <CoreInput value={fromRoutingNumber} onChange={(e) => setFromRoutingNumber(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromSwiftBic')}</label>
+                      <CoreInput value={fromSwiftBic} onChange={(e) => setFromSwiftBic(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankName')}</label>
+                      <CoreInput value={fromBankName} onChange={(e) => setFromBankName(e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankAddress')}</label>
+                      <CoreTextarea value={fromBankAddress} onChange={(e) => setFromBankAddress(e.target.value)} rows={2} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
-                <CoreInput
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="+1-855-413-7030"
-                />
+
+              {/* TO Section */}
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700">{t('invoice.to')}</h3>
+                  <div className="flex gap-2">
+                    {clientTemplates.length > 0 && (
+                      <Dropdown
+                        value=""
+                        onChange={(value) => {
+                          const template = clientTemplates.find(t => t.id === value)
+                          if (template) loadClientTemplate(template)
+                        }}
+                        options={clientTemplates.map(t => ({ value: t.id, label: t.name }))}
+                        placeholder={t('invoice.loadClientTemplate')}
+                        buttonClassName="text-xs"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-outline text-xs"
+                      onClick={() => setShowClientTemplateModal(true)}
+                    >
+                      {t('invoice.saveClientTemplate')}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
+                    <CoreInput
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder={t('invoice.clientNamePlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
+                    <CoreInput
+                      type="email"
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      placeholder={t('invoice.clientEmailPlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
+                    <CoreInput
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      placeholder="+1-855-413-7030"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+                    <CoreTextarea
+                      value={clientAddress}
+                      onChange={(e) => setClientAddress(e.target.value)}
+                      placeholder={t('invoice.clientAddressPlaceholder')}
+                      rows={3}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.date')}</label>
+                  <CustomDatePicker
+                    value={date}
+                    onChange={setDate}
+                    placeholder={t('invoice.date')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.dueDate')}</label>
+                  <CustomDatePicker
+                    value={dueDate}
+                    onChange={setDueDate}
+                    placeholder={t('invoice.dueDate')}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
+                  <button className="btn btn-outline" onClick={addItem}>
+                    <Plus className="w-4 h-4" />
+                    {t('invoice.addItem')}
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {items.map((item, index) => (
+                    <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
+                      <div className="flex-1 space-y-2">
+                        <CoreInput
+                          value={item.description}
+                          onChange={(e) => updateItem(index, 'description', e.target.value)}
+                          placeholder={t('invoice.itemDescription')}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <CoreInput
+                            value={item.period || ''}
+                            onChange={(e) => updateItem(index, 'period', e.target.value)}
+                            placeholder={t('invoice.period')}
+                          />
+                          <div className="grid grid-cols-3 gap-2">
+                            <CoreInput
+                              type="number"
+                              step="0.01"
+                              value={item.hours || 0}
+                              onChange={(e) => {
+                                const hours = Number(e.target.value)
+                                updateItem(index, 'hours', hours)
+                                if (item.price_per_hour) {
+                                  updateItem(index, 'price', hours * item.price_per_hour)
+                                }
+                              }}
+                              placeholder={t('invoice.hours')}
+                            />
+                            <CoreInput
+                              type="number"
+                              step="0.01"
+                              value={item.price_per_hour || 0}
+                              onChange={(e) => {
+                                const pricePerHour = Number(e.target.value)
+                                updateItem(index, 'price_per_hour', pricePerHour)
+                                if (item.hours) {
+                                  updateItem(index, 'price', item.hours * pricePerHour)
+                                }
+                              }}
+                              placeholder={t('invoice.pricePerHour')}
+                            />
+                            <CoreInput
+                              type="number"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) => updateItem(index, 'price', Number(e.target.value))}
+                              placeholder={t('invoice.price')}
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm font-medium text-gray-700">
+                          {t('invoice.total')}: {formatCurrencyEUR(item.quantity * item.price)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeItem(index)}
+                        className="p-2 hover:bg-red-100 rounded self-start"
+                      >
+                        <X className="w-4 h-4 text-red-600" />
+                      </button>
+                    </div>
+                  ))}
+                  {items.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      {t('invoice.noItems')}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.notes')}</label>
                 <CoreTextarea
-                  value={clientAddress}
-                  onChange={(e) => setClientAddress(e.target.value)}
-                  placeholder={t('invoice.clientAddressPlaceholder')}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t('invoice.notesPlaceholder')}
                   rows={3}
                 />
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.date')}</label>
-              <CustomDatePicker
-                value={date}
-                onChange={setDate}
-                placeholder={t('invoice.date')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.dueDate')}</label>
-              <CustomDatePicker
-                value={dueDate}
-                onChange={setDueDate}
-                placeholder={t('invoice.dueDate')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
-              <button className="btn btn-outline" onClick={addItem}>
-                <Plus className="w-4 h-4" />
-                {t('invoice.addItem')}
-              </button>
-            </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {items.map((item, index) => (
-                <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
-                  <div className="flex-1 space-y-2">
-                    <CoreInput
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      placeholder={t('invoice.itemDescription')}
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <CoreInput
-                        value={item.period || ''}
-                        onChange={(e) => updateItem(index, 'period', e.target.value)}
-                        placeholder={t('invoice.period')}
-                      />
-                      <div className="grid grid-cols-3 gap-2">
-                        <CoreInput
-                          type="number"
-                          step="0.01"
-                          value={item.hours || 0}
-                          onChange={(e) => {
-                            const hours = Number(e.target.value)
-                            updateItem(index, 'hours', hours)
-                            if (item.price_per_hour) {
-                              updateItem(index, 'price', hours * item.price_per_hour)
-                            }
-                          }}
-                          placeholder={t('invoice.hours')}
-                        />
-                        <CoreInput
-                          type="number"
-                          step="0.01"
-                          value={item.price_per_hour || 0}
-                          onChange={(e) => {
-                            const pricePerHour = Number(e.target.value)
-                            updateItem(index, 'price_per_hour', pricePerHour)
-                            if (item.hours) {
-                              updateItem(index, 'price', item.hours * pricePerHour)
-                            }
-                          }}
-                          placeholder={t('invoice.pricePerHour')}
-                        />
-                        <CoreInput
-                          type="number"
-                          step="0.01"
-                          value={item.price}
-                          onChange={(e) => updateItem(index, 'price', Number(e.target.value))}
-                          placeholder={t('invoice.price')}
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-2 text-sm font-medium text-gray-700">
-                      {t('invoice.total')}: {formatCurrencyEUR(item.quantity * item.price)}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeItem(index)}
-                    className="p-2 hover:bg-red-100 rounded self-start"
-                  >
-                    <X className="w-4 h-4 text-red-600" />
-                  </button>
-                </div>
-              ))}
-              {items.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  {t('invoice.noItems')}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.notes')}</label>
-            <CoreTextarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t('invoice.notesPlaceholder')}
-              rows={3}
-            />
-          </div>
-
-            </div>
-          </div>
           </div>
 
           {/* Right: Preview */}
