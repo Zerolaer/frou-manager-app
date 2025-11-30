@@ -402,6 +402,7 @@ export default function Invoice() {
         }}
         title={isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
         size="xl"
+        bodyClassName="px-5 py-4"
         footer={createSimpleFooter(
           {
             label: isEditing ? t('actions.save') : t('invoice.create'),
@@ -580,6 +581,7 @@ export default function Invoice() {
           }}
           title={selectedInvoice.invoice_number}
           size="xl"
+          bodyClassName="px-5 py-4"
           footer={
             <div className="flex justify-between">
               <button

@@ -135,6 +135,7 @@ const Modal = ({
   const panelClasses = [
     actualSize === 'cell' ? 'w-[680px]' : actualSize === 'large' ? 'w-[800px]' : 'w-[500px]',
     'max-w-[95vw]',
+    'max-h-[90vh]',
     'rounded-2xl',
     'bg-white',
     'shadow-2xl',
@@ -143,6 +144,9 @@ const Modal = ({
     'ring-black/10',
     'border',
     'border-gray-200',
+    'flex',
+    'flex-col',
+    'overflow-hidden',
   ].join(' ')
 
   const content = (
@@ -174,7 +178,7 @@ const Modal = ({
               rightContent={headerRight}
             />
           )}
-          <div className={bodyClassName ?? 'px-5 py-4'}>
+          <div className={`${bodyClassName ?? 'px-5 py-4'} flex-1 overflow-y-auto`}>
             <div className={`w-auto ${contentClassName ?? ''} mx-auto`}>
               {children}
             </div>
