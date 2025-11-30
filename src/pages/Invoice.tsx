@@ -15,20 +15,38 @@ import '@/invoice.css'
 interface InvoiceItem {
   id: string
   description: string
+  period?: string
   quantity: number
   price: number
+  price_per_hour?: number
+  hours?: number
   total: number
 }
 
 interface Invoice {
   id: string
   invoice_number: string
-  client_name: string
-  client_email: string
-  client_address: string
   date: string
   due_date: string
   notes: string
+  // FROM (отправитель) данные
+  from_name?: string
+  from_country?: string
+  from_city?: string
+  from_province?: string
+  from_address_line1?: string
+  from_address_line2?: string
+  from_postal_code?: string
+  from_account_number?: string
+  from_routing_number?: string
+  from_swift_bic?: string
+  from_bank_name?: string
+  from_bank_address?: string
+  // TO (клиент) данные
+  client_name: string
+  client_email?: string
+  client_address?: string
+  client_phone?: string
   subtotal: number
   tax_rate: number
   tax_amount: number
@@ -37,6 +55,14 @@ interface Invoice {
   folder_id?: string | null
   created_at: string
   updated_at: string
+}
+
+interface ClientTemplate {
+  id: string
+  name: string
+  address?: string
+  email?: string
+  phone?: string
 }
 
 function InvoicePageContent() {
@@ -57,9 +83,6 @@ function InvoicePageContent() {
 
   // Form state
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [clientName, setClientName] = useState('')
-  const [clientEmail, setClientEmail] = useState('')
-  const [clientAddress, setClientAddress] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date()
@@ -71,6 +94,30 @@ function InvoicePageContent() {
   const [items, setItems] = useState<Omit<InvoiceItem, 'id'>[]>([])
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [folders, setFolders] = useState<Array<{ id: string; name: string; color?: string }>>([])
+  
+  // FROM (отправитель) state
+  const [fromName, setFromName] = useState('')
+  const [fromCountry, setFromCountry] = useState('')
+  const [fromCity, setFromCity] = useState('')
+  const [fromProvince, setFromProvince] = useState('')
+  const [fromAddressLine1, setFromAddressLine1] = useState('')
+  const [fromAddressLine2, setFromAddressLine2] = useState('')
+  const [fromPostalCode, setFromPostalCode] = useState('')
+  const [fromAccountNumber, setFromAccountNumber] = useState('')
+  const [fromRoutingNumber, setFromRoutingNumber] = useState('')
+  const [fromSwiftBic, setFromSwiftBic] = useState('')
+  const [fromBankName, setFromBankName] = useState('')
+  const [fromBankAddress, setFromBankAddress] = useState('')
+  
+  // TO (клиент) state
+  const [clientName, setClientName] = useState('')
+  const [clientEmail, setClientEmail] = useState('')
+  const [clientAddress, setClientAddress] = useState('')
+  const [clientPhone, setClientPhone] = useState('')
+  
+  // Client templates
+  const [clientTemplates, setClientTemplates] = useState<ClientTemplate[]>([])
+  const [showClientTemplateModal, setShowClientTemplateModal] = useState(false)
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
@@ -100,6 +147,7 @@ function InvoicePageContent() {
   useEffect(() => {
     if (!userId) return
     loadFolders()
+    loadClientTemplates()
   }, [userId])
 
   // Load invoices
@@ -170,8 +218,11 @@ function InvoicePageContent() {
             items: (itemsData || []).map(item => ({
               id: item.id,
               description: item.description,
+              period: item.period || '',
               quantity: item.quantity,
               price: item.price,
+              price_per_hour: item.price_per_hour || 0,
+              hours: item.hours || 0,
               total: item.quantity * item.price
             }))
           } as Invoice
@@ -212,12 +263,27 @@ function InvoicePageContent() {
         .insert({
           user_id: userId,
           invoice_number: invoiceNumber,
-          client_name: clientName,
-          client_email: clientEmail,
-          client_address: clientAddress,
           date,
           due_date: dueDate,
           notes,
+          // FROM fields
+          from_name: fromName || null,
+          from_country: fromCountry || null,
+          from_city: fromCity || null,
+          from_province: fromProvince || null,
+          from_address_line1: fromAddressLine1 || null,
+          from_address_line2: fromAddressLine2 || null,
+          from_postal_code: fromPostalCode || null,
+          from_account_number: fromAccountNumber || null,
+          from_routing_number: fromRoutingNumber || null,
+          from_swift_bic: fromSwiftBic || null,
+          from_bank_name: fromBankName || null,
+          from_bank_address: fromBankAddress || null,
+          // TO fields
+          client_name: clientName,
+          client_email: clientEmail || null,
+          client_address: clientAddress || null,
+          client_phone: clientPhone || null,
           subtotal,
           tax_rate: taxRate,
           tax_amount: taxAmount,
@@ -243,8 +309,11 @@ function InvoicePageContent() {
         const itemsToInsert = items.map((item, index) => ({
           invoice_id: invoiceData.id,
           description: item.description,
+          period: item.period || null,
           quantity: item.quantity,
           price: item.price,
+          price_per_hour: item.price_per_hour || null,
+          hours: item.hours || null,
           position: index
         }))
 
@@ -280,12 +349,27 @@ function InvoicePageContent() {
         .from('invoices')
         .update({
           invoice_number: invoiceNumber,
-          client_name: clientName,
-          client_email: clientEmail,
-          client_address: clientAddress,
           date,
           due_date: dueDate,
           notes,
+          // FROM fields
+          from_name: fromName || null,
+          from_country: fromCountry || null,
+          from_city: fromCity || null,
+          from_province: fromProvince || null,
+          from_address_line1: fromAddressLine1 || null,
+          from_address_line2: fromAddressLine2 || null,
+          from_postal_code: fromPostalCode || null,
+          from_account_number: fromAccountNumber || null,
+          from_routing_number: fromRoutingNumber || null,
+          from_swift_bic: fromSwiftBic || null,
+          from_bank_name: fromBankName || null,
+          from_bank_address: fromBankAddress || null,
+          // TO fields
+          client_name: clientName,
+          client_email: clientEmail || null,
+          client_address: clientAddress || null,
+          client_phone: clientPhone || null,
           subtotal,
           tax_rate: taxRate,
           tax_amount: taxAmount,
@@ -310,8 +394,11 @@ function InvoicePageContent() {
         const itemsToInsert = items.map((item, index) => ({
           invoice_id: selectedInvoice.id,
           description: item.description,
+          period: item.period || null,
           quantity: item.quantity,
           price: item.price,
+          price_per_hour: item.price_per_hour || null,
+          hours: item.hours || null,
           position: index
         }))
 
@@ -353,14 +440,37 @@ function InvoicePageContent() {
   const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice)
     setInvoiceNumber(invoice.invoice_number)
-    setClientName(invoice.client_name)
-    setClientEmail(invoice.client_email || '')
-    setClientAddress(invoice.client_address || '')
     setDate(invoice.date)
     setDueDate(invoice.due_date)
     setNotes(invoice.notes || '')
     setTaxRate(invoice.tax_rate || 0)
-    setItems(invoice.items.map(({ id, ...rest }) => rest))
+    
+    // FROM fields
+    setFromName(invoice.from_name || '')
+    setFromCountry(invoice.from_country || '')
+    setFromCity(invoice.from_city || '')
+    setFromProvince(invoice.from_province || '')
+    setFromAddressLine1(invoice.from_address_line1 || '')
+    setFromAddressLine2(invoice.from_address_line2 || '')
+    setFromPostalCode(invoice.from_postal_code || '')
+    setFromAccountNumber(invoice.from_account_number || '')
+    setFromRoutingNumber(invoice.from_routing_number || '')
+    setFromSwiftBic(invoice.from_swift_bic || '')
+    setFromBankName(invoice.from_bank_name || '')
+    setFromBankAddress(invoice.from_bank_address || '')
+    
+    // TO fields
+    setClientName(invoice.client_name)
+    setClientEmail(invoice.client_email || '')
+    setClientAddress(invoice.client_address || '')
+    setClientPhone(invoice.client_phone || '')
+    
+    setItems(invoice.items.map(({ id, ...rest }) => ({
+      ...rest,
+      period: rest.period || '',
+      price_per_hour: rest.price_per_hour || 0,
+      hours: rest.hours || 0
+    })))
     setSelectedFolderId(invoice.folder_id || null)
     setIsEditing(true)
   }
@@ -370,11 +480,110 @@ function InvoicePageContent() {
     setIsEditing(false)
   }
 
+  // Load FROM template from localStorage
+  const loadFromTemplate = () => {
+    try {
+      const template = localStorage.getItem('frovo_invoice_from_template')
+      if (template) {
+        const data = JSON.parse(template)
+        setFromName(data.fromName || '')
+        setFromCountry(data.fromCountry || '')
+        setFromCity(data.fromCity || '')
+        setFromProvince(data.fromProvince || '')
+        setFromAddressLine1(data.fromAddressLine1 || '')
+        setFromAddressLine2(data.fromAddressLine2 || '')
+        setFromPostalCode(data.fromPostalCode || '')
+        setFromAccountNumber(data.fromAccountNumber || '')
+        setFromRoutingNumber(data.fromRoutingNumber || '')
+        setFromSwiftBic(data.fromSwiftBic || '')
+        setFromBankName(data.fromBankName || '')
+        setFromBankAddress(data.fromBankAddress || '')
+      }
+    } catch (error) {
+      console.error('Error loading FROM template:', error)
+    }
+  }
+
+  // Save FROM template to localStorage
+  const saveFromTemplate = () => {
+    try {
+      const template = {
+        fromName,
+        fromCountry,
+        fromCity,
+        fromProvince,
+        fromAddressLine1,
+        fromAddressLine2,
+        fromPostalCode,
+        fromAccountNumber,
+        fromRoutingNumber,
+        fromSwiftBic,
+        fromBankName,
+        fromBankAddress
+      }
+      localStorage.setItem('frovo_invoice_from_template', JSON.stringify(template))
+      alert(t('invoice.fromTemplate') + ' ' + t('invoice.saved'))
+    } catch (error) {
+      console.error('Error saving FROM template:', error)
+      alert('Ошибка сохранения шаблона')
+    }
+  }
+
+  // Load client templates
+  const loadClientTemplates = async () => {
+    if (!userId) return
+    try {
+      const { data, error } = await supabase
+        .from('invoice_client_templates')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setClientTemplates(data || [])
+    } catch (error) {
+      console.error('Error loading client templates:', error)
+    }
+  }
+
+  // Load client template
+  const loadClientTemplate = (template: ClientTemplate) => {
+    setClientName(template.name || '')
+    setClientEmail(template.email || '')
+    setClientAddress(template.address || '')
+    setClientPhone(template.phone || '')
+  }
+
+  // Save client template
+  const saveClientTemplate = async () => {
+    if (!userId || !clientName.trim()) {
+      alert('Введите имя клиента')
+      return
+    }
+    try {
+      const { data, error } = await supabase
+        .from('invoice_client_templates')
+        .insert({
+          user_id: userId,
+          name: clientName,
+          email: clientEmail,
+          address: clientAddress,
+          phone: clientPhone
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      await loadClientTemplates()
+      setShowClientTemplateModal(false)
+      alert(t('invoice.clientTemplates') + ' ' + t('invoice.saved'))
+    } catch (error) {
+      console.error('Error saving client template:', error)
+      alert(`Ошибка сохранения шаблона: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+    }
+  }
+
   const resetForm = () => {
     setInvoiceNumber('')
-    setClientName('')
-    setClientEmail('')
-    setClientAddress('')
     setDate(new Date().toISOString().split('T')[0])
     const d = new Date()
     d.setDate(d.getDate() + 30)
@@ -383,10 +592,33 @@ function InvoicePageContent() {
     setTaxRate(0)
     setItems([])
     setSelectedFolderId(null)
+    
+    // Reset FROM fields
+    setFromName('')
+    setFromCountry('')
+    setFromCity('')
+    setFromProvince('')
+    setFromAddressLine1('')
+    setFromAddressLine2('')
+    setFromPostalCode('')
+    setFromAccountNumber('')
+    setFromRoutingNumber('')
+    setFromSwiftBic('')
+    setFromBankName('')
+    setFromBankAddress('')
+    
+    // Reset TO fields
+    setClientName('')
+    setClientEmail('')
+    setClientAddress('')
+    setClientPhone('')
+    
+    // Load FROM template if exists
+    loadFromTemplate()
   }
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, price: 0, total: 0 }])
+    setItems([...items, { description: '', period: '', quantity: 1, price: 0, price_per_hour: 0, hours: 0, total: 0 }])
   }
 
   const removeItem = (index: number) => {
@@ -399,7 +631,7 @@ function InvoicePageContent() {
       ...newItems[index],
       [field]: value
     }
-    if (field === 'quantity' || field === 'price') {
+    if (field === 'quantity' || field === 'price' || field === 'hours' || field === 'price_per_hour') {
       updatedItem.total = updatedItem.quantity * updatedItem.price
     }
     newItems[index] = updatedItem
@@ -496,7 +728,8 @@ function InvoicePageContent() {
           }
         )}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.invoiceNumber')}</label>
@@ -518,45 +751,158 @@ function InvoicePageContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes.folder')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.folder')}</label>
             <Dropdown
               value={selectedFolderId || ''}
               onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
               options={[
-                { value: '', label: t('notes.noFolder') },
+                { value: '', label: t('invoice.noFolder') },
                 ...folders.map(f => ({ value: f.id, label: f.name }))
               ]}
-              placeholder={t('notes.noFolder')}
+              placeholder={t('invoice.noFolder')}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.clientName')}</label>
-            <CoreInput
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder={t('invoice.clientNamePlaceholder')}
-            />
+          {/* FROM Section */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline text-xs"
+                  onClick={loadFromTemplate}
+                >
+                  {t('invoice.loadFromTemplate')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline text-xs"
+                  onClick={saveFromTemplate}
+                >
+                  {t('invoice.saveFromTemplate')}
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromName')}</label>
+                <CoreInput value={fromName} onChange={(e) => setFromName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCountry')}</label>
+                <CoreInput value={fromCountry} onChange={(e) => setFromCountry(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCity')}</label>
+                <CoreInput value={fromCity} onChange={(e) => setFromCity(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromProvince')}</label>
+                <CoreInput value={fromProvince} onChange={(e) => setFromProvince(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine1')}</label>
+                <CoreInput value={fromAddressLine1} onChange={(e) => setFromAddressLine1(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine2')}</label>
+                <CoreInput value={fromAddressLine2} onChange={(e) => setFromAddressLine2(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromPostalCode')}</label>
+                <CoreInput value={fromPostalCode} onChange={(e) => setFromPostalCode(e.target.value)} />
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Банковские данные</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
+                  <CoreInput value={fromAccountNumber} onChange={(e) => setFromAccountNumber(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromRoutingNumber')}</label>
+                  <CoreInput value={fromRoutingNumber} onChange={(e) => setFromRoutingNumber(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromSwiftBic')}</label>
+                  <CoreInput value={fromSwiftBic} onChange={(e) => setFromSwiftBic(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankName')}</label>
+                  <CoreInput value={fromBankName} onChange={(e) => setFromBankName(e.target.value)} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankAddress')}</label>
+                  <CoreTextarea value={fromBankAddress} onChange={(e) => setFromBankAddress(e.target.value)} rows={2} />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.clientEmail')}</label>
-            <CoreInput
-              type="email"
-              value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
-              placeholder={t('invoice.clientEmailPlaceholder')}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.clientAddress')}</label>
-            <CoreTextarea
-              value={clientAddress}
-              onChange={(e) => setClientAddress(e.target.value)}
-              placeholder={t('invoice.clientAddressPlaceholder')}
-              rows={3}
-            />
+          {/* TO Section */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700">{t('invoice.to')}</h3>
+              <div className="flex gap-2">
+                {clientTemplates.length > 0 && (
+                  <Dropdown
+                    value=""
+                    onChange={(value) => {
+                      const template = clientTemplates.find(t => t.id === value)
+                      if (template) loadClientTemplate(template)
+                    }}
+                    options={clientTemplates.map(t => ({ value: t.id, label: t.name }))}
+                    placeholder={t('invoice.loadClientTemplate')}
+                    buttonClassName="text-xs"
+                  />
+                )}
+                <button
+                  type="button"
+                  className="btn btn-outline text-xs"
+                  onClick={() => setShowClientTemplateModal(true)}
+                >
+                  {t('invoice.saveClientTemplate')}
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
+                <CoreInput
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder={t('invoice.clientNamePlaceholder')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
+                <CoreInput
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder={t('invoice.clientEmailPlaceholder')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
+                <CoreInput
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  placeholder="+1-855-413-7030"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+                <CoreTextarea
+                  value={clientAddress}
+                  onChange={(e) => setClientAddress(e.target.value)}
+                  placeholder={t('invoice.clientAddressPlaceholder')}
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -589,27 +935,53 @@ function InvoicePageContent() {
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {items.map((item, index) => (
                 <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
-                  <div className="flex-1">
+                  <div className="flex-1 space-y-2">
                     <CoreInput
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
                       placeholder={t('invoice.itemDescription')}
-                      className="mb-2"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <CoreInput
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                        placeholder={t('invoice.quantity')}
+                        value={item.period || ''}
+                        onChange={(e) => updateItem(index, 'period', e.target.value)}
+                        placeholder={t('invoice.period')}
                       />
-                      <CoreInput
-                        type="number"
-                        step="0.01"
-                        value={item.price}
-                        onChange={(e) => updateItem(index, 'price', Number(e.target.value))}
-                        placeholder={t('invoice.price')}
-                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <CoreInput
+                          type="number"
+                          step="0.01"
+                          value={item.hours || 0}
+                          onChange={(e) => {
+                            const hours = Number(e.target.value)
+                            updateItem(index, 'hours', hours)
+                            if (item.price_per_hour) {
+                              updateItem(index, 'price', hours * item.price_per_hour)
+                            }
+                          }}
+                          placeholder={t('invoice.hours')}
+                        />
+                        <CoreInput
+                          type="number"
+                          step="0.01"
+                          value={item.price_per_hour || 0}
+                          onChange={(e) => {
+                            const pricePerHour = Number(e.target.value)
+                            updateItem(index, 'price_per_hour', pricePerHour)
+                            if (item.hours) {
+                              updateItem(index, 'price', item.hours * pricePerHour)
+                            }
+                          }}
+                          placeholder={t('invoice.pricePerHour')}
+                        />
+                        <CoreInput
+                          type="number"
+                          step="0.01"
+                          value={item.price}
+                          onChange={(e) => updateItem(index, 'price', Number(e.target.value))}
+                          placeholder={t('invoice.price')}
+                        />
+                      </div>
                     </div>
                     <div className="mt-2 text-sm font-medium text-gray-700">
                       {t('invoice.total')}: {formatCurrencyEUR(item.quantity * item.price)}
@@ -766,6 +1138,61 @@ function InvoicePageContent() {
           </div>
         </UnifiedModal>
       )}
+
+      {/* Client Template Modal */}
+      <UnifiedModal
+        open={showClientTemplateModal}
+        onClose={() => setShowClientTemplateModal(false)}
+        title={t('invoice.saveClientTemplate')}
+        footer={createSimpleFooter(
+          {
+            label: t('actions.save'),
+            onClick: saveClientTemplate,
+            disabled: !clientName.trim()
+          },
+          {
+            label: t('actions.cancel'),
+            onClick: () => setShowClientTemplateModal(false)
+          }
+        )}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
+            <CoreInput
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder={t('invoice.clientNamePlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
+            <CoreInput
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder={t('invoice.clientEmailPlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
+            <CoreInput
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+              placeholder="+1-855-413-7030"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+            <CoreTextarea
+              value={clientAddress}
+              onChange={(e) => setClientAddress(e.target.value)}
+              placeholder={t('invoice.clientAddressPlaceholder')}
+              rows={3}
+            />
+          </div>
+        </div>
+      </UnifiedModal>
     </div>
   )
 }
