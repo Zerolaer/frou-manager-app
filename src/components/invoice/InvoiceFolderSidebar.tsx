@@ -36,16 +36,28 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
   React.useEffect(()=>{
     if (!userId) return
     ;(async()=>{
-      // try extended select
-      const ext = await supabase.from('invoice_folders').select('id,name,color,position').order('position', { ascending:true }).order('created_at', { ascending:true })
-      if (!ext.error){
-        setHasColor(true); setHasPosition(true)
-        setItems(([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any, ...((ext.data||[]) as Folder[])]))
-        return
+      try {
+        // try extended select
+        const ext = await supabase.from('invoice_folders').select('id,name,color,position').order('position', { ascending:true }).order('created_at', { ascending:true })
+        if (!ext.error){
+          setHasColor(true); setHasPosition(true)
+          setItems(([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any, ...((ext.data||[]) as Folder[])]))
+          return
+        }
+        // fallback to id,name only
+        const basic = await supabase.from('invoice_folders').select('id,name').order('created_at', { ascending:true })
+        if (!basic.error) {
+          setItems(([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any, ...((basic.data||[]) as Folder[])]))
+        } else {
+          console.error('Error loading folders:', basic.error)
+          // Если таблица не существует, показываем только ALL
+          setItems([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any])
+        }
+      } catch (error) {
+        console.error('Error loading folders:', error)
+        // Если таблица не существует, показываем только ALL
+        setItems([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any])
       }
-      // fallback to id,name only
-      const basic = await supabase.from('invoice_folders').select('id,name').order('created_at', { ascending:true })
-      if (!basic.error) setItems(([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any, ...((basic.data||[]) as Folder[])]))
     })()
   },[userId, t])
 
@@ -138,26 +150,54 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
     if (!ctxFolder) return
     const name = renameValue.trim()
     if (!name) return
-    await supabase.from('invoice_folders').update({ name }).eq('id', ctxFolder.id)
-    setItems(items.map(p=> p.id===ctxFolder.id ? {...p, name} : p))
-    setRenameOpen(false)
+    try {
+      const { error } = await supabase.from('invoice_folders').update({ name }).eq('id', ctxFolder.id)
+      if (error) {
+        console.error('Error renaming folder:', error)
+        alert(`Ошибка переименования: ${error.message}`)
+        return
+      }
+      setItems(items.map(p=> p.id===ctxFolder.id ? {...p, name} : p))
+      setRenameOpen(false)
+    } catch (error) {
+      console.error('Error renaming folder:', error)
+      alert(`Ошибка переименования: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+    }
   }
   async function deleteOk(){
     if (!ctxFolder) return
-    await supabase.from('invoice_folders').delete().eq('id', ctxFolder.id)
-    setItems(items.filter(p=> p.id!==ctxFolder.id))
-    if (activeId===ctxFolder.id) onChange('ALL')
-    setDelOpen(false)
+    try {
+      const { error } = await supabase.from('invoice_folders').delete().eq('id', ctxFolder.id)
+      if (error) {
+        console.error('Error deleting folder:', error)
+        alert(`Ошибка удаления: ${error.message}`)
+        return
+      }
+      setItems(items.filter(p=> p.id!==ctxFolder.id))
+      if (activeId===ctxFolder.id) onChange('ALL')
+      setDelOpen(false)
+    } catch (error) {
+      console.error('Error deleting folder:', error)
+      alert(`Ошибка удаления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+    }
   }
 
   // color change (graceful if no column)
   async function changeColor(c:string){
     if (!ctxFolder) return
-    if (hasColor){
-      await supabase.from('invoice_folders').update({ color:c }).eq('id', ctxFolder.id)
+    try {
+      if (hasColor){
+        const { error } = await supabase.from('invoice_folders').update({ color:c }).eq('id', ctxFolder.id)
+        if (error) {
+          console.error('Error changing color:', error)
+          return
+        }
+      }
+      setItems(items.map(p=> p.id===ctxFolder.id ? {...p, color:c} : p))
+      setCtxOpen(false)
+    } catch (error) {
+      console.error('Error changing color:', error)
     }
-    setItems(items.map(p=> p.id===ctxFolder.id ? {...p, color:c} : p))
-    setCtxOpen(false)
   }
 
   // create folder
@@ -168,19 +208,41 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
     const name = createName.trim()
     if (!name) return
     
-    const { data, error } = await supabase.from('invoice_folders').insert({
-      name,
-      color: createColor,
-      user_id: userId
-    }).select('id,name,color').single()
-    
-    if (!error && data) {
-      setItems(prev => [...prev, data])
-      onChange(data.id)
+    try {
+      const { data, error } = await supabase.from('invoice_folders').insert({
+        name,
+        color: createColor,
+        user_id: userId
+      }).select('id,name,color').single()
+      
+      if (error) {
+        console.error('Error creating folder:', error)
+        alert(`Ошибка создания папки: ${error.message}`)
+        return
+      }
+      
+      if (data) {
+        // Перезагружаем список папок для получения актуального порядка
+        const { data: updatedFolders } = await supabase
+          .from('invoice_folders')
+          .select('id,name,color,position')
+          .order('position', { ascending: true })
+          .order('created_at', { ascending: true })
+        
+        if (updatedFolders) {
+          setItems([{ id: 'ALL', name: t('invoice.allInvoices'), color: null } as any, ...updatedFolders])
+        } else {
+          setItems(prev => [...prev, data])
+        }
+        onChange(data.id)
+        setShowCreate(false)
+        setCreateName('')
+        setCreateColor('#3b82f6')
+      }
+    } catch (error) {
+      console.error('Error creating folder:', error)
+      alert(`Ошибка создания папки: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
-    setShowCreate(false)
-    setCreateName('')
-    setCreateColor('#3b82f6')
   }
 
   return (

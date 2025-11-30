@@ -144,7 +144,17 @@ function InvoicePageContent() {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error('Error loading invoices:', error)
+        if (error.code === '42P01' || error.message.includes('does not exist')) {
+          alert('Таблица invoices не существует!\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor')
+        } else {
+          alert(`Ошибка загрузки инвойсов: ${error.message}`)
+        }
+        setInvoices([])
+        setLoading(false)
+        return
+      }
 
       // Load items for each invoice
       const invoicesWithItems = await Promise.all(
@@ -171,6 +181,14 @@ function InvoicePageContent() {
       setInvoices(invoicesWithItems)
     } catch (error) {
       console.error('Error loading invoices:', error)
+      setInvoices([])
+      if (error instanceof Error) {
+        if (error.message.includes('does not exist') || error.message.includes('42P01')) {
+          alert('Таблица invoices не существует!\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor')
+        } else {
+          alert(`Ошибка загрузки инвойсов: ${error.message}`)
+        }
+      }
     } finally {
       setLoading(false)
     }
@@ -204,12 +222,21 @@ function InvoicePageContent() {
           tax_rate: taxRate,
           tax_amount: taxAmount,
           total,
-          folder_id: selectedFolderId
+          folder_id: selectedFolderId || null
         })
         .select()
         .single()
 
-      if (invoiceError) throw invoiceError
+      if (invoiceError) {
+        console.error('Error creating invoice:', invoiceError)
+        alert(`Ошибка создания инвойса: ${invoiceError.message}\n\nПроверьте:\n1. Выполнен ли SQL скрипт create-invoice-tables.sql в Supabase?\n2. Существуют ли таблицы invoices и invoice_folders?`)
+        return
+      }
+
+      if (!invoiceData) {
+        alert('Ошибка: инвойс не был создан')
+        return
+      }
 
       // Insert items
       if (items.length > 0) {
@@ -225,7 +252,13 @@ function InvoicePageContent() {
           .from('invoice_items')
           .insert(itemsToInsert)
 
-        if (itemsError) throw itemsError
+        if (itemsError) {
+          console.error('Error creating invoice items:', itemsError)
+          alert(`Ошибка создания позиций: ${itemsError.message}`)
+          // Удаляем созданный инвойс, если не удалось создать позиции
+          await supabase.from('invoices').delete().eq('id', invoiceData.id)
+          return
+        }
       }
 
       await loadInvoices()
@@ -233,6 +266,7 @@ function InvoicePageContent() {
       setShowCreateModal(false)
     } catch (error) {
       console.error('Error creating invoice:', error)
+      alert(`Ошибка создания инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
 
@@ -256,14 +290,21 @@ function InvoicePageContent() {
           tax_rate: taxRate,
           tax_amount: taxAmount,
           total,
-          folder_id: selectedFolderId
+          folder_id: selectedFolderId || null
         })
         .eq('id', selectedInvoice.id)
 
-      if (invoiceError) throw invoiceError
+      if (invoiceError) {
+        console.error('Error updating invoice:', invoiceError)
+        alert(`Ошибка обновления инвойса: ${invoiceError.message}`)
+        return
+      }
 
       // Delete old items and insert new ones
-      await supabase.from('invoice_items').delete().eq('invoice_id', selectedInvoice.id)
+      const { error: deleteError } = await supabase.from('invoice_items').delete().eq('invoice_id', selectedInvoice.id)
+      if (deleteError) {
+        console.error('Error deleting old items:', deleteError)
+      }
 
       if (items.length > 0) {
         const itemsToInsert = items.map((item, index) => ({
@@ -278,7 +319,11 @@ function InvoicePageContent() {
           .from('invoice_items')
           .insert(itemsToInsert)
 
-        if (itemsError) throw itemsError
+        if (itemsError) {
+          console.error('Error updating invoice items:', itemsError)
+          alert(`Ошибка обновления позиций: ${itemsError.message}`)
+          return
+        }
       }
 
       await loadInvoices()
@@ -286,6 +331,7 @@ function InvoicePageContent() {
       setSelectedInvoice(null)
     } catch (error) {
       console.error('Error updating invoice:', error)
+      alert(`Ошибка обновления инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
 
