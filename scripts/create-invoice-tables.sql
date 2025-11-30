@@ -1,6 +1,17 @@
 -- Создание таблиц для Invoice функционала
 -- Выполните этот SQL в Supabase SQL Editor
 
+-- Создаем таблицу invoice_folders
+CREATE TABLE IF NOT EXISTS public.invoice_folders (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#3b82f6',
+    position INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Создаем таблицу invoices
 CREATE TABLE IF NOT EXISTS public.invoices (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -16,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     tax_rate NUMERIC(5, 2) DEFAULT 0 NOT NULL,
     tax_amount NUMERIC(10, 2) DEFAULT 0 NOT NULL,
     total NUMERIC(10, 2) DEFAULT 0 NOT NULL,
+    folder_id UUID REFERENCES public.invoice_folders(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -32,8 +44,22 @@ CREATE TABLE IF NOT EXISTS public.invoice_items (
 );
 
 -- Включаем RLS (Row Level Security)
+ALTER TABLE public.invoice_folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+
+-- Создаем политики RLS для invoice_folders
+CREATE POLICY "Users can view their own invoice folders" ON public.invoice_folders
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own invoice folders" ON public.invoice_folders
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own invoice folders" ON public.invoice_folders
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own invoice folders" ON public.invoice_folders
+    FOR DELETE USING (auth.uid() = user_id);
 
 -- Создаем политики RLS для invoices
 CREATE POLICY "Users can view their own invoices" ON public.invoices
@@ -86,7 +112,9 @@ CREATE POLICY "Users can delete invoice items for their invoices" ON public.invo
     );
 
 -- Создаем индексы для производительности
+CREATE INDEX IF NOT EXISTS idx_invoice_folders_user_id ON public.invoice_folders(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON public.invoices(user_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_folder_id ON public.invoices(folder_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON public.invoices(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON public.invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_items_position ON public.invoice_items(invoice_id, position);
@@ -99,6 +127,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
+
+-- Триггер для автоматического обновления updated_at в invoice_folders
+CREATE TRIGGER update_invoice_folders_updated_at BEFORE UPDATE ON public.invoice_folders
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Триггер для автоматического обновления updated_at в invoices
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON public.invoices

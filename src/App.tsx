@@ -86,12 +86,13 @@ export default function App(){
     const isTasks = pathname.includes('tasks')
     const isFinance = pathname.includes('finance')
     const isNotes = pathname.includes('notes')
+    const isInvoice = pathname.includes('invoice')
     const isHome = pathname === '/'
 
-    console.log('🎨 Applying mode class:', { pathname, isFinance, isTasks, isNotes, isHome })
+    console.log('🎨 Applying mode class:', { pathname, isFinance, isTasks, isNotes, isInvoice, isHome })
 
     // Remove all mode classes
-    document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'home-mode')
+    document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'invoice-mode', 'home-mode')
     
     // Add appropriate mode class
     if (isTasks) {
@@ -121,6 +122,16 @@ export default function App(){
       }, 100)
     } else if (isNotes) {
       document.body.classList.add('notes-mode')
+      // Reset finance styles
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.style.height = ''
+        mainContent.style.overflowY = ''
+        mainContent.style.overflowX = ''
+        mainContent.style.maxHeight = ''
+      }
+    } else if (isInvoice) {
+      document.body.classList.add('invoice-mode')
       // Reset finance styles
       const mainContent = document.getElementById('main-content')
       if (mainContent) {

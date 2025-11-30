@@ -2,11 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { Plus, Trash2, Edit2, FileText, Download } from 'lucide-react'
+import { Plus, FileText, Edit2, Download, X } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { formatCurrencyEUR } from '@/lib/format'
 import { exportInvoiceToPDF } from '@/utils/invoicePdf'
+import InvoiceFolderSidebar from '@/components/invoice/InvoiceFolderSidebar'
+import InvoiceCard from '@/components/invoice/InvoiceCard'
+import Dropdown from '@/components/ui/Dropdown'
+import '@/invoice.css'
 
 interface InvoiceItem {
   id: string
@@ -30,20 +34,26 @@ interface Invoice {
   tax_amount: number
   total: number
   items: InvoiceItem[]
+  folder_id?: string | null
   created_at: string
   updated_at: string
 }
 
-export default function Invoice() {
+function InvoicePageContent() {
   const { t } = useSafeTranslation()
-  const { userId, loading: authLoading } = useSupabaseAuth()
-  const { createSimpleFooter, createDangerFooter } = useModalActions()
+  const { userId } = useSupabaseAuth()
+  const { createSimpleFooter } = useModalActions()
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [activeFolder, setActiveFolder] = useState<string | null>('ALL')
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [foldersCollapsed, setFoldersCollapsed] = useState(() => {
+    const saved = localStorage.getItem('frovo_invoice_folders_collapsed')
+    return saved === 'true'
+  })
 
   // Form state
   const [invoiceNumber, setInvoiceNumber] = useState('')
@@ -59,22 +69,80 @@ export default function Invoice() {
   const [notes, setNotes] = useState('')
   const [taxRate, setTaxRate] = useState(0)
   const [items, setItems] = useState<Omit<InvoiceItem, 'id'>[]>([])
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+  const [folders, setFolders] = useState<Array<{ id: string; name: string; color?: string }>>([])
+
+  // SubHeader actions handler
+  function handleSubHeaderAction(action: string) {
+    switch (action) {
+      case 'add-invoice':
+        resetForm()
+        setSelectedFolderId(activeFolder === 'ALL' ? null : activeFolder)
+        setShowCreateModal(true)
+        break
+      default:
+    }
+  }
+
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      handleSubHeaderAction(event.detail)
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    }
+  }, [activeFolder])
+
+  // Load folders
+  useEffect(() => {
+    if (!userId) return
+    loadFolders()
+  }, [userId])
 
   // Load invoices
   useEffect(() => {
     if (!userId) return
     loadInvoices()
-  }, [userId])
+  }, [userId, activeFolder])
+
+  const loadFolders = async () => {
+    if (!userId) return
+    try {
+      const { data, error } = await supabase
+        .from('invoice_folders')
+        .select('id, name, color')
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setFolders(data || [])
+    } catch (error) {
+      console.error('Error loading folders:', error)
+    }
+  }
 
   const loadInvoices = async () => {
     if (!userId) return
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
+
+      if (activeFolder !== 'ALL') {
+        if (activeFolder) {
+          query = query.eq('folder_id', activeFolder)
+        } else {
+          query = query.is('folder_id', null)
+        }
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
 
@@ -135,7 +203,8 @@ export default function Invoice() {
           subtotal,
           tax_rate: taxRate,
           tax_amount: taxAmount,
-          total
+          total,
+          folder_id: selectedFolderId
         })
         .select()
         .single()
@@ -186,7 +255,8 @@ export default function Invoice() {
           subtotal,
           tax_rate: taxRate,
           tax_amount: taxAmount,
-          total
+          total,
+          folder_id: selectedFolderId
         })
         .eq('id', selectedInvoice.id)
 
@@ -220,8 +290,6 @@ export default function Invoice() {
   }
 
   const handleDeleteInvoice = async (invoiceId: string) => {
-    if (!confirm(t('invoice.confirmDelete'))) return
-
     try {
       await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId)
       const { error } = await supabase.from('invoices').delete().eq('id', invoiceId)
@@ -247,6 +315,7 @@ export default function Invoice() {
     setNotes(invoice.notes || '')
     setTaxRate(invoice.tax_rate || 0)
     setItems(invoice.items.map(({ id, ...rest }) => rest))
+    setSelectedFolderId(invoice.folder_id || null)
     setIsEditing(true)
   }
 
@@ -267,6 +336,7 @@ export default function Invoice() {
     setNotes('')
     setTaxRate(0)
     setItems([])
+    setSelectedFolderId(null)
   }
 
   const addItem = () => {
@@ -283,7 +353,6 @@ export default function Invoice() {
       ...newItems[index],
       [field]: value
     }
-    // Recalculate total after updating quantity or price
     if (field === 'quantity' || field === 'price') {
       updatedItem.total = updatedItem.quantity * updatedItem.price
     }
@@ -292,21 +361,6 @@ export default function Invoice() {
   }
 
   const { subtotal, taxAmount, total } = useMemo(() => calculateTotals(items), [items, taxRate])
-
-  // Listen for SubHeader actions
-  useEffect(() => {
-    const handleSubHeaderActionEvent = (event: CustomEvent) => {
-      if (event.detail === 'add-invoice') {
-        resetForm()
-        setShowCreateModal(true)
-      }
-    }
-    
-    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    return () => {
-      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    }
-  }, [])
 
   const handleExportPDF = async (invoice: Invoice) => {
     try {
@@ -317,79 +371,55 @@ export default function Invoice() {
     }
   }
 
-  if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-500">{t('common.loading')}</div>
-      </div>
-    )
-  }
+  // Filter invoices by active folder
+  const filteredInvoices = useMemo(() => {
+    if (activeFolder === 'ALL') return invoices
+    if (activeFolder) {
+      return invoices.filter(inv => inv.folder_id === activeFolder)
+    }
+    return invoices.filter(inv => !inv.folder_id)
+  }, [invoices, activeFolder])
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-
-      {invoices.length === 0 ? (
-        <div className="card py-12 text-center">
-          <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-h2 text-gray-900 mb-2">{t('invoice.noInvoices')}</h3>
-          <p className="text-gray-500 mb-4">{t('invoice.noInvoicesDescription')}</p>
-          <button className="btn" onClick={() => { resetForm(); setShowCreateModal(true) }}>
-            <Plus className="w-4 h-4" />
-            {t('invoice.createFirst')}
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {invoices.map((invoice) => (
-            <div 
-              key={invoice.id} 
-              className="card hover:shadow-lg transition-shadow cursor-pointer" 
-              onClick={() => handleViewInvoice(invoice)}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-h2 text-gray-900">{invoice.invoice_number}</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleEditInvoice(invoice) }}
-                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                    aria-label={t('actions.edit')}
-                  >
-                    <Edit2 className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id) }}
-                    className="p-2 hover:bg-red-100 rounded-xl transition-colors"
-                    aria-label={t('actions.delete')}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2 mb-4">
-                <div>
-                  <span className="text-sm text-gray-500">{t('invoice.client')}: </span>
-                  <span className="text-sm font-medium text-gray-900">{invoice.client_name}</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500">{t('invoice.date')}: </span>
-                  <span className="text-sm text-gray-900">{new Date(invoice.date).toLocaleDateString('ru-RU')}</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500">{t('invoice.total')}: </span>
-                  <span className="text-sm font-semibold text-gray-900">{formatCurrencyEUR(invoice.total)}</span>
-                </div>
-              </div>
-              <button
-                className="btn btn-outline w-full"
-                onClick={(e) => { e.stopPropagation(); handleExportPDF(invoice) }}
-              >
-                <Download className="w-4 h-4" />
-                {t('invoice.exportPDF')}
-              </button>
-            </div>
-          ))}
-        </div>
+    <div className={`invoice-page ${foldersCollapsed ? 'is-collapsed' : ''}`}>
+      {/* Левая область: панель папок */}
+      {userId && (
+        <InvoiceFolderSidebar 
+          userId={userId} 
+          activeId={activeFolder} 
+          onChange={setActiveFolder}
+          collapsed={foldersCollapsed}
+          onToggleCollapse={() => {
+            const newState = !foldersCollapsed
+            setFoldersCollapsed(newState)
+            localStorage.setItem('frovo_invoice_folders_collapsed', String(newState))
+          }}
+        />
       )}
+      
+      {/* Правая область: инвойсы */}
+      <div className="invoice-content">
+        {loading ? null : filteredInvoices.length === 0 ? (
+          <div className="invoice-empty">
+            <FileText className="invoice-empty-icon" />
+            <div className="invoice-empty-title">{t('invoice.noInvoices')}</div>
+            <div className="invoice-empty-description">{t('invoice.noInvoicesDescription')}</div>
+          </div>
+        ) : (
+          <div className="invoice-grid">
+            {filteredInvoices.map((invoice) => (
+              <InvoiceCard
+                key={invoice.id}
+                invoice={invoice}
+                onEdit={handleEditInvoice}
+                onDelete={handleDeleteInvoice}
+                onExport={handleExportPDF}
+                onView={handleViewInvoice}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Create/Edit Modal */}
       <UnifiedModal
@@ -442,6 +472,19 @@ export default function Invoice() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes.folder')}</label>
+            <Dropdown
+              value={selectedFolderId || ''}
+              onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
+              options={[
+                { value: '', label: t('notes.noFolder') },
+                ...folders.map(f => ({ value: f.id, label: f.name }))
+              ]}
+              placeholder={t('notes.noFolder')}
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.clientName')}</label>
             <CoreInput
               value={clientName}
@@ -489,14 +532,14 @@ export default function Invoice() {
             </div>
           </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
-                <button className="btn btn-outline" onClick={addItem}>
-                  <Plus className="w-4 h-4" />
-                  {t('invoice.addItem')}
-                </button>
-              </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
+              <button className="btn btn-outline" onClick={addItem}>
+                <Plus className="w-4 h-4" />
+                {t('invoice.addItem')}
+              </button>
+            </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {items.map((item, index) => (
                 <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
@@ -530,7 +573,7 @@ export default function Invoice() {
                     onClick={() => removeItem(index)}
                     className="p-2 hover:bg-red-100 rounded self-start"
                   >
-                    <Trash2 className="w-4 h-4 text-red-600" />
+                    <X className="w-4 h-4 text-red-600" />
                   </button>
                 </div>
               ))}
@@ -681,3 +724,6 @@ export default function Invoice() {
   )
 }
 
+export default function InvoicePage() {
+  return <InvoicePageContent />
+}
