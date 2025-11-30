@@ -10,6 +10,7 @@ import { exportInvoiceToPDF } from '@/utils/invoicePdf'
 import InvoiceFolderSidebar from '@/components/invoice/InvoiceFolderSidebar'
 import InvoiceCard from '@/components/invoice/InvoiceCard'
 import InvoiceClientsPanel from '@/components/invoice/InvoiceClientsPanel'
+import InvoicePreview from '@/components/invoice/InvoicePreview'
 import Dropdown from '@/components/ui/Dropdown'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import '@/invoice.css'
@@ -726,7 +727,8 @@ function InvoicePageContent() {
         }}
         title={isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
         size="xl"
-        bodyClassName="px-5 py-4"
+        bodyClassName="p-0"
+        contentClassName="max-h-[90vh]"
         footer={createSimpleFooter(
           {
             label: isEditing ? t('actions.save') : t('invoice.create'),
@@ -744,7 +746,10 @@ function InvoicePageContent() {
           }
         )}
       >
-        <div className="space-y-6">
+        <div className="invoice-modal-split">
+          {/* Left: Form */}
+          <div className="invoice-modal-form">
+            <div className="space-y-6 p-5 overflow-y-auto">
           {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1029,21 +1034,39 @@ function InvoicePageContent() {
             />
           </div>
 
-          <div className="border-t pt-4 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">{t('invoice.subtotal')}:</span>
-              <span className="font-medium">{formatCurrencyEUR(subtotal)}</span>
             </div>
-            {taxRate > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('invoice.tax')} ({taxRate}%):</span>
-                <span className="font-medium">{formatCurrencyEUR(taxAmount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-lg font-bold border-t pt-2">
-              <span>{t('invoice.total')}:</span>
-              <span>{formatCurrencyEUR(total)}</span>
-            </div>
+          </div>
+          </div>
+
+          {/* Right: Preview */}
+          <div className="invoice-modal-preview">
+            <InvoicePreview
+              invoiceNumber={invoiceNumber}
+              date={date}
+              dueDate={dueDate}
+              notes={notes}
+              taxRate={taxRate}
+              fromName={fromName}
+              fromCountry={fromCountry}
+              fromCity={fromCity}
+              fromProvince={fromProvince}
+              fromAddressLine1={fromAddressLine1}
+              fromAddressLine2={fromAddressLine2}
+              fromPostalCode={fromPostalCode}
+              fromAccountNumber={fromAccountNumber}
+              fromRoutingNumber={fromRoutingNumber}
+              fromSwiftBic={fromSwiftBic}
+              fromBankName={fromBankName}
+              fromBankAddress={fromBankAddress}
+              clientName={clientName}
+              clientEmail={clientEmail}
+              clientAddress={clientAddress}
+              clientPhone={clientPhone}
+              items={items}
+              subtotal={subtotal}
+              taxAmount={taxAmount}
+              total={total}
+            />
           </div>
         </div>
       </UnifiedModal>

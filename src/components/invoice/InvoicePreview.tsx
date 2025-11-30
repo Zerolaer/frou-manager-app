@@ -1,0 +1,230 @@
+import React from 'react'
+import { useSafeTranslation } from '@/utils/safeTranslation'
+import { formatCurrencyEUR } from '@/lib/format'
+
+interface InvoiceItem {
+  description: string
+  period?: string
+  quantity: number
+  price: number
+  price_per_hour?: number
+  hours?: number
+  total: number
+}
+
+interface InvoicePreviewProps {
+  invoiceNumber: string
+  date: string
+  dueDate: string
+  notes: string
+  taxRate: number
+  // FROM fields
+  fromName?: string
+  fromCountry?: string
+  fromCity?: string
+  fromProvince?: string
+  fromAddressLine1?: string
+  fromAddressLine2?: string
+  fromPostalCode?: string
+  fromAccountNumber?: string
+  fromRoutingNumber?: string
+  fromSwiftBic?: string
+  fromBankName?: string
+  fromBankAddress?: string
+  // TO fields
+  clientName: string
+  clientEmail?: string
+  clientAddress?: string
+  clientPhone?: string
+  items: InvoiceItem[]
+  subtotal: number
+  taxAmount: number
+  total: number
+}
+
+export default function InvoicePreview({
+  invoiceNumber,
+  date,
+  dueDate,
+  notes,
+  taxRate,
+  fromName,
+  fromCountry,
+  fromCity,
+  fromProvince,
+  fromAddressLine1,
+  fromAddressLine2,
+  fromPostalCode,
+  fromAccountNumber,
+  fromRoutingNumber,
+  fromSwiftBic,
+  fromBankName,
+  fromBankAddress,
+  clientName,
+  clientEmail,
+  clientAddress,
+  clientPhone,
+  items,
+  subtotal,
+  taxAmount,
+  total
+}: InvoicePreviewProps) {
+  const { t } = useSafeTranslation()
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  const hasFromData = fromName || fromCountry || fromCity
+
+  return (
+    <div className="invoice-preview">
+      <div className="invoice-preview-container">
+        {/* Header */}
+        <div className="invoice-preview-header">
+          <div className="invoice-preview-title">INVOICE</div>
+          <div className="invoice-preview-number">
+            {invoiceNumber || 'INV-001'}
+          </div>
+        </div>
+
+        {/* From and To sections */}
+        <div className="invoice-preview-addresses">
+          {/* FROM Section */}
+          {hasFromData && (
+            <div className="invoice-preview-from">
+              <div className="invoice-preview-section-title">{t('invoice.from')}</div>
+              {fromName && <div className="invoice-preview-name">{fromName}</div>}
+              <div className="invoice-preview-address">
+                {fromCountry && <div>{fromCountry}</div>}
+                {fromCity && <div>{fromCity}</div>}
+                {fromProvince && <div>{fromProvince}</div>}
+                {fromAddressLine1 && <div>{fromAddressLine1}</div>}
+                {fromAddressLine2 && <div>{fromAddressLine2}</div>}
+                {fromPostalCode && <div>{fromPostalCode}</div>}
+              </div>
+              {(fromAccountNumber || fromRoutingNumber || fromSwiftBic || fromBankName) && (
+                <div className="invoice-preview-banking">
+                  {fromAccountNumber && <div>Account: {fromAccountNumber}</div>}
+                  {fromRoutingNumber && <div>Routing: {fromRoutingNumber}</div>}
+                  {fromSwiftBic && <div>SWIFT/BIC: {fromSwiftBic}</div>}
+                  {fromBankName && <div>{fromBankName}</div>}
+                  {fromBankAddress && <div className="text-xs text-gray-500">{fromBankAddress}</div>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TO Section */}
+          <div className="invoice-preview-to">
+            <div className="invoice-preview-section-title">{t('invoice.to')}</div>
+            {clientName ? (
+              <>
+                <div className="invoice-preview-name">{clientName}</div>
+                {clientEmail && <div className="invoice-preview-contact">{clientEmail}</div>}
+                {clientPhone && <div className="invoice-preview-contact">{clientPhone}</div>}
+                {clientAddress && (
+                  <div className="invoice-preview-address whitespace-pre-line">
+                    {clientAddress}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="invoice-preview-placeholder">{t('invoice.toName')}</div>
+            )}
+          </div>
+        </div>
+
+        {/* Invoice Details */}
+        <div className="invoice-preview-details">
+          <div className="invoice-preview-detail">
+            <span className="invoice-preview-detail-label">{t('invoice.date')}:</span>
+            <span>{date ? formatDate(date) : '-'}</span>
+          </div>
+          <div className="invoice-preview-detail">
+            <span className="invoice-preview-detail-label">{t('invoice.dueDate')}:</span>
+            <span>{dueDate ? formatDate(dueDate) : '-'}</span>
+          </div>
+        </div>
+
+        {/* Items Table */}
+        <div className="invoice-preview-items">
+          <table className="invoice-preview-table">
+            <thead>
+              <tr>
+                <th className="invoice-preview-th">{t('invoice.itemDescription')}</th>
+                {items.some(item => item.period) && (
+                  <th className="invoice-preview-th">{t('invoice.period')}</th>
+                )}
+                {items.some(item => item.hours) && (
+                  <th className="invoice-preview-th">{t('invoice.hours')}</th>
+                )}
+                <th className="invoice-preview-th text-right">{t('invoice.price')}</th>
+                <th className="invoice-preview-th text-right">{t('invoice.total')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length > 0 ? (
+                items.map((item, index) => (
+                  <tr key={index}>
+                    <td className="invoice-preview-td">{item.description || '-'}</td>
+                    {items.some(i => i.period) && (
+                      <td className="invoice-preview-td">{item.period || '-'}</td>
+                    )}
+                    {items.some(i => i.hours) && (
+                      <td className="invoice-preview-td">{item.hours || '-'}</td>
+                    )}
+                    <td className="invoice-preview-td text-right">
+                      {formatCurrencyEUR(item.price)}
+                    </td>
+                    <td className="invoice-preview-td text-right font-semibold">
+                      {formatCurrencyEUR(item.quantity * item.price)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="invoice-preview-td text-center text-gray-400">
+                    {t('invoice.noItems')}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Totals */}
+        <div className="invoice-preview-totals">
+          <div className="invoice-preview-total-row">
+            <span>{t('invoice.subtotal')}:</span>
+            <span className="font-semibold">{formatCurrencyEUR(subtotal)}</span>
+          </div>
+          {taxRate > 0 && (
+            <div className="invoice-preview-total-row">
+              <span>{t('invoice.tax')} ({taxRate}%):</span>
+              <span className="font-semibold">{formatCurrencyEUR(taxAmount)}</span>
+            </div>
+          )}
+          <div className="invoice-preview-total-row invoice-preview-total-final">
+            <span className="font-bold text-lg">{t('invoice.total')}:</span>
+            <span className="font-bold text-lg">{formatCurrencyEUR(total)}</span>
+          </div>
+        </div>
+
+        {/* Notes */}
+        {notes && (
+          <div className="invoice-preview-notes">
+            <div className="invoice-preview-notes-title">{t('invoice.notes')}:</div>
+            <div className="invoice-preview-notes-content whitespace-pre-line">{notes}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
