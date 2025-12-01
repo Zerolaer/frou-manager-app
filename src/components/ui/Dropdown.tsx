@@ -62,6 +62,7 @@ export default function Dropdown({
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
   const [dropdownAlignment, setDropdownAlignment] = useState<'left' | 'right'>('left')
   const [buttonWidth, setButtonWidth] = useState(0)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const btnRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const selectedOptionRef = useRef<HTMLButtonElement>(null)
@@ -126,9 +127,34 @@ export default function Dropdown({
     const fitsLeft = buttonRect.right - dropdownRect.width >= 0
 
     // Determine position
-    setDropdownPosition(fitsBelow ? 'bottom' : fitsAbove ? 'top' : 'bottom')
-    setDropdownAlignment(fitsRight ? 'left' : fitsLeft ? 'right' : 'left')
-  }, [open])
+    const position = fitsBelow ? 'bottom' : fitsAbove ? 'top' : 'bottom'
+    const alignment = fitsRight ? 'left' : fitsLeft ? 'right' : 'left'
+    
+    setDropdownPosition(position)
+    setDropdownAlignment(alignment)
+    
+    // Calculate fixed position
+    const style: React.CSSProperties = {
+      minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
+      width: 'auto',
+      animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      transformOrigin: position === 'bottom' ? 'top' : 'bottom'
+    }
+    
+    if (position === 'bottom') {
+      style.top = `${buttonRect.bottom + 8}px`
+    } else {
+      style.bottom = `${window.innerHeight - buttonRect.top}px`
+    }
+    
+    if (alignment === 'left') {
+      style.left = `${buttonRect.left}px`
+    } else {
+      style.right = `${window.innerWidth - buttonRect.right}px`
+    }
+    
+    setDropdownStyle(style)
+  }, [open, buttonWidth])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -195,14 +221,7 @@ export default function Dropdown({
           <div 
             ref={dropdownRef}
             className={`fixed bg-white border border-gray-200 rounded-xl shadow-lg z-[9999] max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
-            style={{
-              [dropdownPosition === 'bottom' ? 'top' : 'bottom']: btnRef.current ? `${dropdownPosition === 'bottom' ? btnRef.current.getBoundingClientRect().bottom + 8 : window.innerHeight - btnRef.current.getBoundingClientRect().top}px` : 'auto',
-              [dropdownAlignment === 'left' ? 'left' : 'right']: btnRef.current ? `${dropdownAlignment === 'left' ? btnRef.current.getBoundingClientRect().left : window.innerWidth - btnRef.current.getBoundingClientRect().right}px` : 'auto',
-              minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
-              width: 'auto',
-              animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-              transformOrigin: dropdownPosition === 'bottom' ? 'top' : 'bottom'
-            }}
+            style={dropdownStyle}
           >
             {options.map((option) => (
               <button
