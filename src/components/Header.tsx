@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar, FileInvoice, UserPlus } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar, FileCheck, UserPlus } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
@@ -35,7 +35,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
     { to: '/finance', icon: DollarSign, label: t('nav.finance') },
     { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
     { to: '/notes', icon: FileText, label: t('nav.notes') },
-    { to: '/invoice', icon: FileInvoice, label: t('nav.invoice') },
+    { to: '/invoice', icon: FileCheck, label: t('nav.invoice') },
   ]
 
   const getSubHeaderContent = () => {
