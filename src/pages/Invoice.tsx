@@ -971,7 +971,7 @@ function InvoicePageContent() {
         }}
         title={isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
         size="xl"
-        bodyClassName="p-0 !overflow-hidden"
+        bodyClassName="p-0 !overflow-hidden invoice-modal-body"
         contentClassName="max-h-[90vh] !w-[95vw] !max-w-[1400px] invoice-create-modal !overflow-hidden"
         footer={createSimpleFooter(
           {

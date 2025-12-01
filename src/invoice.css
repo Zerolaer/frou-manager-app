@@ -333,6 +333,15 @@ body.invoice-mode #main-content {
   overflow: hidden !important;
 }
 
+/* Force no overflow on modal body when invoice modal is active */
+.invoice-modal-body {
+  overflow: hidden !important;
+}
+
+.invoice-modal-body.flex-1 {
+  overflow: hidden !important;
+}
+
 /* Invoice Preview Styles */
 .invoice-preview {
   width: 100%;
