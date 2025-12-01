@@ -191,14 +191,13 @@ export default function Dropdown({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
           <div 
             ref={dropdownRef}
-            className={`absolute bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
+            className={`fixed bg-white border border-gray-200 rounded-xl shadow-lg z-[9999] max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
             style={{
-              [dropdownPosition === 'bottom' ? 'top' : 'bottom']: '100%',
-              [dropdownPosition === 'bottom' ? 'marginTop' : 'marginBottom']: '8px',
-              [dropdownAlignment === 'left' ? 'left' : 'right']: '0',
+              [dropdownPosition === 'bottom' ? 'top' : 'bottom']: btnRef.current ? `${dropdownPosition === 'bottom' ? btnRef.current.getBoundingClientRect().bottom + 8 : window.innerHeight - btnRef.current.getBoundingClientRect().top}px` : 'auto',
+              [dropdownAlignment === 'left' ? 'left' : 'right']: btnRef.current ? `${dropdownAlignment === 'left' ? btnRef.current.getBoundingClientRect().left : window.innerWidth - btnRef.current.getBoundingClientRect().right}px` : 'auto',
               minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
               width: 'auto',
               animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
