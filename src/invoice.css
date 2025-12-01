@@ -301,27 +301,36 @@ body.invoice-mode #main-content {
   gap: 0;
   height: calc(90vh - 120px);
   max-height: calc(90vh - 120px);
-  overflow: hidden;
+  overflow: hidden !important;
   width: 100%;
   max-width: 100%;
 }
 
 .invoice-modal-form {
   border-right: 1px solid #E9F2F6;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   background: #fff;
   height: 100%;
   max-width: 100%;
 }
 
 .invoice-modal-preview {
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   background: #f8fafc;
   padding: 0;
   height: 100%;
   max-width: 100%;
+}
+
+/* Override modal body overflow for invoice modal */
+.invoice-create-modal {
+  overflow: hidden !important;
+}
+
+.invoice-create-modal > div {
+  overflow: hidden !important;
 }
 
 /* Invoice Preview Styles */

@@ -971,8 +971,8 @@ function InvoicePageContent() {
         }}
         title={isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
         size="xl"
-        bodyClassName="p-0 overflow-hidden"
-        contentClassName="max-h-[90vh] !w-[95vw] !max-w-[1400px] invoice-create-modal overflow-hidden"
+        bodyClassName="p-0 !overflow-hidden"
+        contentClassName="max-h-[90vh] !w-[95vw] !max-w-[1400px] invoice-create-modal !overflow-hidden"
         footer={createSimpleFooter(
           {
             label: isEditing ? t('actions.save') : t('invoice.create'),
@@ -990,9 +990,9 @@ function InvoicePageContent() {
           }
         )}
       >
-        <div className="invoice-modal-split">
+        <div className="invoice-modal-split" style={{ overflow: 'hidden' }}>
           {/* Left: Form */}
-          <div className="invoice-modal-form">
+          <div className="invoice-modal-form" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
             <div className="space-y-6 p-5">
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
@@ -1545,7 +1545,7 @@ function InvoicePageContent() {
           </div>
 
           {/* Right: Preview */}
-          <div className="invoice-modal-preview">
+          <div className="invoice-modal-preview" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
             <InvoicePreview
               invoiceNumber={invoiceNumber}
               date={date}
