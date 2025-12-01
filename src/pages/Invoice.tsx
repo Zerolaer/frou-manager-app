@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { Plus, FileText, Edit2, Download, X } from 'lucide-react'
+import { Plus, FileText, Edit2, Download, X, Upload, Save, Palette } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { formatCurrencyEUR } from '@/lib/format'
@@ -114,6 +114,13 @@ function InvoicePageContent() {
   const [fromSwiftBic, setFromSwiftBic] = useState('')
   const [fromBankName, setFromBankName] = useState('')
   const [fromBankAddress, setFromBankAddress] = useState('')
+  
+  // PDF Header Color customization
+  const [pdfHeaderColor, setPdfHeaderColor] = useState(() => {
+    const saved = localStorage.getItem('frovo_invoice_pdf_header_color')
+    return saved || '#1e293b'
+  })
+  const [showColorPicker, setShowColorPicker] = useState(false)
   
   // TO (клиент) state
   const [clientName, setClientName] = useState('')
@@ -682,6 +689,12 @@ function InvoicePageContent() {
     
     // Load FROM template if exists
     loadFromTemplate()
+    
+    // Load PDF header color
+    const savedColor = localStorage.getItem('frovo_invoice_pdf_header_color')
+    if (savedColor) {
+      setPdfHeaderColor(savedColor)
+    }
   }
 
   const addItem = () => {
@@ -724,11 +737,16 @@ function InvoicePageContent() {
 
   const handleExportPDF = async (invoice: Invoice) => {
     try {
-      await exportInvoiceToPDF(invoice)
+      await exportInvoiceToPDF(invoice, pdfHeaderColor)
     } catch (error) {
       console.error('Error exporting PDF:', error)
       alert(t('invoice.exportError'))
     }
+  }
+
+  const handleColorChange = (color: string) => {
+    setPdfHeaderColor(color)
+    localStorage.setItem('frovo_invoice_pdf_header_color', color)
   }
 
   // Filter invoices by active folder
@@ -861,48 +879,107 @@ function InvoicePageContent() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.taxRate')} (%)</label>
                   <CoreInput
                     type="number"
-                    value={taxRate}
-                    onChange={(e) => setTaxRate(Number(e.target.value))}
+                    value={taxRate || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Number(e.target.value)
+                      setTaxRate(Math.max(0, Math.min(100, val)))
+                    }}
                     placeholder="0"
+                    min="0"
+                    max="100"
+                    step="0.01"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.folder')}</label>
-                <Dropdown
-                  value={selectedFolderId || ''}
-                  onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
-                  options={[
-                    { value: '', label: t('invoice.noFolder') },
-                    ...folders.map(f => ({ value: f.id, label: f.name }))
-                  ]}
-                  placeholder={t('invoice.noFolder')}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.folder')}</label>
+                  <Dropdown
+                    value={selectedFolderId || ''}
+                    onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
+                    options={[
+                      { value: '', label: t('invoice.noFolder') },
+                      ...folders.map(f => ({ value: f.id, label: f.name }))
+                    ]}
+                    placeholder={t('invoice.noFolder')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Цвет шапки PDF</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={pdfHeaderColor}
+                      onChange={(e) => handleColorChange(e.target.value)}
+                      className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                      title="Выберите цвет шапки для PDF"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5"
+                      title="Настройки цвета"
+                    >
+                      <Palette className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {showColorPicker && (
+                    <div className="mt-2 p-3 bg-white border rounded-lg shadow-sm">
+                      <div className="grid grid-cols-4 gap-2">
+                        {['#1e293b', '#059669', '#dc2626', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#be185d'].map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => {
+                              handleColorChange(color)
+                              setShowColorPicker(false)
+                            }}
+                            className="w-8 h-8 rounded border-2 border-gray-300 hover:border-gray-500 transition-colors"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleColorChange('#1e293b')
+                          setShowColorPicker(false)
+                        }}
+                        className="mt-2 text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        Сбросить по умолчанию
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* FROM Section */}
               <div className="border rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
-                      className="btn btn-outline text-xs"
+                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
                       onClick={loadFromTemplate}
                       title={t('invoice.loadFromTemplate')}
                     >
-                      {t('invoice.loadFromTemplate')}
+                      <Upload className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Загрузить</span>
                     </button>
                     <button
                       type="button"
-                      className="btn btn-outline text-xs"
+                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
                       onClick={saveFromTemplate}
                       title={t('invoice.saveFromTemplate') + ' (автосохранение при потере фокуса)'}
                     >
-                      {t('invoice.saveFromTemplate')}
+                      <Save className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Сохранить</span>
                     </button>
-                    <span className="text-xs text-gray-500 self-center">Автосохранение включено</span>
+                    <span className="text-xs text-gray-500 self-center whitespace-nowrap">💾 авто</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -964,9 +1041,9 @@ function InvoicePageContent() {
 
               {/* TO Section */}
               <div className="border rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h3 className="text-sm font-semibold text-gray-700">{t('invoice.to')}</h3>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {clientTemplates.length > 0 && (
                       <Dropdown
                         value=""
@@ -976,15 +1053,16 @@ function InvoicePageContent() {
                         }}
                         options={clientTemplates.map(t => ({ value: t.id, label: t.name }))}
                         placeholder={t('invoice.loadClientTemplate')}
-                        buttonClassName="text-xs"
+                        buttonClassName="text-xs px-3 py-1.5"
                       />
                     )}
                     <button
                       type="button"
-                      className="btn btn-outline text-xs"
+                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
                       onClick={() => setShowClientTemplateModal(true)}
                     >
-                      {t('invoice.saveClientTemplate')}
+                      <Save className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Сохранить</span>
                     </button>
                   </div>
                 </div>
@@ -1133,8 +1211,15 @@ function InvoicePageContent() {
                                   min="0"
                                   value={item.price || ''}
                                   onChange={(e) => {
-                                    const price = e.target.value === '' ? 0 : Number(e.target.value)
-                                    updateItem(index, 'price', price)
+                                    const val = e.target.value
+                                    if (val === '' || val === '-') {
+                                      updateItem(index, 'price', 0)
+                                    } else {
+                                      const price = Number(val)
+                                      if (!isNaN(price) && price >= 0) {
+                                        updateItem(index, 'price', price)
+                                      }
+                                    }
                                   }}
                                   placeholder={t('invoice.price')}
                                 />
@@ -1152,8 +1237,15 @@ function InvoicePageContent() {
                                   min="0"
                                   value={item.hours || ''}
                                   onChange={(e) => {
-                                    const hours = e.target.value === '' ? 0 : Number(e.target.value)
-                                    updateItem(index, 'hours', hours)
+                                    const val = e.target.value
+                                    if (val === '' || val === '-') {
+                                      updateItem(index, 'hours', 0)
+                                    } else {
+                                      const hours = Number(val)
+                                      if (!isNaN(hours) && hours >= 0) {
+                                        updateItem(index, 'hours', hours)
+                                      }
+                                    }
                                   }}
                                   placeholder={t('invoice.hours')}
                                 />
@@ -1166,8 +1258,15 @@ function InvoicePageContent() {
                                   min="0"
                                   value={item.price_per_hour || ''}
                                   onChange={(e) => {
-                                    const pricePerHour = e.target.value === '' ? 0 : Number(e.target.value)
-                                    updateItem(index, 'price_per_hour', pricePerHour)
+                                    const val = e.target.value
+                                    if (val === '' || val === '-') {
+                                      updateItem(index, 'price_per_hour', 0)
+                                    } else {
+                                      const pricePerHour = Number(val)
+                                      if (!isNaN(pricePerHour) && pricePerHour >= 0) {
+                                        updateItem(index, 'price_per_hour', pricePerHour)
+                                      }
+                                    }
                                   }}
                                   placeholder={t('invoice.pricePerHour')}
                                 />
@@ -1247,6 +1346,7 @@ function InvoicePageContent() {
               subtotal={subtotal}
               taxAmount={taxAmount}
               total={total}
+              headerColor={pdfHeaderColor}
             />
           </div>
         </div>

@@ -43,6 +43,7 @@ interface InvoicePreviewProps {
   subtotal: number
   taxAmount: number
   total: number
+  headerColor?: string
 }
 
 export default function InvoicePreview({
@@ -70,7 +71,8 @@ export default function InvoicePreview({
   items,
   subtotal,
   taxAmount,
-  total
+  total,
+  headerColor = '#1e293b'
 }: InvoicePreviewProps) {
   const { t } = useSafeTranslation()
 
@@ -89,7 +91,7 @@ export default function InvoicePreview({
     <div className="invoice-preview">
       <div className="invoice-preview-container">
         {/* Header */}
-        <div className="invoice-preview-header">
+        <div className="invoice-preview-header" style={{ backgroundColor: headerColor }}>
           <div className="invoice-preview-title">INVOICE</div>
           <div className="invoice-preview-number">
             Invoice #{invoiceNumber || 'INV-001'}

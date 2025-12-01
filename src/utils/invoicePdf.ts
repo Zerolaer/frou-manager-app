@@ -47,11 +47,20 @@ interface Invoice {
   items: InvoiceItem[]
 }
 
-export async function exportInvoiceToPDF(invoice: Invoice) {
+export async function exportInvoiceToPDF(invoice: Invoice, headerColor?: string) {
   const doc = new jsPDF()
   
   // Colors
-  const primaryColor: [number, number, number] = [31, 41, 55] // gray-800
+  // Parse header color from hex to RGB
+  let primaryColor: [number, number, number] = [31, 41, 55] // gray-800 default
+  if (headerColor) {
+    const hex = headerColor.replace('#', '')
+    primaryColor = [
+      parseInt(hex.substring(0, 2), 16),
+      parseInt(hex.substring(2, 4), 16),
+      parseInt(hex.substring(4, 6), 16)
+    ]
+  }
   const lightGray: [number, number, number] = [243, 244, 246] // gray-100
   
   // Header with dark background
