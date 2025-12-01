@@ -302,18 +302,23 @@ body.invoice-mode #main-content {
   height: calc(90vh - 120px);
   max-height: calc(90vh - 120px);
   overflow: hidden;
+  width: 100%;
 }
 
 .invoice-modal-form {
   border-right: 1px solid #E9F2F6;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #fff;
+  height: 100%;
 }
 
 .invoice-modal-preview {
   overflow-y: auto;
+  overflow-x: hidden;
   background: #f8fafc;
   padding: 0;
+  height: 100%;
 }
 
 /* Invoice Preview Styles */

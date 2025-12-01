@@ -295,6 +295,10 @@ export async function exportInvoiceToPDF(invoice: Invoice, headerColor?: string)
       fontStyle: 'bold',
       fontSize: 10
     },
+    styles: {
+      lineColor: [primaryColor[0], primaryColor[1], primaryColor[2]],
+      lineWidth: 0.1
+    },
     bodyStyles: {
       fontSize: 9
     },

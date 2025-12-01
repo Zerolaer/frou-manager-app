@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS public.invoice_items (
     price NUMERIC(10, 2) DEFAULT 0 NOT NULL,
     price_per_hour NUMERIC(10, 2),
     hours NUMERIC(10, 2),
+    item_type TEXT DEFAULT 'product',
     position INTEGER DEFAULT 0 NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

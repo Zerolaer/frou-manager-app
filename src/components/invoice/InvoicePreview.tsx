@@ -91,7 +91,7 @@ export default function InvoicePreview({
     <div className="invoice-preview">
       <div className="invoice-preview-container">
         {/* Header */}
-        <div className="invoice-preview-header" style={{ backgroundColor: headerColor }}>
+        <div className="invoice-preview-header" style={{ backgroundColor: headerColor, '--theme-color': headerColor } as React.CSSProperties}>
           <div className="invoice-preview-title">INVOICE</div>
           <div className="invoice-preview-number">
             Invoice #{invoiceNumber || 'INV-001'}
@@ -161,18 +161,18 @@ export default function InvoicePreview({
           <table className="invoice-preview-table">
             <thead>
               <tr>
-                <th className="invoice-preview-th">{t('invoice.itemDescription')}</th>
+                <th className="invoice-preview-th" style={{ backgroundColor: headerColor }}>{t('invoice.itemDescription')}</th>
                 {items.some(item => item.item_type === 'service_period' || item.period) && (
-                  <th className="invoice-preview-th">{t('invoice.period')}</th>
+                  <th className="invoice-preview-th" style={{ backgroundColor: headerColor }}>{t('invoice.period')}</th>
                 )}
                 {items.some(item => item.item_type === 'product' || (!item.item_type && item.quantity > 1)) && (
-                  <th className="invoice-preview-th text-right">{t('invoice.quantity')}</th>
+                  <th className="invoice-preview-th text-right" style={{ backgroundColor: headerColor }}>{t('invoice.quantity')}</th>
                 )}
                 {items.some(item => item.item_type === 'hourly' || item.hours) && (
-                  <th className="invoice-preview-th text-right">{t('invoice.hours')}</th>
+                  <th className="invoice-preview-th text-right" style={{ backgroundColor: headerColor }}>{t('invoice.hours')}</th>
                 )}
-                <th className="invoice-preview-th text-right">{t('invoice.price')}</th>
-                <th className="invoice-preview-th text-right">{t('invoice.total')}</th>
+                <th className="invoice-preview-th text-right" style={{ backgroundColor: headerColor }}>{t('invoice.price')}</th>
+                <th className="invoice-preview-th text-right" style={{ backgroundColor: headerColor }}>{t('invoice.total')}</th>
               </tr>
             </thead>
             <tbody>

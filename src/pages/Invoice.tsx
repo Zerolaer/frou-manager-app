@@ -115,18 +115,26 @@ function InvoicePageContent() {
   const [fromBankName, setFromBankName] = useState('')
   const [fromBankAddress, setFromBankAddress] = useState('')
   
-  // PDF Header Color customization
-  const [pdfHeaderColor, setPdfHeaderColor] = useState(() => {
-    const saved = localStorage.getItem('frovo_invoice_pdf_header_color')
+  // PDF Theme customization (header + table)
+  const [pdfThemeColor, setPdfThemeColor] = useState(() => {
+    const saved = localStorage.getItem('frovo_invoice_pdf_theme_color')
     return saved || '#1e293b'
   })
   const [showColorPicker, setShowColorPicker] = useState(false)
+  
+  // FROM section - saved template state
+  const [fromDataSaved, setFromDataSaved] = useState(false)
+  const [isEditingFrom, setIsEditingFrom] = useState(false)
   
   // TO (клиент) state
   const [clientName, setClientName] = useState('')
   const [clientEmail, setClientEmail] = useState('')
   const [clientAddress, setClientAddress] = useState('')
   const [clientPhone, setClientPhone] = useState('')
+  
+  // TO section - track if data changed
+  const [toDataChanged, setToDataChanged] = useState(false)
+  const [originalToData, setOriginalToData] = useState({ name: '', email: '', address: '', phone: '' })
   
   // Client templates
   const [clientTemplates, setClientTemplates] = useState<ClientTemplate[]>([])
@@ -336,11 +344,8 @@ function InvoicePageContent() {
             price: item.price,
             price_per_hour: item.price_per_hour || null,
             hours: item.hours || null,
+            item_type: item.item_type || 'product',
             position: index
-          }
-          // Only add item_type if it exists (for backward compatibility)
-          if (item.item_type) {
-            itemData.item_type = item.item_type
           }
           return itemData
         })
@@ -433,11 +438,8 @@ function InvoicePageContent() {
             price: item.price,
             price_per_hour: item.price_per_hour || null,
             hours: item.hours || null,
+            item_type: item.item_type || 'product',
             position: index
-          }
-          // Only add item_type if it exists (for backward compatibility)
-          if (item.item_type) {
-            itemData.item_type = item.item_type
           }
           return itemData
         })
@@ -512,6 +514,13 @@ function InvoicePageContent() {
     setClientEmail(invoice.client_email || '')
     setClientAddress(invoice.client_address || '')
     setClientPhone(invoice.client_phone || '')
+    setOriginalToData({ 
+      name: invoice.client_name, 
+      email: invoice.client_email || '', 
+      address: invoice.client_address || '', 
+      phone: invoice.client_phone || '' 
+    })
+    setToDataChanged(false)
     
     setItems(invoice.items.map(({ id, ...rest }) => ({
       ...rest,
@@ -528,31 +537,34 @@ function InvoicePageContent() {
     setIsEditing(false)
   }
 
-  // Load FROM template from localStorage
-  const loadFromTemplate = () => {
-    try {
-      const template = localStorage.getItem('frovo_invoice_from_template')
-      if (template) {
-        const data = JSON.parse(template)
-        setFromName(data.fromName || '')
-        setFromCountry(data.fromCountry || '')
-        setFromCity(data.fromCity || '')
-        setFromProvince(data.fromProvince || '')
-        setFromAddressLine1(data.fromAddressLine1 || '')
-        setFromAddressLine2(data.fromAddressLine2 || '')
-        setFromPostalCode(data.fromPostalCode || '')
-        setFromAccountNumber(data.fromAccountNumber || '')
-        setFromRoutingNumber(data.fromRoutingNumber || '')
-        setFromSwiftBic(data.fromSwiftBic || '')
-        setFromBankName(data.fromBankName || '')
-        setFromBankAddress(data.fromBankAddress || '')
+  // Load FROM template from localStorage (one-time on mount)
+  useEffect(() => {
+    if (!fromDataSaved && !isEditingFrom) {
+      try {
+        const template = localStorage.getItem('frovo_invoice_from_template')
+        if (template) {
+          const data = JSON.parse(template)
+          setFromName(data.fromName || '')
+          setFromCountry(data.fromCountry || '')
+          setFromCity(data.fromCity || '')
+          setFromProvince(data.fromProvince || '')
+          setFromAddressLine1(data.fromAddressLine1 || '')
+          setFromAddressLine2(data.fromAddressLine2 || '')
+          setFromPostalCode(data.fromPostalCode || '')
+          setFromAccountNumber(data.fromAccountNumber || '')
+          setFromRoutingNumber(data.fromRoutingNumber || '')
+          setFromSwiftBic(data.fromSwiftBic || '')
+          setFromBankName(data.fromBankName || '')
+          setFromBankAddress(data.fromBankAddress || '')
+          setFromDataSaved(true)
+        }
+      } catch (error) {
+        console.error('Error loading FROM template:', error)
       }
-    } catch (error) {
-      console.error('Error loading FROM template:', error)
     }
-  }
+  }, [fromDataSaved, isEditingFrom])
 
-  // Save FROM template to localStorage (auto-save on change)
+  // Save FROM template to localStorage
   const saveFromTemplate = () => {
     try {
       const template = {
@@ -570,9 +582,11 @@ function InvoicePageContent() {
         fromBankAddress
       }
       localStorage.setItem('frovo_invoice_from_template', JSON.stringify(template))
-      // Show subtle notification instead of alert
+      setFromDataSaved(true)
+      setIsEditingFrom(false)
+      // Show notification
       const notification = document.createElement('div')
-      notification.textContent = t('invoice.fromTemplate') + ' ' + t('invoice.saved')
+      notification.textContent = 'Данные сохранены'
       notification.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
       document.body.appendChild(notification)
       setTimeout(() => {
@@ -582,14 +596,56 @@ function InvoicePageContent() {
       }, 2000)
     } catch (error) {
       console.error('Error saving FROM template:', error)
-      alert('Ошибка сохранения шаблона')
+      alert('Ошибка сохранения данных')
     }
   }
-
-  // Auto-save FROM template on blur
-  const handleFromFieldBlur = () => {
-    if (fromName || fromAccountNumber || fromBankName) {
-      saveFromTemplate()
+  
+  // Track TO data changes
+  useEffect(() => {
+    const hasChanged = 
+      clientName !== originalToData.name ||
+      clientEmail !== originalToData.email ||
+      clientAddress !== originalToData.address ||
+      clientPhone !== originalToData.phone
+    setToDataChanged(hasChanged)
+  }, [clientName, clientEmail, clientAddress, clientPhone, originalToData])
+  
+  // Save TO template
+  const saveToTemplate = async () => {
+    if (!userId || !clientName.trim()) {
+      alert('Введите имя клиента')
+      return
+    }
+    try {
+      const { data, error } = await supabase
+        .from('invoice_client_templates')
+        .insert({
+          user_id: userId,
+          name: clientName,
+          email: clientEmail,
+          address: clientAddress,
+          phone: clientPhone
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      await loadClientTemplates()
+      setOriginalToData({ name: clientName, email: clientEmail || '', address: clientAddress || '', phone: clientPhone || '' })
+      setToDataChanged(false)
+      // Show notification
+      const notification = document.createElement('div')
+      notification.textContent = 'Клиент сохранен'
+      notification.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+      document.body.appendChild(notification)
+      setTimeout(() => {
+        notification.style.opacity = '0'
+        notification.style.transition = 'opacity 0.3s'
+        setTimeout(() => document.body.removeChild(notification), 300)
+      }, 2000)
+    } catch (error) {
+      console.error('Error saving client template:', error)
+      alert(`Ошибка сохранения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
 
@@ -615,6 +671,13 @@ function InvoicePageContent() {
     setClientEmail(template.email || '')
     setClientAddress(template.address || '')
     setClientPhone(template.phone || '')
+    setOriginalToData({ 
+      name: template.name || '', 
+      email: template.email || '', 
+      address: template.address || '', 
+      phone: template.phone || '' 
+    })
+    setToDataChanged(false)
   }
 
   // Save client template
@@ -691,9 +754,9 @@ function InvoicePageContent() {
     loadFromTemplate()
     
     // Load PDF header color
-    const savedColor = localStorage.getItem('frovo_invoice_pdf_header_color')
+    const savedColor = localStorage.getItem('frovo_invoice_pdf_theme_color')
     if (savedColor) {
-      setPdfHeaderColor(savedColor)
+      setPdfThemeColor(savedColor)
     }
   }
 
@@ -712,6 +775,29 @@ function InvoicePageContent() {
       [field]: value
     }
     
+    // If changing item_type, reset fields that don't apply to new type
+    if (field === 'item_type') {
+      const newType = value as ItemType
+      if (newType === 'product') {
+        // Reset period, hours, price_per_hour
+        updatedItem.period = ''
+        updatedItem.hours = 0
+        updatedItem.price_per_hour = 0
+        updatedItem.quantity = updatedItem.quantity || 1
+      } else if (newType === 'service_period') {
+        // Reset quantity, price_per_hour (keep hours optional)
+        updatedItem.quantity = 1
+        updatedItem.price_per_hour = 0
+        // Keep period and hours
+      } else if (newType === 'hourly') {
+        // Reset quantity, period
+        updatedItem.quantity = 1
+        updatedItem.period = ''
+        updatedItem.hours = updatedItem.hours || 0
+        updatedItem.price_per_hour = updatedItem.price_per_hour || 0
+      }
+    }
+    
     // Recalculate total based on item type
     const itemType = updatedItem.item_type || 'product'
     
@@ -719,8 +805,13 @@ function InvoicePageContent() {
       // For product: total = quantity * price
       updatedItem.total = updatedItem.quantity * updatedItem.price
     } else if (itemType === 'service_period') {
-      // For service period: total = price (period is just a description)
-      updatedItem.total = updatedItem.price
+      // For service period: if hours provided, use hourly rate, else use price
+      if (updatedItem.hours && updatedItem.price_per_hour) {
+        updatedItem.total = updatedItem.hours * updatedItem.price_per_hour
+        updatedItem.price = updatedItem.total
+      } else {
+        updatedItem.total = updatedItem.price
+      }
     } else if (itemType === 'hourly') {
       // For hourly: total = hours * price_per_hour, and price = total
       const hours = updatedItem.hours || 0
@@ -737,16 +828,16 @@ function InvoicePageContent() {
 
   const handleExportPDF = async (invoice: Invoice) => {
     try {
-      await exportInvoiceToPDF(invoice, pdfHeaderColor)
+      await exportInvoiceToPDF(invoice, pdfThemeColor)
     } catch (error) {
       console.error('Error exporting PDF:', error)
       alert(t('invoice.exportError'))
     }
   }
 
-  const handleColorChange = (color: string) => {
-    setPdfHeaderColor(color)
-    localStorage.setItem('frovo_invoice_pdf_header_color', color)
+  const handleThemeColorChange = (color: string) => {
+    setPdfThemeColor(color)
+    localStorage.setItem('frovo_invoice_pdf_theme_color', color)
   }
 
   // Filter invoices by active folder
@@ -864,7 +955,7 @@ function InvoicePageContent() {
         <div className="invoice-modal-split">
           {/* Left: Form */}
           <div className="invoice-modal-form">
-            <div className="space-y-6 p-5 overflow-y-auto">
+            <div className="space-y-6 p-5">
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -906,20 +997,20 @@ function InvoicePageContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Цвет шапки PDF</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Тема PDF</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      value={pdfHeaderColor}
-                      onChange={(e) => handleColorChange(e.target.value)}
+                      value={pdfThemeColor}
+                      onChange={(e) => handleThemeColorChange(e.target.value)}
                       className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                      title="Выберите цвет шапки для PDF"
+                      title="Выберите тему для PDF (шапка и таблица)"
                     />
                     <button
                       type="button"
                       onClick={() => setShowColorPicker(!showColorPicker)}
                       className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5"
-                      title="Настройки цвета"
+                      title="Настройки темы"
                     >
                       <Palette className="w-3.5 h-3.5" />
                     </button>
@@ -932,7 +1023,7 @@ function InvoicePageContent() {
                             key={color}
                             type="button"
                             onClick={() => {
-                              handleColorChange(color)
+                              handleThemeColorChange(color)
                               setShowColorPicker(false)
                             }}
                             className="w-8 h-8 rounded border-2 border-gray-300 hover:border-gray-500 transition-colors"
@@ -944,7 +1035,7 @@ function InvoicePageContent() {
                       <button
                         type="button"
                         onClick={() => {
-                          handleColorChange('#1e293b')
+                          handleThemeColorChange('#1e293b')
                           setShowColorPicker(false)
                         }}
                         className="mt-2 text-xs text-gray-600 hover:text-gray-800"
@@ -960,56 +1051,84 @@ function InvoicePageContent() {
               <div className="border rounded-lg p-4 bg-gray-50">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  {!isEditingFrom ? (
                     <button
                       type="button"
                       className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
-                      onClick={loadFromTemplate}
-                      title={t('invoice.loadFromTemplate')}
+                      onClick={() => setIsEditingFrom(true)}
+                      title="Редактировать данные отправителя"
                     >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Загрузить</span>
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Редактировать</span>
                     </button>
+                  ) : (
                     <button
                       type="button"
-                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
+                      className="btn text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap bg-black text-white"
                       onClick={saveFromTemplate}
-                      title={t('invoice.saveFromTemplate') + ' (автосохранение при потере фокуса)'}
+                      title="Сохранить данные"
                     >
                       <Save className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Сохранить</span>
+                      <span>Сохранить</span>
                     </button>
-                    <span className="text-xs text-gray-500 self-center whitespace-nowrap">💾 авто</span>
-                  </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className={`grid grid-cols-2 gap-4 ${!isEditingFrom ? 'opacity-60' : ''}`}>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromName')}</label>
-                    <CoreInput value={fromName} onChange={(e) => setFromName(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromName} 
+                      onChange={(e) => setFromName(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCountry')}</label>
-                    <CoreInput value={fromCountry} onChange={(e) => setFromCountry(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromCountry} 
+                      onChange={(e) => setFromCountry(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCity')}</label>
-                    <CoreInput value={fromCity} onChange={(e) => setFromCity(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromCity} 
+                      onChange={(e) => setFromCity(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromProvince')}</label>
-                    <CoreInput value={fromProvince} onChange={(e) => setFromProvince(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromProvince} 
+                      onChange={(e) => setFromProvince(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine1')}</label>
-                    <CoreInput value={fromAddressLine1} onChange={(e) => setFromAddressLine1(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromAddressLine1} 
+                      onChange={(e) => setFromAddressLine1(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine2')}</label>
-                    <CoreInput value={fromAddressLine2} onChange={(e) => setFromAddressLine2(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromAddressLine2} 
+                      onChange={(e) => setFromAddressLine2(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromPostalCode')}</label>
-                    <CoreInput value={fromPostalCode} onChange={(e) => setFromPostalCode(e.target.value)} onBlur={handleFromFieldBlur} />
+                    <CoreInput 
+                      value={fromPostalCode} 
+                      onChange={(e) => setFromPostalCode(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t">
@@ -1017,23 +1136,44 @@ function InvoicePageContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
-                      <CoreInput value={fromAccountNumber} onChange={(e) => setFromAccountNumber(e.target.value)} onBlur={handleFromFieldBlur} />
+                      <CoreInput 
+                        value={fromAccountNumber} 
+                        onChange={(e) => setFromAccountNumber(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromRoutingNumber')}</label>
-                      <CoreInput value={fromRoutingNumber} onChange={(e) => setFromRoutingNumber(e.target.value)} onBlur={handleFromFieldBlur} />
+                      <CoreInput 
+                        value={fromRoutingNumber} 
+                        onChange={(e) => setFromRoutingNumber(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromSwiftBic')}</label>
-                      <CoreInput value={fromSwiftBic} onChange={(e) => setFromSwiftBic(e.target.value)} onBlur={handleFromFieldBlur} />
+                      <CoreInput 
+                        value={fromSwiftBic} 
+                        onChange={(e) => setFromSwiftBic(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankName')}</label>
-                      <CoreInput value={fromBankName} onChange={(e) => setFromBankName(e.target.value)} onBlur={handleFromFieldBlur} />
+                      <CoreInput 
+                        value={fromBankName} 
+                        onChange={(e) => setFromBankName(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
                     </div>
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankAddress')}</label>
-                      <CoreTextarea value={fromBankAddress} onChange={(e) => setFromBankAddress(e.target.value)} onBlur={handleFromFieldBlur} rows={2} />
+                      <CoreTextarea 
+                        value={fromBankAddress} 
+                        onChange={(e) => setFromBankAddress(e.target.value)} 
+                        disabled={!isEditingFrom}
+                        rows={2} 
+                      />
                     </div>
                   </div>
                 </div>
@@ -1056,14 +1196,16 @@ function InvoicePageContent() {
                         buttonClassName="text-xs px-3 py-1.5"
                       />
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
-                      onClick={() => setShowClientTemplateModal(true)}
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Сохранить</span>
-                    </button>
+                    {toDataChanged && (
+                      <button
+                        type="button"
+                        className="btn text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap bg-black text-white"
+                        onClick={saveToTemplate}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Сохранить</span>
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -1194,37 +1336,113 @@ function InvoicePageContent() {
                           )}
                           
                           {itemType === 'service_period' && (
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.period')}</label>
-                                <CoreInput
-                                  value={item.period || ''}
-                                  onChange={(e) => updateItem(index, 'period', e.target.value)}
-                                  placeholder="01.02.2025 - 30.02.2025"
-                                />
+                            <>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Дата от</label>
+                                  <CustomDatePicker
+                                    value={item.period?.split(' - ')[0] || ''}
+                                    onChange={(date) => {
+                                      const currentTo = item.period?.split(' - ')[1] || ''
+                                      updateItem(index, 'period', date + (currentTo ? ' - ' + currentTo : ''))
+                                    }}
+                                    placeholder="Дата от"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Дата до</label>
+                                  <CustomDatePicker
+                                    value={item.period?.split(' - ')[1] || ''}
+                                    onChange={(date) => {
+                                      const currentFrom = item.period?.split(' - ')[0] || ''
+                                      updateItem(index, 'period', (currentFrom || '') + (currentFrom && date ? ' - ' : '') + date)
+                                    }}
+                                    placeholder="Дата до"
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.price')}</label>
-                                <CoreInput
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={item.price || ''}
-                                  onChange={(e) => {
-                                    const val = e.target.value
-                                    if (val === '' || val === '-') {
-                                      updateItem(index, 'price', 0)
-                                    } else {
-                                      const price = Number(val)
-                                      if (!isNaN(price) && price >= 0) {
-                                        updateItem(index, 'price', price)
+                              <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.hours')} (опционально)</label>
+                                  <CoreInput
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.hours || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value
+                                      if (val === '' || val === '-') {
+                                        updateItem(index, 'hours', 0)
+                                      } else {
+                                        const hours = Number(val)
+                                        if (!isNaN(hours) && hours >= 0) {
+                                          updateItem(index, 'hours', hours)
+                                        }
                                       }
-                                    }
-                                  }}
-                                  placeholder={t('invoice.price')}
-                                />
+                                    }}
+                                    placeholder={t('invoice.hours')}
+                                  />
+                                </div>
+                                {item.hours ? (
+                                  <>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.pricePerHour')}</label>
+                                      <CoreInput
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={item.price_per_hour || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value
+                                          if (val === '' || val === '-') {
+                                            updateItem(index, 'price_per_hour', 0)
+                                          } else {
+                                            const pricePerHour = Number(val)
+                                            if (!isNaN(pricePerHour) && pricePerHour >= 0) {
+                                              updateItem(index, 'price_per_hour', pricePerHour)
+                                            }
+                                          }
+                                        }}
+                                        placeholder={t('invoice.pricePerHour')}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.total')}</label>
+                                      <CoreInput
+                                        type="number"
+                                        step="0.01"
+                                        value={item.total || 0}
+                                        readOnly
+                                        className="bg-gray-100 cursor-not-allowed"
+                                        placeholder={t('invoice.total')}
+                                      />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="col-span-2">
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.price')}</label>
+                                    <CoreInput
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={item.price || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value
+                                        if (val === '' || val === '-') {
+                                          updateItem(index, 'price', 0)
+                                        } else {
+                                          const price = Number(val)
+                                          if (!isNaN(price) && price >= 0) {
+                                            updateItem(index, 'price', price)
+                                          }
+                                        }
+                                      }}
+                                      placeholder={t('invoice.price')}
+                                    />
+                                  </div>
+                                )}
                               </div>
-                            </div>
+                            </>
                           )}
                           
                           {itemType === 'hourly' && (
@@ -1346,7 +1564,7 @@ function InvoicePageContent() {
               subtotal={subtotal}
               taxAmount={taxAmount}
               total={total}
-              headerColor={pdfHeaderColor}
+              headerColor={pdfThemeColor}
             />
           </div>
         </div>
