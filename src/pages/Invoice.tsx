@@ -1528,12 +1528,8 @@ function InvoicePageContent() {
                       </div>
                     )
                   })}
-                  {items.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      {t('invoice.noItems')}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div>
