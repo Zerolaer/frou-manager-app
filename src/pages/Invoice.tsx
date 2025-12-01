@@ -125,6 +125,8 @@ function InvoicePageContent() {
   const [clientTemplates, setClientTemplates] = useState<ClientTemplate[]>([])
   const [showClientTemplateModal, setShowClientTemplateModal] = useState(false)
 
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false)
+
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
     switch (action) {
@@ -132,6 +134,9 @@ function InvoicePageContent() {
         resetForm()
         setSelectedFolderId(activeFolder === 'ALL' ? null : activeFolder)
         setShowCreateModal(true)
+        break
+      case 'add-client':
+        setShowCreateClientModal(true)
         break
       default:
     }
@@ -347,6 +352,11 @@ function InvoicePageContent() {
       }
 
       await loadInvoices()
+      // Reload client stats after creating invoice
+      if (userId) {
+        // Trigger reload in InvoiceClientsPanel by updating a dependency
+        window.dispatchEvent(new CustomEvent('invoice-created'))
+      }
       resetForm()
       setShowCreateModal(false)
     } catch (error) {
@@ -455,6 +465,10 @@ function InvoicePageContent() {
       const { error } = await supabase.from('invoices').delete().eq('id', invoiceId)
       if (error) throw error
       await loadInvoices()
+      // Reload client stats after deleting invoice
+      if (userId) {
+        window.dispatchEvent(new CustomEvent('invoice-deleted'))
+      }
       if (selectedInvoice?.id === invoiceId) {
         setSelectedInvoice(null)
         setIsEditing(false)
@@ -531,7 +545,7 @@ function InvoicePageContent() {
     }
   }
 
-  // Save FROM template to localStorage
+  // Save FROM template to localStorage (auto-save on change)
   const saveFromTemplate = () => {
     try {
       const template = {
@@ -549,10 +563,26 @@ function InvoicePageContent() {
         fromBankAddress
       }
       localStorage.setItem('frovo_invoice_from_template', JSON.stringify(template))
-      alert(t('invoice.fromTemplate') + ' ' + t('invoice.saved'))
+      // Show subtle notification instead of alert
+      const notification = document.createElement('div')
+      notification.textContent = t('invoice.fromTemplate') + ' ' + t('invoice.saved')
+      notification.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+      document.body.appendChild(notification)
+      setTimeout(() => {
+        notification.style.opacity = '0'
+        notification.style.transition = 'opacity 0.3s'
+        setTimeout(() => document.body.removeChild(notification), 300)
+      }, 2000)
     } catch (error) {
       console.error('Error saving FROM template:', error)
       alert('Ошибка сохранения шаблона')
+    }
+  }
+
+  // Auto-save FROM template on blur
+  const handleFromFieldBlur = () => {
+    if (fromName || fromAccountNumber || fromBankName) {
+      saveFromTemplate()
     }
   }
 
@@ -601,7 +631,17 @@ function InvoicePageContent() {
       
       if (error) throw error
       await loadClientTemplates()
+      // Reload client stats after creating client
+      if (userId) {
+        window.dispatchEvent(new CustomEvent('client-created'))
+      }
       setShowClientTemplateModal(false)
+      setShowCreateClientModal(false)
+      // Reset client form
+      setClientName('')
+      setClientEmail('')
+      setClientAddress('')
+      setClientPhone('')
       alert(t('invoice.clientTemplates') + ' ' + t('invoice.saved'))
     } catch (error) {
       console.error('Error saving client template:', error)
@@ -745,10 +785,28 @@ function InvoicePageContent() {
       {userId && (
         <InvoiceClientsPanel
           userId={userId}
-          onSelectClient={(clientName) => {
-            setClientName(clientName)
+          onSelectClient={async (clientName) => {
             if (!showCreateModal && !isEditing) {
+              // Reset form first
               resetForm()
+              
+              // Then load client template data
+              const { data: clientTemplate } = await supabase
+                .from('invoice_client_templates')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('name', clientName)
+                .single()
+              
+              if (clientTemplate) {
+                setClientName(clientTemplate.name || '')
+                setClientEmail(clientTemplate.email || '')
+                setClientAddress(clientTemplate.address || '')
+                setClientPhone(clientTemplate.phone || '')
+              } else {
+                setClientName(clientName)
+              }
+              
               setShowCreateModal(true)
             }
           }}
@@ -832,6 +890,7 @@ function InvoicePageContent() {
                       type="button"
                       className="btn btn-outline text-xs"
                       onClick={loadFromTemplate}
+                      title={t('invoice.loadFromTemplate')}
                     >
                       {t('invoice.loadFromTemplate')}
                     </button>
@@ -839,39 +898,41 @@ function InvoicePageContent() {
                       type="button"
                       className="btn btn-outline text-xs"
                       onClick={saveFromTemplate}
+                      title={t('invoice.saveFromTemplate') + ' (автосохранение при потере фокуса)'}
                     >
                       {t('invoice.saveFromTemplate')}
                     </button>
+                    <span className="text-xs text-gray-500 self-center">Автосохранение включено</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromName')}</label>
-                    <CoreInput value={fromName} onChange={(e) => setFromName(e.target.value)} />
+                    <CoreInput value={fromName} onChange={(e) => setFromName(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCountry')}</label>
-                    <CoreInput value={fromCountry} onChange={(e) => setFromCountry(e.target.value)} />
+                    <CoreInput value={fromCountry} onChange={(e) => setFromCountry(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCity')}</label>
-                    <CoreInput value={fromCity} onChange={(e) => setFromCity(e.target.value)} />
+                    <CoreInput value={fromCity} onChange={(e) => setFromCity(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromProvince')}</label>
-                    <CoreInput value={fromProvince} onChange={(e) => setFromProvince(e.target.value)} />
+                    <CoreInput value={fromProvince} onChange={(e) => setFromProvince(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine1')}</label>
-                    <CoreInput value={fromAddressLine1} onChange={(e) => setFromAddressLine1(e.target.value)} />
+                    <CoreInput value={fromAddressLine1} onChange={(e) => setFromAddressLine1(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine2')}</label>
-                    <CoreInput value={fromAddressLine2} onChange={(e) => setFromAddressLine2(e.target.value)} />
+                    <CoreInput value={fromAddressLine2} onChange={(e) => setFromAddressLine2(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromPostalCode')}</label>
-                    <CoreInput value={fromPostalCode} onChange={(e) => setFromPostalCode(e.target.value)} />
+                    <CoreInput value={fromPostalCode} onChange={(e) => setFromPostalCode(e.target.value)} onBlur={handleFromFieldBlur} />
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t">
@@ -879,23 +940,23 @@ function InvoicePageContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
-                      <CoreInput value={fromAccountNumber} onChange={(e) => setFromAccountNumber(e.target.value)} />
+                      <CoreInput value={fromAccountNumber} onChange={(e) => setFromAccountNumber(e.target.value)} onBlur={handleFromFieldBlur} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromRoutingNumber')}</label>
-                      <CoreInput value={fromRoutingNumber} onChange={(e) => setFromRoutingNumber(e.target.value)} />
+                      <CoreInput value={fromRoutingNumber} onChange={(e) => setFromRoutingNumber(e.target.value)} onBlur={handleFromFieldBlur} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromSwiftBic')}</label>
-                      <CoreInput value={fromSwiftBic} onChange={(e) => setFromSwiftBic(e.target.value)} />
+                      <CoreInput value={fromSwiftBic} onChange={(e) => setFromSwiftBic(e.target.value)} onBlur={handleFromFieldBlur} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankName')}</label>
-                      <CoreInput value={fromBankName} onChange={(e) => setFromBankName(e.target.value)} />
+                      <CoreInput value={fromBankName} onChange={(e) => setFromBankName(e.target.value)} onBlur={handleFromFieldBlur} />
                     </div>
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankAddress')}</label>
-                      <CoreTextarea value={fromBankAddress} onChange={(e) => setFromBankAddress(e.target.value)} rows={2} />
+                      <CoreTextarea value={fromBankAddress} onChange={(e) => setFromBankAddress(e.target.value)} onBlur={handleFromFieldBlur} rows={2} />
                     </div>
                   </div>
                 </div>
@@ -1298,7 +1359,74 @@ function InvoicePageContent() {
         </UnifiedModal>
       )}
 
-      {/* Client Template Modal */}
+      {/* Create Client Modal */}
+      <UnifiedModal
+        open={showCreateClientModal}
+        onClose={() => {
+          setShowCreateClientModal(false)
+          setClientName('')
+          setClientEmail('')
+          setClientAddress('')
+          setClientPhone('')
+        }}
+        title={t('invoice.newClient')}
+        footer={createSimpleFooter(
+          {
+            label: t('actions.save'),
+            onClick: saveClientTemplate,
+            disabled: !clientName.trim()
+          },
+          {
+            label: t('actions.cancel'),
+            onClick: () => {
+              setShowCreateClientModal(false)
+              setClientName('')
+              setClientEmail('')
+              setClientAddress('')
+              setClientPhone('')
+            }
+          }
+        )}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
+            <CoreInput
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder={t('invoice.clientNamePlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
+            <CoreInput
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder={t('invoice.clientEmailPlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
+            <CoreInput
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+              placeholder="+1-855-413-7030"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+            <CoreTextarea
+              value={clientAddress}
+              onChange={(e) => setClientAddress(e.target.value)}
+              placeholder={t('invoice.clientAddressPlaceholder')}
+              rows={3}
+            />
+          </div>
+        </div>
+      </UnifiedModal>
+
+      {/* Client Template Modal (from form) */}
       <UnifiedModal
         open={showClientTemplateModal}
         onClose={() => setShowClientTemplateModal(false)}

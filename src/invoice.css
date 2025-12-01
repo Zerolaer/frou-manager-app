@@ -338,21 +338,27 @@ body.invoice-mode #main-content {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+  padding: 12px 20px;
+  background: #1e293b;
+  border-radius: 0;
+  margin-left: -32px;
+  margin-right: -32px;
+  margin-top: -32px;
+  padding-top: 16px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #1e293b;
 }
 
 .invoice-preview-title {
   font-size: 32px;
   font-weight: 700;
-  color: #1e293b;
+  color: #ffffff;
   letter-spacing: 2px;
 }
 
 .invoice-preview-number {
-  font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  color: #ffffff;
 }
 
 .invoice-preview-addresses {
@@ -414,23 +420,25 @@ body.invoice-mode #main-content {
 }
 
 .invoice-preview-details {
-  display: flex;
-  gap: 24px;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.invoice-preview-detail {
-  display: flex;
-  gap: 8px;
-  font-size: 13px;
-  color: #475569;
-}
-
-.invoice-preview-detail-label {
+.invoice-preview-details-title {
+  font-size: 10px;
   font-weight: 600;
   color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.invoice-preview-detail {
+  display: block;
+  font-size: 10px;
+  color: #000000;
+  margin-bottom: 5px;
 }
 
 .invoice-preview-items {
@@ -475,22 +483,33 @@ body.invoice-mode #main-content {
 .invoice-preview-totals {
   margin-bottom: 24px;
   padding-top: 16px;
-  border-top: 2px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .invoice-preview-total-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #475569;
+  width: 200px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: #000000;
+}
+
+.invoice-preview-total-divider {
+  width: 200px;
+  height: 0.8px;
+  background: #969696;
+  margin: 8px 0;
+  align-self: flex-end;
 }
 
 .invoice-preview-total-final {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
-  color: #1e293b;
+  margin-top: 0;
+  padding-top: 0;
+  font-size: 12px;
+  color: #000000;
 }
 
 .invoice-preview-notes {
@@ -499,10 +518,20 @@ body.invoice-mode #main-content {
 }
 
 .invoice-preview-notes-title {
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 600;
   color: #64748b;
-  margin-bottom: 8px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.invoice-preview-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  text-align: center;
+  font-size: 8px;
+  color: #94a3b8;
 }
 
 .invoice-preview-notes-content {

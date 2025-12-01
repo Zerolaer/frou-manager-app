@@ -494,6 +494,7 @@
   "invoice": {
     "title": "Инвойсы",
     "newInvoice": "Новый инвойс",
+    "newClient": "Новый клиент",
     "editInvoice": "Редактировать инвойс",
     "create": "Создать",
     "noInvoices": "Нет инвойсов",

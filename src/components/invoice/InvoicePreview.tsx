@@ -92,7 +92,7 @@ export default function InvoicePreview({
         <div className="invoice-preview-header">
           <div className="invoice-preview-title">INVOICE</div>
           <div className="invoice-preview-number">
-            {invoiceNumber || 'INV-001'}
+            Invoice #{invoiceNumber || 'INV-001'}
           </div>
         </div>
 
@@ -145,13 +145,12 @@ export default function InvoicePreview({
 
         {/* Invoice Details */}
         <div className="invoice-preview-details">
+          <div className="invoice-preview-details-title">INVOICE DETAILS</div>
           <div className="invoice-preview-detail">
-            <span className="invoice-preview-detail-label">{t('invoice.date')}:</span>
-            <span>{date ? formatDate(date) : '-'}</span>
+            <span>Date: {date ? formatDate(date) : '-'}</span>
           </div>
           <div className="invoice-preview-detail">
-            <span className="invoice-preview-detail-label">{t('invoice.dueDate')}:</span>
-            <span>{dueDate ? formatDate(dueDate) : '-'}</span>
+            <span>Due Date: {dueDate ? formatDate(dueDate) : '-'}</span>
           </div>
         </div>
 
@@ -223,17 +222,18 @@ export default function InvoicePreview({
         {/* Totals */}
         <div className="invoice-preview-totals">
           <div className="invoice-preview-total-row">
-            <span>{t('invoice.subtotal')}:</span>
+            <span>Subtotal:</span>
             <span className="font-semibold">{formatCurrencyEUR(subtotal)}</span>
           </div>
           {taxRate > 0 && (
             <div className="invoice-preview-total-row">
-              <span>{t('invoice.tax')} ({taxRate}%):</span>
+              <span>Tax ({taxRate}%):</span>
               <span className="font-semibold">{formatCurrencyEUR(taxAmount)}</span>
             </div>
           )}
+          <div className="invoice-preview-total-divider"></div>
           <div className="invoice-preview-total-row invoice-preview-total-final">
-            <span className="font-bold text-lg">{t('invoice.total')}:</span>
+            <span className="font-bold text-lg">Total:</span>
             <span className="font-bold text-lg">{formatCurrencyEUR(total)}</span>
           </div>
         </div>
@@ -241,10 +241,15 @@ export default function InvoicePreview({
         {/* Notes */}
         {notes && (
           <div className="invoice-preview-notes">
-            <div className="invoice-preview-notes-title">{t('invoice.notes')}:</div>
+            <div className="invoice-preview-notes-title">NOTES</div>
             <div className="invoice-preview-notes-content whitespace-pre-line">{notes}</div>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="invoice-preview-footer">
+          Thank you for your business!
+        </div>
       </div>
     </div>
   )

@@ -494,6 +494,7 @@
   "invoice": {
     "title": "Invoices",
     "newInvoice": "New Invoice",
+    "newClient": "New Client",
     "editInvoice": "Edit Invoice",
     "create": "Create",
     "noInvoices": "No invoices",

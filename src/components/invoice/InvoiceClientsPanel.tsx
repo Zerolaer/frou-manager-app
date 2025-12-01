@@ -28,51 +28,76 @@ export default function InvoiceClientsPanel({ userId, onSelectClient }: Props) {
   useEffect(() => {
     if (!userId) return
     loadClientStats()
+    
+    // Listen for invoice and client create/delete events to reload stats
+    const handleEvent = () => {
+      loadClientStats()
+    }
+    window.addEventListener('invoice-created', handleEvent)
+    window.addEventListener('invoice-deleted', handleEvent)
+    window.addEventListener('client-created', handleEvent)
+    
+    return () => {
+      window.removeEventListener('invoice-created', handleEvent)
+      window.removeEventListener('invoice-deleted', handleEvent)
+      window.removeEventListener('client-created', handleEvent)
+    }
   }, [userId])
 
   const loadClientStats = async () => {
     if (!userId) return
     setLoading(true)
     try {
-      // Загружаем все инвойсы пользователя
-      const { data: invoices, error } = await supabase
-        .from('invoices')
-        .select('id, client_name, client_email, client_phone, client_address, total, date, created_at')
+      // Загружаем клиентов из invoice_client_templates
+      const { data: clientTemplates, error: templatesError } = await supabase
+        .from('invoice_client_templates')
+        .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (templatesError) throw templatesError
 
-      // Группируем по клиентам
-      const clientMap = new Map<string, ClientStats>()
+      // Загружаем все инвойсы для подсчета статистики
+      const { data: invoices, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('id, client_name, total, date')
+        .eq('user_id', userId)
 
+      if (invoicesError) throw invoicesError
+
+      // Создаем мапу для подсчета статистики по клиентам
+      const invoiceStats = new Map<string, { count: number; total: number; lastDate?: string }>()
+      
       invoices?.forEach((invoice) => {
         const clientName = invoice.client_name
-        if (!clientMap.has(clientName)) {
-          clientMap.set(clientName, {
-            id: clientName,
-            name: clientName,
-            email: invoice.client_email || undefined,
-            phone: invoice.client_phone || undefined,
-            address: invoice.client_address || undefined,
-            totalInvoices: 0,
-            totalAmount: 0,
-            lastInvoiceDate: undefined
-          })
+        if (!invoiceStats.has(clientName)) {
+          invoiceStats.set(clientName, { count: 0, total: 0 })
         }
+        const stats = invoiceStats.get(clientName)!
+        stats.count += 1
+        stats.total += Number(invoice.total || 0)
+        if (!stats.lastDate || new Date(invoice.date) > new Date(stats.lastDate)) {
+          stats.lastDate = invoice.date
+        }
+      })
 
-        const client = clientMap.get(clientName)!
-        client.totalInvoices += 1
-        client.totalAmount += Number(invoice.total || 0)
-        
-        // Обновляем последнюю дату инвойса
-        if (!client.lastInvoiceDate || new Date(invoice.date) > new Date(client.lastInvoiceDate)) {
-          client.lastInvoiceDate = invoice.date
+      // Объединяем клиентов из шаблонов со статистикой
+      const clientsWithStats: ClientStats[] = (clientTemplates || []).map(template => {
+        const stats = invoiceStats.get(template.name) || { count: 0, total: 0, lastDate: undefined }
+        return {
+          id: template.id,
+          name: template.name,
+          email: template.email || undefined,
+          phone: template.phone || undefined,
+          address: template.address || undefined,
+          totalInvoices: stats.count,
+          totalAmount: stats.total,
+          lastInvoiceDate: stats.lastDate
         }
       })
 
       // Сортируем по общей сумме (убывание)
-      const sortedClients = Array.from(clientMap.values()).sort((a, b) => b.totalAmount - a.totalAmount)
+      const sortedClients = clientsWithStats.sort((a, b) => b.totalAmount - a.totalAmount)
       setClients(sortedClients)
     } catch (error) {
       console.error('Error loading client stats:', error)
