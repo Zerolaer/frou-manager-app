@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { Plus, FileText, Edit2, Download, X, Upload, Save, Palette } from 'lucide-react'
+import { Plus, FileText, Edit2, Download, X, Upload, Save, Edit2 as EditIcon } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { formatCurrencyEUR } from '@/lib/format'
@@ -116,15 +116,28 @@ function InvoicePageContent() {
   const [fromBankAddress, setFromBankAddress] = useState('')
   
   // PDF Theme customization (header + table)
-  const [pdfThemeColor, setPdfThemeColor] = useState(() => {
-    const saved = localStorage.getItem('frovo_invoice_pdf_theme_color')
-    return saved || '#1e293b'
+  const pdfThemes = [
+    { id: 'classic', name: 'Классическая', color: '#1e293b' },
+    { id: 'green', name: 'Зеленая', color: '#059669' },
+    { id: 'blue', name: 'Синяя', color: '#2563eb' },
+    { id: 'purple', name: 'Фиолетовая', color: '#7c3aed' },
+    { id: 'red', name: 'Красная', color: '#dc2626' },
+    { id: 'orange', name: 'Оранжевая', color: '#ea580c' },
+    { id: 'teal', name: 'Бирюзовая', color: '#0891b2' },
+    { id: 'pink', name: 'Розовая', color: '#be185d' }
+  ]
+  
+  const [pdfThemeId, setPdfThemeId] = useState(() => {
+    const saved = localStorage.getItem('frovo_invoice_pdf_theme_id')
+    return saved || 'classic'
   })
-  const [showColorPicker, setShowColorPicker] = useState(false)
+  
+  const pdfThemeColor = pdfThemes.find(t => t.id === pdfThemeId)?.color || '#1e293b'
   
   // FROM section - saved template state
   const [fromDataSaved, setFromDataSaved] = useState(false)
   const [isEditingFrom, setIsEditingFrom] = useState(false)
+  const [bankDataFilled, setBankDataFilled] = useState(false)
   
   // TO (клиент) state
   const [clientName, setClientName] = useState('')
@@ -595,6 +608,9 @@ function InvoicePageContent() {
       localStorage.setItem('frovo_invoice_from_template', JSON.stringify(template))
       setFromDataSaved(true)
       setIsEditingFrom(false)
+      // Check if bank data is filled
+      const hasBankData = !!(fromAccountNumber || fromBankName || fromSwiftBic)
+      setBankDataFilled(hasBankData)
       // Show notification
       const notification = document.createElement('div')
       notification.textContent = 'Данные сохранены'
@@ -610,6 +626,14 @@ function InvoicePageContent() {
       alert('Ошибка сохранения данных')
     }
   }
+  
+  // Check if bank data is filled
+  useEffect(() => {
+    const hasBankData = !!(fromAccountNumber || fromBankName || fromSwiftBic)
+    if (fromDataSaved && !isEditingFrom) {
+      setBankDataFilled(hasBankData)
+    }
+  }, [fromAccountNumber, fromBankName, fromSwiftBic, fromDataSaved, isEditingFrom])
   
   // Track TO data changes
   useEffect(() => {
@@ -767,10 +791,10 @@ function InvoicePageContent() {
     setFromDataSaved(false)
     setIsEditingFrom(false)
     
-    // Load PDF theme color
-    const savedColor = localStorage.getItem('frovo_invoice_pdf_theme_color')
-    if (savedColor) {
-      setPdfThemeColor(savedColor)
+    // Load PDF theme
+    const savedThemeId = localStorage.getItem('frovo_invoice_pdf_theme_id')
+    if (savedThemeId) {
+      setPdfThemeId(savedThemeId)
     }
   }
 
@@ -849,9 +873,9 @@ function InvoicePageContent() {
     }
   }
 
-  const handleThemeColorChange = (color: string) => {
-    setPdfThemeColor(color)
-    localStorage.setItem('frovo_invoice_pdf_theme_color', color)
+  const handleThemeChange = (themeId: string) => {
+    setPdfThemeId(themeId)
+    localStorage.setItem('frovo_invoice_pdf_theme_id', themeId)
   }
 
   // Filter invoices by active folder
@@ -947,8 +971,8 @@ function InvoicePageContent() {
         }}
         title={isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
         size="xl"
-        bodyClassName="p-0"
-        contentClassName="max-h-[90vh] !w-[95vw] !max-w-[1400px] invoice-create-modal"
+        bodyClassName="p-0 overflow-hidden"
+        contentClassName="max-h-[90vh] !w-[95vw] !max-w-[1400px] invoice-create-modal overflow-hidden"
         footer={createSimpleFooter(
           {
             label: isEditing ? t('actions.save') : t('invoice.create'),
@@ -1012,52 +1036,15 @@ function InvoicePageContent() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Тема PDF</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={pdfThemeColor}
-                      onChange={(e) => handleThemeColorChange(e.target.value)}
-                      className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                      title="Выберите тему для PDF (шапка и таблица)"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowColorPicker(!showColorPicker)}
-                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5"
-                      title="Настройки темы"
-                    >
-                      <Palette className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  {showColorPicker && (
-                    <div className="mt-2 p-3 bg-white border rounded-lg shadow-sm">
-                      <div className="grid grid-cols-4 gap-2">
-                        {['#1e293b', '#059669', '#dc2626', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#be185d'].map((color) => (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => {
-                              handleThemeColorChange(color)
-                              setShowColorPicker(false)
-                            }}
-                            className="w-8 h-8 rounded border-2 border-gray-300 hover:border-gray-500 transition-colors"
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleThemeColorChange('#1e293b')
-                          setShowColorPicker(false)
-                        }}
-                        className="mt-2 text-xs text-gray-600 hover:text-gray-800"
-                      >
-                        Сбросить по умолчанию
-                      </button>
-                    </div>
-                  )}
+                  <Dropdown
+                    value={pdfThemeId}
+                    onChange={(value) => handleThemeChange(String(value))}
+                    options={pdfThemes.map(theme => ({ 
+                      value: theme.id, 
+                      label: theme.name 
+                    }))}
+                    placeholder="Выберите тему"
+                  />
                 </div>
               </div>
 
@@ -1147,7 +1134,7 @@ function InvoicePageContent() {
                 </div>
                 <div className="mt-4 pt-4 border-t">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Банковские данные</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid grid-cols-2 gap-4 ${bankDataFilled && !isEditingFrom ? 'opacity-60' : ''}`}>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
                       <CoreInput 
@@ -1282,13 +1269,24 @@ function InvoicePageContent() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
-                  <button className="btn btn-outline" onClick={addItem}>
-                    <Plus className="w-4 h-4" />
-                    {t('invoice.addItem')}
+                  <button className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5" onClick={addItem}>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('invoice.addItem')}</span>
                   </button>
                 </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {items.map((item, index) => {
+                {items.length === 0 ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <Plus className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-500 font-medium">Нет позиций</p>
+                      <p className="text-xs text-gray-400">Нажмите "Добавить позицию" чтобы начать</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {items.map((item, index) => {
                     const itemType = item.item_type || 'product'
                     return (
                       <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">

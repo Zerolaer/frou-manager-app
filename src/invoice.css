@@ -303,6 +303,7 @@ body.invoice-mode #main-content {
   max-height: calc(90vh - 120px);
   overflow: hidden;
   width: 100%;
+  max-width: 100%;
 }
 
 .invoice-modal-form {
@@ -311,6 +312,7 @@ body.invoice-mode #main-content {
   overflow-x: hidden;
   background: #fff;
   height: 100%;
+  max-width: 100%;
 }
 
 .invoice-modal-preview {
@@ -319,6 +321,7 @@ body.invoice-mode #main-content {
   background: #f8fafc;
   padding: 0;
   height: 100%;
+  max-width: 100%;
 }
 
 /* Invoice Preview Styles */
