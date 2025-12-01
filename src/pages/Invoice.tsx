@@ -160,7 +160,18 @@ function InvoicePageContent() {
   // Listen for SubHeader actions
   useEffect(() => {
     const handleSubHeaderActionEvent = (event: CustomEvent) => {
-      handleSubHeaderAction(event.detail)
+      const action = event.detail
+      switch (action) {
+        case 'add-invoice':
+          resetForm()
+          setSelectedFolderId(activeFolder === 'ALL' ? null : activeFolder)
+          setShowCreateModal(true)
+          break
+        case 'add-client':
+          setShowCreateClientModal(true)
+          break
+        default:
+      }
     }
     
     window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
@@ -537,9 +548,9 @@ function InvoicePageContent() {
     setIsEditing(false)
   }
 
-  // Load FROM template from localStorage (one-time on mount)
+  // Load FROM template from localStorage (one-time when modal opens)
   useEffect(() => {
-    if (!fromDataSaved && !isEditingFrom) {
+    if ((showCreateModal || isEditing) && !fromDataSaved && !isEditingFrom) {
       try {
         const template = localStorage.getItem('frovo_invoice_from_template')
         if (template) {
@@ -562,7 +573,7 @@ function InvoicePageContent() {
         console.error('Error loading FROM template:', error)
       }
     }
-  }, [fromDataSaved, isEditingFrom])
+  }, [showCreateModal, isEditing, fromDataSaved, isEditingFrom])
 
   // Save FROM template to localStorage
   const saveFromTemplate = () => {
@@ -610,7 +621,7 @@ function InvoicePageContent() {
     setToDataChanged(hasChanged)
   }, [clientName, clientEmail, clientAddress, clientPhone, originalToData])
   
-  // Save TO template
+  // Save TO template (used in TO section)
   const saveToTemplate = async () => {
     if (!userId || !clientName.trim()) {
       alert('Введите имя клиента')
@@ -648,7 +659,7 @@ function InvoicePageContent() {
       alert(`Ошибка сохранения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
-
+  
   // Load client templates
   const loadClientTemplates = async () => {
     if (!userId) return
@@ -749,11 +760,14 @@ function InvoicePageContent() {
     setClientEmail('')
     setClientAddress('')
     setClientPhone('')
+    setOriginalToData({ name: '', email: '', address: '', phone: '' })
+    setToDataChanged(false)
     
-    // Load FROM template if exists
-    loadFromTemplate()
+    // Reset FROM editing state - will trigger useEffect to load template
+    setFromDataSaved(false)
+    setIsEditingFrom(false)
     
-    // Load PDF header color
+    // Load PDF theme color
     const savedColor = localStorage.getItem('frovo_invoice_pdf_theme_color')
     if (savedColor) {
       setPdfThemeColor(savedColor)
