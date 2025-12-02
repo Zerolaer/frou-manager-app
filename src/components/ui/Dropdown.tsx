@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown } from 'lucide-react'
 
 // Add keyframe animation for dropdown appearance
@@ -62,7 +63,7 @@ export default function Dropdown({
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
   const [dropdownAlignment, setDropdownAlignment] = useState<'left' | 'right'>('left')
   const [buttonWidth, setButtonWidth] = useState(0)
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+  const [dropdownCoords, setDropdownCoords] = useState({ top: 0, left: 0 })
   const btnRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const selectedOptionRef = useRef<HTMLButtonElement>(null)
@@ -105,26 +106,28 @@ export default function Dropdown({
 
   // Smart positioning when dropdown opens
   useEffect(() => {
-    if (!open || !btnRef.current || !dropdownRef.current) return
+    if (!open || !btnRef.current) return
 
     const button = btnRef.current
-    const dropdown = dropdownRef.current
     const buttonRect = button.getBoundingClientRect()
-    const dropdownRect = dropdown.getBoundingClientRect()
     
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight
     }
 
+    // Estimate dropdown height (will be measured after render)
+    const estimatedHeight = 200
+    
     // Check if dropdown fits below button
-    const fitsBelow = buttonRect.bottom + dropdownRect.height + 8 <= viewport.height
+    const fitsBelow = buttonRect.bottom + estimatedHeight + 8 <= viewport.height
     // Check if dropdown fits above button
-    const fitsAbove = buttonRect.top - dropdownRect.height - 8 >= 0
+    const fitsAbove = buttonRect.top - estimatedHeight - 8 >= 0
     
     // Check horizontal alignment
-    const fitsRight = buttonRect.left + dropdownRect.width <= viewport.width
-    const fitsLeft = buttonRect.right - dropdownRect.width >= 0
+    const estimatedWidth = buttonWidth > 0 ? buttonWidth : 240
+    const fitsRight = buttonRect.left + estimatedWidth <= viewport.width
+    const fitsLeft = buttonRect.right - estimatedWidth >= 0
 
     // Determine position
     const position = fitsBelow ? 'bottom' : fitsAbove ? 'top' : 'bottom'
@@ -133,27 +136,23 @@ export default function Dropdown({
     setDropdownPosition(position)
     setDropdownAlignment(alignment)
     
-    // Calculate fixed position
-    const style: React.CSSProperties = {
-      minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
-      width: 'auto',
-      animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-      transformOrigin: position === 'bottom' ? 'top' : 'bottom'
-    }
+    // Calculate coordinates for fixed positioning
+    let top = 0
+    let left = 0
     
     if (position === 'bottom') {
-      style.top = `${buttonRect.bottom + 8}px`
+      top = buttonRect.bottom + 8
     } else {
-      style.bottom = `${window.innerHeight - buttonRect.top}px`
+      top = buttonRect.top - estimatedHeight - 8
     }
     
     if (alignment === 'left') {
-      style.left = `${buttonRect.left}px`
+      left = buttonRect.left
     } else {
-      style.right = `${window.innerWidth - buttonRect.right}px`
+      left = buttonRect.right - estimatedWidth
     }
     
-    setDropdownStyle(style)
+    setDropdownCoords({ top, left })
   }, [open, buttonWidth])
 
   // Close dropdown when clicking outside
@@ -215,13 +214,20 @@ export default function Dropdown({
         {!hideChevron && <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />}
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <>
           <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
           <div 
             ref={dropdownRef}
             className={`fixed bg-white border border-gray-200 rounded-xl shadow-lg z-[9999] max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
-            style={dropdownStyle}
+            style={{
+              top: `${dropdownCoords.top}px`,
+              left: `${dropdownCoords.left}px`,
+              minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
+              width: 'auto',
+              animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              transformOrigin: dropdownPosition === 'bottom' ? 'top' : 'bottom'
+            }}
           >
             {options.map((option) => (
               <button
@@ -244,7 +250,8 @@ export default function Dropdown({
               </button>
             ))}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   )
