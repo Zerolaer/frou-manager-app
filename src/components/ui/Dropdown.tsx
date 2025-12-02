@@ -171,7 +171,7 @@ export default function Dropdown({
   }
 
   return (
-    <div className={`relative w-full ${className}`} ref={dropdownRef}>
+    <div className={`relative w-full ${className}`}>
       <button
         ref={btnRef}
         onClick={() => !disabled && setOpen(!open)}
