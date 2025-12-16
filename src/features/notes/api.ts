@@ -1,5 +1,6 @@
 /* src/features/notes/api.ts */
 import { supabase } from '@/lib/supabaseClient';
+import { logger } from '@/lib/monitoring';
 import type { Note } from './types';
 
 /**
