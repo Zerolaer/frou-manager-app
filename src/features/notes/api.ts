@@ -35,26 +35,14 @@ export async function listNotes(query: string, sort: SortKey = 'updated_at', fol
   const { data, error } = await req;
   if (error) throw error;
   
-  console.log('📚 listNotes fetched:', { 
-    count: data?.length, 
-    firstNote: data?.[0] ? {
-      id: data[0].id,
-      title: data[0].title,
-      hasContent: !!data[0].content,
-      contentLength: data[0].content?.length
-    } : null
+  logger.debug('listNotes fetched', { 
+    count: data?.length
   });
   
   return data as Note[];
 }
 
 export async function createNote(payload: Partial<Note>) {
-  console.log('➕ API createNote called:', { 
-    hasContent: !!payload.content, 
-    contentLength: payload.content?.length,
-    payload 
-  });
-  
   const { data, error } = await supabase
     .from('notes')
     .insert({
@@ -67,22 +55,15 @@ export async function createNote(payload: Partial<Note>) {
     .single();
   
   if (error) {
-    console.error('❌ API createNote error:', error);
+    logger.error('API createNote error:', error);
     throw error;
   }
   
-  console.log('✅ API createNote success:', data.id);
+  logger.debug('API createNote success', { id: data.id });
   return data as Note;
 }
 
 export async function updateNote(id: string, changes: Partial<Note>) {
-  console.log('🔄 API updateNote called:', { 
-    id, 
-    hasContent: !!changes.content, 
-    contentLength: changes.content?.length,
-    changes 
-  });
-  
   const { data, error } = await supabase
     .from('notes')
     .update(changes)
@@ -91,11 +72,11 @@ export async function updateNote(id: string, changes: Partial<Note>) {
     .single();
   
   if (error) {
-    console.error('❌ API updateNote error:', error);
+    logger.error('API updateNote error:', error);
     throw error;
   }
   
-  console.log('✅ API updateNote success:', { id, updatedData: data });
+  logger.debug('API updateNote success', { id });
   return data as Note;
 }
 

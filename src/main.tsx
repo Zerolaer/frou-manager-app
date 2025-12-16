@@ -16,6 +16,7 @@ const LazyPages = {
   Tasks: React.lazy(() => import('./pages/Tasks')),
   Notes: React.lazy(() => import('./pages/Notes')),
   Invoice: React.lazy(() => import('./pages/Invoice')),
+  Habits: React.lazy(() => import('./pages/Habits')),
   Storybook: React.lazy(() => import('./pages/Storybook')),
 }
 
@@ -91,6 +92,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={null}>
             <LazyPages.Invoice />
+          </Suspense>
+        )
+      },
+      { 
+        path: 'habits', 
+        element: (
+          <Suspense fallback={null}>
+            <LazyPages.Habits />
           </Suspense>
         )
       },

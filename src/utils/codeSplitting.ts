@@ -55,6 +55,8 @@ export const LazyPages = {
   Finance: lazy(() => import('@/pages/Finance')),
   Tasks: lazy(() => import('@/pages/Tasks')),
   Notes: lazy(() => import('@/pages/Notes')),
+  Invoice: lazy(() => import('@/pages/Invoice')),
+  Habits: lazy(() => import('@/pages/Habits')),
   Login: lazy(() => import('@/pages/Login')),
   Storybook: lazy(() => import('@/pages/Storybook'))
 }

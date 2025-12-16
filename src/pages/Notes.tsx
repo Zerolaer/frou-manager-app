@@ -85,7 +85,7 @@ function NotesPageContent() {
         const error = err instanceof Error ? err : new Error(t('errors.unknownError'));
         setError(error);
         setIsLoading(false);
-        console.error('Error loading notes:', err);
+        logger.error('Error loading notes:', err);
       }
     }
   }
@@ -100,25 +100,18 @@ function NotesPageContent() {
 
   const handleSave = useCallback(async (draft: Partial<Note>, id?: string) => {
     try {
-      console.log('📝 Notes.tsx handleSave called:', { 
-        id, 
-        hasContent: !!draft.content,
-        contentLength: draft.content?.length,
-        title: draft.title 
-      });
-      
       if (!id) {
         // При создании используем folder_id из draft (выбранный в модальном окне)
         const created = await createNote(draft);
         setNotes((prev) => [created, ...prev]);
-        console.log('✅ Note created:', created.id);
+        logger.debug('Note created', { id: created.id });
       } else {
         const updated = await updateNote(id, draft);
         setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
-        console.log('✅ Note updated:', id);
+        logger.debug('Note updated', { id });
       }
     } catch (error) {
-      console.error('❌ Error saving note:', error);
+      logger.error('Error saving note:', error);
     }
   }, []);
 
@@ -129,7 +122,7 @@ function NotesPageContent() {
         // При создании используем folder_id из draft (выбранный в модальном окне)
         const created = await createNote(draft);
         setNotes((prev) => [created, ...prev]);
-        console.log('Note created');
+        logger.debug('Note created');
       } else {
         const updated = await updateNote(id, draft);
         setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
@@ -145,9 +138,9 @@ function NotesPageContent() {
     try {
       await deleteNote(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
-      console.log('Note deleted');
+      logger.debug('Note deleted');
     } catch (error) {
-      console.error('Error deleting note:', error);
+      logger.error('Error deleting note:', error);
     }
   }, []);
 
@@ -155,9 +148,9 @@ function NotesPageContent() {
     try {
       const updated = await togglePin(n.id, !n.pinned);
       setNotes((prev) => prev.map((x) => (x.id === n.id ? updated : x)));
-      console.log(n.pinned ? 'Pin removed' : 'Note pinned');
+      logger.debug(n.pinned ? 'Pin removed' : 'Note pinned');
     } catch (error) {
-      console.error('Error toggling pin:', error);
+      logger.error('Error toggling pin:', error);
     }
   }, []);
 
@@ -185,11 +178,7 @@ function NotesPageContent() {
       : notes.filter(n => n.folder_id === activeFolder)
     
     downloadNotes(notesToExport, exportFormat ? 'json' : 'markdown')
-    console.log(
-      exportFormat 
-        ? (t('notes.exportedJSON') || 'Экспортировано в JSON')
-        : (t('notes.exportedMarkdown') || 'Экспортировано в Markdown')
-    )
+    logger.debug('Notes exported', { format: exportFormat ? 'json' : 'markdown', count: notesToExport.length })
   }, [notes, activeFolder, t])
 
   // Apply filters to notes

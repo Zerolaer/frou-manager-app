@@ -262,7 +262,7 @@ export const VALIDATION_SCHEMAS = {
   }
 } as const
 
-// XSS protection
+// XSS protection - escapes all HTML (for plain text)
 export function sanitizeHtml(input: string): string {
   if (typeof input !== 'string') return ''
   
@@ -273,6 +273,88 @@ export function sanitizeHtml(input: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;')
+}
+
+// Whitelist of allowed HTML tags for rich text content (notes, descriptions)
+const ALLOWED_HTML_TAGS = [
+  'p', 'div', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+  'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'blockquote', 'code', 'pre', 'span', 'a'
+]
+
+// Whitelist of allowed attributes
+const ALLOWED_ATTRIBUTES = ['href', 'title', 'class', 'style']
+
+// Sanitize rich text HTML - allows safe formatting tags but removes dangerous content
+export function sanitizeRichTextHtml(input: string): string {
+  if (typeof input !== 'string') return ''
+  
+  try {
+    // Create a temporary DOM element to parse HTML
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(input, 'text/html')
+    const body = doc.body
+    
+    // Remove dangerous tags and attributes recursively
+    const removeDangerous = (element: Element) => {
+      // Remove script, iframe, object, embed, form, input, button
+      const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'meta', 'link', 'style']
+      dangerousTags.forEach(tag => {
+        const elements = element.getElementsByTagName(tag)
+        Array.from(elements).forEach(el => el.remove())
+      })
+      
+      // Process all elements
+      const allElements = element.querySelectorAll('*')
+      allElements.forEach(el => {
+        // Remove element if not in whitelist
+        if (!ALLOWED_HTML_TAGS.includes(el.tagName.toLowerCase())) {
+          // Replace with its content
+          const parent = el.parentNode
+          if (parent) {
+            while (el.firstChild) {
+              parent.insertBefore(el.firstChild, el)
+            }
+            parent.removeChild(el)
+          }
+          return
+        }
+        
+        // Remove dangerous attributes
+        const attrs = Array.from(el.attributes)
+        attrs.forEach(attr => {
+          const attrName = attr.name.toLowerCase()
+          
+          // Remove event handlers (onclick, onerror, etc.)
+          if (attrName.startsWith('on')) {
+            el.removeAttribute(attr.name)
+            return
+          }
+          
+          // Remove javascript: protocol
+          if (attrName === 'href' || attrName === 'src') {
+            const value = attr.value.toLowerCase()
+            if (value.startsWith('javascript:') || value.startsWith('data:') || value.startsWith('vbscript:')) {
+              el.removeAttribute(attr.name)
+              return
+            }
+          }
+          
+          // Only keep allowed attributes
+          if (!ALLOWED_ATTRIBUTES.includes(attrName)) {
+            el.removeAttribute(attr.name)
+          }
+        })
+      })
+    }
+    
+    removeDangerous(body)
+    
+    return body.innerHTML
+  } catch (error) {
+    // If parsing fails, escape all HTML as fallback
+    return sanitizeHtml(input)
+  }
 }
 
 // SQL injection protection (for display purposes)

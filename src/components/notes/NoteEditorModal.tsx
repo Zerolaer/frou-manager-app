@@ -1,5 +1,6 @@
 /* src/components/notes/NoteEditorModal.tsx */
 import { logger } from '@/lib/monitoring'
+import { sanitizeRichTextHtml } from '@/lib/dataValidation'
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import SideModal from '@/components/ui/SideModal'
@@ -104,9 +105,8 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   useEffect(() => {
     if (!open) return;
     
-    console.log('📖 Loading note into editor:', { 
-      noteId: note?.id, 
-      hasContent: !!note?.content,
+    logger.debug('Loading note into editor', { 
+      noteId: note?.id
       contentLength: note?.content?.length,
       content: note?.content?.substring(0, 100)
     });
@@ -141,19 +141,13 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   async function handleSave() {
     setLoading(true);
     try {
-      // Получаем актуальное значение из contenteditable
+      // Получаем актуальное значение из contenteditable и санитизируем для защиты от XSS
       const currentContent = textareaRef.current?.innerHTML || content;
-      
-      console.log('💾 Saving note:', { 
-        title, 
-        contentLength: currentContent.length, 
-        content: currentContent.substring(0, 100),
-        noteId: note?.id 
-      });
+      const sanitizedContent = sanitizeRichTextHtml(currentContent);
       
       await onSave({ 
         title, 
-        content: currentContent, 
+        content: sanitizedContent, 
         folder_id: folderId || null 
       }, note?.id);
       onClose();
@@ -178,12 +172,13 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
     if (!note) return;
     
     try {
-      // Получаем актуальное значение из contenteditable
+      // Получаем актуальное значение из contenteditable и санитизируем
       const currentContent = textareaRef.current?.innerHTML || content;
+      const sanitizedContent = sanitizeRichTextHtml(currentContent);
       
       await onSave({
         title: `${note.title} (${t('notes.copy')})`,
-        content: currentContent,
+        content: sanitizedContent,
         folder_id: note.folder_id,
         pinned: false
       });
@@ -197,13 +192,14 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   const autoSave = useCallback(async () => {
     if (!note?.id || saving) return;
     
-    // Получаем актуальное значение из contenteditable
+    // Получаем актуальное значение из contenteditable и санитизируем
     const currentContent = textareaRef.current?.innerHTML || content;
+    const sanitizedContent = sanitizeRichTextHtml(currentContent);
     
     // Проверяем, есть ли реальные изменения
     const hasChanges = 
       title !== initialValues.title ||
-      currentContent !== initialValues.content ||
+      sanitizedContent !== initialValues.content ||
       folderId !== initialValues.folderId;
     
     if (!hasChanges) return; // Нет изменений - не сохраняем
@@ -214,7 +210,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
       const saveFunction = onAutoSave || onSave;
       await saveFunction({ 
         title, 
-        content: currentContent, 
+        content: sanitizedContent, 
         folder_id: folderId || null 
       }, note.id);
     } catch (error) {

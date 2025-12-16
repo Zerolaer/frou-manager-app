@@ -10,6 +10,7 @@
     "storybook": "Storybook",
     "goals": "Goals",
     "invoice": "Invoices",
+    "habits": "Habits",
     "logout": "Logout"
   },
   "aria": {
@@ -34,7 +35,8 @@
     "finance": "Finance",
     "tasks": "Tasks",
     "notes": "Notes",
-    "invoice": "Invoices"
+    "invoice": "Invoices",
+    "habits": "Habits"
   },
   "actions": {
     "refresh": "Refresh",
@@ -413,7 +415,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "selectAll": "Select All",
-    "deselectAll": "Deselect All"
+    "deselectAll": "Deselect All",
+    "optional": "optional"
   },
   "dashboard": {
     "tasksToday": "Tasks Today",
@@ -575,5 +578,70 @@
     "itemTypeProduct": "Product/Service",
     "itemTypeServicePeriod": "Service Period",
     "itemTypeHourly": "Hourly Rate"
+  },
+  "habits": {
+    "createHabit": "Create Habit",
+    "title": "Title",
+    "type": "Type",
+    "automatic": "Automatic",
+    "manual": "Manual",
+    "progress": "Progress",
+    "startDate": "Start Date",
+    "endDate": "End Date (optional)",
+    "initialValue": "Initial Value",
+    "targetValue": "Target Value",
+    "currentValue": "Current Value",
+    "daysCount": "Days passed",
+    "completionCount": "Completed times",
+    "streakDays": "Day streak",
+    "progressPercentage": "Progress",
+    "complete": "Complete",
+    "addValue": "Add Value",
+    "value": "Value",
+    "noHabits": "You don't have any habits yet",
+    "editHabit": "Edit Habit",
+    "deleteHabit": "Delete Habit",
+    "confirmDelete": "Are you sure you want to delete this habit?",
+    "habitCreated": "Habit created",
+    "habitUpdated": "Habit updated",
+    "habitDeleted": "Habit deleted",
+    "markComplete": "Mark as Complete",
+    "alreadyCompleted": "Already completed today",
+    "addProgress": "Add Progress",
+    "enterValue": "Enter value",
+    "daysSinceStart": "days since start",
+    "completedToday": "Completed today",
+    "notCompletedToday": "Not completed today",
+    "lastCompleted": "Last completed",
+    "of": "of",
+    "completed": "Completed",
+    "notCompleted": "Not Completed"
+    "newHabit": "New Habit",
+    "editHabit": "Edit Habit",
+    "title": "Title",
+    "titlePlaceholder": "e.g., Quit smoking",
+    "type": {
+      "label": "Habit Type",
+      "automatic": "Automatic",
+      "manual": "Manual",
+      "progress": "Progress",
+      "automaticDescription": "Automatically counts days from start date. Example: Quit smoking",
+      "manualDescription": "Requires daily confirmation. Example: Take vitamins",
+      "progressDescription": "Tracks progress from initial to final value. Example: Save money"
+    },
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "initialValue": "Initial Value",
+    "finalValue": "Final Value",
+    "streak": "day streak",
+    "days": "days",
+    "daysSinceStart": "days since start",
+    "completions": "completions",
+    "complete": "Complete",
+    "uncomplete": "Uncomplete",
+    "addValue": "Add value",
+    "noHabits": "You don't have any habits yet",
+    "createFirst": "Create your first habit to start tracking your progress",
+    "deleteConfirm": "Are you sure you want to delete this habit? All completion data will be deleted."
   }
 }

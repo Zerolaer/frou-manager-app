@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar, FileCheck, UserPlus } from 'lucide-react'
+import { LogOut, Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar, FileCheck, UserPlus, Sparkles } from 'lucide-react'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
@@ -36,6 +36,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
     { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
     { to: '/notes', icon: FileText, label: t('nav.notes') },
     { to: '/invoice', icon: FileCheck, label: t('nav.invoice') },
+    { to: '/habits', icon: Sparkles, label: t('nav.habits') },
   ]
 
   const getSubHeaderContent = () => {
@@ -80,6 +81,14 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
           actions: [
             { id: 'add-client', label: t('invoice.newClient'), icon: UserPlus, variant: 'secondary' },
             { id: 'add-invoice', label: t('invoice.newInvoice'), icon: Plus, variant: 'primary' }
+          ]
+        }
+
+      case '/habits':
+        return {
+          title: t('pages.habits'),
+          actions: [
+            { id: 'add-habit', label: t('habits.createHabit'), icon: Plus, variant: 'primary' }
           ]
         }
 

@@ -118,7 +118,7 @@ export default function Finance(){
         mainContent.style.overflowY = 'auto'
         mainContent.style.overflowX = 'auto'
         mainContent.style.maxHeight = 'calc(100vh - 172px)'
-        console.log('🔧 Finance: Applied scroll styles to #main-content')
+        logger.debug('Applied scroll styles to main-content')
       }
     }
   }, [isMobile])
@@ -220,7 +220,7 @@ export default function Finance(){
       if (signal?.aborted) return
       
       if (catsRes.error || entriesRes.error) { 
-        console.error('Error loading financial data:', catsRes.error || entriesRes.error); 
+        logger.error('Error loading financial data:', catsRes.error || entriesRes.error); 
         setLoading(false); 
         return 
       }
@@ -257,7 +257,7 @@ export default function Finance(){
       }
     } catch (error) {
       if (!signal?.aborted) {
-        console.error('Error loading financial data:', error)
+        logger.error('Error loading financial data:', error)
         setLoading(false)
       }
     }
@@ -328,7 +328,7 @@ export default function Finance(){
     const payload: { user_id: string; type: 'income' | 'expense'; name: string; parent_id?: string } = { user_id: userId, type, name }
     if (newParent) payload.parent_id = newParent.id
     const { data, error } = await supabase.from('finance_categories').insert(payload).select('id,name,type,parent_id').single()
-    if (error) { console.error('Error creating category:', error); return }
+    if (error) { logger.error('Error creating category:', error); return }
     const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(MONTHS_IN_YEAR).fill(0) }
     if (type === FINANCE_TYPES.INCOME) {
       const raw = [...incomeRaw, cat]; setIncomeRaw(raw)
@@ -337,7 +337,6 @@ export default function Finance(){
       const raw = [...expenseRaw, cat]; setExpenseRaw(raw)
       writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
     }
-    console.log(`Category created: ${name}`)
     setShowAdd(false); setNewName(''); setNewType(FINANCE_TYPES.INCOME); setNewParent(null)
   }
 
@@ -357,7 +356,6 @@ export default function Finance(){
       setCtxCat(cat)
       setCtxOpen(true)
     } catch (error) {
-      console.error('Error in onContextCategory:', error)
       logger.error('Error opening category context menu:', error)
     }
   }
@@ -367,7 +365,7 @@ export default function Finance(){
     const name = renameValue.trim()
     if (!name || !ctxCat) { setRenameOpen(false); return }
     const { error } = await supabase.from('finance_categories').update({ name }).eq('id', ctxCat.id)
-    if (error) { console.error('Error creating category:', error); return }
+    if (error) { logger.error('Error updating category:', error); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -381,7 +379,7 @@ export default function Finance(){
   async function confirmDelete(){
     if (!ctxCat) return
     const { error } = await supabase.from('finance_categories').delete().eq('id', ctxCat.id)
-    if (error) { console.error('Error creating category:', error); return }
+    if (error) { logger.error('Error deleting category:', error); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.filter(c => c.id !== ctxCat.id); setIncomeRaw(raw)
       writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
@@ -498,10 +496,9 @@ export default function Finance(){
         })
       }
       
-      console.log('Data inserted successfully')
+      logger.debug('Data pasted successfully')
     } catch (error) {
-      console.error('Error inserting data')
-      logger.error('Paste error:', error)
+      logger.error('Error pasting data:', error)
     }
     
     setCellCtxOpen(false); setCtxCellHighlight(null)

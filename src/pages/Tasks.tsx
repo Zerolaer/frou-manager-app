@@ -581,7 +581,6 @@ export default function Tasks(){
       }
     } catch (error) {
       logger.error('Error updating task positions:', error)
-      console.error('Error moving task:', error)
     }
   }
 
@@ -835,7 +834,7 @@ const projectColorById = React.useMemo(() => {
       if (cancelled) return
       
       if (error) {
-        console.error('Error fetching all tasks:', error)
+        logger.error('Error fetching all tasks:', error)
         return
       }
       
@@ -895,7 +894,11 @@ const projectColorById = React.useMemo(() => {
           user_id: uid
         })
         .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
-      if (!error && data){
+      if (error) {
+        logger.error('Error duplicating task:', error)
+        throw error
+      }
+      if (data){
         const t: TaskItem = {
           id: data.id,
           project_id: data.project_id || undefined,
@@ -913,6 +916,8 @@ const projectColorById = React.useMemo(() => {
         ;(map[dayKey] ||= []).push(t)
         setTasks(map)
       }
+    } catch (error) {
+      logger.error('Error duplicating task:', error)
     } finally {
       setCtx(c => ({ ...c, open: false }))
     }
@@ -941,15 +946,18 @@ const projectColorById = React.useMemo(() => {
   
   async function deleteSingleTask(task: TaskItem, dayKey: string) {
     try{
-      await supabase.from('tasks_items').delete().eq('id', task.id)
+      const { error: deleteError } = await supabase.from('tasks_items').delete().eq('id', task.id)
+      if (deleteError) {
+        logger.error('Error deleting task:', deleteError)
+        throw deleteError
+      }
       const map = { ...tasks }
       const list = map[dayKey] || []
       const idx = list.findIndex(x => x.id === task.id)
       if (idx >= 0){ list.splice(idx,1); map[dayKey] = list }
       setTasks(map)
-      console.log('Task deleted successfully')
     } catch (error) {
-      console.error('Error deleting task:', error)
+      logger.error('Error deleting task:', error)
     } finally {
       setCtx(c => ({ ...c, open: false }))
       setShowRecurringDelete(false)
@@ -977,13 +985,9 @@ const projectColorById = React.useMemo(() => {
       })
       setTasks(map)
       
-      const recurringTasks = Object.values(tasks)
-        .flat()
-        .filter(t => t.recurring_task_id === task.recurring_task_id)
-      
-      console.log(`Deleted ${recurringTasks.length} recurring tasks`)
+      logger.debug(`Deleted recurring tasks with id: ${task.recurring_task_id}`)
     } catch (error) {
-      console.error('Error deleting recurring tasks:', error)
+      logger.error('Error deleting recurring tasks:', error)
     } finally {
       setShowRecurringDelete(false)
       setTaskToDelete(null)
@@ -1011,10 +1015,8 @@ const projectColorById = React.useMemo(() => {
         }
       })
       setTasks(map)
-      
-      console.log('Task updated successfully')
     } catch (error) {
-      console.error('Error updating task:', error)
+      logger.error('Error updating task:', error)
     } finally {
       setShowRecurringEdit(false)
       setTaskToEdit(null)
@@ -1048,13 +1050,9 @@ const projectColorById = React.useMemo(() => {
       })
       setTasks(map)
       
-      const recurringTasks = Object.values(tasks)
-        .flat()
-        .filter(t => t.recurring_task_id === task.recurring_task_id)
-      
-      console.log(`Updated ${recurringTasks.length} recurring tasks`)
+      logger.debug(`Updated recurring tasks with id: ${task.recurring_task_id}`)
     } catch (error) {
-      console.error('Error updating recurring tasks:', error)
+      logger.error('Error updating recurring tasks:', error)
     } finally {
       setShowRecurringEdit(false)
       setTaskToEdit(null)
@@ -1103,11 +1101,10 @@ const projectColorById = React.useMemo(() => {
       const next = [...projects, { id:data.id, name:data.name }]
       setProjects(next)
       if (!activeProject) setActiveProject(data.id)
-      console.log(`Project created: ${name}`)
       setProjectName('')
       setOpenNewProject(false)
     } else if (error) {
-      console.error('Error creating project:', error)
+      logger.error('Error creating project:', error)
     }
   }
 
@@ -1253,18 +1250,14 @@ const projectColorById = React.useMemo(() => {
       setTasks(taskMap)
       
       // Show success message
-      const message = createdTasks.length > 1 
-        ? `Создано ${createdTasks.length} повторяющихся задач`
-        : 'Повторяющаяся задача создана'
-      console.log(message)
+      logger.debug(`Created ${createdTasks.length} recurring task instances`)
       
       setTaskTitle('')
       setTaskDesc('')
       setOpenNewTask(false)
 
     } catch (error) {
-      logger.error('❌ Error creating recurring tasks:', error)
-      console.error('Error creating recurring tasks:', error)
+      logger.error('Error creating recurring tasks:', error)
     }
   }
 
@@ -1347,11 +1340,10 @@ const projectColorById = React.useMemo(() => {
       const map = { ...tasks }
       ;(map[key] ||= []).push(newTask)
       setTasks(map)
-      console.log(`Task created: ${title}`)
       setTaskTitle(''); setTaskDesc('')
       setOpenNewTask(false)
     } else if (error) {
-      console.error('Error creating task:', error)
+      logger.error('Error creating task:', error)
       }
     }
   }
