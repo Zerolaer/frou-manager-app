@@ -105,11 +105,11 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
   useEffect(() => {
     if (!open) return;
     
-    logger.debug('Loading note into editor', { 
-      noteId: note?.id
-      contentLength: note?.content?.length,
-      content: note?.content?.substring(0, 100)
-    });
+      logger.debug('Loading note into editor', {
+        noteId: note?.id,
+        contentLength: note?.content?.length,
+        content: note?.content?.substring(0, 100)
+      });
     
     setTitle(note?.title ?? '');
     const noteContent = note?.content ?? '';
