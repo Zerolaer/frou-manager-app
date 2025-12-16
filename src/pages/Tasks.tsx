@@ -179,6 +179,7 @@ export default function Tasks(){
   const isSyncingRef = React.useRef<boolean>(false) // Prevent double sync calls
   const lastClickTimeRef = React.useRef<number>(0) // Track last click time to prevent double clicks
   const lastClickedTaskIdRef = React.useRef<string | null>(null) // Track last clicked task to prevent rapid re-clicks
+  const isOpeningModalRef = React.useRef<boolean>(false) // Track if modal is currently opening
   
   
   // Calendar state
@@ -1853,16 +1854,19 @@ const projectColorById = React.useMemo(() => {
                               return
                             }
                             
-                            // Prevent double clicks - ignore if clicked within 300ms on the same task
+                            // Prevent double clicks - ignore if clicked within 500ms on the same task
                             const now = Date.now()
                             const timeSinceLastClick = now - lastClickTimeRef.current
-                            const isDoubleClick = timeSinceLastClick < 300 && lastClickedTaskIdRef.current === taskItem.id
+                            const isDoubleClick = timeSinceLastClick < 500 && lastClickedTaskIdRef.current === taskItem.id
                             
                             // Also check if modal is already open for this exact task
                             const isAlreadyOpen = viewTask?.id === taskItem.id
                             
-                            if (isDoubleClick || isAlreadyOpen) {
-                              logger.debug('❌ Ignoring click - double click or already open', { isDoubleClick, isAlreadyOpen, timeSinceLastClick })
+                            // Check if modal is currently opening
+                            const isOpening = isOpeningModalRef.current
+                            
+                            if (isDoubleClick || isAlreadyOpen || isOpening) {
+                              logger.debug('❌ Ignoring click - double click, already open, or opening', { isDoubleClick, isAlreadyOpen, isOpening, timeSinceLastClick })
                               e.preventDefault()
                               e.stopPropagation()
                               return
@@ -1872,6 +1876,13 @@ const projectColorById = React.useMemo(() => {
                             logger.debug('✅ Opening task modal immediately')
                             lastClickTimeRef.current = now
                             lastClickedTaskIdRef.current = taskItem.id
+                            isOpeningModalRef.current = true
+                            
+                            // Set a timeout to allow modal to open and prevent rapid re-clicks
+                            setTimeout(() => {
+                              isOpeningModalRef.current = false
+                            }, 500)
+                            
                             setViewTask(taskItem)
                           }}
                         >
@@ -2026,6 +2037,7 @@ const projectColorById = React.useMemo(() => {
             // Reset click tracking to allow reopening the task
             lastClickedTaskIdRef.current = null
             lastClickTimeRef.current = 0
+            isOpeningModalRef.current = false
           }}
           task={viewTask}
           onUpdated={handleTaskUpdate}

@@ -38,6 +38,7 @@ const SideModal = ({
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
   const onCloseRef = useRef(onClose)
+  const openTimeRef = useRef<number>(0) // Track when modal was opened
   
   // Keep ref up to date
   useEffect(() => {
@@ -48,6 +49,7 @@ const SideModal = ({
     if (open) {
       setIsVisible(true)
       setIsAnimating(true)
+      openTimeRef.current = Date.now() // Record opening time
       // Небольшая задержка для начала анимации
       const timer = setTimeout(() => {
         setIsAnimating(false)
@@ -111,7 +113,17 @@ const SideModal = ({
         zIndex,
         pointerEvents: noBackdrop ? 'none' : 'auto' // Don't capture clicks when no backdrop
       }}
-      onMouseDown={noBackdrop || disableBackdropClick ? undefined : onClose}
+      onMouseDown={(e) => {
+        // Prevent closing if clicked within 500ms of opening (prevents double-click issues)
+        if (noBackdrop || disableBackdropClick) return
+        const timeSinceOpen = Date.now() - openTimeRef.current
+        if (timeSinceOpen < 500) {
+          e.preventDefault()
+          e.stopPropagation()
+          return
+        }
+        onClose()
+      }}
     >
       {/* Overlay with backdrop blur - только если не noBackdrop */}
       {!noBackdrop && (
