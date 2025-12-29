@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import type { FC } from 'react'
 import { AccessibleButton } from './AccessibleComponents'
 import { announceToScreenReader } from '@/lib/accessibility'
 import { isProduction } from '../lib/env'
@@ -37,7 +38,7 @@ export function useOnlineStatus() {
 }
 
 // Offline indicator component
-export const OfflineIndicator: React.FC = () => {
+export const OfflineIndicator: FC = () => {
   const { isOnline } = useOnlineStatus()
   const [showIndicator, setShowIndicator] = useState(false)
 
@@ -200,7 +201,7 @@ export function useOfflineOperations() {
 }
 
 // Offline queue indicator
-export const OfflineQueueIndicator: React.FC = () => {
+export const OfflineQueueIndicator: FC = () => {
   const { queueLength, processQueue, clearQueue } = useOfflineOperations()
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -323,7 +324,7 @@ export function createOfflineApiCall<T>(
 }
 
 // OfflineSupport React Component
-const OfflineSupport: React.FC = () => {
+const OfflineSupport: FC = () => {
   const { isOnline, wasOffline } = useOnlineStatus()
 
   if (isOnline) {

@@ -1,4 +1,4 @@
-import React, { Suspense, ComponentType } from 'react'
+import React, { Suspense, ComponentType, useState, useEffect, useRef, useCallback } from 'react'
 import { useSmartPreloading } from '@/utils/codeSplitting'
 import { WidgetSkeleton, TaskCardSkeleton, FinanceRowSkeleton, ListItemSkeleton, PageSkeleton } from './LoadingStates'
 
@@ -63,12 +63,12 @@ export function IntersectionLazy<T extends ComponentType<any>>({
   children,
   ...props
 }: IntersectionLazyProps<T>) {
-  const [Component, setComponent] = React.useState<T | null>(null)
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
-  const ref = React.useRef<HTMLDivElement>(null)
+  const [Component, setComponent] = useState<T | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     const observer = new IntersectionObserver(
       async (entries) => {
         const [entry] = entries
@@ -122,11 +122,11 @@ export function ProgressiveLazy<T extends ComponentType<any>>({
   children,
   ...props
 }: ProgressiveLazyProps<T>) {
-  const [Component, setComponent] = React.useState<T | null>(null)
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [Component, setComponent] = useState<T | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  const loadComponent = React.useCallback(async () => {
+  const loadComponent = useCallback(async () => {
     if (Component || isLoading) return
 
     setIsLoading(true)
@@ -150,7 +150,7 @@ export function ProgressiveLazy<T extends ComponentType<any>>({
   }, [importFunction, Component, isLoading, priority])
 
   // Auto-load high priority components
-  React.useEffect(() => {
+  useEffect(() => {
     if (priority === 'high') {
       loadComponent()
     }

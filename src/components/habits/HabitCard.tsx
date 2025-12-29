@@ -54,19 +54,6 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
     }
   };
 
-  const getTypeColor = () => {
-    switch (habit.type) {
-      case 'automatic':
-        return 'bg-blue-50 border-blue-200';
-      case 'manual':
-        return 'bg-green-50 border-green-200';
-      case 'progress':
-        return 'bg-purple-50 border-purple-200';
-      default:
-        return 'bg-gray-50 border-gray-200';
-    }
-  };
-
   const getTypeLabel = () => {
     switch (habit.type) {
       case 'automatic':
@@ -81,12 +68,14 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
   };
 
   return (
-    <div className={`rounded-xl border-2 p-4 ${getTypeColor()} transition-all hover:shadow-md`}>
+    <div className="rounded-xl border border-gray-200 bg-white p-4 transition-all hover:shadow-sm">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900 mb-1">{habit.title}</h3>
-          <span className="text-xs text-gray-600">{getTypeLabel()}</span>
+          <span className="inline-flex items-center text-xs text-gray-600 px-2 py-0.5 rounded-full border border-gray-200 bg-white">
+            {getTypeLabel()}
+          </span>
         </div>
         <div ref={menuRef} className="relative">
           <button
@@ -117,7 +106,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
       <div className="space-y-2 mb-4">
         {habit.type === 'automatic' && (
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-blue-600" />
+            <TrendingUp className="w-4 h-4 text-gray-700" />
             <span className="text-sm font-medium text-gray-900">
               {habit.days_count || 0} {t('habits.daysSinceStart')}
             </span>
@@ -127,7 +116,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
         {habit.type === 'manual' && (
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-green-600" />
+              <Check className="w-4 h-4 text-gray-700" />
               <span className="text-sm font-medium text-gray-900">
                 {habit.completion_count || 0} {t('habits.completions')}
               </span>
@@ -138,7 +127,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
               </div>
             )}
             {isCompletedToday && (
-              <div className="text-xs text-green-600 font-medium">
+              <div className="text-xs text-gray-700 font-medium">
                 ✓ {t('habits.completedToday')}
               </div>
             )}
@@ -159,7 +148,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gray-900 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${habit.progress_percentage || 0}%` }}
               />
             </div>
@@ -173,10 +162,10 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
           <button
             onClick={onComplete}
             disabled={isCompletedToday}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
               isCompletedToday
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-200'
+                : 'bg-gray-900 text-white hover:bg-black border-gray-900'
             }`}
           >
             {isCompletedToday ? t('habits.alreadyCompleted') : t('habits.complete')}
@@ -196,7 +185,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
                 />
                 <button
                   onClick={handleAddProgressClick}
-                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -204,7 +193,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onComplete, onAddPr
             ) : (
               <button
                 onClick={() => setShowProgressInput(true)}
-                className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                className="w-full px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-medium"
               >
                 {t('habits.addValue')}
               </button>

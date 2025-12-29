@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import React, { Suspense, lazy, useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { SkipLinks } from './components/AccessibleComponents'
 import AppLoader from './components/AppLoader'
@@ -8,10 +8,10 @@ import { useMobileDetection } from './hooks/useMobileDetection'
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
 // Lazy load heavy components
-const Header = lazy(() => import('./components/Header'))
-const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
-const OfflineSupport = lazy(() => import('./components/OfflineSupport'))
-const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
+import Header from './components/Header'
+import KeyboardShortcuts from './components/KeyboardShortcuts'
+import OfflineSupport from './components/OfflineSupport'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 export default function App(){
   const { isMobile } = useMobileDetection()
@@ -57,7 +57,7 @@ export default function App(){
   // Supabase is now hardcoded, no need to check
 
   // Listen for year changes from Finance page
-  React.useEffect(() => {
+  useEffect(() => {
     const handleFinanceYearChanged = (event: CustomEvent) => {
       setCurrentYear(event.detail)
     }
@@ -69,7 +69,7 @@ export default function App(){
   }, [])
 
   // Listen for tasks projects data from Tasks page
-  React.useEffect(() => {
+  useEffect(() => {
     const handleTasksProjectsData = (event: CustomEvent) => {
       setTasksProjectsData(event.detail)
     }
@@ -81,18 +81,19 @@ export default function App(){
   }, [])
 
   // Apply mode classes to body immediately and on route changes
-  const applyModeClass = React.useCallback(() => {
+  const applyModeClass = useCallback(() => {
     const pathname = window.location.pathname.toLowerCase()
     const isTasks = pathname.includes('tasks')
     const isFinance = pathname.includes('finance')
     const isNotes = pathname.includes('notes')
     const isInvoice = pathname.includes('invoice')
+    const isSettings = pathname.includes('settings')
     const isHome = pathname === '/'
 
-    console.log('🎨 Applying mode class:', { pathname, isFinance, isTasks, isNotes, isInvoice, isHome })
+    console.log('🎨 Applying mode class:', { pathname, isFinance, isTasks, isNotes, isInvoice, isSettings, isHome })
 
     // Remove all mode classes
-    document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'invoice-mode', 'home-mode')
+    document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'invoice-mode', 'settings-mode', 'home-mode')
     
     // Add appropriate mode class
     if (isTasks) {
@@ -140,6 +141,16 @@ export default function App(){
         mainContent.style.overflowX = ''
         mainContent.style.maxHeight = ''
       }
+    } else if (isSettings) {
+      document.body.classList.add('settings-mode')
+      // Reset finance styles
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.style.height = ''
+        mainContent.style.overflowY = ''
+        mainContent.style.overflowX = ''
+        mainContent.style.maxHeight = ''
+      }
     } else if (isHome) {
       document.body.classList.add('home-mode')
       // Reset finance styles
@@ -154,12 +165,12 @@ export default function App(){
   }, [])
 
   // Apply immediately on mount
-  React.useEffect(() => {
+  useEffect(() => {
     applyModeClass()
   }, [applyModeClass])
 
   // Listen for route changes
-  React.useEffect(() => {
+  useEffect(() => {
     const handleRouteChange = () => {
       // Small delay to ensure DOM is updated
       setTimeout(() => {
@@ -178,7 +189,7 @@ export default function App(){
   }, [applyModeClass])
 
   // Also apply mode class when location changes (for React Router)
-  React.useEffect(() => {
+  useEffect(() => {
     applyModeClass()
   }, [applyModeClass, location.pathname])
 
@@ -188,8 +199,7 @@ export default function App(){
       <SkipLinks />
       <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
         {!isMobile && (
-          <Suspense fallback={<AppLoader />}>
-            <Header 
+          <Header 
               currentYear={currentYear}
               selectedWeek={selectedWeek}
               tasksProjectsData={tasksProjectsData}
@@ -212,29 +222,20 @@ export default function App(){
                 window.dispatchEvent(new CustomEvent('tasks-projects-filter-change', { detail: projectIds }))
               }}
             />
-          </Suspense>
         )}
         <main 
           id="main-content"
           className={`flex-1 overflow-x-hidden flex flex-col ${isMobile ? 'p-0' : 'p-4'}`}
-          style={{ backgroundColor: isMobile ? '#ffffff' : '#F2F7FA' }}
+          style={{ backgroundColor: isMobile ? '#ffffff' : '#F8F8F8' }}
           role="main"
           aria-label="Основное содержимое"
         >
-          <Suspense fallback={<AppLoader />}>
-            <Outlet />
-          </Suspense>
+          <Outlet />
         </main>
       </div>
-      <Suspense fallback={null}>
-        <KeyboardShortcuts />
-      </Suspense>
-      <Suspense fallback={null}>
-        <OfflineSupport />
-      </Suspense>
-      <Suspense fallback={null}>
-        <PWAInstallPrompt />
-      </Suspense>
+      <KeyboardShortcuts />
+      <OfflineSupport />
+      <PWAInstallPrompt />
     </AppErrorBoundary>
   )
 }

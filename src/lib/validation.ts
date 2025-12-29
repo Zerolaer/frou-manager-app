@@ -80,11 +80,11 @@ export function useFormValidation<T extends Record<string, any>>(
   initialValues: T,
   validators: Partial<Record<keyof T, ValidationRule<T[keyof T]>[]>>
 ) {
-  const [values, setValues] = React.useState(initialValues)
-  const [errors, setErrors] = React.useState<Partial<Record<keyof T, string[]>>>({})
-  const [touched, setTouched] = React.useState<Partial<Record<keyof T, boolean>>>({})
+  const [values, setValues] = useState(initialValues)
+  const [errors, setErrors] = useState<Partial<Record<keyof T, string[]>>>({})
+  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({})
 
-  const validateField = React.useCallback((field: keyof T) => {
+  const validateField = useCallback((field: keyof T) => {
     const fieldValidators = validators[field]
     if (!fieldValidators) return
 
@@ -97,7 +97,7 @@ export function useFormValidation<T extends Record<string, any>>(
     }))
   }, [values, validators])
 
-  const validateForm = React.useCallback(() => {
+  const validateForm = useCallback(() => {
     const newErrors: Partial<Record<keyof T, string[]>> = {}
     let isValid = true
 
@@ -118,7 +118,7 @@ export function useFormValidation<T extends Record<string, any>>(
     return isValid
   }, [values, validators])
 
-  const setValue = React.useCallback((field: keyof T, value: T[keyof T]) => {
+  const setValue = useCallback((field: keyof T, value: T[keyof T]) => {
     setValues(prev => ({ ...prev, [field]: value }))
     
     // Clear errors when user starts typing
@@ -127,12 +127,12 @@ export function useFormValidation<T extends Record<string, any>>(
     }
   }, [errors])
 
-  const setFieldTouched = React.useCallback((field: keyof T) => {
+  const setFieldTouched = useCallback((field: keyof T) => {
     setTouched(prev => ({ ...prev, [field]: true }))
     validateField(field)
   }, [validateField])
 
-  const reset = React.useCallback(() => {
+  const reset = useCallback(() => {
     setValues(initialValues)
     setErrors({})
     setTouched({})
@@ -152,4 +152,4 @@ export function useFormValidation<T extends Record<string, any>>(
 }
 
 // Import React for hooks
-import React from 'react'
+import { useState, useCallback } from 'react'

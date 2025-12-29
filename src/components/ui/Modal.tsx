@@ -132,9 +132,18 @@ const Modal = ({
   const actualSize = size === 'cell' ? 'cell' : (size === 'sm' || size === 'md' ? 'default' : (size === 'lg' || size === 'xl') ? 'large' : size)
   
   // БЕЗ вложенных бэктиков — безопасно для esbuild/Netlify
+  // Если contentClassName содержит переопределение ширины для панели (w-[xxx]), применяем его к панели
+  const hasPanelWidth = contentClassName?.match(/w-\[[\d\w]+\]/)
+  const widthClass = hasPanelWidth ? '' : (actualSize === 'cell' ? 'w-[680px]' : actualSize === 'large' ? 'w-[800px]' : 'w-[500px]')
+  const maxWidthClass = hasPanelWidth ? '' : 'max-w-[95vw]'
+  
+  // Извлекаем классы ширины из contentClassName для применения к панели
+  const panelWidthClasses = contentClassName?.match(/(?:^|\s)(w-\[[\d\w]+\]|max-w-\[[\d\w]+\])(?=\s|$)/g)?.join(' ') || ''
+  const contentClasses = contentClassName?.replace(/(?:^|\s)(w-\[[\d\w]+\]|max-w-\[[\d\w]+\])(?=\s|$)/g, '').trim() || ''
+  
   const panelClasses = [
-    actualSize === 'cell' ? 'w-[680px]' : actualSize === 'large' ? 'w-[800px]' : 'w-[500px]',
-    'max-w-[95vw]',
+    widthClass,
+    maxWidthClass,
     'max-h-[90vh]',
     'rounded-2xl',
     'bg-white',
@@ -147,7 +156,8 @@ const Modal = ({
     'flex',
     'flex-col',
     'overflow-hidden',
-  ].join(' ')
+    panelWidthClasses,
+  ].filter(Boolean).join(' ')
 
   const content = (
     <div
@@ -158,7 +168,7 @@ const Modal = ({
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           ref={panelRef}
-          className={`${panelClasses} ${contentClassName || ''} transition-all duration-300 ease-out ${
+          className={`${panelClasses} transition-all duration-300 ease-out ${
             !isAnimating 
               ? 'opacity-100 scale-100 translate-y-0' 
               : 'opacity-0 scale-95 translate-y-2'
@@ -179,7 +189,7 @@ const Modal = ({
             />
           )}
           <div className={`${bodyClassName ?? 'px-5 py-4'} flex-1 overflow-y-auto`}>
-            <div className={`w-auto ${contentClassName ?? ''} mx-auto`}>
+            <div className={`w-auto ${contentClasses} mx-auto`}>
               {children}
             </div>
           </div>

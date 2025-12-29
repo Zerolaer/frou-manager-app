@@ -94,7 +94,7 @@ export default function RecurringEditModal({
                 : 'border-gray-200 hover:border-gray-300'
             }`}
             style={{
-              backgroundColor: selectedAction === 'all' ? '#F2F7FA' : 'white'
+              backgroundColor: selectedAction === 'all' ? '#F8F8F8' : 'white'
             }}
             onClick={() => setSelectedAction('all')}
           >

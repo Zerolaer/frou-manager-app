@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
+import type { FC } from 'react'
 import { useGlobalKeyboardShortcuts } from '@/hooks/useKeyboardNavigation'
 
 interface KeyboardShortcutsProps {
@@ -6,7 +7,7 @@ interface KeyboardShortcutsProps {
   onToggle?: () => void
 }
 
-const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
+const KeyboardShortcuts: FC<KeyboardShortcutsProps> = ({
   show = false,
   onToggle
 }) => {
@@ -141,14 +142,14 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
                       </span>
                       <div className="flex items-center gap-1">
                         {shortcut.keys.map((key, keyIndex) => (
-                          <React.Fragment key={keyIndex}>
+                          <Fragment key={keyIndex}>
                             {keyIndex > 0 && (
                               <span className="text-gray-400 mx-1">+</span>
                             )}
                             <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 border border-gray-300 rounded">
                               {key}
                             </kbd>
-                          </React.Fragment>
+                          </Fragment>
                         ))}
                       </div>
                     </div>

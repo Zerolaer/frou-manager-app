@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface PriorityData {
   high: number;
@@ -99,9 +100,34 @@ const PrioritiesWidget = () => {
       />
 
       <div className="flex-1 p-6 flex flex-col justify-center">
-        {/* Circles in Apple Watch style */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="relative w-40 h-40">
+        {loading ? (
+          <>
+            {/* Skeleton for circles */}
+            <div className="flex items-center justify-center mb-6">
+              <Skeleton variant="circular" width={160} height={160} />
+            </div>
+
+            {/* Skeleton for legend */}
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Skeleton variant="rectangular" width={16} height={16} className="rounded-sm" />
+                    <Skeleton variant="text" width={80} height={16} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton variant="text" width={60} height={16} />
+                    <Skeleton variant="text" width={30} height={16} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Circles in Apple Watch style */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative w-40 h-40">
             {/* Low priority - inner circle */}
             <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
               <circle
@@ -193,7 +219,8 @@ const PrioritiesWidget = () => {
             </div>
           ))}
         </div>
-
+          </>
+        )}
       </div>
     </div>
   );

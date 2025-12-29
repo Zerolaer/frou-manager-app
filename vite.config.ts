@@ -7,6 +7,8 @@ export default defineConfig({
     react({
       // Enable React Fast Refresh
       fastRefresh: true,
+      // Use automatic JSX runtime
+      jsxRuntime: 'automatic',
       // Optimize React imports
       babel: {
         plugins: []
@@ -17,7 +19,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    dedupe: ['react', 'react-dom', 'react/jsx-runtime']
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
+    // Ensure proper module resolution for dynamic imports
+    preserveSymlinks: false
   },
   define: {
     global: 'globalThis',
@@ -34,9 +38,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Don't code-split React - keep it in main bundle to ensure it's always available
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'vendor-react'
+            // Keep React and react-router-dom in main bundle - don't split them
+            // This ensures React is always available when lazy-loaded components need it
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler') || id.includes('react/jsx-runtime') || id.includes('react-router')) {
+              // Return undefined to keep in main bundle
+              return
             }
             if (id.includes('@supabase')) {
               return 'vendor-supabase'
@@ -48,12 +56,19 @@ export default defineConfig({
           }
         }
       }
+    },
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
     }
   },
   optimizeDeps: {
     include: [
       'react', 
-      'react-dom', 
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-router',
       'react-router-dom', 
       '@supabase/supabase-js', 
       'lucide-react', 
@@ -74,7 +89,12 @@ export default defineConfig({
       supported: {
         'top-level-await': true
       }
-    }
+    },
+    // Better handling of dynamic imports
+    entries: [
+      'src/main.tsx',
+      'src/pages/**/*.tsx'
+    ]
   },
   server: {
     fs: {
@@ -82,6 +102,18 @@ export default defineConfig({
     },
     headers: {
       'Cache-Control': 'public, max-age=31536000, immutable'
-    }
+    },
+    // Ensure proper module resolution for embedded browsers like Cursor
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost'
+    },
+    // Fix for dynamic imports
+    cors: true
+  },
+  // Ensure React is always available - important for Cursor browser compatibility
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'react'
   }
 })

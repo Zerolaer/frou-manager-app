@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { startOfWeek, endOfWeek, subWeeks, isSameWeek } from 'date-fns';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface TasksStatsWidgetProps {
   type: 'total' | 'completed';
@@ -177,69 +178,96 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
       />
 
       <div className="flex-1 p-6 flex flex-col justify-center">
-        {/* Large number */}
-        <div className="text-4xl font-bold text-gray-900 mb-2">
-          {stats.current}
-        </div>
-        
-        {/* Change percentage */}
-        <div className="flex items-center gap-2 text-sm mb-3">
-          {stats.change !== 0 && (
-            <>
-              {isPositive ? (
-                <TrendingUp className="w-5 h-5 text-gray-900" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-gray-900" />
-              )}
-              <span className="font-medium text-gray-900">
-                +{Math.abs(stats.changePercent)}%
-              </span>
-            </>
-          )}
-          <span className="text-xs text-gray-500">
-            {isPositive ? t('dashboard.moreThan') || 'More than' : t('dashboard.lessThan') || 'Less than'} {t('dashboard.thanLastWeek') || 'than last week'}
-          </span>
-        </div>
-
-        {/* Horizontal bars by projects */}
-        <div className="space-y-2">
-          {projectStats.length > 0 ? (
-            projectStats.map((project, index) => {
-              const colors = ['bg-black', 'bg-gray-800', 'bg-gray-600', 'bg-gray-500', 'bg-gray-400'];
-              const color = colors[index] || 'bg-gray-500';
-              
-              return (
-                <div key={project.project_name} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-700 truncate flex-1">
-                      {project.project_name}
-                    </span>
-                    <div className="flex items-center gap-1 ml-2">
-                      <span className="text-xs font-bold text-gray-900">
-                        {project.count}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        ({project.percentage}%)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className={`h-1.5 rounded-full ${color}`}
-                      style={{ 
-                        width: `${Math.max(project.percentage, 2)}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center text-gray-500 py-2">
-              <div className="text-xs">{t('dashboard.noProjectData') || 'No project data'}</div>
+        {loading ? (
+          <>
+            {/* Skeleton for large number */}
+            <Skeleton variant="rectangular" height={48} className="mb-2 rounded-lg" />
+            
+            {/* Skeleton for change percentage */}
+            <div className="flex items-center gap-2 mb-3">
+              <Skeleton variant="rectangular" width={100} height={20} className="rounded" />
             </div>
-          )}
-        </div>
+
+            {/* Skeleton for project bars */}
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Skeleton variant="text" width="60%" height={16} />
+                    <Skeleton variant="text" width={60} height={16} />
+                  </div>
+                  <Skeleton variant="rectangular" height={6} className="rounded-full" />
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Large number */}
+            <div className="text-4xl font-bold text-gray-900 mb-2">
+              {stats.current}
+            </div>
+            
+            {/* Change percentage */}
+            <div className="flex items-center gap-2 text-sm mb-3">
+              {stats.change !== 0 && (
+                <>
+                  {isPositive ? (
+                    <TrendingUp className="w-5 h-5 text-gray-900" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-gray-900" />
+                  )}
+                  <span className="font-medium text-gray-900">
+                    +{Math.abs(stats.changePercent)}%
+                  </span>
+                </>
+              )}
+              <span className="text-xs text-gray-500">
+                {isPositive ? t('dashboard.moreThan') || 'More than' : t('dashboard.lessThan') || 'Less than'} {t('dashboard.thanLastWeek') || 'than last week'}
+              </span>
+            </div>
+
+            {/* Horizontal bars by projects */}
+            <div className="space-y-2">
+              {projectStats.length > 0 ? (
+                projectStats.map((project, index) => {
+                  const colors = ['bg-black', 'bg-gray-800', 'bg-gray-600', 'bg-gray-500', 'bg-gray-400'];
+                  const color = colors[index] || 'bg-gray-500';
+                  
+                  return (
+                    <div key={project.project_name} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-700 truncate flex-1">
+                          {project.project_name}
+                        </span>
+                        <div className="flex items-center gap-1 ml-2">
+                          <span className="text-xs font-bold text-gray-900">
+                            {project.count}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ({project.percentage}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${color}`}
+                          style={{ 
+                            width: `${Math.max(project.percentage, 2)}%`
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center text-gray-500 py-2">
+                  <div className="text-xs">{t('dashboard.noProjectData') || 'No project data'}</div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { logger } from '@/lib/monitoring'
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import React, { Component, ErrorInfo, ReactNode, useState, useEffect, useCallback } from 'react'
 import { AccessibleButton } from './AccessibleComponents'
 import { ARIA_LABELS } from '@/lib/accessibility'
 import { isDevelopment } from '../lib/env'
@@ -169,10 +169,10 @@ export const AsyncErrorBoundary: React.FC<AsyncErrorBoundaryProps> = ({
   fallback,
   onError
 }) => {
-  const [hasError, setHasError] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [hasError, setHasError] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleAsyncError = (event: ErrorEvent) => {
       setHasError(true)
       setError(event.error)
@@ -229,16 +229,16 @@ export const FeatureErrorBoundary: React.FC<FeatureErrorBoundaryProps> = ({
   fallback,
   onError
 }) => {
-  const [hasError, setHasError] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [hasError, setHasError] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  const handleError = React.useCallback((error: Error) => {
+  const handleError = useCallback((error: Error) => {
     setHasError(true)
     setError(error)
     onError?.(error)
   }, [onError])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (hasError) {
       // Auto-recover after 5 seconds
       const timeout = setTimeout(() => {

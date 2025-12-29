@@ -14,11 +14,18 @@ body:has(.home-page) {
 .home-grid {
   display: grid !important;
   grid-template-columns: repeat(4, 1fr) !important;
-  grid-template-rows: 1fr 1fr !important;
+  grid-auto-rows: minmax(200px, 1fr) !important;
   gap: 16px !important;
   flex: 1 !important;
   min-height: 0 !important;
   max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Habits stats grid: auto-fit like home widgets */
+.habits-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  grid-auto-rows: minmax(200px, auto) !important;
 }
 
 .home-grid::-webkit-scrollbar {
@@ -61,6 +68,25 @@ body:has(.home-page) {
   display: flex;
   flex-direction: column;
   min-height: 200px;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Анимация появления блоков */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
 }
 
 

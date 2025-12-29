@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from 'date-fns'
@@ -24,14 +24,14 @@ export default function TaskCalendarModal({
   const [currentMonth, setCurrentMonth] = useState(new Date())
   
   // Reset to current month when modal opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setCurrentMonth(new Date())
     }
   }, [open])
   
   // Notify parent when month changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (open && onMonthChange) {
       onMonthChange(currentMonth)
     }
@@ -74,7 +74,7 @@ export default function TaskCalendarModal({
       open={open}
       onClose={onClose}
       title={t('actions.calendar')}
-      size="xl"
+      size="md"
       variant="center"
       footer={
         <ModalFooter
@@ -88,41 +88,41 @@ export default function TaskCalendarModal({
       bodyClassName="p-0"
     >
       {/* Month navigation */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-gray-50">
         <button
           onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
-          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
           aria-label="Previous month"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
         
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-base font-semibold text-gray-900">
           {format(currentMonth, 'MMMM yyyy')}
         </h3>
         
         <button
           onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
-          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
           aria-label="Next month"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Calendar grid */}
-      <div className="p-6">
+      <div className="p-4">
           {/* Day names */}
-          <div className="grid grid-cols-7 gap-2 mb-2">
+          <div className="grid grid-cols-7 gap-1 mb-1.5">
             {dayNames.map(day => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+              <div key={day} className="text-center text-[10px] font-medium text-gray-500 py-1">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Calendar days */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1">
             {/* Empty cells for offset */}
             {Array.from({ length: firstDayOffset }).map((_, i) => (
               <div key={`empty-${i}`} />
@@ -142,20 +142,20 @@ export default function TaskCalendarModal({
                   key={dateKey}
                   onClick={() => handleDateClick(day)}
                   className={`
-                    relative aspect-square p-2 rounded-lg border transition-all
+                    relative aspect-square p-1 rounded-md border transition-all
                     ${isCurrentDay 
                       ? 'border-black font-semibold' 
                       : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                     }
                   `}
-                  style={isCurrentDay ? { backgroundColor: '#F2F7FA' } : {}}
+                  style={isCurrentDay ? { backgroundColor: '#F8F8F8' } : {}}
                 >
-                  <div className="text-sm text-gray-900">
+                  <div className="text-xs text-gray-900">
                     {day.getDate()}
                   </div>
                   
                   {hasTasks && (
-                    <div className={`absolute bottom-1 right-1 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-medium ${
+                    <div className={`absolute bottom-0.5 right-0.5 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-medium ${
                       hasOpenTasks 
                         ? 'bg-black' 
                         : allTasksClosed 

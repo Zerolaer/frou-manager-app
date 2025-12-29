@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useEffect, useCallback } from 'react'
+import React, { forwardRef, useRef, useEffect, useCallback, useMemo, useState } from 'react'
 import { 
   ARIA_LABELS, 
   ARIA_ROLES, 
@@ -43,7 +43,7 @@ export const AccessibleButton = forwardRef<HTMLButtonElement, AccessibleButtonPr
     onClick?.(e)
   }, [onClick, announceOnClick])
 
-  const buttonClasses = React.useMemo(() => {
+  const buttonClasses = useMemo(() => {
     const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2'
     
     const variantClasses = {
@@ -162,7 +162,7 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
     }
   }, [onClose])
 
-  const sizeClasses = React.useMemo(() => {
+  const sizeClasses = useMemo(() => {
     const sizeMap = {
       sm: 'max-w-md',
       md: 'max-w-lg',
@@ -236,7 +236,7 @@ export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps
   
   const describedByIds = [describedBy, errorId, helperId].filter(Boolean).join(' ') || undefined
 
-  const inputClasses = React.useMemo(() => {
+  const inputClasses = useMemo(() => {
     const baseClasses = 'w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors'
     const errorClasses = error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
     
@@ -300,7 +300,7 @@ export const AccessibleList: React.FC<AccessibleListProps> = ({
   ariaLabel,
   className = ''
 }) => {
-  const [focusedIndex, setFocusedIndex] = React.useState(-1)
+  const [focusedIndex, setFocusedIndex] = useState(-1)
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     switch (e.key) {

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarCheck, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { getPriorityTextKey } from '@/lib/taskHelpers';
 import { logger } from '@/lib/monitoring';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface Task {
   id: string;
@@ -18,6 +20,7 @@ interface Task {
 const TasksTodayWidget = () => {
   const { userId } = useSupabaseAuth();
   const { t } = useSafeTranslation();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,34 +68,64 @@ const TasksTodayWidget = () => {
       />
 
       <div className="flex-1 p-6 flex flex-col">
-        {/* Progress */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">
-              {completedTasks} {t('common.of') || 'of'} {totalTasks} {t('dashboard.completedTasks') || 'completed tasks'}
-            </span>
-            <span className="text-sm font-medium text-gray-900">
-              {Math.round(progressPercentage)}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-black h-2 rounded-full"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Tasks list */}
-        <div className="flex-1 space-y-2 overflow-y-auto">
-          {tasks.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">
-              <Clock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">{t('dashboard.noTasks') || 'No tasks for today'}</p>
+        {loading ? (
+          <>
+            {/* Skeleton for progress */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <Skeleton variant="text" width={150} height={16} />
+                <Skeleton variant="text" width={40} height={16} />
+              </div>
+              <Skeleton variant="rectangular" height={8} className="rounded-full" />
             </div>
-          ) : (
-            tasks.slice(0, 5).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+
+            {/* Skeleton for tasks list */}
+            <div className="flex-1 space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Skeleton variant="circular" width={24} height={24} />
+                  <div className="flex-1">
+                    <Skeleton variant="text" width="80%" height={16} />
+                  </div>
+                  <Skeleton variant="rectangular" width={60} height={20} className="rounded-full" />
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Progress */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">
+                  {completedTasks} {t('common.of') || 'of'} {totalTasks} {t('dashboard.completedTasks') || 'completed tasks'}
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {Math.round(progressPercentage)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-black h-2 rounded-full"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Tasks list */}
+            <div className="flex-1 space-y-2 overflow-y-auto">
+              {tasks.length === 0 ? (
+                <div className="text-center text-gray-500 py-4">
+                  <Clock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">{t('dashboard.noTasks') || 'No tasks for today'}</p>
+                </div>
+              ) : (
+                tasks.slice(0, 5).map((task) => (
+              <div 
+                key={task.id} 
+                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={() => navigate('/tasks')}
+              >
                 {/* Custom round checkbox like in subtasks */}
                 <div
                   onClick={(e) => {
@@ -140,16 +173,18 @@ const TasksTodayWidget = () => {
                   </span>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+                ))
+              )}
+            </div>
 
-        {tasks.length > 5 && (
-          <div className="mt-2 text-center">
-            <span className="text-xs text-gray-500">
-              and {tasks.length - 5} more tasks
-            </span>
-          </div>
+            {tasks.length > 5 && (
+              <div className="mt-2 text-center">
+                <span className="text-xs text-gray-500">
+                  and {tasks.length - 5} more tasks
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -1,8 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  darkMode: ['selector', '[data-color-scheme="dark"]'],
   theme: {
     extend: {
+      screens: {
+        'xs': '375px',
+      },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
@@ -13,19 +17,19 @@ export default {
           foreground: '#ffffff',
         },
         secondary: {
-          DEFAULT: '#F2F7FA', // Секондари кнопка
+          DEFAULT: '#F8F8F8', // Секондари кнопка
           foreground: '#171717',
         },
         outline: {
           DEFAULT: '#E5E7EB', // Все обводки, разделители
         },
         background: {
-          DEFAULT: '#F2F7FA', // Основной фон
+          DEFAULT: '#F8F8F8', // Основной фон
           card: '#FFFFFF', // Карточки и модалки
         },
         // Legacy поддержка
         base: {
-          bg: '#F2F7FA',
+          bg: '#F8F8F8',
           card: '#FFFFFF'
         }
       },
@@ -46,8 +50,8 @@ export default {
           '100%': { opacity: '1', transform: 'translateY(-50%) translateX(0)' }
         },
         'pulse-slow': {
-          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
-          '50%': { opacity: '0.7', transform: 'scale(1.05)' }
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.01)' }
         },
         wave: {
           '0%': { transform: 'translateX(-100%)' },

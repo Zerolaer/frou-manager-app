@@ -26,7 +26,10 @@ export function Skeleton({
   style,
   ...props
 }: SkeletonProps) {
-  const baseStyles = "bg-gray-200 dark:bg-gray-700"
+  // Always use light theme - dark theme is disabled
+  const backgroundColor = '#f9fafb' // gray-50
+  
+  const baseStyles = ""
   
   const variantStyles = {
     text: "rounded h-4 w-full",
@@ -35,7 +38,7 @@ export function Skeleton({
   }
 
   const animationStyles = {
-    pulse: "animate-pulse",
+    pulse: "animate-pulse-slow",
     wave: "animate-wave",
     none: ""
   }
@@ -54,6 +57,7 @@ export function Skeleton({
         className
       )}
       style={{
+        backgroundColor,
         ...dimensions,
         ...style
       }}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Filter } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -24,7 +24,7 @@ export default function NotesFilterModal({
   const { t } = useTranslation()
   const [localFilters, setLocalFilters] = useState<NotesFilters>(filters)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setLocalFilters(filters)
     }

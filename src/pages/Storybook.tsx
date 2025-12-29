@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Home, DollarSign, CheckSquare, FileText, Settings, Calendar, ChevronLeft, ChevronRight, MoreVertical, BarChart3, Target, Wallet, ListTodo, StickyNote, Goal } from 'lucide-react'
+import { Plus, Home, DollarSign, CheckSquare, FileText, Settings, Calendar, ChevronLeft, ChevronRight, MoreVertical, BarChart3, Target, Wallet, ListTodo, StickyNote, Goal, Download, X, Edit2, Trash2, Pin, Copy, Check as CheckIcon, TrendingUp, User, Languages, LogOut, Video, Users, Moon, HelpCircle, MessageSquare, Zap } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 
 // UI Components
@@ -9,9 +9,17 @@ import Modal from '@/components/ui/Modal'
 import SideModal from '@/components/ui/SideModal'
 import { UnifiedModal } from '@/components/ui/ModalSystem'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LoadingButton } from '@/components/ui/LoadingButton'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { LoadingButton, Spinner } from '@/components/ui/LoadingButton'
+import { Skeleton, TaskCardSkeleton, FinanceRowSkeleton, WidgetSkeleton, ListItemSkeleton, PageSkeleton } from '@/components/ui/Skeleton'
+import { LoadingButton as LoadingButtonStates, LoadingCard, LoadingList, LoadingGrid, LoadingPage } from '@/components/ui/LoadingStates'
+import { Checkbox } from '@/components/ui/Checkbox'
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import CoreMenu from '@/components/ui/CoreMenu'
+import CustomDatePicker from '@/components/ui/CustomDatePicker'
+import { VirtualizedGrid } from '@/components/ui/VirtualizedGrid'
 
 // Finance Components
 import CategoryRow from '@/components/finance/CategoryRow'
@@ -37,6 +45,8 @@ import Sidebar from '@/components/Sidebar'
 import SidebarItem from '@/components/SidebarItem'
 import Header from '@/components/Header'
 import WeekTimeline from '@/components/WeekTimeline'
+import UserMenu from '@/components/UserMenu'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 // Form Components
 import Check from '@/components/Check'
@@ -52,11 +62,11 @@ import AnnualStatsModal from '@/components/AnnualStatsModal'
 import NoteCard from '@/components/notes/NoteCard'
 import NoteEditorModal from '@/components/notes/NoteEditorModal'
 
-// Tasks Components
-import { CardItem } from '@/components/tasks/CardItem'
-import { DayColumn } from '@/components/tasks/DayColumn'
-import { WeekBoard } from '@/components/tasks/WeekBoard'
-import MobileTasksDay from '@/components/tasks/MobileTasksDay'
+// Habits Components
+import HabitCard from '@/components/habits/HabitCard'
+
+// Invoice Components
+import InvoiceCard from '@/components/invoice/InvoiceCard'
 
 // Other Components
 import AppLoader from '@/components/AppLoader'
@@ -64,14 +74,17 @@ import AuthCard from '@/components/AuthCard'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import FolderSidebar from '@/components/FolderSidebar'
 import ProjectSidebar from '@/components/ProjectSidebar'
+import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 
 const StorybookPage = () => {
   const { t } = useSafeTranslation()
   const [activeSection, setActiveSection] = useState('ui')
   const [modalOpen, setModalOpen] = useState(false)
   const [sideModalOpen, setSideModalOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [dropdownValue, setDropdownValue] = useState('EUR')
   const [inputValue, setInputValue] = useState('')
+  const [checkboxChecked, setCheckboxChecked] = useState(false)
 
   const sections = {
     ui: {
@@ -84,33 +97,85 @@ const StorybookPage = () => {
           usage: 'Везде где нужна кнопка',
           demo: (
             <div className="space-y-4">
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button className="btn">Основная кнопка</button>
                 <button className="btn btn-outline">Кнопка с обводкой</button>
                 <button className="btn btn-outline btn-xs">Маленькая кнопка</button>
-              </div>
-              <div className="flex gap-3">
                 <button className="btn btn-primary">Черная кнопка</button>
                 <button className="btn btn-outline w-[34px] h-[34px] p-0 flex items-center justify-center">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
+              <div className="flex gap-3 flex-wrap">
+                <Button>Button Component</Button>
+                <Button variant="outline">Outline</Button>
+                <Button variant="destructive">Destructive</Button>
+                <Button variant="ghost">Ghost</Button>
+                <Button variant="secondary">Secondary</Button>
+                <Button size="sm">Small</Button>
+                <Button size="lg">Large</Button>
+                <Button size="icon"><Plus /></Button>
+              </div>
+            </div>
+          )
+        },
+        {
+          name: 'Badge',
+          description: 'Бейдж для меток и статусов',
+          usage: 'Отображение статусов, категорий, тегов',
+          demo: (
+            <div className="flex gap-3 flex-wrap">
+              <Badge>Default</Badge>
+              <Badge variant="secondary">Secondary</Badge>
+              <Badge variant="destructive">Destructive</Badge>
+              <Badge variant="outline">Outline</Badge>
             </div>
           )
         },
         {
           name: 'CoreInput',
           description: 'Базовый инпут с корпоративным стилем',
-          usage: t('storybook.allTextInputs'),
+          usage: t('storybook.allTextInputs') || 'Все текстовые поля',
           demo: (
-            <div className="space-y-4">
+            <div className="space-y-4 max-w-md">
               <CoreInput 
-                placeholder={t('storybook.enterText')}
+                placeholder={t('storybook.enterText') || 'Введите текст'}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
               <CoreInput type="number" placeholder="Число" />
               <CoreInput type="email" placeholder="Email" />
+              <CoreInput disabled placeholder="Disabled" />
+            </div>
+          )
+        },
+        {
+          name: 'CoreTextarea',
+          description: 'Текстовое поле для многострочного ввода',
+          usage: 'Описания, заметки, комментарии',
+          demo: (
+            <div className="max-w-md">
+              <CoreTextarea 
+                placeholder="Введите текст..."
+                rows={4}
+              />
+            </div>
+          )
+        },
+        {
+          name: 'Checkbox',
+          description: 'Чекбокс компонент',
+          usage: 'Выбор опций, включение/выключение',
+          demo: (
+            <div className="space-y-3">
+              <Checkbox 
+                checked={checkboxChecked}
+                onChange={(e) => setCheckboxChecked(e.target.checked)}
+                label="С меткой"
+              />
+              <Checkbox checked={true} />
+              <Checkbox checked={false} />
+              <Checkbox size="sm" label="Маленький" />
             </div>
           )
         },
@@ -130,6 +195,32 @@ const StorybookPage = () => {
                 ]}
                 placeholder="Выберите валюту"
               />
+            </div>
+          )
+        },
+        {
+          name: 'Card',
+          description: 'Карточка для контента',
+          usage: 'Группировка контента, виджеты',
+          demo: (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Заголовок карточки</CardTitle>
+                  <CardDescription>Описание карточки</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Содержимое карточки</p>
+                </CardContent>
+                <CardFooter>
+                  <Button>Действие</Button>
+                </CardFooter>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <p>Простая карточка без заголовка</p>
+                </CardContent>
+              </Card>
             </div>
           )
         },
@@ -169,6 +260,120 @@ const StorybookPage = () => {
               </SideModal>
             </div>
           )
+        },
+        {
+          name: 'Dialog',
+          description: 'Диалоговое окно (Radix UI)',
+          usage: 'Подтверждения, уведомления',
+          demo: (
+            <div>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>Открыть Dialog</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Заголовок диалога</DialogTitle>
+                    <DialogDescription>
+                      Описание диалога
+                    </DialogDescription>
+                  </DialogHeader>
+                  <p>Содержимое диалога</p>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Отмена</Button>
+                    <Button onClick={() => setDialogOpen(false)}>Подтвердить</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )
+        },
+        {
+          name: 'Tooltip',
+          description: 'Всплывающая подсказка',
+          usage: 'Дополнительная информация при наведении',
+          demo: (
+            <TooltipProvider>
+              <div className="flex gap-4">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button>Наведите на меня</Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Это подсказка</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          )
+        },
+        {
+          name: 'Skeleton',
+          description: 'Скелетон для состояний загрузки',
+          usage: 'Плейсхолдеры при загрузке контента',
+          demo: (
+            <div className="space-y-4 max-w-md">
+              <Skeleton variant="text" />
+              <Skeleton variant="text" width="80%" />
+              <Skeleton variant="circular" width={40} height={40} />
+              <Skeleton variant="rectangular" height={100} />
+              <TaskCardSkeleton />
+            </div>
+          )
+        },
+        {
+          name: 'LoadingButton',
+          description: 'Кнопка с состоянием загрузки',
+          usage: 'Асинхронные действия',
+          demo: (
+            <div className="flex gap-3">
+              <LoadingButton loading={false}>Обычная кнопка</LoadingButton>
+              <LoadingButton loading={true}>Загрузка...</LoadingButton>
+              <LoadingButtonStates loading={true}>Загрузка (States)</LoadingButtonStates>
+            </div>
+          )
+        },
+        {
+          name: 'Spinner',
+          description: 'Спиннер загрузки',
+          usage: 'Индикатор загрузки',
+          demo: (
+            <div className="flex gap-4 items-center">
+              <Spinner size="sm" />
+              <Spinner size="md" />
+              <Spinner size="lg" />
+            </div>
+          )
+        },
+        {
+          name: 'CoreMenu',
+          description: 'Контекстное меню',
+          usage: 'Меню действий, опции',
+          demo: (
+            <div className="w-48">
+              <CoreMenu
+                options={[
+                  { value: 'edit', label: 'Редактировать' },
+                  { value: 'delete', label: 'Удалить', destructive: true },
+                  { value: 'copy', label: 'Копировать' }
+                ]}
+                onSelect={(value) => console.log('Selected:', value)}
+              />
+            </div>
+          )
+        },
+        {
+          name: 'CustomDatePicker',
+          description: 'Выбор даты',
+          usage: 'Выбор дат в формах',
+          demo: (
+            <div className="w-64">
+              <CustomDatePicker
+                value={new Date()}
+                onChange={() => {}}
+              />
+            </div>
+          )
         }
       ]
     },
@@ -179,7 +384,7 @@ const StorybookPage = () => {
         {
           name: 'ProjectDropdown',
           description: 'Выбор проекта',
-          usage: t('storybook.projectFiltering'),
+          usage: t('storybook.projectFiltering') || 'Фильтрация по проектам',
           demo: (
             <div className="w-48">
               <ProjectDropdown
@@ -218,12 +423,46 @@ const StorybookPage = () => {
               />
             </div>
           )
+        },
+        {
+          name: 'UserMenu',
+          description: 'Меню пользователя',
+          usage: 'Профиль, настройки, выход',
+          demo: (
+            <div>
+              <UserMenu />
+            </div>
+          )
+        },
+        {
+          name: 'LanguageSwitcher',
+          description: 'Переключатель языка',
+          usage: 'Смена языка интерфейса',
+          demo: (
+            <div>
+              <LanguageSwitcher />
+            </div>
+          )
+        },
+        {
+          name: 'WeekTimeline',
+          description: 'Таймлайн недели',
+          usage: 'Навигация по неделям в задачах',
+          demo: (
+            <div className="max-w-2xl">
+              <WeekTimeline
+                anchor={new Date()}
+                onPrev={() => {}}
+                onNext={() => {}}
+              />
+            </div>
+          )
         }
       ]
     },
-    feedback: {
-      title: 'Feedback Components',
-      description: 'Компоненты обратной связи',
+    forms: {
+      title: 'Form Components',
+      description: 'Компоненты форм',
       components: [
         {
           name: 'Check',
@@ -233,6 +472,20 @@ const StorybookPage = () => {
             <div className="space-y-2">
               <Check checked={false} onToggle={() => {}} />
               <Check checked={true} onToggle={() => {}} />
+            </div>
+          )
+        },
+        {
+          name: 'CheckFinance',
+          description: 'Чекбокс для финансов',
+          usage: 'Включение/исключение записей',
+          demo: (
+            <div className="space-y-2">
+              <CheckFinance 
+                checked={true}
+                onToggle={() => {}}
+              />
+              <label className="text-sm text-gray-600">Включить в расчеты</label>
             </div>
           )
         }
@@ -321,6 +574,136 @@ const StorybookPage = () => {
         }
       ]
     },
+    tasks: {
+      title: 'Task Components',
+      description: 'Компоненты для работы с задачами',
+      components: [
+        {
+          name: 'TaskCard',
+          description: 'Карточка задачи',
+          usage: 'Отображение задач в списках',
+          demo: (
+            <div className="w-80">
+              <TaskCard
+                task={{
+                  id: '1',
+                  title: 'Пример задачи',
+                  description: 'Описание задачи',
+                  priority: 'high',
+                  status: 'todo',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }}
+              />
+            </div>
+          )
+        }
+      ]
+    },
+    notes: {
+      title: 'Notes Components',
+      description: 'Компоненты для работы с заметками',
+      components: [
+        {
+          name: 'NoteCard',
+          description: 'Карточка заметки',
+          usage: 'Отображение заметок в сетке',
+          demo: (
+            <div className="w-80">
+              <NoteCard
+                note={{
+                  id: '1',
+                  title: 'Пример заметки',
+                  content: 'Содержимое заметки',
+                  folder_id: null,
+                  pinned: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }}
+                folder={null}
+                onEdit={() => {}}
+                onTogglePin={() => {}}
+                onDuplicate={() => {}}
+                onDelete={() => {}}
+              />
+            </div>
+          )
+        }
+      ]
+    },
+    habits: {
+      title: 'Habits Components',
+      description: 'Компоненты для работы с привычками',
+      components: [
+        {
+          name: 'HabitCard',
+          description: 'Карточка привычки',
+          usage: 'Отображение привычек',
+          demo: (
+            <div className="w-80">
+              <HabitCard
+                habit={{
+                  id: '1',
+                  title: 'Пример привычки',
+                  type: 'manual',
+                  start_date: new Date().toISOString(),
+                  end_date: null,
+                  days_count: 10,
+                  completion_count: 5,
+                  streak_days: 3,
+                  last_completion_date: new Date().toISOString(),
+                  current_value: null,
+                  target_value: null,
+                  progress_percentage: null
+                }}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                onComplete={() => {}}
+                onAddProgress={() => {}}
+              />
+            </div>
+          )
+        }
+      ]
+    },
+    invoice: {
+      title: 'Invoice Components',
+      description: 'Компоненты для работы с инвойсами',
+      components: [
+        {
+          name: 'InvoiceCard',
+          description: 'Карточка инвойса',
+          usage: 'Отображение инвойсов',
+          demo: (
+            <div className="w-80">
+              <InvoiceCard
+                invoice={{
+                  id: '1',
+                  invoice_number: 'INV-001',
+                  client_name: 'Клиент',
+                  client_email: 'client@example.com',
+                  client_address: 'Адрес',
+                  date: new Date().toISOString(),
+                  due_date: new Date().toISOString(),
+                  notes: '',
+                  subtotal: 1000,
+                  tax_rate: 0,
+                  tax_amount: 0,
+                  total: 1000,
+                  items: [],
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                onExport={() => {}}
+                onView={() => {}}
+              />
+            </div>
+          )
+        }
+      ]
+    },
     dashboard: {
       title: 'Dashboard Components',
       description: 'Компоненты дашборда',
@@ -348,100 +731,92 @@ const StorybookPage = () => {
         }
       ]
     },
-    tasks: {
-      title: 'Task Components',
-      description: 'Компоненты для работы с задачами',
+    loading: {
+      title: 'Loading Components',
+      description: 'Компоненты состояний загрузки',
       components: [
         {
-          name: 'TaskCard',
-          description: 'Карточка задачи',
-          usage: 'Отображение задач в списках',
+          name: 'LoadingCard',
+          description: 'Карточка с состоянием загрузки',
+          usage: 'Загрузка контента карточки',
           demo: (
-            <div className="w-80">
-              <TaskCard
-                task={{
-                  id: '1',
-                  title: 'Пример задачи',
-                  description: 'Описание задачи',
-                  priority: 'high',
-                  status: 'todo',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }}
-              />
+            <div className="max-w-md">
+              <LoadingCard loading={true} />
+              <LoadingCard loading={false}>
+                <Card><CardContent>Загруженный контент</CardContent></Card>
+              </LoadingCard>
+            </div>
+          )
+        },
+        {
+          name: 'LoadingList',
+          description: 'Список с состоянием загрузки',
+          usage: 'Загрузка списка элементов',
+          demo: (
+            <div className="max-w-md">
+              <LoadingList loading={true} itemCount={3} />
+              <LoadingList loading={false}>
+                <div className="space-y-2">
+                  <div className="p-2 border rounded">Элемент 1</div>
+                  <div className="p-2 border rounded">Элемент 2</div>
+                </div>
+              </LoadingList>
+            </div>
+          )
+        },
+        {
+          name: 'LoadingGrid',
+          description: 'Сетка с состоянием загрузки',
+          usage: 'Загрузка сетки элементов',
+          demo: (
+            <div className="max-w-2xl">
+              <LoadingGrid loading={true} columns={3} itemCount={6} />
+            </div>
+          )
+        },
+        {
+          name: 'LoadingPage',
+          description: 'Страница с состоянием загрузки',
+          usage: 'Загрузка всей страницы',
+          demo: (
+            <div>
+              <LoadingPage loading={true} />
             </div>
           )
         }
       ]
     },
-    modals: {
-      title: 'Modal Components',
-      description: 'Модальные окна приложения',
+    other: {
+      title: 'Other Components',
+      description: 'Прочие компоненты',
       components: [
         {
-          name: 'CellEditor',
-          description: 'Редактор ячеек финансов',
-          usage: 'Редактирование финансовых записей',
+          name: 'AppLoader',
+          description: 'Загрузчик приложения',
+          usage: 'Инициализация приложения',
           demo: (
             <div>
-              <button 
-                className="btn" 
-                onClick={() => console.log('CellEditor would open here')}
-              >
-                Открыть CellEditor
-              </button>
+              <AppLoader />
             </div>
           )
         },
         {
-          name: 'AnnualStatsModal',
-          description: 'Статистика за год',
-          usage: 'Показ годовой статистики',
+          name: 'AuthCard',
+          description: 'Карточка аутентификации',
+          usage: 'Форма входа/регистрации',
           demo: (
-            <div>
-              <button 
-                className="btn" 
-                onClick={() => console.log('AnnualStatsModal would open here')}
-              >
-                Открыть AnnualStatsModal
-              </button>
-            </div>
-          )
-        }
-      ]
-    },
-    forms: {
-      title: 'Form Components',
-      description: 'Компоненты форм',
-      components: [
-        {
-          name: 'CheckFinance',
-          description: 'Чекбокс для финансов',
-          usage: 'Включение/исключение записей',
-          demo: (
-            <div className="space-y-2">
-              <CheckFinance 
-                checked={true}
-                onToggle={() => {}}
-              />
-              <label className="text-sm text-gray-600">Включить в расчеты</label>
+            <div className="max-w-md">
+              <AuthCard title="Вход" onSubmit={() => {}} />
             </div>
           )
         },
         {
-          name: 'VirtualizedList',
-          description: 'Виртуализированный список',
-          usage: 'Большие списки данных',
+          name: 'PWAInstallPrompt',
+          description: 'Промпт установки PWA',
+          usage: 'Предложение установить приложение',
           demo: (
-            <div className="border rounded-lg p-4 bg-white h-40">
-              <div className="text-sm text-gray-500 mb-2">Пример виртуализированного списка:</div>
-              <div className="space-y-1">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className="p-2 bg-gray-50 rounded text-sm">
-                    Элемент списка {i + 1}
-                  </div>
-                ))}
-              </div>
+            <div>
+              <PWAInstallPrompt />
             </div>
           )
         }

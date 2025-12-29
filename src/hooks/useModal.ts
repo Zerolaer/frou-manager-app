@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import type { DependencyList, MutableRefObject } from 'react'
 import { logger } from '@/lib/monitoring'
 
 export interface ModalState {

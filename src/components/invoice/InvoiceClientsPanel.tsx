@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { formatCurrencyEUR } from '@/lib/format'
-import { User, DollarSign, FileText, TrendingUp } from 'lucide-react'
+import { User, DollarSign, FileText, TrendingUp, Edit2, Trash2 } from 'lucide-react'
 
 interface ClientStats {
   id: string
@@ -15,12 +15,23 @@ interface ClientStats {
   lastInvoiceDate?: string
 }
 
+interface ClientTemplate {
+  id: string
+  name: string
+  address?: string
+  email?: string
+  phone?: string
+}
+
 interface Props {
   userId: string
   onSelectClient?: (clientName: string) => void
+  onEditClient?: (client: ClientTemplate) => void
+  onDeleteClient?: (clientId: string) => void
+  clientTemplates?: ClientTemplate[]
 }
 
-export default function InvoiceClientsPanel({ userId, onSelectClient }: Props) {
+export default function InvoiceClientsPanel({ userId, onSelectClient, onEditClient, onDeleteClient, clientTemplates = [] }: Props) {
   const { t } = useSafeTranslation()
   const [clients, setClients] = useState<ClientStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,11 +47,15 @@ export default function InvoiceClientsPanel({ userId, onSelectClient }: Props) {
     window.addEventListener('invoice-created', handleEvent)
     window.addEventListener('invoice-deleted', handleEvent)
     window.addEventListener('client-created', handleEvent)
+    window.addEventListener('client-updated', handleEvent)
+    window.addEventListener('client-deleted', handleEvent)
     
     return () => {
       window.removeEventListener('invoice-created', handleEvent)
       window.removeEventListener('invoice-deleted', handleEvent)
       window.removeEventListener('client-created', handleEvent)
+      window.removeEventListener('client-updated', handleEvent)
+      window.removeEventListener('client-deleted', handleEvent)
     }
   }, [userId])
 
@@ -132,8 +147,10 @@ export default function InvoiceClientsPanel({ userId, onSelectClient }: Props) {
           <User className="w-5 h-5" />
           {t('invoice.clients')}
         </h3>
-        <div className="text-xs text-gray-500">
-          {clients.length} {t('invoice.clientsCount')}
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-gray-500">
+            {clients.length} {t('invoice.clientsCount')}
+          </div>
         </div>
       </div>
 
@@ -144,37 +161,74 @@ export default function InvoiceClientsPanel({ userId, onSelectClient }: Props) {
             <div className="text-sm text-gray-500">{t('invoice.noClients')}</div>
           </div>
         ) : (
-          clients.map((client) => (
-            <div
-              key={client.id}
-              className="invoice-client-card"
-              onClick={() => onSelectClient?.(client.name)}
-            >
-              <div className="invoice-client-header">
-                <div className="invoice-client-name">{client.name}</div>
-                <div className="invoice-client-amount">
-                  {formatCurrencyEUR(client.totalAmount)}
+          clients.map((client) => {
+            const clientTemplate = clientTemplates.find(t => t.id === client.id)
+            return (
+              <div
+                key={client.id}
+                className="invoice-client-card"
+              >
+                <div 
+                  className="invoice-client-header"
+                  onClick={() => onSelectClient?.(client.name)}
+                >
+                  <div className="invoice-client-name">{client.name}</div>
+                  <div className="flex items-center gap-2">
+                    {onEditClient && clientTemplate && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditClient(clientTemplate)
+                        }}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+                        title={t('actions.edit') || 'Редактировать'}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    {onDeleteClient && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDeleteClient(client.id)
+                        }}
+                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-600"
+                        title={t('invoice.deleteClientTemplate') || 'Удалить клиента'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <div className="invoice-client-amount">
+                      {formatCurrencyEUR(client.totalAmount)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="invoice-client-stats">
-                <div className="invoice-client-stat">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  <span>{client.totalInvoices} {t('invoice.invoices')}</span>
+                
+                <div 
+                  className="invoice-client-stats"
+                  onClick={() => onSelectClient?.(client.name)}
+                >
+                  <div className="invoice-client-stat">
+                    <FileText className="w-4 h-4 text-gray-400" />
+                    <span>{client.totalInvoices} {t('invoice.invoices')}</span>
+                  </div>
+                  <div className="invoice-client-stat">
+                    <TrendingUp className="w-4 h-4 text-gray-400" />
+                    <span>{formatDate(client.lastInvoiceDate)}</span>
+                  </div>
                 </div>
-                <div className="invoice-client-stat">
-                  <TrendingUp className="w-4 h-4 text-gray-400" />
-                  <span>{formatDate(client.lastInvoiceDate)}</span>
-                </div>
-              </div>
 
-              {client.email && (
-                <div className="invoice-client-contact">
-                  <span className="text-xs text-gray-500">{client.email}</span>
-                </div>
-              )}
-            </div>
-          ))
+                {client.email && (
+                  <div 
+                    className="invoice-client-contact"
+                    onClick={() => onSelectClient?.(client.name)}
+                  >
+                    <span className="text-xs text-gray-500">{client.email}</span>
+                  </div>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
     </div>

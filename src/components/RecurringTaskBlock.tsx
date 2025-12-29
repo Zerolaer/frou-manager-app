@@ -154,7 +154,7 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
 
             <button
               onClick={handleEditRecurrence}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-200 text-gray-900 hover:bg-gray-300 rounded-lg transition-colors text-sm font-medium"
             >
               <Repeat className="w-4 h-4" />
               <span>{t('tasks.recurring.makeRecurring') || 'Сделать повторяющейся'}</span>

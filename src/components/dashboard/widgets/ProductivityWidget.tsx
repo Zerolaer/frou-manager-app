@@ -6,6 +6,7 @@ import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { startOfWeek, endOfWeek, format, eachDayOfInterval } from 'date-fns';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface DayData {
   day: string;
@@ -136,24 +137,47 @@ const ProductivityWidget = ({ selectedWeek = new Date() }: ProductivityWidgetPro
 
 
       <div className="flex-1 p-6 flex flex-col">
-        {/* Main metrics */}
-        <div className="mb-6">
-          <div className="text-3xl font-bold text-gray-900 mb-2">
-            {averageProductivity}%
-          </div>
-          <div className="flex items-center gap-1 text-gray-600 mb-2">
-            <TrendingUp className="w-5 h-5" />
-            <span className="text-base font-medium">+{averageProductivity}%</span>
-          </div>
-          <p className="text-base text-gray-600">
-            {getTotalCompleted()}/{totalTasks} {t('dashboard.tasks') || 'tasks'}
-          </p>
-        </div>
+        {loading ? (
+          <>
+            {/* Skeleton for main metrics */}
+            <div className="mb-6">
+              <Skeleton variant="rectangular" height={40} className="mb-2 rounded-lg" />
+              <Skeleton variant="rectangular" width={120} height={24} className="mb-2 rounded" />
+              <Skeleton variant="rectangular" width={100} height={20} className="rounded" />
+            </div>
 
-        {/* Bar chart */}
-        <div className="flex-1 flex flex-col justify-end">
-          <div className="flex items-end justify-between gap-1 h-full min-h-24">
-            {weekData.map((day, index) => {
+            {/* Skeleton for bar chart */}
+            <div className="flex-1 flex flex-col justify-end">
+              <div className="flex items-end justify-between gap-1 h-full min-h-24">
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <div key={i} className="flex flex-col items-center flex-1 h-full">
+                    <Skeleton variant="rectangular" width="100%" height={`${30 + i * 10}%`} className="rounded-t-md mb-2" />
+                    <Skeleton variant="text" width={30} height={14} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Main metrics */}
+            <div className="mb-6">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {averageProductivity}%
+              </div>
+              <div className="flex items-center gap-1 text-gray-600 mb-2">
+                <TrendingUp className="w-5 h-5" />
+                <span className="text-base font-medium">+{averageProductivity}%</span>
+              </div>
+              <p className="text-base text-gray-600">
+                {getTotalCompleted()}/{totalTasks} {t('dashboard.tasks') || 'tasks'}
+              </p>
+            </div>
+
+            {/* Bar chart */}
+            <div className="flex-1 flex flex-col justify-end">
+              <div className="flex items-end justify-between gap-1 h-full min-h-24">
+                {weekData.map((day, index) => {
               // Bar height = total number of tasks, but minimum 1/3 of height with one task
               const baseHeight = maxTasks > 0 ? (1 / maxTasks) * 100 : 100; // height for 1 task
               const minHeight = baseHeight / 3; // 1/3 of height with one task
@@ -230,6 +254,8 @@ const ProductivityWidget = ({ selectedWeek = new Date() }: ProductivityWidgetPro
             })}
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

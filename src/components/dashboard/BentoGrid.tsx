@@ -17,9 +17,10 @@ interface BentoCardProps {
   className?: string;
   colSpan?: 1 | 2 | 3 | 4;
   rowSpan?: 1 | 2 | 3;
+  index?: number; // Индекс для анимации появления
 }
 
-export function BentoCard({ children, className = '', colSpan = 1, rowSpan = 1 }: BentoCardProps) {
+export function BentoCard({ children, className = '', colSpan = 1, rowSpan = 1, index = 0 }: BentoCardProps) {
   const colSpanClass = {
     1: 'col-span-1',
     2: 'col-span-2',
@@ -33,14 +34,22 @@ export function BentoCard({ children, className = '', colSpan = 1, rowSpan = 1 }
     3: 'row-span-3',
   }[rowSpan];
 
+  // Задержка для анимации: 50ms на каждый блок
+  const animationDelay = index * 50;
+
   return (
     <div 
       className={`
         bg-white rounded-3xl
         ${colSpanClass} ${rowSpanClass} ${className}
+        animate-fade-in-up
       `}
       style={{
-        border: '1px solid #E9F2F6'
+        border: '1px solid #E9F2F6',
+        width: '100%',
+        boxSizing: 'border-box',
+        animationDelay: `${animationDelay}ms`,
+        animationFillMode: 'both'
       }}
     >
       {children}

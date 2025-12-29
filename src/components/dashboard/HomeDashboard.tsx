@@ -35,38 +35,38 @@ export default function HomeDashboard() {
       <div className="home-grid">
         {/* FIRST ROW */}
         {/* Created Tasks */}
-        <BentoCard colSpan={1} rowSpan={1} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={1} className="bento-card" index={0}>
           <TasksStatsWidget type="total" selectedWeek={selectedWeek} />
         </BentoCard>
 
         {/* Completed Tasks */}
-        <BentoCard colSpan={1} rowSpan={1} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={1} className="bento-card" index={1}>
           <TasksStatsWidget type="completed" selectedWeek={selectedWeek} />
         </BentoCard>
 
         {/* Productivity */}
-        <BentoCard colSpan={1} rowSpan={1} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={1} className="bento-card" index={2}>
           <ProductivityWidget selectedWeek={selectedWeek} />
         </BentoCard>
 
         {/* Tasks Today - stretched block */}
-        <BentoCard colSpan={1} rowSpan={2} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={2} className="bento-card" index={3}>
           <TasksTodayWidget />
         </BentoCard>
 
         {/* SECOND ROW */}
         {/* Priorities */}
-        <BentoCard colSpan={1} rowSpan={1} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={1} className="bento-card" index={4}>
           <PrioritiesWidget />
         </BentoCard>
 
         {/* Planned Expenses */}
-        <BentoCard colSpan={1} rowSpan={1} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={1} className="bento-card" index={5}>
           <PlannedExpensesWidget />
         </BentoCard>
 
         {/* Monthly Budget */}
-        <BentoCard colSpan={1} rowSpan={1} className="bento-card">
+        <BentoCard colSpan={1} rowSpan={1} className="bento-card" index={6}>
           <BudgetWidget />
         </BentoCard>
       </div>

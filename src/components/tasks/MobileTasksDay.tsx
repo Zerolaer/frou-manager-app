@@ -59,7 +59,7 @@ export default function MobileTasksDay({
         }`}
         style={{ 
           borderLeftColor: projectColor,
-          backgroundColor: isCompleted ? '#F2F7FA' : '#ffffff'
+          backgroundColor: isCompleted ? '#F8F8F8' : '#ffffff'
         }}
         onClick={() => onEditTask(task)}
       >

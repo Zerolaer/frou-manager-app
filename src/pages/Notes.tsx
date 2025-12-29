@@ -7,20 +7,27 @@ import FolderSidebar from '@/components/FolderSidebar';
 import NotesFilterModal, { type NotesFilters } from '@/components/NotesFilterModal';
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
-;
 import { VirtualizedGrid } from '@/components/VirtualizedList';
 import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
 import { useApiWithRetry } from '@/hooks/useRetry';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { downloadNotes } from '@/lib/notesExport';
 import { logger } from '@/lib/monitoring';
+import { supabase } from '@/lib/supabaseClient';
 import '@/notes.css';
+
+type Folder = {
+  id: string;
+  name: string;
+  color?: string;
+};
 
 function NotesPageContent() {
   const { t } = useSafeTranslation();
   const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -32,43 +39,8 @@ function NotesPageContent() {
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<NotesFilters>({});
-
-  // SubHeader actions handler
-  function handleSubHeaderAction(action: string) {
-    switch (action) {
-      case 'add-note':
-        setEditing(null);
-        setModalOpen(true);
-        break
-      case 'search':
-        // Focus search input
-        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-        if (searchInput) searchInput.focus();
-        break
-      case 'filter':
-        setShowFilters(true)
-        break
-      case 'export':
-        handleExportNotes()
-        break
-      default:
-        // Unknown action
-    }
-  }
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
-
-  // Listen for SubHeader actions
-  useEffect(() => {
-    const handleSubHeaderActionEvent = (event: CustomEvent) => {
-      handleSubHeaderAction(event.detail)
-    }
-    
-    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    return () => {
-      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    }
-  }, [])
 
   async function reload(signal?: AbortSignal) {
     try {
@@ -90,11 +62,48 @@ function NotesPageContent() {
     }
   }
 
+  // Load folders
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      try {
+        // Try with position first (if column exists)
+        let query = supabase
+          .from('notes_folders')
+          .select('id, name, color');
+        
+        // Try to order by position, fallback to created_at if position doesn't exist
+        const { data, error } = await query
+          .order('created_at', { ascending: true });
+        
+        if (error) {
+          logger.error('Error loading folders:', error);
+          return;
+        }
+        
+        if (data) {
+          setFolders(data);
+        }
+      } catch (err) {
+        logger.error('Error in folder loading:', err);
+      }
+    })();
+  }, [userId]);
+
   useEffect(() => {
     const ctl = new AbortController();
     reload(ctl.signal);
     return () => ctl.abort();
   }, [activeFolder]);
+
+  // Create folder map for quick lookup
+  const folderMap = useMemo(() => {
+    const map = new Map<string, Folder>();
+    folders.forEach(folder => {
+      map.set(folder.id, folder);
+    });
+    return map;
+  }, [folders]);
 
   // Body class is now managed in App.tsx
 
@@ -144,6 +153,10 @@ function NotesPageContent() {
     }
   }, []);
 
+  const handleDeleteNote = useCallback(async (n: Note) => {
+    await handleDelete(n.id);
+  }, [handleDelete]);
+
   const handleTogglePin = useCallback(async (n: Note) => {
     try {
       const updated = await togglePin(n.id, !n.pinned);
@@ -151,6 +164,21 @@ function NotesPageContent() {
       logger.debug(n.pinned ? 'Pin removed' : 'Note pinned');
     } catch (error) {
       logger.error('Error toggling pin:', error);
+    }
+  }, []);
+
+  const handleDuplicate = useCallback(async (n: Note) => {
+    try {
+      const duplicated = await createNote({
+        title: `${n.title} (Копия)`,
+        content: n.content,
+        folder_id: n.folder_id,
+        pinned: false
+      });
+      setNotes((prev) => [duplicated, ...prev]);
+      logger.debug('Note duplicated');
+    } catch (error) {
+      logger.error('Error duplicating note:', error);
     }
   }, []);
 
@@ -180,6 +208,41 @@ function NotesPageContent() {
     downloadNotes(notesToExport, exportFormat ? 'json' : 'markdown')
     logger.debug('Notes exported', { format: exportFormat ? 'json' : 'markdown', count: notesToExport.length })
   }, [notes, activeFolder, t])
+
+  // SubHeader actions handler
+  const handleSubHeaderAction = useCallback((action: string) => {
+    switch (action) {
+      case 'add-note':
+        setEditing(null);
+        setModalOpen(true);
+        break
+      case 'search':
+        // Focus search input
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        if (searchInput) searchInput.focus();
+        break
+      case 'filter':
+        setShowFilters(true)
+        break
+      case 'export':
+        handleExportNotes()
+        break
+      default:
+        // Unknown action
+    }
+  }, [handleExportNotes])
+
+  // Listen for SubHeader actions
+  useEffect(() => {
+    const handleSubHeaderActionEvent = (event: CustomEvent) => {
+      handleSubHeaderAction(event.detail)
+    }
+    
+    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    return () => {
+      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
+    }
+  }, [handleSubHeaderAction])
 
   // Apply filters to notes
   const applyNotesFilters = useCallback((notesList: Note[]): Note[] => {
@@ -232,28 +295,41 @@ function NotesPageContent() {
             columns={gridColumns}
             itemHeight={200}
             containerHeight={600}
-            renderItem={(note, index) => (
-            <NoteCard
-              key={(note as Note).id}
-              note={note as Note}
-              onEdit={handleEditNote}
-              onTogglePin={handleTogglePin}
-            />
-            )}
+            renderItem={(note, index) => {
+              const noteData = note as Note;
+              const folder = noteData.folder_id ? folderMap.get(noteData.folder_id) : null;
+              return (
+                <NoteCard
+                  key={noteData.id}
+                  note={noteData}
+                  folder={folder}
+                  onEdit={handleEditNote}
+                  onTogglePin={handleTogglePin}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDeleteNote}
+                />
+              );
+            }}
             keyExtractor={(note) => (note as Note).id}
             gap={16}
             className="p-4"
           />
         ) : (
           <div className="notes-grid">
-            {applyNotesFilters(notes).map((n) => (
-              <NoteCard
-                key={n.id}
-                note={n}
-                onEdit={handleEditNote}
-                onTogglePin={handleTogglePin}
-              />
-            ))}
+            {applyNotesFilters(notes).map((n) => {
+              const folder = n.folder_id ? folderMap.get(n.folder_id) : null;
+              return (
+                <NoteCard
+                  key={n.id}
+                  note={n}
+                  folder={folder}
+                  onEdit={handleEditNote}
+                  onTogglePin={handleTogglePin}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDeleteNote}
+                />
+              );
+            })}
           </div>
         )}
       </div>

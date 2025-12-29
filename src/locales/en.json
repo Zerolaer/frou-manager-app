@@ -57,7 +57,8 @@
     "add": "Add",
     "create": "Create",
     "update": "Update",
-    "close": "Close"
+    "close": "Close",
+    "change": "Change"
   },
   "finance": {
     "addCategory": "Add Category",
@@ -222,6 +223,9 @@
     "removeTodo": "Remove Todo",
     "addSubtask": "Add Subtask",
     "subtasks": "Subtasks",
+    "subtaskDateOptional": "Subtask date (optional)",
+    "subtaskDateValidation": "Subtask date cannot be earlier than parent task date",
+    "subtaskOf": "Subtask of",
     "created": "Created",
     "tag": "Tag",
     "date": "Date",
@@ -393,6 +397,18 @@
     "networkError": "Network error. Please try again.",
     "unknownError": "An unknown error occurred"
   },
+  "user": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "changeLanguage": "Change Language",
+    "menu": "User Menu",
+    "activeStream": "Active stream",
+    "people": "People",
+    "siteSettings": "Site settings",
+    "profilePreferences": "My profile & preferences",
+    "helpCenter": "Help center",
+    "feedback": "Feedback"
+  },
   "common": {
     "loading": "Loading...",
     "noData": "No data available",
@@ -414,6 +430,9 @@
     "add": "Add",
     "save": "Save",
     "cancel": "Cancel",
+    "step": "Step",
+    "back": "Back",
+    "next": "Next",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "optional": "optional"
@@ -498,7 +517,9 @@
     "title": "Invoices",
     "newInvoice": "New Invoice",
     "newClient": "New Client",
+    "editClient": "Edit Client",
     "editInvoice": "Edit Invoice",
+    "clientUpdated": "Client updated",
     "create": "Create",
     "noInvoices": "No invoices",
     "noInvoicesDescription": "Create your first invoice to get started",
@@ -569,6 +590,11 @@
     "saveClientTemplate": "Save Client Template",
     "loadClientTemplate": "Load Template",
     "deleteClientTemplate": "Delete Template",
+    "confirmDeleteClient": "Are you sure you want to delete this client?",
+    "clientDeleted": "Client deleted",
+    "clientUpdated": "Client updated",
+    "editClient": "Edit Client",
+    "newClient": "New Client",
     "saved": "saved",
     "clients": "Clients",
     "clientsCount": "clients",
@@ -577,7 +603,93 @@
     "itemType": "Item Type",
     "itemTypeProduct": "Product/Service",
     "itemTypeServicePeriod": "Service Period",
-    "itemTypeHourly": "Hourly Rate"
+    "itemTypeHourly": "Hourly Rate",
+    "selectClient": "Select Client",
+    "selectFolder": "Select Folder",
+    "selectFromTemplate": "Select Sender Data",
+    "clickAddItem": "Click \"Add Item\" to get started",
+    "dateFrom": "Date From",
+    "dateTo": "Date To",
+    "newFromTemplate": "New Sender Template",
+    "editFromTemplate": "Edit Sender Template",
+    "noFromTemplates": "No sender templates",
+    "fromNamePlaceholder": "e.g. John Doe LLC",
+    "bankDetails": "Bank Details"
+  },
+  "settings": {
+    "title": "Account Settings",
+    "sections": {
+      "profile": "My Profile",
+      "security": "Security",
+      "system": "System Settings",
+      "notifications": "Notifications",
+      "billing": "Billing",
+      "data": "Data Export",
+      "delete": "Delete Account"
+    },
+    "account": {
+      "title": "Account Settings",
+      "name": "Full Name",
+      "email": "Email",
+      "password": "Password",
+      "passwordDescription": "Change your password to protect your account",
+      "notSet": "Not set",
+      "editName": "Edit Name",
+      "editEmail": "Edit Email",
+      "changePassword": "Change Password",
+      "namePlaceholder": "Enter your full name",
+      "emailPlaceholder": "Enter your email",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password (minimum 6 characters)",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Repeat new password",
+      "passwordsDontMatch": "Passwords do not match"
+    },
+    "system": {
+      "title": "System Settings",
+      "language": "Interface Language",
+      "languageDescription": "Choose the interface language",
+      "theme": "Theme",
+      "themeDescription": "Choose the appearance theme",
+      "dateFormat": "Date Format",
+      "dateFormatDescription": "Choose how dates are displayed",
+      "timeFormat": "Time Format",
+      "timeFormatDescription": "Choose how time is displayed",
+      "timezone": "Timezone",
+      "timezoneDescription": "Choose your timezone",
+      "defaultCurrency": "Default Currency",
+      "defaultCurrencyDescription": "Default currency for finances",
+      "autoLoadLastPage": "Auto-load Last Page",
+      "autoLoadLastPageDescription": "Automatically open the last visited page on login",
+      "autoSaveDrafts": "Auto-save Drafts",
+      "autoSaveDraftsDescription": "Automatically save task drafts"
+    },
+    "notifications": {
+      "pushTitle": "Push Notification Settings",
+      "enableDesktop": "Enable Desktop Notification",
+      "enableDesktopDesc": "Receive notification all of the messages, contracts, documents.",
+      "enableBadge": "Enable Unread Notification Badge",
+      "enableBadgeDesc": "Shows a red badge on the app icon when you have unread message",
+      "pushTimeout": "Push Notification Time-out",
+      "emailTitle": "Email Notifications",
+      "communicationEmails": "Communication Emails",
+      "communicationEmailsDesc": "Receive email for messages, contracts, documents.",
+      "announcements": "Announcements & Updates",
+      "announcementsDesc": "Receive email about product updates, improvements, etc.",
+      "soundsTitle": "Sounds",
+      "disableSounds": "Disable All Notification Sounds",
+      "disableSoundsDesc": "Mute all notification of the messages, contracts, documents."
+    },
+    "billing": {
+      "comingSoon": "Billing settings coming soon..."
+    },
+    "data": {
+      "comingSoon": "Data export functionality coming soon..."
+    },
+    "delete": {
+      "warning": "Deleting your account will permanently remove all your data. This action cannot be undone.",
+      "confirm": "Delete Account"
+    }
   },
   "habits": {
     "createHabit": "Create Habit",

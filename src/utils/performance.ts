@@ -1,5 +1,5 @@
 // Performance utilities
-import React from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { isDevelopment } from '@/lib/env'
 import { logger } from '@/lib/monitoring'
 
@@ -37,10 +37,10 @@ export function useIntersectionObserver(
   callback: (entries: IntersectionObserverEntry[]) => void,
   options: IntersectionObserverInit = {}
 ) {
-  const observerRef = React.useRef<IntersectionObserver | null>(null)
-  const elementRef = React.useRef<HTMLElement | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const elementRef = useRef<HTMLElement | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window === 'undefined') return
 
     observerRef.current = new IntersectionObserver(callback, {
@@ -56,7 +56,7 @@ export function useIntersectionObserver(
     }
   }, [callback, options])
 
-  const observe = React.useCallback((element: HTMLElement | null) => {
+  const observe = useCallback((element: HTMLElement | null) => {
     if (elementRef.current) {
       observerRef.current?.unobserve(elementRef.current)
     }
@@ -73,13 +73,13 @@ export function useIntersectionObserver(
 
 // Memory usage monitoring
 export function useMemoryMonitor() {
-  const [memoryInfo, setMemoryInfo] = React.useState<{
+  const [memoryInfo, setMemoryInfo] = useState<{
     usedJSHeapSize: number
     totalJSHeapSize: number
     jsHeapSizeLimit: number
   } | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window === 'undefined' || !('memory' in performance)) return
 
     const updateMemoryInfo = () => {

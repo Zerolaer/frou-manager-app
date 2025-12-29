@@ -1,5 +1,6 @@
 import { logger } from '@/lib/monitoring'
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import type { DependencyList } from 'react'
 import { X, Download } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useModal } from '@/hooks/useModal'

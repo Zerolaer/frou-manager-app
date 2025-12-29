@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Euro } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCurrencyEUR } from '@/lib/format';
@@ -7,6 +7,7 @@ import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { logger } from '@/lib/monitoring'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface BudgetData {
   balance: number;
@@ -190,75 +191,105 @@ const BudgetWidget = () => {
       />
 
       <div className="flex-1 p-6 flex flex-col min-h-0">
-        {/* Main metrics */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {/* Balance */}
-          <div className="bg-black rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-300 mb-1">{t('dashboard.balance') || 'Balance'}</div>
-            <div className={`${getResponsiveFontSize()} font-bold text-white`}>
-              {formatCurrencyEUR(budget.balance)}
+        {loading ? (
+          <>
+            {/* Skeleton for main metrics */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-gray-50 rounded-2xl p-4">
+                  <Skeleton variant="text" width={60} height={12} className="mb-1" />
+                  <Skeleton variant="rectangular" height={24} className="mb-1 rounded" />
+                  <Skeleton variant="text" width={40} height={12} />
+                </div>
+              ))}
             </div>
-            {budget.previousBalance !== 0 && (
-              <div className="text-xs text-gray-300">
-                {budget.balance > budget.previousBalance ? '↗' : '↘'} {Math.abs(((budget.balance - budget.previousBalance) / budget.previousBalance * 100)).toFixed(0)}%
+
+            {/* Skeleton for additional statistics */}
+            <div className="space-y-3">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <Skeleton variant="text" width={150} height={16} className="mb-2" />
+                <Skeleton variant="rectangular" height={8} className="mb-2 rounded-full" />
+                <Skeleton variant="text" width={100} height={12} />
               </div>
-            )}
-          </div>
-
-          {/* Income */}
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">{t('dashboard.earned') || 'Earned'}</div>
-            <div className={`${getResponsiveFontSize()} font-bold text-gray-900`}>
-              {formatCurrencyEUR(budget.earned)}
-            </div>
-            {budget.previousEarned !== 0 && (
-              <div className="text-xs text-gray-600">
-                {budget.earned > budget.previousEarned ? '↗' : '↘'} {Math.abs(((budget.earned - budget.previousEarned) / budget.previousEarned * 100)).toFixed(0)}%
+              <div className="bg-gray-50 rounded-lg p-3">
+                <Skeleton variant="text" width={120} height={16} className="mb-2" />
+                <Skeleton variant="text" width={140} height={14} />
               </div>
-            )}
-          </div>
-
-          {/* Expenses */}
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-gray-500 mb-1">{t('dashboard.spent') || 'Spent'}</div>
-            <div className={`${getResponsiveFontSize()} font-bold text-gray-900`}>
-              {formatCurrencyEUR(budget.spent)}
             </div>
-            {budget.previousSpent !== 0 && (
-              <div className="text-xs text-gray-600">
-                {budget.spent < budget.previousSpent ? '↗' : '↘'} {Math.abs(((budget.spent - budget.previousSpent) / budget.previousSpent * 100)).toFixed(0)}%
+          </>
+        ) : (
+          <>
+            {/* Main metrics */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {/* Balance */}
+              <div className="bg-black rounded-lg p-3 text-center">
+                <div className="text-xs text-gray-300 mb-1">{t('dashboard.balance') || 'Balance'}</div>
+                <div className={`${getResponsiveFontSize()} font-bold text-white`}>
+                  {formatCurrencyEUR(budget.balance)}
+                </div>
+                {budget.previousBalance !== 0 && (
+                  <div className="text-xs text-gray-300">
+                    {budget.balance > budget.previousBalance ? '↗' : '↘'} {Math.abs(((budget.balance - budget.previousBalance) / budget.previousBalance * 100)).toFixed(0)}%
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Additional statistics */}
-        <div className="space-y-3">
-          {/* Income to expense ratio */}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-600 mb-2">Income to expense ratio</div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div 
-                className="bg-black h-2 rounded-full"
-                style={{ width: `${budget.earned > 0 ? Math.min(100, (budget.spent / budget.earned) * 100) : 0}%` }}
-              ></div>
-            </div>
-            <div className="text-xs text-gray-500">
-              {budget.earned > 0 ? `${((budget.spent / budget.earned) * 100).toFixed(0)}%` : '0%'} of income spent
-            </div>
-          </div>
+              {/* Income */}
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <div className="text-xs text-gray-500 mb-1">{t('dashboard.earned') || 'Earned'}</div>
+                <div className={`${getResponsiveFontSize()} font-bold text-gray-900`}>
+                  {formatCurrencyEUR(budget.earned)}
+                </div>
+                {budget.previousEarned !== 0 && (
+                  <div className="text-xs text-gray-600">
+                    {budget.earned > budget.previousEarned ? '↗' : '↘'} {Math.abs(((budget.earned - budget.previousEarned) / budget.previousEarned * 100)).toFixed(0)}%
+                  </div>
+                )}
+              </div>
 
-          {/* Comparison with previous month */}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm font-medium text-gray-900 mb-2">Balance change</div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-600">To previous month</span>
-              <span className="text-sm font-bold text-gray-900">
-                {budget.balance > budget.previousBalance ? '+' : ''}{formatCurrencyEUR(budget.balance - budget.previousBalance)}
-              </span>
+              {/* Expenses */}
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <div className="text-xs text-gray-500 mb-1">{t('dashboard.spent') || 'Spent'}</div>
+                <div className={`${getResponsiveFontSize()} font-bold text-gray-900`}>
+                  {formatCurrencyEUR(budget.spent)}
+                </div>
+                {budget.previousSpent !== 0 && (
+                  <div className="text-xs text-gray-600">
+                    {budget.spent < budget.previousSpent ? '↗' : '↘'} {Math.abs(((budget.spent - budget.previousSpent) / budget.previousSpent * 100)).toFixed(0)}%
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+
+            {/* Additional statistics */}
+            <div className="space-y-3">
+              {/* Income to expense ratio */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="text-sm text-gray-600 mb-2">Income to expense ratio</div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <div 
+                    className="bg-black h-2 rounded-full"
+                    style={{ width: `${budget.earned > 0 ? Math.min(100, (budget.spent / budget.earned) * 100) : 0}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {budget.earned > 0 ? `${((budget.spent / budget.earned) * 100).toFixed(0)}%` : '0%'} of income spent
+                </div>
+              </div>
+
+              {/* Comparison with previous month */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="text-sm font-medium text-gray-900 mb-2">Balance change</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">To previous month</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    {budget.balance > budget.previousBalance ? '+' : ''}{formatCurrencyEUR(budget.balance - budget.previousBalance)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import { ModalField, ModalContent } from '@/components/ui/ModalForm'
@@ -16,9 +16,9 @@ type Props = {
 
 export default function ProjectCreateModal({ open, onClose, userId, onCreated }: Props) {
   const { t } = useTranslation()
-  const [name, setName] = React.useState('')
-  const [color, setColor] = React.useState<string|undefined>(COLORS[8])
-  const [loading, setLoading] = React.useState(false)
+  const [name, setName] = useState('')
+  const [color, setColor] = useState<string|undefined>(COLORS[8])
+  const [loading, setLoading] = useState(false)
 
   async function submit(){
     const n = name.trim()

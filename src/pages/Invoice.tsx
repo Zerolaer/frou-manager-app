@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { Plus, FileText, Edit2, Download, X, Upload, Save, Edit2 as EditIcon } from 'lucide-react'
+import { Plus, FileText, Edit2, Download, X, Upload, Save, Edit2 as EditIcon, Trash2, ChevronDown, ChevronUp, Search, Filter, TrendingUp, MoreVertical } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import { formatCurrencyEUR } from '@/lib/format'
@@ -10,7 +10,9 @@ import { exportInvoiceToPDF } from '@/utils/invoicePdf'
 import InvoiceFolderSidebar from '@/components/invoice/InvoiceFolderSidebar'
 import InvoiceCard from '@/components/invoice/InvoiceCard'
 import InvoiceClientsPanel from '@/components/invoice/InvoiceClientsPanel'
+import InvoiceFromTemplatesPanel from '@/components/invoice/InvoiceFromTemplatesPanel'
 import InvoicePreview from '@/components/invoice/InvoicePreview'
+import CreateInvoiceWizard from '@/components/invoice/CreateInvoiceWizard'
 import Dropdown from '@/components/ui/Dropdown'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import '@/invoice.css'
@@ -80,8 +82,25 @@ function InvoicePageContent() {
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL')
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<Invoice | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCreateWizard, setShowCreateWizard] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState({
+    layout: true,
+    general: true,
+    payment: false
+  })
+  
+  const toggleSection = (section: 'layout' | 'general' | 'payment') => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
   const [foldersCollapsed, setFoldersCollapsed] = useState(() => {
     const saved = localStorage.getItem('frovo_invoice_folders_collapsed')
     return saved === 'true'
@@ -154,13 +173,14 @@ function InvoicePageContent() {
   const [showClientTemplateModal, setShowClientTemplateModal] = useState(false)
 
   const [showCreateClientModal, setShowCreateClientModal] = useState(false)
+  const [editingClient, setEditingClient] = useState<ClientTemplate | null>(null)
+  const [showEditClientModal, setShowEditClientModal] = useState(false)
 
   // SubHeader actions handler
   function handleSubHeaderAction(action: string) {
     switch (action) {
       case 'add-invoice':
         resetForm()
-        setSelectedFolderId(activeFolder === 'ALL' ? null : activeFolder)
         setShowCreateModal(true)
         break
       case 'add-client':
@@ -177,7 +197,6 @@ function InvoicePageContent() {
       switch (action) {
         case 'add-invoice':
           resetForm()
-          setSelectedFolderId(activeFolder === 'ALL' ? null : activeFolder)
           setShowCreateModal(true)
           break
         case 'add-client':
@@ -398,6 +417,91 @@ function InvoicePageContent() {
     } catch (error) {
       console.error('Error creating invoice:', error)
       alert(`Ошибка создания инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+    }
+  }
+
+  const handleCreateInvoiceFromWizard = async (wizardData: any) => {
+    if (!userId) return
+
+    const { subtotal, taxAmount, total } = calculateTotals(wizardData.items)
+
+    try {
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          user_id: userId,
+          invoice_number: wizardData.invoiceNumber,
+          date: wizardData.date,
+          due_date: wizardData.dueDate,
+          notes: wizardData.notes || '',
+          // FROM fields from template
+          from_name: wizardData.selectedFromTemplate?.name || null,
+          from_country: wizardData.selectedFromTemplate?.country || null,
+          from_city: wizardData.selectedFromTemplate?.city || null,
+          from_province: wizardData.selectedFromTemplate?.province || null,
+          from_address_line1: wizardData.selectedFromTemplate?.address_line1 || null,
+          from_address_line2: wizardData.selectedFromTemplate?.address_line2 || null,
+          from_postal_code: wizardData.selectedFromTemplate?.postal_code || null,
+          from_account_number: wizardData.selectedFromTemplate?.account_number || null,
+          from_routing_number: wizardData.selectedFromTemplate?.routing_number || null,
+          from_swift_bic: wizardData.selectedFromTemplate?.swift_bic || null,
+          from_bank_name: wizardData.selectedFromTemplate?.bank_name || null,
+          from_bank_address: wizardData.selectedFromTemplate?.bank_address || null,
+          // TO fields from client template
+          client_name: wizardData.selectedClient?.name || '',
+          client_email: wizardData.selectedClient?.email || null,
+          client_address: wizardData.selectedClient?.address || null,
+          client_phone: wizardData.selectedClient?.phone || null,
+          subtotal,
+          tax_rate: wizardData.taxRate || 0,
+          tax_amount: taxAmount,
+          total,
+          folder_id: wizardData.folderId || null
+        })
+        .select()
+        .single()
+
+      if (invoiceError) {
+        console.error('Error creating invoice:', invoiceError)
+        throw invoiceError
+      }
+
+      if (!invoiceData) {
+        throw new Error('Invoice was not created')
+      }
+
+      // Insert items
+      if (wizardData.items && wizardData.items.length > 0) {
+        const itemsToInsert = wizardData.items.map((item: any, index: number) => ({
+          invoice_id: invoiceData.id,
+          description: item.description || '',
+          period: item.period || null,
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          price_per_hour: item.price_per_hour || null,
+          hours: item.hours || null,
+          item_type: item.item_type || 'product',
+          position: index
+        }))
+
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .insert(itemsToInsert)
+
+        if (itemsError) {
+          console.error('Error creating invoice items:', itemsError)
+          await supabase.from('invoices').delete().eq('id', invoiceData.id)
+          throw itemsError
+        }
+      }
+
+      await loadInvoices()
+      if (userId) {
+        window.dispatchEvent(new CustomEvent('invoice-created'))
+      }
+    } catch (error) {
+      console.error('Error creating invoice from wizard:', error)
+      throw error
     }
   }
 
@@ -754,6 +858,100 @@ function InvoicePageContent() {
     }
   }
 
+  // Update client template
+  const updateClientTemplate = async () => {
+    if (!userId || !editingClient || !clientName.trim()) {
+      alert('Введите имя клиента')
+      return
+    }
+    try {
+      const { error } = await supabase
+        .from('invoice_client_templates')
+        .update({
+          name: clientName,
+          email: clientEmail,
+          address: clientAddress,
+          phone: clientPhone
+        })
+        .eq('id', editingClient.id)
+        .eq('user_id', userId)
+      
+      if (error) throw error
+      await loadClientTemplates()
+      // Reload client stats after updating client
+      if (userId) {
+        window.dispatchEvent(new CustomEvent('client-updated'))
+      }
+      setShowEditClientModal(false)
+      setEditingClient(null)
+      // Reset client form
+      setClientName('')
+      setClientEmail('')
+      setClientAddress('')
+      setClientPhone('')
+      
+      // Show notification
+      const notification = document.createElement('div')
+      notification.textContent = t('invoice.clientUpdated') || 'Клиент обновлен'
+      notification.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+      document.body.appendChild(notification)
+      setTimeout(() => {
+        notification.style.opacity = '0'
+        notification.style.transition = 'opacity 0.3s'
+        setTimeout(() => document.body.removeChild(notification), 300)
+      }, 2000)
+    } catch (error) {
+      console.error('Error updating client template:', error)
+      alert(`Ошибка обновления клиента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+    }
+  }
+
+  // Delete client template
+  const handleDeleteClient = async (clientId: string) => {
+    if (!userId) return
+    if (!confirm(t('invoice.confirmDeleteClient') || 'Вы уверены, что хотите удалить этого клиента?')) {
+      return
+    }
+    try {
+      const { error } = await supabase
+        .from('invoice_client_templates')
+        .delete()
+        .eq('id', clientId)
+        .eq('user_id', userId)
+      
+      if (error) throw error
+      await loadClientTemplates()
+      // Reload client stats after deleting client
+      if (userId) {
+        window.dispatchEvent(new CustomEvent('client-deleted'))
+      }
+      
+      // Show notification
+      const notification = document.createElement('div')
+      notification.textContent = t('invoice.clientDeleted') || 'Клиент удален'
+      notification.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+      document.body.appendChild(notification)
+      setTimeout(() => {
+        notification.style.opacity = '0'
+        notification.style.transition = 'opacity 0.3s'
+        setTimeout(() => document.body.removeChild(notification), 300)
+      }, 2000)
+    } catch (error) {
+      console.error('Error deleting client template:', error)
+      alert(`Ошибка удаления клиента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+    }
+  }
+
+  // Handle edit client
+  const handleEditClient = (client: ClientTemplate) => {
+    setEditingClient(client)
+    setClientName(client.name || '')
+    setClientEmail(client.email || '')
+    setClientAddress(client.address || '')
+    setClientPhone(client.phone || '')
+    setShowEditClientModal(true)
+  }
+
   const resetForm = () => {
     setInvoiceNumber('')
     setDate(new Date().toISOString().split('T')[0])
@@ -880,12 +1078,774 @@ function InvoicePageContent() {
 
   // Filter invoices by active folder
   const filteredInvoices = useMemo(() => {
-    if (activeFolder === 'ALL') return invoices
-    if (activeFolder) {
-      return invoices.filter(inv => inv.folder_id === activeFolder)
+    let result = invoices
+    if (activeFolder === 'ALL') {
+      result = invoices
+    } else if (activeFolder) {
+      result = invoices.filter(inv => inv.folder_id === activeFolder)
+    } else {
+      result = invoices.filter(inv => !inv.folder_id)
     }
-    return invoices.filter(inv => !inv.folder_id)
-  }, [invoices, activeFolder])
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter(inv => 
+        inv.invoice_number.toLowerCase().includes(query) ||
+        inv.client_name.toLowerCase().includes(query) ||
+        (inv.client_email && inv.client_email.toLowerCase().includes(query))
+      )
+    }
+    
+    return result
+  }, [invoices, activeFolder, searchQuery])
+
+  // Calculate statistics
+  const invoiceStats = useMemo(() => {
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+    
+    const thisMonthInvoices = filteredInvoices.filter(inv => {
+      const invDate = new Date(inv.date)
+      return invDate.getMonth() === currentMonth && invDate.getFullYear() === currentYear
+    })
+    
+    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+    
+    // Determine paid/unpaid based on due_date (if due_date is past, consider unpaid)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const paidInvoices = filteredInvoices.filter(inv => {
+      if (!inv.due_date) return false
+      const dueDate = new Date(inv.due_date)
+      dueDate.setHours(0, 0, 0, 0)
+      // For now, consider invoices with due_date in the past as potentially unpaid
+      // In real app, you'd have a status field
+      return dueDate >= today
+    })
+    
+    const unpaidInvoices = filteredInvoices.filter(inv => {
+      if (!inv.due_date) return true
+      const dueDate = new Date(inv.due_date)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today
+    })
+    
+    const paidAmount = paidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+    const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+    
+    const thisMonthPaid = thisMonthInvoices.filter(inv => {
+      if (!inv.due_date) return false
+      const dueDate = new Date(inv.due_date)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate >= today
+    })
+    
+    const thisMonthUnpaid = thisMonthInvoices.filter(inv => {
+      if (!inv.due_date) return true
+      const dueDate = new Date(inv.due_date)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today
+    })
+    
+    return {
+      total: totalAmount,
+      totalCount: filteredInvoices.length,
+      paid: paidAmount,
+      paidCount: paidInvoices.length,
+      unpaid: unpaidAmount,
+      unpaidCount: unpaidInvoices.length,
+      thisMonthCount: thisMonthInvoices.length,
+      thisMonthPaidCount: thisMonthPaid.length,
+      thisMonthUnpaidCount: thisMonthUnpaid.length
+    }
+  }, [filteredInvoices])
+
+  // Show full-page create/edit mode
+  if (showCreateModal || isEditing) {
+    return (
+      <div className="invoice-create-page" style={{ height: 'calc(100vh - 96px)', display: 'flex', flexDirection: 'column' }}>
+        {/* Header with actions */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setShowCreateModal(false)
+                setIsEditing(false)
+                setSelectedInvoice(null)
+                resetForm()
+              }}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+            <h1 className="text-xl font-semibold text-gray-900">
+              {isEditing ? t('invoice.editInvoice') : t('invoice.newInvoice')}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setShowCreateModal(false)
+                setIsEditing(false)
+                setSelectedInvoice(null)
+                resetForm()
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              {t('actions.cancel')}
+            </button>
+            <button
+              onClick={isEditing ? handleUpdateInvoice : handleCreateInvoice}
+              disabled={!invoiceNumber.trim() || !clientName.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEditing ? t('actions.save') : t('invoice.create')}
+            </button>
+          </div>
+        </div>
+
+        {/* Main content: Form + Preview */}
+        <div className="flex-1 grid grid-cols-2 gap-0 overflow-hidden" style={{ height: 'calc(100% - 73px)' }}>
+          {/* Left: Form */}
+          <div className="overflow-y-auto bg-white border-r border-gray-200">
+            <div className="p-6 space-y-4">
+              {/* Collapsible Section: Layout */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('layout')}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-900">Layout</span>
+                  {expandedSections.layout ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+                {expandedSections.layout && (
+                  <div className="p-4 space-y-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Тема PDF</label>
+                        <Dropdown
+                          value={pdfThemeId}
+                          onChange={(value) => handleThemeChange(String(value))}
+                          options={pdfThemes.map(theme => ({ 
+                            value: theme.id, 
+                            label: theme.name 
+                          }))}
+                          placeholder="Выберите тему"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.folder')}</label>
+                        <Dropdown
+                          value={selectedFolderId || ''}
+                          onChange={(value) => setSelectedFolderId(value ? String(value) : null)}
+                          options={[
+                            { value: '', label: t('invoice.noFolder') },
+                            ...folders.map(f => ({ value: f.id, label: f.name }))
+                          ]}
+                          placeholder={t('invoice.noFolder')}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Collapsible Section: General */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('general')}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-900">General</span>
+                  {expandedSections.general ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+                {expandedSections.general && (
+                  <div className="p-4 space-y-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.invoiceNumber')}</label>
+                        <CoreInput
+                          value={invoiceNumber}
+                          onChange={(e) => setInvoiceNumber(e.target.value)}
+                          placeholder="INV-001"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.taxRate')} (%)</label>
+                        <CoreInput
+                          type="number"
+                          value={taxRate || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : Number(e.target.value)
+                            setTaxRate(Math.max(0, Math.min(100, val)))
+                          }}
+                          placeholder="0"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.date')}</label>
+                        <CustomDatePicker
+                          value={date}
+                          onChange={setDate}
+                          placeholder={t('invoice.date')}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.dueDate')}</label>
+                        <CustomDatePicker
+                          value={dueDate}
+                          onChange={setDueDate}
+                          placeholder={t('invoice.dueDate')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* FROM Section */}
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
+                  {!isEditingFrom ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
+                      onClick={() => setIsEditingFrom(true)}
+                      title="Редактировать данные отправителя"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Редактировать</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap bg-black text-white"
+                      onClick={saveFromTemplate}
+                      title="Сохранить данные"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Сохранить</span>
+                    </button>
+                  )}
+                </div>
+                <div className={`grid grid-cols-2 gap-4 ${!isEditingFrom ? 'opacity-60' : ''}`}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromName')}</label>
+                    <CoreInput 
+                      value={fromName} 
+                      onChange={(e) => setFromName(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCountry')}</label>
+                    <CoreInput 
+                      value={fromCountry} 
+                      onChange={(e) => setFromCountry(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromCity')}</label>
+                    <CoreInput 
+                      value={fromCity} 
+                      onChange={(e) => setFromCity(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromProvince')}</label>
+                    <CoreInput 
+                      value={fromProvince} 
+                      onChange={(e) => setFromProvince(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine1')}</label>
+                    <CoreInput 
+                      value={fromAddressLine1} 
+                      onChange={(e) => setFromAddressLine1(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAddressLine2')}</label>
+                    <CoreInput 
+                      value={fromAddressLine2} 
+                      onChange={(e) => setFromAddressLine2(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromPostalCode')}</label>
+                    <CoreInput 
+                      value={fromPostalCode} 
+                      onChange={(e) => setFromPostalCode(e.target.value)} 
+                      disabled={!isEditingFrom}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Банковские данные</h4>
+                  <div className={`grid grid-cols-2 gap-4 ${bankDataFilled && !isEditingFrom ? 'opacity-60' : ''}`}>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromAccountNumber')}</label>
+                      <CoreInput 
+                        value={fromAccountNumber} 
+                        onChange={(e) => setFromAccountNumber(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromRoutingNumber')}</label>
+                      <CoreInput 
+                        value={fromRoutingNumber} 
+                        onChange={(e) => setFromRoutingNumber(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromSwiftBic')}</label>
+                      <CoreInput 
+                        value={fromSwiftBic} 
+                        onChange={(e) => setFromSwiftBic(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankName')}</label>
+                      <CoreInput 
+                        value={fromBankName} 
+                        onChange={(e) => setFromBankName(e.target.value)} 
+                        disabled={!isEditingFrom}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.fromBankAddress')}</label>
+                      <CoreTextarea 
+                        value={fromBankAddress} 
+                        onChange={(e) => setFromBankAddress(e.target.value)} 
+                        disabled={!isEditingFrom}
+                        rows={2} 
+                      />
+                    </div>
+                  </div>
+                </div>
+                    </div>
+
+                    {/* TO Section */}
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                        <h3 className="text-sm font-semibold text-gray-700">{t('invoice.to')}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {clientTemplates.length > 0 && (
+                            <Dropdown
+                              value=""
+                              onChange={(value) => {
+                                const template = clientTemplates.find(t => t.id === value)
+                                if (template) loadClientTemplate(template)
+                              }}
+                              options={clientTemplates.map(t => ({ value: t.id, label: t.name }))}
+                              placeholder={t('invoice.loadClientTemplate')}
+                              buttonClassName="text-xs px-3 py-1.5"
+                            />
+                          )}
+                          {toDataChanged && (
+                            <button
+                              type="button"
+                              className="btn text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap bg-black text-white"
+                              onClick={saveToTemplate}
+                            >
+                              <Save className="w-3.5 h-3.5" />
+                              <span>Сохранить</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
+                          <CoreInput
+                            value={clientName}
+                            onChange={(e) => setClientName(e.target.value)}
+                            placeholder={t('invoice.clientNamePlaceholder')}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
+                          <CoreInput
+                            type="email"
+                            value={clientEmail}
+                            onChange={(e) => setClientEmail(e.target.value)}
+                            placeholder={t('invoice.clientEmailPlaceholder')}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
+                          <CoreInput
+                            value={clientPhone}
+                            onChange={(e) => setClientPhone(e.target.value)}
+                            placeholder="+1-855-413-7030"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+                          <CoreTextarea
+                            value={clientAddress}
+                            onChange={(e) => setClientAddress(e.target.value)}
+                            placeholder={t('invoice.clientAddressPlaceholder')}
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Items Section */}
+                    <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">{t('invoice.items')}</label>
+                  <button className="btn btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5" onClick={addItem}>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('invoice.addItem')}</span>
+                  </button>
+                </div>
+                {items.length === 0 ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <Plus className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-500 font-medium">Нет позиций</p>
+                      <p className="text-xs text-gray-400">Нажмите "Добавить позицию" чтобы начать</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {items.map((item, index) => {
+                      const itemType = item.item_type || 'product'
+                      return (
+                        <div key={index} className="flex gap-2 p-3 border rounded-lg bg-gray-50">
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.itemType')}</label>
+                              <Dropdown
+                                value={itemType}
+                                onChange={(value) => updateItem(index, 'item_type', value as ItemType)}
+                                options={[
+                                  { value: 'product', label: t('invoice.itemTypeProduct') },
+                                  { value: 'service_period', label: t('invoice.itemTypeServicePeriod') },
+                                  { value: 'hourly', label: t('invoice.itemTypeHourly') }
+                                ]}
+                                buttonClassName="text-xs"
+                              />
+                            </div>
+                            <CoreInput
+                              value={item.description}
+                              onChange={(e) => updateItem(index, 'description', e.target.value)}
+                              placeholder={t('invoice.itemDescription')}
+                            />
+                            {itemType === 'product' && (
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.quantity')}</label>
+                                  <CoreInput
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.quantity || ''}
+                                    onChange={(e) => {
+                                      const qty = e.target.value === '' ? 0 : Number(e.target.value)
+                                      updateItem(index, 'quantity', qty)
+                                    }}
+                                    placeholder={t('invoice.quantity')}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.price')}</label>
+                                  <CoreInput
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.price || ''}
+                                    onChange={(e) => {
+                                      const price = e.target.value === '' ? 0 : Number(e.target.value)
+                                      updateItem(index, 'price', price)
+                                    }}
+                                    placeholder={t('invoice.price')}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {itemType === 'service_period' && (
+                              <>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Дата от</label>
+                                    <CustomDatePicker
+                                      value={item.period?.split(' - ')[0] || ''}
+                                      onChange={(date) => {
+                                        const currentTo = item.period?.split(' - ')[1] || ''
+                                        updateItem(index, 'period', date + (currentTo ? ' - ' + currentTo : ''))
+                                      }}
+                                      placeholder="Дата от"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Дата до</label>
+                                    <CustomDatePicker
+                                      value={item.period?.split(' - ')[1] || ''}
+                                      onChange={(date) => {
+                                        const currentFrom = item.period?.split(' - ')[0] || ''
+                                        updateItem(index, 'period', (currentFrom || '') + (currentFrom && date ? ' - ' : '') + date)
+                                      }}
+                                      placeholder="Дата до"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.hours')} (опционально)</label>
+                                    <CoreInput
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={item.hours || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value
+                                        if (val === '' || val === '-') {
+                                          updateItem(index, 'hours', 0)
+                                        } else {
+                                          const hours = Number(val)
+                                          if (!isNaN(hours) && hours >= 0) {
+                                            updateItem(index, 'hours', hours)
+                                          }
+                                        }
+                                      }}
+                                      placeholder={t('invoice.hours')}
+                                    />
+                                  </div>
+                                  {item.hours ? (
+                                    <>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.pricePerHour')}</label>
+                                        <CoreInput
+                                          type="number"
+                                          step="0.01"
+                                          min="0"
+                                          value={item.price_per_hour || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value
+                                            if (val === '' || val === '-') {
+                                              updateItem(index, 'price_per_hour', 0)
+                                            } else {
+                                              const pricePerHour = Number(val)
+                                              if (!isNaN(pricePerHour) && pricePerHour >= 0) {
+                                                updateItem(index, 'price_per_hour', pricePerHour)
+                                              }
+                                            }
+                                          }}
+                                          placeholder={t('invoice.pricePerHour')}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.total')}</label>
+                                        <CoreInput
+                                          type="number"
+                                          step="0.01"
+                                          value={item.total || 0}
+                                          readOnly
+                                          className="bg-gray-100 cursor-not-allowed"
+                                          placeholder={t('invoice.total')}
+                                        />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="col-span-2">
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.price')}</label>
+                                      <CoreInput
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={item.price || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value
+                                          if (val === '' || val === '-') {
+                                            updateItem(index, 'price', 0)
+                                          } else {
+                                            const price = Number(val)
+                                            if (!isNaN(price) && price >= 0) {
+                                              updateItem(index, 'price', price)
+                                            }
+                                          }
+                                        }}
+                                        placeholder={t('invoice.price')}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                            {itemType === 'hourly' && (
+                              <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.hours')}</label>
+                                  <CoreInput
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.hours || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value
+                                      if (val === '' || val === '-') {
+                                        updateItem(index, 'hours', 0)
+                                      } else {
+                                        const hours = Number(val)
+                                        if (!isNaN(hours) && hours >= 0) {
+                                          updateItem(index, 'hours', hours)
+                                        }
+                                      }
+                                    }}
+                                    placeholder={t('invoice.hours')}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.pricePerHour')}</label>
+                                  <CoreInput
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.price_per_hour || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value
+                                      if (val === '' || val === '-') {
+                                        updateItem(index, 'price_per_hour', 0)
+                                      } else {
+                                        const pricePerHour = Number(val)
+                                        if (!isNaN(pricePerHour) && pricePerHour >= 0) {
+                                          updateItem(index, 'price_per_hour', pricePerHour)
+                                        }
+                                      }
+                                    }}
+                                    placeholder={t('invoice.pricePerHour')}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('invoice.total')}</label>
+                                  <CoreInput
+                                    type="number"
+                                    step="0.01"
+                                    value={item.total || 0}
+                                    readOnly
+                                    className="bg-gray-100 cursor-not-allowed"
+                                    placeholder={t('invoice.total')}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            <div className="mt-2 text-sm font-medium text-gray-700">
+                              {t('invoice.total')}: {formatCurrencyEUR(item.total || item.quantity * item.price)}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeItem(index)}
+                            className="p-2 hover:bg-red-100 rounded self-start"
+                          >
+                            <X className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.notes')}</label>
+                      <CoreTextarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder={t('invoice.notesPlaceholder')}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Collapsible Section: Payment */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('payment')}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-900">Payment</span>
+                  {expandedSections.payment ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+                {expandedSections.payment && (
+                  <div className="p-4 space-y-4 border-t border-gray-200">
+                    <div className="text-sm text-gray-500">Payment settings and options</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Preview */}
+          <div className="overflow-y-auto bg-gray-50">
+            <InvoicePreview
+              invoiceNumber={invoiceNumber}
+              date={date}
+              dueDate={dueDate}
+              notes={notes}
+              taxRate={taxRate}
+              fromName={fromName}
+              fromCountry={fromCountry}
+              fromCity={fromCity}
+              fromProvince={fromProvince}
+              fromAddressLine1={fromAddressLine1}
+              fromAddressLine2={fromAddressLine2}
+              fromPostalCode={fromPostalCode}
+              fromAccountNumber={fromAccountNumber}
+              fromRoutingNumber={fromRoutingNumber}
+              fromSwiftBic={fromSwiftBic}
+              fromBankName={fromBankName}
+              fromBankAddress={fromBankAddress}
+              clientName={clientName}
+              clientEmail={clientEmail}
+              clientAddress={clientAddress}
+              clientPhone={clientPhone}
+              items={items}
+              subtotal={subtotal}
+              taxAmount={taxAmount}
+              total={total}
+              headerColor={pdfThemeColor}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`invoice-page ${foldersCollapsed ? 'is-collapsed' : ''}`}>
@@ -906,61 +1866,411 @@ function InvoicePageContent() {
       
       {/* Центральная область: инвойсы */}
       <div className="invoice-content">
-        {loading ? null : filteredInvoices.length === 0 ? (
-          <div className="invoice-empty">
-            <FileText className="invoice-empty-icon" />
-            <div className="invoice-empty-title">{t('invoice.noInvoices')}</div>
-            <div className="invoice-empty-description">{t('invoice.noInvoicesDescription')}</div>
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-gray-500">{t('common.loading')}</div>
           </div>
         ) : (
-          <div className="invoice-grid">
-            {filteredInvoices.map((invoice) => (
-              <InvoiceCard
-                key={invoice.id}
-                invoice={invoice}
-                onEdit={handleEditInvoice}
-                onDelete={handleDeleteInvoice}
-                onExport={handleExportPDF}
-                onView={handleViewInvoice}
-              />
-            ))}
+          <div className="flex flex-col h-full">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {/* Total Invoices */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5 relative">
+                <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                  <MoreVertical className="w-4 h-4 text-gray-400" />
+                </button>
+                <div className="mb-2">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatCurrencyEUR(invoiceStats.total)}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Invoices this month
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-green-600">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>8%</span>
+                </div>
+              </div>
+
+              {/* Paid Invoices */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5 relative">
+                <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                  <MoreVertical className="w-4 h-4 text-gray-400" />
+                </button>
+                <div className="mb-2">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatCurrencyEUR(invoiceStats.paid)}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    from {invoiceStats.thisMonthPaidCount} invoices this month
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-green-600">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>8%</span>
+                </div>
+              </div>
+
+              {/* Unpaid Invoices */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5 relative">
+                <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                  <MoreVertical className="w-4 h-4 text-gray-400" />
+                </button>
+                <div className="mb-2">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {formatCurrencyEUR(invoiceStats.unpaid)}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    from {invoiceStats.thisMonthUnpaidCount} invoices this month
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-green-600">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>8%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* All Invoices Table */}
+            <div className="flex-1 bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
+              {/* Table Header with Search */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">All Invoices</h3>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search here"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                    />
+                  </div>
+                  <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    Filter
+                  </button>
+                </div>
+              </div>
+
+              {/* Table */}
+              {filteredInvoices.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <div className="text-sm font-medium text-gray-900 mb-1">{t('invoice.noInvoices')}</div>
+                    <div className="text-xs text-gray-500">{t('invoice.noInvoicesDescription')}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300"
+                          />
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                          <div className="flex items-center gap-2">
+                            Invoices
+                            <ChevronDown className="w-3 h-3" />
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                          <div className="flex items-center gap-2">
+                            Name
+                            <ChevronDown className="w-3 h-3" />
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                          <div className="flex items-center gap-2">
+                            Date
+                            <ChevronDown className="w-3 h-3" />
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                          <div className="flex items-center gap-2">
+                            Status
+                            <ChevronDown className="w-3 h-3" />
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                          <div className="flex items-center justify-end gap-2">
+                            Amount
+                            <ChevronDown className="w-3 h-3" />
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {filteredInvoices.map((invoice) => {
+                        const isSelected = selectedInvoiceForView?.id === invoice.id
+                        const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date()
+                        const status = isOverdue ? 'Unpaid' : 'Paid'
+                        
+                        return (
+                          <tr
+                            key={invoice.id}
+                            onClick={() => setSelectedInvoiceForView(invoice)}
+                            className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                              isSelected ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <td className="px-6 py-4">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => setSelectedInvoiceForView(invoice)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="rounded border-gray-300"
+                              />
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                              {invoice.invoice_number}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              {invoice.client_name}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              {new Date(invoice.date).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                status === 'Paid' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                              {formatCurrencyEUR(invoice.total)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Правая область: клиенты */}
+      {/* Правая область: детали инвойса или клиенты */}
       {userId && (
-        <InvoiceClientsPanel
-          userId={userId}
-          onSelectClient={async (clientName) => {
-            if (!showCreateModal && !isEditing) {
-              // Reset form first
-              resetForm()
+        <div className="invoice-right-sidebar">
+          {selectedInvoiceForView ? (
+            /* Invoices Detail Panel */
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col h-full">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Invoices Detail</h3>
+                <button
+                  onClick={() => setSelectedInvoiceForView(null)}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
               
-              // Then load client template data
-              const { data: clientTemplate } = await supabase
-                .from('invoice_client_templates')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('name', clientName)
-                .single()
-              
-              if (clientTemplate) {
-                setClientName(clientTemplate.name || '')
-                setClientEmail(clientTemplate.email || '')
-                setClientAddress(clientTemplate.address || '')
-                setClientPhone(clientTemplate.phone || '')
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* From/To */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">From</div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm">
+                          {selectedInvoiceForView.from_name?.charAt(0) || 'P'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">{selectedInvoiceForView.from_name || 'Payfast'}</div>
+                        <div className="text-sm text-gray-500">Payfastuxer@mail.com</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">To</div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm">
+                          {selectedInvoiceForView.client_name?.charAt(0) || 'F'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">{selectedInvoiceForView.client_name}</div>
+                        <div className="text-sm text-gray-500">{selectedInvoiceForView.client_email || 'figma@mail.com'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Details */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Due Date</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {new Date(selectedInvoiceForView.due_date).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Subject</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {selectedInvoiceForView.invoice_number} - {new Date(selectedInvoiceForView.date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Billed to</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedInvoiceForView.client_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Currency</span>
+                    <span className="text-sm font-medium text-gray-900">EUR - Euro</span>
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Items</div>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 text-xs font-semibold text-gray-700">Description</th>
+                        <th className="text-right py-2 text-xs font-semibold text-gray-700">Price</th>
+                        <th className="text-right py-2 text-xs font-semibold text-gray-700">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedInvoiceForView.items.map((item, index) => (
+                        <tr key={index} className="border-b border-gray-100">
+                          <td className="py-2 text-sm text-gray-700">{item.description}</td>
+                          <td className="py-2 text-sm text-gray-700 text-right">{formatCurrencyEUR(item.price)}</td>
+                          <td className="py-2 text-sm font-medium text-gray-900 text-right">{formatCurrencyEUR(item.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary */}
+                <div className="space-y-2 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium text-gray-900">{formatCurrencyEUR(selectedInvoiceForView.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Discount %</span>
+                    <span className="font-medium text-gray-900">$0</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold pt-2 border-t border-gray-200">
+                    <span>Total</span>
+                    <span>{formatCurrencyEUR(selectedInvoiceForView.total)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold pt-2">
+                    <span>Amount due</span>
+                    <span>{formatCurrencyEUR(selectedInvoiceForView.total)}</span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <button className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  Paid Now
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <InvoiceClientsPanel
+            userId={userId}
+            onSelectClient={async (clientName) => {
+              if (!showCreateModal && !isEditing) {
+                // Reset form first
+                resetForm()
+                
+                // Then load client template data
+                const { data: clientTemplate } = await supabase
+                  .from('invoice_client_templates')
+                  .select('*')
+                  .eq('user_id', userId)
+                  .eq('name', clientName)
+                  .single()
+                
+                if (clientTemplate) {
+                  setClientName(clientTemplate.name || '')
+                  setClientEmail(clientTemplate.email || '')
+                  setClientAddress(clientTemplate.address || '')
+                  setClientPhone(clientTemplate.phone || '')
+                } else {
+                  setClientName(clientName)
+                }
+                
+                // Open full-page create mode
+                setShowCreateModal(true)
               } else {
-                setClientName(clientName)
+                // If in create/edit mode, just load the client
+                const { data: clientTemplate } = await supabase
+                  .from('invoice_client_templates')
+                  .select('*')
+                  .eq('user_id', userId)
+                  .eq('name', clientName)
+                  .single()
+                
+                if (clientTemplate) {
+                  setClientName(clientTemplate.name || '')
+                  setClientEmail(clientTemplate.email || '')
+                  setClientAddress(clientTemplate.address || '')
+                  setClientPhone(clientTemplate.phone || '')
+                } else {
+                  setClientName(clientName)
+                }
               }
-              
-              setShowCreateModal(true)
-            }
-          }}
-        />
+            }}
+            onEditClient={handleEditClient}
+            onDeleteClient={handleDeleteClient}
+            clientTemplates={clientTemplates}
+          />
+              <InvoiceFromTemplatesPanel
+                userId={userId}
+                onSelectTemplate={(template) => {
+                  setFromName(template.name || '')
+                  setFromCountry(template.country || '')
+                  setFromCity(template.city || '')
+                  setFromProvince(template.province || '')
+                  setFromAddressLine1(template.address_line1 || '')
+                  setFromAddressLine2(template.address_line2 || '')
+                  setFromPostalCode(template.postal_code || '')
+                  setFromAccountNumber(template.account_number || '')
+                  setFromRoutingNumber(template.routing_number || '')
+                  setFromSwiftBic(template.swift_bic || '')
+                  setFromBankName(template.bank_name || '')
+                  setFromBankAddress(template.bank_address || '')
+                  setIsEditingFrom(false)
+                  setFromDataSaved(true)
+                }}
+              />
+            </>
+          )}
+        </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Modal - DISABLED, using full-page mode instead */}
+      {false && (
       <UnifiedModal
         open={showCreateModal || isEditing}
         onClose={() => {
@@ -1046,10 +2356,10 @@ function InvoicePageContent() {
                     placeholder="Выберите тему"
                   />
                 </div>
-              </div>
+                    </div>
 
-              {/* FROM Section */}
-              <div className="border rounded-lg p-4 bg-gray-50">
+                    {/* FROM Section */}
+                    <div className="border rounded-lg p-4 bg-gray-50">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h3 className="text-sm font-semibold text-gray-700">{t('invoice.from')}</h3>
                   {!isEditingFrom ? (
@@ -1577,6 +2887,7 @@ function InvoicePageContent() {
           </div>
         </div>
       </UnifiedModal>
+      )}
 
       {/* View Modal */}
       {selectedInvoice && !isEditing && (
@@ -1806,6 +3117,86 @@ function InvoicePageContent() {
           </div>
         </div>
       </UnifiedModal>
+
+      {/* Edit Client Modal */}
+      <UnifiedModal
+        open={showEditClientModal}
+        onClose={() => {
+          setShowEditClientModal(false)
+          setEditingClient(null)
+          setClientName('')
+          setClientEmail('')
+          setClientAddress('')
+          setClientPhone('')
+        }}
+        title={t('invoice.editClient') || 'Редактировать клиента'}
+        footer={createSimpleFooter(
+          {
+            label: t('actions.save'),
+            onClick: updateClientTemplate,
+            disabled: !clientName.trim()
+          },
+          {
+            label: t('actions.cancel'),
+            onClick: () => {
+              setShowEditClientModal(false)
+              setEditingClient(null)
+              setClientName('')
+              setClientEmail('')
+              setClientAddress('')
+              setClientPhone('')
+            }
+          }
+        )}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toName')}</label>
+            <CoreInput
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder={t('invoice.clientNamePlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toEmail')}</label>
+            <CoreInput
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder={t('invoice.clientEmailPlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toPhone')}</label>
+            <CoreInput
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+              placeholder="+1-855-413-7030"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.toAddress')}</label>
+            <CoreTextarea
+              value={clientAddress}
+              onChange={(e) => setClientAddress(e.target.value)}
+              placeholder={t('invoice.clientAddressPlaceholder')}
+              rows={3}
+            />
+          </div>
+        </div>
+      </UnifiedModal>
+
+      {/* Create Invoice Wizard */}
+      {userId && (
+        <CreateInvoiceWizard
+          open={showCreateWizard}
+          onClose={() => setShowCreateWizard(false)}
+          onCreateInvoice={handleCreateInvoiceFromWizard}
+          userId={userId}
+          folders={folders}
+        />
+      )}
     </div>
   )
 }

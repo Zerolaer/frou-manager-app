@@ -1,5 +1,5 @@
 import { logger } from '@/lib/monitoring'
-import React from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 
 // Theme system and dark mode utilities
 
@@ -149,15 +149,19 @@ class ThemeManager {
   }
 
   private initializeTheme() {
-    // Check for saved theme preference
+    // Always use light theme - dark theme is disabled
     const savedTheme = this.getStoredTheme()
     
-    if (savedTheme && THEMES[savedTheme]) {
+    // Only allow light themes (non-dark)
+    if (savedTheme && THEMES[savedTheme] && !THEMES[savedTheme].dark) {
       this.currentTheme = THEMES[savedTheme]
     } else {
-      // Check system preference
-      this.systemPreference = this.getSystemPreference()
-      this.currentTheme = THEMES[this.systemPreference]
+      // Force light theme
+      this.currentTheme = THEMES.light
+      // Clear any dark theme from storage
+      if (savedTheme && THEMES[savedTheme] && THEMES[savedTheme].dark) {
+        localStorage.removeItem(THEME_STORAGE_KEY)
+      }
     }
 
     this.applyTheme(this.currentTheme)
@@ -190,22 +194,8 @@ class ThemeManager {
   }
 
   private setupSystemPreferenceListener() {
-    if (typeof window === 'undefined') return
-
-    try {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      mediaQuery.addEventListener('change', (e) => {
-        this.systemPreference = e.matches ? 'dark' : 'light'
-        
-        // Only auto-switch if user hasn't manually set a theme
-        const savedTheme = this.getStoredTheme()
-        if (!savedTheme) {
-          this.setTheme(THEMES[this.systemPreference])
-        }
-      })
-    } catch {
-      // Ignore if media query is not supported
-    }
+    // Disabled - dark theme is not allowed
+    // Always use light theme regardless of system preference
   }
 
   private applyTheme(theme: Theme) {
@@ -224,7 +214,8 @@ class ThemeManager {
 
     // Set data attribute for CSS selectors
     root.setAttribute('data-theme', theme.name)
-    root.setAttribute('data-color-scheme', theme.dark ? 'dark' : 'light')
+    // Always set to 'light' - dark theme is disabled
+    root.setAttribute('data-color-scheme', 'light')
 
     // Update meta theme-color for mobile browsers
     this.updateMetaThemeColor(theme.colors.primary)
@@ -255,19 +246,24 @@ class ThemeManager {
 
   setThemeByName(themeName: string) {
     const theme = THEMES[themeName]
-    if (theme) {
+    // Block dark themes - only allow light themes
+    if (theme && !theme.dark) {
       this.setTheme(theme)
+    } else if (theme && theme.dark) {
+      // If user tries to set dark theme, force light theme instead
+      this.setTheme(THEMES.light)
     }
   }
 
   toggleDarkMode() {
-    const newTheme = this.currentTheme.dark ? THEMES.light : THEMES.dark
-    this.setTheme(newTheme)
+    // Dark mode is disabled - always use light theme
+    this.setTheme(THEMES.light)
   }
 
   resetToSystem() {
     localStorage.removeItem(THEME_STORAGE_KEY)
-    this.setTheme(THEMES[this.systemPreference])
+    // Always reset to light theme (dark theme is disabled)
+    this.setTheme(THEMES.light)
   }
 
   subscribe(listener: (theme: Theme) => void): () => void {
@@ -290,7 +286,8 @@ class ThemeManager {
   }
 
   getAvailableThemes(): Theme[] {
-    return Object.values(THEMES)
+    // Only return light themes (dark themes are disabled)
+    return Object.values(THEMES).filter(theme => !theme.dark)
   }
 
   isDarkMode(): boolean {
@@ -304,26 +301,26 @@ export const themeManager = new ThemeManager()
 
 // React hook for theme management
 export function useTheme() {
-  const [theme, setTheme] = React.useState<Theme>(themeManager.getCurrentTheme())
+  const [theme, setTheme] = useState<Theme>(themeManager.getCurrentTheme())
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = themeManager.subscribe(setTheme)
     return unsubscribe
   }, [])
 
-  const setThemeByName = React.useCallback((themeName: string) => {
+  const setThemeByName = useCallback((themeName: string) => {
     themeManager.setThemeByName(themeName)
   }, [])
 
-  const toggleDarkMode = React.useCallback(() => {
+  const toggleDarkMode = useCallback(() => {
     themeManager.toggleDarkMode()
   }, [])
 
-  const resetToSystem = React.useCallback(() => {
+  const resetToSystem = useCallback(() => {
     themeManager.resetToSystem()
   }, [])
 
-  const getAvailableThemes = React.useCallback(() => {
+  const getAvailableThemes = useCallback(() => {
     return themeManager.getAvailableThemes()
   }, [])
 
@@ -342,7 +339,7 @@ export const ThemeProvider: React.FC<{
   children: React.ReactNode
   defaultTheme?: string
 }> = ({ children, defaultTheme }) => {
-  React.useEffect(() => {
+  useEffect(() => {
     if (defaultTheme && THEMES[defaultTheme]) {
       themeManager.setThemeByName(defaultTheme)
     }
@@ -356,13 +353,13 @@ export const ThemeSelector: React.FC<{
   className?: string
 }> = ({ className = '' }) => {
   const { theme, setTheme, getAvailableThemes } = useTheme()
-  const [isOpen, setIsOpen] = React.useState(false)
-  const buttonRef = React.useRef<HTMLButtonElement>(null)
-  const menuRef = React.useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const themes = getAvailableThemes()
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         menuRef.current &&

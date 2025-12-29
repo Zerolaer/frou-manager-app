@@ -133,19 +133,26 @@ export default function Dropdown({
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
+        !dropdownRef.current.contains(target) &&
         btnRef.current &&
-        !btnRef.current.contains(event.target as Node)
+        !btnRef.current.contains(target)
       ) {
         setOpen(false)
       }
     }
 
     if (open) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      // Use timeout to avoid immediate closing when opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside, true)
+      }, 0)
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener('mousedown', handleClickOutside, true)
+      }
     }
   }, [open])
 
@@ -174,7 +181,10 @@ export default function Dropdown({
     <div className={`relative w-full ${className}`}>
       <button
         ref={btnRef}
-        onClick={() => !disabled && setOpen(!open)}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!disabled) setOpen(!open)
+        }}
         disabled={disabled}
         className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 ${buttonClassName}`}
         style={buttonStyle}

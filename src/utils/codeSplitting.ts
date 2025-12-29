@@ -1,5 +1,5 @@
 import { logger } from '@/lib/monitoring'
-import React, { lazy, ComponentType } from 'react'
+import React, { lazy, ComponentType, useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { isDevelopment } from '@/lib/env'
 
 // Lazy load components with error boundaries
@@ -23,20 +23,20 @@ export function createLazyComponent<T extends ComponentType<any>>(
 export function usePreloadComponent<T extends ComponentType<any>>(
   importFunction: () => Promise<{ default: T }>
 ) {
-  const preloadRef = React.useRef<Promise<any> | null>(null)
+  const preloadRef = useRef<Promise<any> | null>(null)
 
-  const preload = React.useCallback(() => {
+  const preload = useCallback(() => {
     if (!preloadRef.current) {
       preloadRef.current = importFunction()
     }
     return preloadRef.current
   }, [importFunction])
 
-  const handleMouseEnter = React.useCallback(() => {
+  const handleMouseEnter = useCallback(() => {
     preload()
   }, [preload])
 
-  const handleFocus = React.useCallback(() => {
+  const handleFocus = useCallback(() => {
     preload()
   }, [preload])
 
@@ -113,10 +113,10 @@ export const LazyLibraries = {
 
 // Hook for loading states
 export function useLazyLoadingState() {
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  const loadComponent = React.useCallback(async <T>(
+  const loadComponent = useCallback(async <T>(
     importFunction: () => Promise<T>
   ): Promise<T | null> => {
     try {
@@ -144,12 +144,12 @@ export function useIntersectionLazyLoading<T extends ComponentType<any>>(
   importFunction: () => Promise<{ default: T }>,
   options: IntersectionObserverInit = {}
 ) {
-  const [Component, setComponent] = React.useState<T | null>(null)
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
-  const ref = React.useRef<HTMLDivElement>(null)
+  const [Component, setComponent] = useState<T | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     const observer = new IntersectionObserver(
       async (entries) => {
         const [entry] = entries
@@ -184,16 +184,16 @@ export function useSmartPreloading<T extends ComponentType<any>>(
   importFunction: () => Promise<{ default: T }>,
   preloadTriggers: ('hover' | 'focus' | 'mousedown')[] = ['hover', 'focus']
 ) {
-  const preloadRef = React.useRef<Promise<any> | null>(null)
+  const preloadRef = useRef<Promise<any> | null>(null)
 
-  const preload = React.useCallback(() => {
+  const preload = useCallback(() => {
     if (!preloadRef.current) {
       preloadRef.current = importFunction()
     }
     return preloadRef.current
   }, [importFunction])
 
-  const preloadProps = React.useMemo(() => {
+  const preloadProps = useMemo(() => {
     const props: any = {}
     
     if (preloadTriggers.includes('hover')) {
@@ -219,11 +219,11 @@ export function useProgressiveLoading<T extends ComponentType<any>>(
   importFunction: () => Promise<{ default: T }>,
   priority: 'high' | 'medium' | 'low' = 'medium'
 ) {
-  const [Component, setComponent] = React.useState<T | null>(null)
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [Component, setComponent] = useState<T | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  const loadComponent = React.useCallback(async () => {
+  const loadComponent = useCallback(async () => {
     if (Component || isLoading) return
 
     setIsLoading(true)
@@ -247,7 +247,7 @@ export function useProgressiveLoading<T extends ComponentType<any>>(
   }, [importFunction, Component, isLoading, priority])
 
   // Auto-load high priority components
-  React.useEffect(() => {
+  useEffect(() => {
     if (priority === 'high') {
       loadComponent()
     }

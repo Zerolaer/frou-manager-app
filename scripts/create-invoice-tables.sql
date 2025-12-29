@@ -24,6 +24,26 @@ CREATE TABLE IF NOT EXISTS public.invoice_client_templates (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Создаем таблицу invoice_from_templates для шаблонов отправителя
+CREATE TABLE IF NOT EXISTS public.invoice_from_templates (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    country TEXT,
+    city TEXT,
+    province TEXT,
+    address_line1 TEXT,
+    address_line2 TEXT,
+    postal_code TEXT,
+    account_number TEXT,
+    routing_number TEXT,
+    swift_bic TEXT,
+    bank_name TEXT,
+    bank_address TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Создаем таблицу invoices
 CREATE TABLE IF NOT EXISTS public.invoices (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -154,6 +174,7 @@ CREATE TABLE IF NOT EXISTS public.invoice_items (
 -- Включаем RLS (Row Level Security)
 ALTER TABLE public.invoice_folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_client_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoice_from_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 
@@ -173,6 +194,24 @@ CREATE POLICY "Users can update their own client templates" ON public.invoice_cl
     FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete their own client templates" ON public.invoice_client_templates
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Создаем политики RLS для invoice_from_templates
+DROP POLICY IF EXISTS "Users can view their own from templates" ON public.invoice_from_templates;
+DROP POLICY IF EXISTS "Users can insert their own from templates" ON public.invoice_from_templates;
+DROP POLICY IF EXISTS "Users can update their own from templates" ON public.invoice_from_templates;
+DROP POLICY IF EXISTS "Users can delete their own from templates" ON public.invoice_from_templates;
+
+CREATE POLICY "Users can view their own from templates" ON public.invoice_from_templates
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own from templates" ON public.invoice_from_templates
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own from templates" ON public.invoice_from_templates
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own from templates" ON public.invoice_from_templates
     FOR DELETE USING (auth.uid() = user_id);
 
 -- Удаляем существующие политики, если они есть (для повторного запуска скрипта)
@@ -257,6 +296,7 @@ CREATE POLICY "Users can delete invoice items for their invoices" ON public.invo
 -- Создаем индексы для производительности
 CREATE INDEX IF NOT EXISTS idx_invoice_folders_user_id ON public.invoice_folders(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_client_templates_user_id ON public.invoice_client_templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_from_templates_user_id ON public.invoice_from_templates(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON public.invoices(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_folder_id ON public.invoices(folder_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON public.invoices(created_at DESC);
@@ -283,6 +323,11 @@ CREATE TRIGGER update_invoice_folders_updated_at BEFORE UPDATE ON public.invoice
 -- Триггер для автоматического обновления updated_at в invoice_client_templates
 DROP TRIGGER IF EXISTS update_invoice_client_templates_updated_at ON public.invoice_client_templates;
 CREATE TRIGGER update_invoice_client_templates_updated_at BEFORE UPDATE ON public.invoice_client_templates
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Триггер для автоматического обновления updated_at в invoice_from_templates
+DROP TRIGGER IF EXISTS update_invoice_from_templates_updated_at ON public.invoice_from_templates;
+CREATE TRIGGER update_invoice_from_templates_updated_at BEFORE UPDATE ON public.invoice_from_templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Триггер для автоматического обновления updated_at в invoices

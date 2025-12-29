@@ -116,12 +116,42 @@ const SideModal = ({
       onMouseDown={(e) => {
         // Prevent closing if clicked within 500ms of opening (prevents double-click issues)
         if (noBackdrop || disableBackdropClick) return
+        
+        const target = e.target as HTMLElement
+        
+        // Don't close if clicking on interactive elements inside the modal
+        const isInsideModal = target.closest('[data-modal-content]')
+        if (isInsideModal) {
+          e.preventDefault()
+          e.stopPropagation()
+          return
+        }
+        
+        // Also check if click is on the panel wrapper (not the backdrop itself)
+        const isOnPanel = target.closest('.side-modal-panel-wrapper')
+        if (isOnPanel) {
+          e.preventDefault()
+          e.stopPropagation()
+          return
+        }
+        
+        // Check if click is on the backdrop overlay div itself
+        const isOnBackdropOverlay = target.classList.contains('backdrop-overlay') || target.closest('.backdrop-overlay')
+        if (!isOnBackdropOverlay) {
+          // If not clicking on backdrop overlay, it means we're clicking inside modal content
+          e.preventDefault()
+          e.stopPropagation()
+          return
+        }
+        
         const timeSinceOpen = Date.now() - openTimeRef.current
         if (timeSinceOpen < 500) {
           e.preventDefault()
           e.stopPropagation()
           return
         }
+        
+        // Only close if clicking directly on the backdrop overlay
         onClose()
       }}
     >
@@ -140,6 +170,7 @@ const SideModal = ({
       >
         <div
           ref={panelRef}
+          data-modal-content
           className={`${splitView ? 'w-[calc(50vw-24px)] h-[calc(100vh-32px)] my-4 rounded-2xl' : 'w-[50vw] h-[calc(100vh-32px)] my-4 rounded-2xl'} bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
             !isAnimating 
               ? 'opacity-100 translate-x-0' 

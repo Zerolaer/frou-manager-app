@@ -1,4 +1,4 @@
-import React from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { logger } from '@/lib/monitoring'
 
 interface PendingRequest {
@@ -176,11 +176,11 @@ export function useRequestDeduplication<T>(
   queryFn: () => Promise<T>,
   config?: RequestConfig
 ) {
-  const [data, setData] = React.useState<T | null>(null)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  const execute = React.useCallback(async () => {
+  const execute = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -194,7 +194,7 @@ export function useRequestDeduplication<T>(
     }
   }, [queryKey, queryFn, config])
 
-  React.useEffect(() => {
+  useEffect(() => {
     execute()
   }, [execute])
 

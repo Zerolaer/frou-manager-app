@@ -154,6 +154,32 @@ body.invoice-mode #main-content {
   color: #94a3b8;
 }
 
+/* Invoice right sidebar container */
+.invoice-right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.invoice-right-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.invoice-right-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.invoice-right-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.invoice-right-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 /* Invoice clients panel */
 .invoice-clients-panel {
   background: #fff;
@@ -161,9 +187,10 @@ body.invoice-mode #main-content {
   border: 1px solid #E9F2F6;
   padding: 16px;
   overflow-y: auto;
-  height: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .invoice-clients-panel::-webkit-scrollbar {

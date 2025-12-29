@@ -57,7 +57,8 @@
     "add": "Добавить",
     "create": "Создать",
     "update": "Обновить",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "change": "Изменить"
   },
   "finance": {
     "addCategory": "Добавить категорию",
@@ -222,6 +223,9 @@
     "removeTodo": "Удалить задачу",
     "addSubtask": "Добавить подзадачу",
     "subtasks": "Подзадачи",
+    "subtaskDateOptional": "Дата подзадачи (опционально)",
+    "subtaskDateValidation": "Дата подзадачи не может быть раньше даты родительской задачи",
+    "subtaskOf": "Подзадача задачи",
     "created": "Создана",
     "tag": "Тег",
     "date": "Дата",
@@ -393,6 +397,18 @@
     "networkError": "Ошибка сети. Попробуйте снова.",
     "unknownError": "Произошла неизвестная ошибка"
   },
+  "user": {
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "changeLanguage": "Сменить язык",
+    "menu": "Меню пользователя",
+    "activeStream": "Активный поток",
+    "people": "Люди",
+    "siteSettings": "Настройки сайта",
+    "profilePreferences": "Мой профиль и настройки",
+    "helpCenter": "Центр помощи",
+    "feedback": "Обратная связь"
+  },
   "common": {
     "loading": "Загрузка...",
     "noData": "Нет данных",
@@ -414,6 +430,9 @@
     "add": "Добавить",
     "save": "Сохранить",
     "cancel": "Отмена",
+    "step": "Шаг",
+    "back": "Назад",
+    "next": "Далее",
     "selectAll": "Выбрать все",
     "deselectAll": "Снять все"
   },
@@ -497,7 +516,9 @@
     "title": "Инвойсы",
     "newInvoice": "Новый инвойс",
     "newClient": "Новый клиент",
+    "editClient": "Редактировать клиента",
     "editInvoice": "Редактировать инвойс",
+    "clientUpdated": "Клиент обновлен",
     "create": "Создать",
     "noInvoices": "Нет инвойсов",
     "noInvoicesDescription": "Создайте первый инвойс для начала работы",
@@ -568,6 +589,11 @@
     "saveClientTemplate": "Сохранить шаблон клиента",
     "loadClientTemplate": "Загрузить шаблон",
     "deleteClientTemplate": "Удалить шаблон",
+    "confirmDeleteClient": "Вы уверены, что хотите удалить этого клиента?",
+    "clientDeleted": "Клиент удален",
+    "clientUpdated": "Клиент обновлен",
+    "editClient": "Редактировать клиента",
+    "newClient": "Новый клиент",
     "saved": "сохранено",
     "clients": "Клиенты",
     "clientsCount": "клиентов",
@@ -576,7 +602,93 @@
     "itemType": "Тип записи",
     "itemTypeProduct": "Товар/услуга",
     "itemTypeServicePeriod": "Период обслуживания",
-    "itemTypeHourly": "Почасовая оплата"
+    "itemTypeHourly": "Почасовая оплата",
+    "selectClient": "Выберите клиента",
+    "selectFolder": "Выберите папку",
+    "selectFromTemplate": "Выберите данные отправителя",
+    "clickAddItem": "Нажмите \"Добавить позицию\" чтобы начать",
+    "dateFrom": "Дата от",
+    "dateTo": "Дата до",
+    "newFromTemplate": "Новый шаблон отправителя",
+    "editFromTemplate": "Редактировать шаблон отправителя",
+    "noFromTemplates": "Нет шаблонов отправителя",
+    "fromNamePlaceholder": "Например: ИП Иванов И.И.",
+    "bankDetails": "Банковские реквизиты"
+  },
+  "settings": {
+    "title": "Настройки аккаунта",
+    "sections": {
+      "profile": "Мой профиль",
+      "security": "Безопасность",
+      "system": "Настройки системы",
+      "notifications": "Уведомления",
+      "billing": "Биллинг",
+      "data": "Экспорт данных",
+      "delete": "Удалить аккаунт"
+    },
+    "account": {
+      "title": "Настройки аккаунта",
+      "name": "Имя и фамилия",
+      "email": "Email",
+      "password": "Пароль",
+      "passwordDescription": "Измените пароль для защиты аккаунта",
+      "notSet": "Не установлено",
+      "editName": "Редактировать имя",
+      "editEmail": "Редактировать email",
+      "changePassword": "Изменить пароль",
+      "namePlaceholder": "Введите имя и фамилию",
+      "emailPlaceholder": "Введите email",
+      "newPassword": "Новый пароль",
+      "newPasswordPlaceholder": "Введите новый пароль (минимум 6 символов)",
+      "confirmPassword": "Подтвердите пароль",
+      "confirmPasswordPlaceholder": "Повторите новый пароль",
+      "passwordsDontMatch": "Пароли не совпадают"
+    },
+    "system": {
+      "title": "Настройки системы",
+      "language": "Язык интерфейса",
+      "languageDescription": "Выберите язык интерфейса",
+      "theme": "Тема оформления",
+      "themeDescription": "Выберите тему оформления",
+      "dateFormat": "Формат даты",
+      "dateFormatDescription": "Выберите формат отображения даты",
+      "timeFormat": "Формат времени",
+      "timeFormatDescription": "Выберите формат отображения времени",
+      "timezone": "Часовой пояс",
+      "timezoneDescription": "Выберите часовой пояс",
+      "defaultCurrency": "Валюта по умолчанию",
+      "defaultCurrencyDescription": "Валюта по умолчанию для финансов",
+      "autoLoadLastPage": "Автозагрузка последней страницы",
+      "autoLoadLastPageDescription": "Автоматически открывать последнюю посещенную страницу при входе",
+      "autoSaveDrafts": "Автосохранение черновиков",
+      "autoSaveDraftsDescription": "Автоматически сохранять черновики задач"
+    },
+    "notifications": {
+      "pushTitle": "Настройки push-уведомлений",
+      "enableDesktop": "Включить уведомления на рабочем столе",
+      "enableDesktopDesc": "Получать уведомления обо всех сообщениях, контрактах, документах.",
+      "enableBadge": "Включить значок непрочитанных уведомлений",
+      "enableBadgeDesc": "Показывать красный значок на иконке приложения, когда есть непрочитанные сообщения",
+      "pushTimeout": "Таймаут push-уведомлений",
+      "emailTitle": "Email уведомления",
+      "communicationEmails": "Уведомления о коммуникациях",
+      "communicationEmailsDesc": "Получать email для сообщений, контрактов, документов.",
+      "announcements": "Анонсы и обновления",
+      "announcementsDesc": "Получать email о обновлениях продукта, улучшениях и т.д.",
+      "soundsTitle": "Звуки",
+      "disableSounds": "Отключить все звуки уведомлений",
+      "disableSoundsDesc": "Отключить все звуки уведомлений для сообщений, контрактов, документов."
+    },
+    "billing": {
+      "comingSoon": "Настройки биллинга скоро будут доступны..."
+    },
+    "data": {
+      "comingSoon": "Функционал экспорта данных скоро будет доступен..."
+    },
+    "delete": {
+      "warning": "Удаление аккаунта навсегда удалит все ваши данные. Это действие нельзя отменить.",
+      "confirm": "Удалить аккаунт"
+    }
   },
   "habits": {
     "createHabit": "Создать привычку",

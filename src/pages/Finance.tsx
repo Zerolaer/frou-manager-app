@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, Suspense } from 'react'
+import React, { useEffect, useMemo, useRef, useState, Suspense, Fragment } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { MoreVertical } from "lucide-react";
 import { supabase } from '@/lib/supabaseClient'
@@ -595,7 +595,7 @@ export default function Finance(){
 
   // Desktop view - original grid layout
   return (
-    <React.Fragment>
+    <Fragment>
       <div className="finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">{t('finance.category')}</div></div>
@@ -834,6 +834,6 @@ export default function Finance(){
         expenseByMonth={totalExpenseByMonth}
       />
       </div>
-    </React.Fragment>
+    </Fragment>
   )
 }

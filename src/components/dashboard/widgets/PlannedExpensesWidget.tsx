@@ -9,6 +9,7 @@ import { monthRangeTZ } from '@/lib/dateUtils';
 import { DASHBOARD } from '@/config/dashboard.config';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface PlannedExpense {
   id: string;
@@ -128,15 +129,30 @@ const PlannedExpensesWidget = () => {
       />
 
       <div className="flex-1 p-6 flex flex-col min-h-0">
-        {/* Expenses list */}
-        <div className="flex-1 space-y-2 overflow-y-auto scrollbar-hide min-h-0">
-          {expenses.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">
-              <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">{t('dashboard.noPlannedExpenses') || 'No planned expenses'}</p>
-            </div>
-          ) : (
-            expenses.map((expense) => (
+        {loading ? (
+          <div className="flex-1 space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                <Skeleton variant="rectangular" width={20} height={20} className="rounded" />
+                <div className="flex-1">
+                  <Skeleton variant="text" width="70%" height={16} />
+                  <Skeleton variant="text" width="50%" height={12} className="mt-1" />
+                </div>
+                <Skeleton variant="text" width={60} height={16} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Expenses list */}
+            <div className="flex-1 space-y-2 overflow-y-auto scrollbar-hide min-h-0">
+              {expenses.length === 0 ? (
+                <div className="text-center text-gray-500 py-4">
+                  <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">{t('dashboard.noPlannedExpenses') || 'No planned expenses'}</p>
+                </div>
+              ) : (
+                expenses.map((expense) => (
               <div key={expense.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                 <div className="flex-shrink-0">
                   <AlertTriangle className="w-5 h-5 text-gray-900" />
@@ -155,16 +171,18 @@ const PlannedExpensesWidget = () => {
                   </span>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+                ))
+              )}
+            </div>
 
-        {expenses.length > 5 && (
-          <div className="mt-2 text-center flex-shrink-0">
-            <span className="text-xs text-gray-500">
-              {t('dashboard.andMore', { count: expenses.length - 5 }) || `and ${expenses.length - 5} more`}
-            </span>
-          </div>
+            {expenses.length > 5 && (
+              <div className="mt-2 text-center flex-shrink-0">
+                <span className="text-xs text-gray-500">
+                  {t('dashboard.andMore', { count: expenses.length - 5 }) || `and ${expenses.length - 5} more`}
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

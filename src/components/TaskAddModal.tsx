@@ -297,7 +297,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
                     borderRadius: '12px',
                     position: 'relative',
                     overflow: 'hidden',
-                    backgroundColor: isHovered && !todo.done ? '#F2F7FA' : 'transparent'
+                    backgroundColor: isHovered && !todo.done ? '#F8F8F8' : 'transparent'
                   }}
                   onMouseEnter={() => todoManager.setHoveredTodoId?.(todo.id)}
                   onMouseLeave={() => todoManager.setHoveredTodoId?.(null)}

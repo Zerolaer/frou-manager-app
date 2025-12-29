@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Plus, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
@@ -43,7 +43,7 @@ export default function FinanceMobile() {
   ]
 
   // Load data
-  React.useEffect(() => {
+  useEffect(() => {
     if (!userId) return
 
     const loadData = async () => {

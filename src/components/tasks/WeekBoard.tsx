@@ -10,7 +10,7 @@
  */
 
 import { logger } from '@/lib/monitoring'
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import {
   DndContext,
   DragEndEvent,
@@ -75,7 +75,7 @@ export function WeekBoard({
   const [optimisticDays, setOptimisticDays] = useState<typeof days>(days)
 
   // Update optimistic state when props change (for external updates)
-  React.useEffect(() => {
+  useEffect(() => {
     setOptimisticDays(days)
   }, [days])
 

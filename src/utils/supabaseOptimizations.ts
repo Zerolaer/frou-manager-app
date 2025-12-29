@@ -1,4 +1,4 @@
-import React from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/lib/monitoring'
 import { requestBatcher, requestQueue } from './requestDeduplication'
@@ -252,14 +252,14 @@ export function useOptimizedSupabaseQuery<T>(
     staleTime?: number
   } = {}
 ) {
-  const [data, setData] = React.useState<T[] | null>(null)
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<any>(null)
-  const [lastFetch, setLastFetch] = React.useState<number>(0)
+  const [data, setData] = useState<T[] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<any>(null)
+  const [lastFetch, setLastFetch] = useState<number>(0)
 
   const { enabled = true, refetchInterval, staleTime = 300000 } = options // 5 minutes default
 
-  const fetchData = React.useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!enabled) return
 
     try {
@@ -281,14 +281,14 @@ export function useOptimizedSupabaseQuery<T>(
     }
   }, [query, enabled])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (enabled) {
       fetchData()
     }
   }, [fetchData, enabled])
 
   // Refetch interval
-  React.useEffect(() => {
+  useEffect(() => {
     if (!refetchInterval) return
 
     const interval = setInterval(() => {
@@ -306,10 +306,10 @@ export function useOptimizedSupabaseQuery<T>(
 
 // Hook for batch operations
 export function useBatchOperations() {
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<any>(null)
 
-  const executeBatch = React.useCallback(async <T>(operations: BatchOperation<T>[]) => {
+  const executeBatch = useCallback(async <T>(operations: BatchOperation<T>[]) => {
     try {
       setLoading(true)
       setError(null)
@@ -333,7 +333,7 @@ export function useRealtimeSubscription<T>(
   callback: (payload: any) => void,
   filters?: Record<string, any>
 ) {
-  React.useEffect(() => {
+  useEffect(() => {
     const subscription = supabaseOptimizer.subscribeToChanges(table, callback, filters)
     
     return () => {

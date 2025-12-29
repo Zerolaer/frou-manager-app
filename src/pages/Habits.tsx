@@ -1,21 +1,23 @@
 /* src/pages/Habits.tsx */
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import '@/home.css';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { logger } from '@/lib/monitoring';
 import HabitCard from '@/components/habits/HabitCard';
 import HabitModal from '@/components/habits/HabitModal';
-import { 
-  listHabits, 
-  createHabit, 
-  updateHabit, 
-  deleteHabit, 
+import {
+  listHabits,
+  createHabit,
+  updateHabit,
+  deleteHabit,
   getHabitStats,
   markHabitComplete,
   addProgressValue
 } from '@/features/habits/api';
 import type { Habit, HabitWithStats } from '@/types/habits';
-import { format } from 'date-fns';
+import { BentoCard } from '@/components/dashboard/BentoGrid';
+import { CheckSquare, Flame, Target, Activity } from 'lucide-react';
 
 export default function Habits() {
   const { t } = useSafeTranslation();
@@ -125,6 +127,33 @@ export default function Habits() {
     setModalOpen(true);
   }, []);
 
+  // Derived stats for header blocks
+  const stats = useMemo(() => {
+    const total = habits.length;
+    const automatic = habits.filter(h => h.type === 'automatic');
+    const manual = habits.filter(h => h.type === 'manual');
+    const progress = habits.filter(h => h.type === 'progress');
+
+    const totalDaysTracked = automatic.reduce((sum, h) => sum + (h.days_count || 0), 0);
+    const totalCompletions = manual.reduce((sum, h) => sum + (h.completion_count || 0), 0);
+    const maxStreak = manual.reduce((max, h) => Math.max(max, h.streak_days || 0), 0);
+    const avgProgress =
+      progress.length > 0
+        ? Math.round(
+            progress.reduce((sum, h) => sum + (h.progress_percentage || 0), 0) /
+              progress.length
+          )
+        : 0;
+
+    return {
+      total,
+      totalDaysTracked,
+      totalCompletions,
+      maxStreak,
+      avgProgress
+    };
+  }, [habits]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -137,27 +166,132 @@ export default function Habits() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-7xl mx-auto p-6">
-        {habits.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">{t('habits.noHabits')}</p>
-            <p className="text-sm text-gray-400">{t('habits.createFirst')}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {habits.map(habit => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                onEdit={() => handleEdit(habit)}
-                onDelete={() => handleDelete(habit.id)}
-                onComplete={() => handleComplete(habit.id)}
-                onAddProgress={(value) => handleAddProgress(habit.id, value)}
-              />
-            ))}
-          </div>
-        )}
+    <div className="home-page">
+      <div className="space-y-4">
+        {/* Stats row in bento style (aligned with Home) */}
+        <div className="home-grid habits-grid gap-4">
+          <BentoCard className="bento-card p-0">
+            <div className="h-full flex flex-col">
+              <div className="px-5 pt-4 pb-3 border-b border-[#E9F2F6] flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#F8F8F8] flex items-center justify-center text-gray-900">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {t('habits.createHabit')}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {t('habits.totalHabits') || 'Total habits'}
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 pt-3 pb-4 space-y-2">
+                <div className="text-4xl font-bold text-gray-900">{stats.total}</div>
+                <div className="text-sm text-gray-500">
+                  {t('habits.subtitleTotal') || t('dashboard.tasksStatsDescription') || ''}
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          <BentoCard className="bento-card p-0">
+            <div className="h-full flex flex-col">
+              <div className="px-5 pt-4 pb-3 border-b border-[#E9F2F6] flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#F8F8F8] flex items-center justify-center text-gray-900">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {t('habits.daysSinceStart')}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {t('habits.totalDaysTracked') || 'Days tracked (auto)'}
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 pt-3 pb-4 space-y-2">
+                <div className="text-4xl font-bold text-gray-900">{stats.totalDaysTracked}</div>
+                <div className="text-sm text-gray-500">
+                  {t('habits.subtitleDays') || t('dashboard.tasksStatsDescription') || ''}
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          <BentoCard className="bento-card p-0">
+            <div className="h-full flex flex-col">
+              <div className="px-5 pt-4 pb-3 border-b border-[#E9F2F6] flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#F8F8F8] flex items-center justify-center text-gray-900">
+                  <CheckSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {t('habits.completions')}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {t('habits.manualCompletions') || 'Manual completions'}
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 pt-3 pb-4 space-y-2">
+                <div className="text-4xl font-bold text-gray-900">{stats.totalCompletions}</div>
+                <div className="text-sm text-gray-500">
+                  {t('habits.subtitleCompletions') || t('dashboard.tasksStatsDescription') || ''}
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          <BentoCard className="bento-card p-0">
+            <div className="h-full flex flex-col">
+              <div className="px-5 pt-4 pb-3 border-b border-[#E9F2F6] flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {t('habits.streak')}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {t('habits.maxStreak') || 'Best streak'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">{t('habits.progressPercentage')}</div>
+                  <div className="text-2xl font-semibold text-gray-900">{stats.avgProgress}%</div>
+                </div>
+              </div>
+              <div className="px-5 pt-3 pb-4 space-y-2">
+                <div className="text-4xl font-bold text-gray-900">{stats.maxStreak}</div>
+                <div className="text-sm text-gray-500">
+                  {t('habits.subtitleStreak') || t('dashboard.tasksStatsDescription') || ''}
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+        </div>
+
+        {/* Habits list as a full-width bento card below stats */}
+        <div className="mt-2">
+          <BentoCard className="bento-card p-4 overflow-auto">
+            {habits.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-500 mb-3">{t('habits.noHabits')}</p>
+                <p className="text-sm text-gray-400">{t('habits.createFirst')}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {habits.map(habit => (
+                  <HabitCard
+                    key={habit.id}
+                    habit={habit}
+                    onEdit={() => handleEdit(habit)}
+                    onDelete={() => handleDelete(habit.id)}
+                    onComplete={() => handleComplete(habit.id)}
+                    onAddProgress={(value) => handleAddProgress(habit.id, value)}
+                  />
+                ))}
+              </div>
+            )}
+          </BentoCard>
+        </div>
       </div>
 
       {modalOpen && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Circle, CheckCircle2 } from 'lucide-react'
 import { format, addDays, subDays, isToday } from 'date-fns'
 import { useSafeTranslation } from '@/utils/safeTranslation'
@@ -36,7 +36,7 @@ export default function TasksMobile() {
   const isTodayDate = isToday(currentDate)
 
   // Load tasks
-  React.useEffect(() => {
+  useEffect(() => {
     if (!userId) return
 
     const loadTasks = async () => {

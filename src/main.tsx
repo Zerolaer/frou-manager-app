@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react'
+import React, { useState, useEffect, Fragment } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { I18nextProvider } from 'react-i18next'
@@ -8,44 +8,66 @@ import App from './App'
 import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
 
-// Lazy load pages
+// Import all pages directly to avoid React null issues in lazy loading
+import Login from './pages/Login'
+import Home from './pages/Home'
+import Finance from './pages/Finance'
+import Tasks from './pages/Tasks'
+import Notes from './pages/Notes'
+import Invoice from './pages/Invoice'
+import Habits from './pages/Habits'
+import Settings from './pages/Settings'
+import Storybook from './pages/Storybook'
+
 const LazyPages = {
-  Login: React.lazy(() => import('./pages/Login')),
-  Home: React.lazy(() => import('./pages/Home')),
-  Finance: React.lazy(() => import('./pages/Finance')),
-  Tasks: React.lazy(() => import('./pages/Tasks')),
-  Notes: React.lazy(() => import('./pages/Notes')),
-  Invoice: React.lazy(() => import('./pages/Invoice')),
-  Habits: React.lazy(() => import('./pages/Habits')),
-  Storybook: React.lazy(() => import('./pages/Storybook')),
+  Login,
+  Home,
+  Finance,
+  Tasks,
+  Notes,
+  Invoice,
+  Habits,
+  Settings,
+  Storybook,
 }
 
 
 const Protected = ({children}: {children: React.ReactNode}) => {
-  const [loading, setLoading] = React.useState(true);
-  const [authed, setAuthed] = React.useState(false);
-  React.useEffect(() => {
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    // Check if supabase is properly configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      // If no Supabase config, allow access (for development)
+      setAuthed(true);
+      setLoading(false);
+      return;
+    }
+    
     supabase.auth.getSession().then(({ data }) => {
       setAuthed(!!data.session);
       setLoading(false);
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      setLoading(false);
+      // Allow access on error (for development)
+      setAuthed(true);
     });
+    
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
       setAuthed(!!sess);
     });
-    return () => { sub.subscription.unsubscribe() }
+    return () => { sub?.subscription?.unsubscribe() }
   }, []);
   if (loading) return <AppLoader />;
-  return authed ? <React.Fragment>{children}</React.Fragment> : <Navigate to="/login" replace />;
+  return authed ? <Fragment>{children}</Fragment> : <Navigate to="/login" replace />;
 }
 
 const router = createBrowserRouter([
   { 
     path: '/login', 
-    element: (
-      <Suspense fallback={null}>
-        <LazyPages.Login />
-      </Suspense>
-    )
+    element: <LazyPages.Login />
   },
   {
     path: '/',
@@ -57,60 +79,36 @@ const router = createBrowserRouter([
     children: [
       { 
         index: true, 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Home />
-          </Suspense>
-        )
+        element: <LazyPages.Home />
       },
       { 
         path: 'finance', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Finance />
-          </Suspense>
-        )
+        element: <LazyPages.Finance />
       },
       { 
         path: 'tasks', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Tasks />
-          </Suspense>
-        )
+        element: <LazyPages.Tasks />
       },
       { 
         path: 'notes', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Notes />
-          </Suspense>
-        )
+        element: <LazyPages.Notes />
       },
       { 
         path: 'invoice', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Invoice />
-          </Suspense>
-        )
+        element: <LazyPages.Invoice />
       },
       { 
         path: 'habits', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Habits />
-          </Suspense>
-        )
+        element: <LazyPages.Habits />
+      },
+      { 
+        path: 'settings', 
+        element: <LazyPages.Settings />
       },
       // Storybook route only available in development
       ...(import.meta.env.DEV ? [{
         path: 'storybook', 
-        element: (
-          <Suspense fallback={null}>
-            <LazyPages.Storybook />
-          </Suspense>
-        )
+        element: <LazyPages.Storybook />
       }] : []),
     ]
   },

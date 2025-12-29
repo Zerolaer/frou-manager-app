@@ -1,0 +1,153 @@
+/* ===== Settings layout (no page vertical scroll) ===== */
+.settings-page {
+  height: calc(100vh - 96px); /* 100vh - Header (80px) - padding (16px) */
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.settings-page.is-collapsed {
+  grid-template-columns: 72px 1fr;
+}
+
+/* Disable page scroll when on settings page */
+body.settings-mode {
+  overflow: hidden !important;
+}
+
+body.settings-mode #main-content {
+  overflow: hidden !important;
+  padding-bottom: 16px !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .settings-page {
+    height: calc(100vh - 172px);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+  }
+  
+  .settings-sidebar {
+    height: auto;
+    max-height: 200px;
+  }
+  
+  .settings-content {
+    height: 100%;
+  }
+}
+
+/* Settings sidebar styling */
+.settings-sidebar {
+  background: #fff;
+  border-radius: 24px;
+  border: 1px solid #E9F2F6;
+  padding: 12px;
+  overflow-y: auto;
+  overflow: visible;
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-sidebar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.settings-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.settings-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.settings-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 12px;
+  position: relative;
+  min-height: 48px;
+}
+
+.settings-sidebar-head .title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: .2px;
+}
+
+.sidebar-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 16px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.sidebar-btn:hover {
+  background: #f3f4f6;
+}
+
+.btn-outline {
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
+/* Settings content area */
+.settings-content {
+  background: #fff;
+  border-radius: 24px;
+  border: 1px solid #E9F2F6;
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.settings-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+
+

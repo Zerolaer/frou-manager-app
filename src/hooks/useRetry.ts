@@ -232,7 +232,7 @@ export function usePollingWithRetry<T>(
   }, [])
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       stopPolling()
     }
@@ -248,4 +248,4 @@ export function usePollingWithRetry<T>(
 }
 
 // Import React for useEffect
-import React from 'react'
+import { useEffect } from 'react'

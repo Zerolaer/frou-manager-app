@@ -383,11 +383,11 @@ export function useFormValidation<T extends Record<string, any>>(
   initialValues: T,
   schema: ValidationSchema
 ) {
-  const [values, setValues] = React.useState<T>(initialValues)
-  const [errors, setErrors] = React.useState<Record<keyof T, string[]>>({} as Record<keyof T, string[]>)
-  const [touched, setTouched] = React.useState<Record<keyof T, boolean>>({} as Record<keyof T, boolean>)
+  const [values, setValues] = useState<T>(initialValues)
+  const [errors, setErrors] = useState<Record<keyof T, string[]>>({} as Record<keyof T, string[]>)
+  const [touched, setTouched] = useState<Record<keyof T, boolean>>({} as Record<keyof T, boolean>)
 
-  const validateSingleField = React.useCallback((fieldName: keyof T, value: any): ValidationResult => {
+  const validateSingleField = useCallback((fieldName: keyof T, value: any): ValidationResult => {
     const rule = schema[fieldName as string]
     if (!rule) return { isValid: true, errors: [], sanitizedValue: value }
 
@@ -400,7 +400,7 @@ export function useFormValidation<T extends Record<string, any>>(
     return result
   }, [schema])
 
-  const validateAll = React.useCallback(() => {
+  const validateAll = useCallback(() => {
     const result = validateObject(values, schema)
     setErrors(result.errors.reduce((acc, error) => {
       // Parse field name from error message (simplified)
@@ -414,7 +414,7 @@ export function useFormValidation<T extends Record<string, any>>(
     return result.isValid
   }, [values, schema])
 
-  const handleChange = React.useCallback((fieldName: keyof T, value: any) => {
+  const handleChange = useCallback((fieldName: keyof T, value: any) => {
     setValues(prev => ({ ...prev, [fieldName]: value }))
     setTouched(prev => ({ ...prev, [fieldName]: true }))
     
@@ -423,12 +423,12 @@ export function useFormValidation<T extends Record<string, any>>(
     }
   }, [touched, validateField])
 
-  const handleBlur = React.useCallback((fieldName: keyof T) => {
+  const handleBlur = useCallback((fieldName: keyof T) => {
     setTouched(prev => ({ ...prev, [fieldName]: true }))
     validateField(fieldName, values[fieldName])
   }, [validateField, values])
 
-  const reset = React.useCallback(() => {
+  const reset = useCallback(() => {
     setValues(initialValues)
     setErrors({} as Record<keyof T, string[]>)
     setTouched({} as Record<keyof T, boolean>)
@@ -447,6 +447,6 @@ export function useFormValidation<T extends Record<string, any>>(
   }
 }
 
-// Import React for hooks
-import React from 'react'
+// Import React hooks
+import { useState, useCallback } from 'react'
 

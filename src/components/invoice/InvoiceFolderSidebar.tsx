@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabaseClient'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
@@ -25,15 +25,15 @@ const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10
 
 export default function InvoiceFolderSidebar({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props){
   const { t } = useTranslation()
-  const [items, setItems] = React.useState<Folder[]>([])
-  const [showCreate, setShowCreate] = React.useState(false)
-  const [hasColor, setHasColor] = React.useState(false)
-  const [hasPosition, setHasPosition] = React.useState(false)
-  const [hoveredFolder, setHoveredFolder] = React.useState<string | null>(null)
+  const [items, setItems] = useState<Folder[]>([])
+  const [showCreate, setShowCreate] = useState(false)
+  const [hasColor, setHasColor] = useState(false)
+  const [hasPosition, setHasPosition] = useState(false)
+  const [hoveredFolder, setHoveredFolder] = useState<string | null>(null)
   const { createSimpleFooter, createDangerFooter } = useModalActions()
 
   // load with feature detection
-  React.useEffect(()=>{
+  useEffect(()=>{
     if (!userId) return
     ;(async()=>{
       try {
@@ -62,7 +62,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
   },[userId, t])
 
   // DnD reorder
-  const dragId = React.useRef<string|null>(null)
+  const dragId = useRef<string|null>(null)
   function onDragStart(id:string){ dragId.current = id }
   async function onDropOver(id:string){
     const from = dragId.current; dragId.current = null
@@ -90,11 +90,11 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
   }
 
   // context menu
-  const [ctxOpen, setCtxOpen] = React.useState(false)
-  const [ctxPos, setCtxPos] = React.useState({x:0,y:0})
-  const [ctxFolder, setCtxFolder] = React.useState<Folder|null>(null)
-  const menuRef = React.useRef<HTMLDivElement|null>(null)
-  React.useEffect(()=>{
+  const [ctxOpen, setCtxOpen] = useState(false)
+  const [ctxPos, setCtxPos] = useState({x:0,y:0})
+  const [ctxFolder, setCtxFolder] = useState<Folder|null>(null)
+  const menuRef = useRef<HTMLDivElement|null>(null)
+  useEffect(()=>{
     const onDoc = (e:MouseEvent)=>{
       if (ctxOpen && menuRef.current && !menuRef.current.contains(e.target as any)) setCtxOpen(false)
     }
@@ -142,9 +142,9 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
   }
 
   // rename/delete
-  const [renameOpen, setRenameOpen] = React.useState(false)
-  const [renameValue, setRenameValue] = React.useState('')
-  const [delOpen, setDelOpen] = React.useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
+  const [delOpen, setDelOpen] = useState(false)
 
   async function renameOk(){
     if (!ctxFolder) return
@@ -201,8 +201,8 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
   }
 
   // create folder
-  const [createName, setCreateName] = React.useState('')
-  const [createColor, setCreateColor] = React.useState('#3b82f6')
+  const [createName, setCreateName] = useState('')
+  const [createColor, setCreateColor] = useState('#3b82f6')
 
   async function createOk(){
     const name = createName.trim()

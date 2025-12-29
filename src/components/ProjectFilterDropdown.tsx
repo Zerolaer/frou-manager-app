@@ -1,5 +1,5 @@
-import React from 'react'
-import { ChevronDown } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { ChevronDown, Folder } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Project } from '@/types/shared'
 
@@ -17,20 +17,34 @@ export default function ProjectFilterDropdown({
   disabled = false
 }: ProjectFilterDropdownProps) {
   const { t } = useSafeTranslation()
-  const [isOpen, setIsOpen] = React.useState(false)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   // Close dropdown when clicking outside
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false)
       }
     }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      // Use timeout to avoid immediate closing when opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside, true)
+      }, 0)
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener('mousedown', handleClickOutside, true)
+      }
     }
   }, [isOpen])
 
@@ -57,25 +71,25 @@ export default function ProjectFilterDropdown({
   return (
     <div ref={dropdownRef} className="relative">
       <button
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!disabled) setIsOpen(!isOpen)
+        }}
         disabled={disabled}
-        className={`subheader-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex-shrink-0 whitespace-nowrap ${
-          disabled
-            ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
-        }`}
+        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 flex-shrink-0 whitespace-nowrap`}
         aria-label={t('tasks.filterProjects')}
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-        </svg>
-        <span>
-          {noneSelected 
-            ? t('tasks.noProjectsSelected')
-            : allSelected 
-            ? t('tasks.allProjectsSelected') 
-            : t('tasks.projectsSelected', { count: selectedProjectIds.length })}
-        </span>
+        <div className="flex items-center gap-2">
+          <Folder className="w-4 h-4" />
+          <span>
+            {noneSelected 
+              ? t('tasks.noProjectsSelected')
+              : allSelected 
+              ? t('tasks.allProjectsSelected') 
+              : t('tasks.projectsSelected', { count: selectedProjectIds.length })}
+          </span>
+        </div>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 

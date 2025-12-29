@@ -14,6 +14,14 @@ export type Todo = {
   // For subtasks that can be opened as separate tasks
   isTask?: boolean;
   taskId?: string;
+  // Date for subtask to appear on board
+  date?: string | null;
+  // Additional fields for subtasks that are opened as separate tasks
+  description?: string | null;
+  tag?: string | null;
+  priority?: string | null;
+  // Flag to distinguish simple todos from subtasks
+  isSimpleTodo?: boolean;
 }
 
 export type TaskItem = {
@@ -21,6 +29,8 @@ export type TaskItem = {
   title: string;
   description?: string | null;
   date: string | null;
+  start_date?: string | null; // Start date for Gantt chart
+  due_date?: string | null; // Due date for Gantt chart
   position: number;
   priority?: string | null;
   tag?: string | null;

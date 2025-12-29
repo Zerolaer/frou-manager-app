@@ -1,5 +1,5 @@
 
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { MoreVertical, ChevronDown, ChevronRight, CornerDownRight } from 'lucide-react'
 import type { Cat, CtxCat, CellCtx, MoneyType } from '@/features/finance/types'
 
@@ -42,12 +42,12 @@ export default function CategoryRow({
   
   // For children rows, use accordion animation
   const isChild = !!row.parent_id
-  const [shouldRender, setShouldRender] = React.useState(!(isChild && row.isCollapsed))
-  const [isCollapsing, setIsCollapsing] = React.useState(false)
-  const [isExpanding, setIsExpanding] = React.useState(false)
-  const prevCollapsedRef = React.useRef(row.isCollapsed)
+  const [shouldRender, setShouldRender] = useState(!(isChild && row.isCollapsed))
+  const [isCollapsing, setIsCollapsing] = useState(false)
+  const [isExpanding, setIsExpanding] = useState(false)
+  const prevCollapsedRef = useRef(row.isCollapsed)
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isChild) return
     
     const wasCollapsed = prevCollapsedRef.current

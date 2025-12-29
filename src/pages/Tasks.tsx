@@ -12,6 +12,8 @@ import RecurringEditModal from '@/components/RecurringEditModal'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
 import TaskCalendarModal from '@/components/TaskCalendarModal'
+import TasksListView from '@/components/tasks/TasksListView'
+import TasksGanttView from '@/components/tasks/TasksGanttView'
 import '@/tasks.css'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
@@ -22,7 +24,7 @@ import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 import { logger } from '@/lib/monitoring'
-import { Repeat, Plus } from 'lucide-react'
+import { Repeat, Plus, Calendar } from 'lucide-react'
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
@@ -175,6 +177,7 @@ export default function Tasks(){
   const [taskStack, setTaskStack] = React.useState<TaskItem[]>([]) // Stack of opened tasks
   const [isSubtaskOpen, setIsSubtaskOpen] = React.useState(false) // Flag for subtask modal
   const [mobileDate, setMobileDate] = React.useState(new Date())
+  const [viewMode, setViewMode] = React.useState<'weekly' | 'list' | 'gantt'>('weekly') // View mode: weekly, list, or gantt
   const lastParentUpdateRef = React.useRef<string>('') // Track last parent update to prevent loops
   const isSyncingRef = React.useRef<boolean>(false) // Prevent double sync calls
   const lastClickTimeRef = React.useRef<number>(0) // Track last click time to prevent double clicks
@@ -209,6 +212,24 @@ export default function Tasks(){
         // Unknown action
     }
   }
+
+  // Listen for view mode changes from Header
+  React.useEffect(() => {
+    const handleViewModeSelect = (event: CustomEvent) => {
+      const newMode = event.detail as 'weekly' | 'list' | 'gantt'
+      setViewMode(newMode)
+    }
+    
+    window.addEventListener('tasks-view-mode-select', handleViewModeSelect as EventListener)
+    return () => {
+      window.removeEventListener('tasks-view-mode-select', handleViewModeSelect as EventListener)
+    }
+  }, [])
+
+  // Notify Header about view mode changes
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('tasks-view-mode-changed', { detail: viewMode }))
+  }, [viewMode])
 
   // New DnD system with mouse events
   const [draggedTask, setDraggedTask] = React.useState<TaskItem | null>(null)
@@ -695,6 +716,8 @@ const projectColorById = React.useMemo(() => {
   const [tasks, setTasks] = React.useState<Record<string, TaskItem[]>>({})
   // All tasks for calendar (entire month)
   const [allTasks, setAllTasks] = React.useState<Record<string, TaskItem[]>>({})
+  // Force refresh trigger
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0)
   // Track last active project to clear cache on project switch
   const lastActiveProject = React.useRef(activeProject)
   // Track current month for calendar
@@ -719,7 +742,7 @@ const projectColorById = React.useMemo(() => {
       const endDate = format(end, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
+        .select('id,project_id,title,description,date,start_date,due_date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date',     { ascending:true })
@@ -794,7 +817,7 @@ const projectColorById = React.useMemo(() => {
     return () => {
       cancelled = true
     }
-  }, [uid, activeProject, start, end, selectedProjectIds])
+  }, [uid, activeProject, start, end, selectedProjectIds, refreshTrigger])
 
   // Load all tasks for calendar (based on calendar month)
   React.useEffect(() => {
@@ -1491,63 +1514,115 @@ const projectColorById = React.useMemo(() => {
   const handleSubtaskUpdate = async (updatedSubtask: any | null, isSave?: boolean) => {
     if (!updatedSubtask) return
     
-    // Prevent double sync calls
-    if (isSyncingRef.current) return
-    isSyncingRef.current = true
-    
-    try {
-      // If this subtask has a parent_task_id AND the parent is currently open
-      if (updatedSubtask?.parent_task_id && viewTask?.id === updatedSubtask.parent_task_id && viewTask) {
-        // Check if we need to sync by comparing current checkbox state with subtask status
-        const currentTodo = viewTask.todos?.find((todo: Todo) => todo.taskId === updatedSubtask.id)
-        if (!currentTodo) return
+    // CRITICAL: Force immediate update by using setTasks with functional update
+    // This ensures React sees the change and re-renders immediately
+    setTasks(prevTasks => {
+      const subtaskDate = updatedSubtask.date || null
+      const dateWasRemoved = !subtaskDate || subtaskDate === '' || subtaskDate === null || subtaskDate === undefined
+      
+      // Create a deep copy of tasks - CRITICAL for React to see the change
+      const newMap: Record<string, TaskItem[]> = {}
+      Object.keys(prevTasks).forEach(key => {
+        newMap[key] = [...prevTasks[key]]
+      })
+      
+      // FIRST: Always check if subtask exists on ANY date and update it (for status/date changes)
+      let foundOnAnyDate = false
+      
+      Object.keys(newMap).forEach(dayKey => {
+        const originalArray = newMap[dayKey]
+        const updatedArray = originalArray.map(t => {
+          if (t.id === updatedSubtask.id) {
+            foundOnAnyDate = true
+            // Always create a completely new object to ensure React sees the change
+            return { ...updatedSubtask } as TaskItem
+          }
+          return t
+        })
+        // Only update if array actually changed (found the subtask)
+        if (foundOnAnyDate && updatedArray !== originalArray) {
+          newMap[dayKey] = updatedArray
+        }
+      })
+      
+      if (dateWasRemoved) {
+        // Remove from ALL dates if date was removed
+        Object.keys(newMap).forEach(dayKey => {
+          newMap[dayKey] = newMap[dayKey].filter(t => t.id !== updatedSubtask.id)
+          if (newMap[dayKey].length === 0) {
+            delete newMap[dayKey]
+          }
+        })
+        return newMap
+      } else {
+        // Date was set - ensure subtask is on correct date
+        const targetDate = subtaskDate as string
         
-        const shouldBeDone = updatedSubtask.status === 'closed'
-        if (currentTodo.done === shouldBeDone) {
-          // No change needed, skip sync to prevent infinite loop
-          return
+        // Remove from any other dates (if not already updated above)
+        if (!foundOnAnyDate) {
+          Object.keys(newMap).forEach(dayKey => {
+            if (dayKey !== targetDate) {
+              newMap[dayKey] = newMap[dayKey].filter(t => t.id !== updatedSubtask.id)
+              if (newMap[dayKey].length === 0) {
+                delete newMap[dayKey]
+              }
+            }
+          })
         }
         
-        // Reload parent task from database
-        const { data: parentTask, error } = await supabase
-          .from('tasks_items')
-          .select('*')
-          .eq('id', updatedSubtask.parent_task_id)
-          .single()
+        // If subtask wasn't found, add it to target date
+        if (!foundOnAnyDate) {
+          if (!newMap[targetDate]) {
+            newMap[targetDate] = []
+          }
+          newMap[targetDate] = [...newMap[targetDate], { ...updatedSubtask } as TaskItem]
+        }
         
-        if (error) return
-        
-        if (parentTask?.todos) {
-          // Update the corresponding todo item's done status based on subtask status
-          const updatedTodos = parentTask.todos.map((todo: Todo) => {
-            if (todo.taskId === updatedSubtask.id) {
-              return { ...todo, done: updatedSubtask.status === 'closed' }
-            }
-            return todo
-          })
+        // CRITICAL: Always return new map to trigger React re-render
+        // We always create a new map and modify arrays, so React will see the change
+        return newMap
+      }
+    })
+    
+    // Sync with parent task if needed (async, don't block board update)
+    if (updatedSubtask?.parent_task_id && viewTask?.id === updatedSubtask.parent_task_id && viewTask) {
+      // Check if we need to sync by comparing current checkbox state with subtask status
+      const currentTodo = viewTask.todos?.find((todo: Todo) => todo.taskId === updatedSubtask.id)
+      if (currentTodo) {
+        const shouldBeDone = updatedSubtask.status === 'closed'
+        if (currentTodo.done !== shouldBeDone) {
+          // Reload parent task from database
+          const { data: parentTask, error } = await supabase
+            .from('tasks_items')
+            .select('*')
+            .eq('id', updatedSubtask.parent_task_id)
+            .single()
           
-          // Check if todos actually changed
-          const todosChanged = JSON.stringify(parentTask.todos) !== JSON.stringify(updatedTodos)
-          
-          if (todosChanged) {
-            // Update parent task in database
-            await supabase
-              .from('tasks_items')
-              .update({ todos: updatedTodos })
-              .eq('id', parentTask.id)
+          if (!error && parentTask?.todos) {
+            // Update the corresponding todo item's done status based on subtask status
+            const updatedTodos = parentTask.todos.map((todo: Todo) => {
+              if (todo.taskId === updatedSubtask.id) {
+                return { ...todo, done: updatedSubtask.status === 'closed' }
+              }
+              return todo
+            })
             
-            // Update viewTask with new todos
-            setViewTask({ ...parentTask, todos: updatedTodos } as TaskItem)
+            // Check if todos actually changed
+            const todosChanged = JSON.stringify(parentTask.todos) !== JSON.stringify(updatedTodos)
+            
+            if (todosChanged) {
+              // Update parent task in database
+              await supabase
+                .from('tasks_items')
+                .update({ todos: updatedTodos })
+                .eq('id', parentTask.id)
+              
+              // Update viewTask with new todos
+              setViewTask({ ...parentTask, todos: updatedTodos } as TaskItem)
+            }
           }
         }
       }
-    } catch (err) {
-      console.error('❌ Error syncing subtask:', err)
-    } finally {
-      // Reset sync flag after a short delay
-      setTimeout(() => {
-        isSyncingRef.current = false
-      }, 100)
     }
   }
 
@@ -1567,6 +1642,19 @@ const projectColorById = React.useMemo(() => {
     // Handle task deletion (updatedTask is null)
     if (!updatedTask) {
       setViewTask(null)
+      return
+    }
+    
+    // CRITICAL: If this is a subtask update (has parent_task_id), route to handleSubtaskUpdate
+    // This ensures all subtask changes (status, date, etc.) immediately update the board
+    const parentTaskId = (updatedTask as any)?.parent_task_id
+    if (parentTaskId) {
+      // Immediately update the board
+      handleSubtaskUpdate(updatedTask, isSave)
+      // Also update viewTask if it's the current subtask being viewed
+      if (viewTask && viewTask.id === updatedTask.id) {
+        setViewTask(updatedTask as TaskItem)
+      }
       return
     }
     
@@ -1729,16 +1817,18 @@ const projectColorById = React.useMemo(() => {
       />
       
 
-      {/* Right area: week grid (no outer header - buttons inside table) */}
+      {/* Right area: content */}
       <section className="tasks-board">
-        <div className="week-grid">
-          <div className="week-head">
-            <WeekTimeline
-              anchor={start}
-              onPrev={()=>setStart(prev=>subWeeks(prev,1))}
-              onNext={()=>setStart(prev=>addWeeks(prev,1))}
-            />
-          </div>
+        {/* View content */}
+        {viewMode === 'weekly' && (
+          <div className="week-grid">
+            <div className="week-head">
+              <WeekTimeline
+                anchor={start}
+                onPrev={()=>setStart(prev=>subWeeks(prev,1))}
+                onNext={()=>setStart(prev=>addWeeks(prev,1))}
+              />
+            </div>
 
           {days.map((d, dayIndex) => {
             const key = format(d, 'yyyy-MM-dd')
@@ -2002,7 +2092,28 @@ const projectColorById = React.useMemo(() => {
               </div>
             )
           })}
-        </div>
+          </div>
+        )}
+
+        {viewMode === 'list' && (
+          <TasksListView 
+            tasks={tasks}
+            start={start}
+            onTaskClick={(task) => setViewTask(task)}
+            onTaskUpdate={handleTaskUpdate}
+            t={t}
+          />
+        )}
+
+        {viewMode === 'gantt' && (
+          <TasksGanttView 
+            tasks={tasks}
+            start={start}
+            onTaskClick={(task) => setViewTask(task)}
+            onTaskUpdate={handleTaskUpdate}
+            t={t}
+          />
+        )}
       </section>
 
       {/* Modal: new project */}
@@ -2030,9 +2141,12 @@ const projectColorById = React.useMemo(() => {
             lastClickedTaskIdRef.current = null
             lastClickTimeRef.current = 0
             isOpeningModalRef.current = false
+            // Trigger board refresh to update subtask statuses
+            setRefreshTrigger(prev => prev + 1)
           }}
           task={viewTask}
           onUpdated={handleTaskUpdate}
+          onSubtaskDateChange={handleSubtaskUpdate}
           onUpdateRecurrence={updateRecurringTaskSettings}
           position="right"
           customZIndex={100}
@@ -2063,6 +2177,21 @@ const projectColorById = React.useMemo(() => {
           }}
           task={taskStack[taskStack.length - 1]}
           onUpdated={handleSubtaskUpdate}
+          onUpdateBoard={(taskId, todos) => {
+            // Direct board update for subtask todos
+            console.log('📢 onUpdateBoard called for subtask:', { taskId, todosCount: todos.length })
+            const map = { ...tasks }
+            Object.keys(map).forEach(dayKey => {
+              const dayTasks = map[dayKey] || []
+              const taskIndex = dayTasks.findIndex(t => t.id === taskId)
+              if (taskIndex >= 0) {
+                map[dayKey] = dayTasks.map((t, idx) => 
+                  idx === taskIndex ? { ...t, todos } as TaskItem : t
+                )
+              }
+            })
+            setTasks(map)
+          }}
           onUpdateRecurrence={updateRecurringTaskSettings}
           position="left"
           noBackdrop={true} // No backdrop - don't block main task
@@ -2096,8 +2225,10 @@ const projectColorById = React.useMemo(() => {
           if (isMobile) {
             setMobileDate(date)
           } else {
+            // Set the week containing the selected date
             setStart(startOfWeek(date, { weekStartsOn: 1 }))
           }
+          setShowCalendar(false)
         }}
         onMonthChange={setCalendarMonth}
       />
