@@ -50,6 +50,11 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
   // Load saved draft from localStorage
   useEffect(() => {
     if (open) {
+      // If initialDate is provided, clear draft to avoid date conflicts
+      if (initialDate) {
+        localStorage.removeItem('frovo_task_draft')
+      }
+      
       const saved = localStorage.getItem('frovo_task_draft')
       if (saved) {
         try {
@@ -60,7 +65,8 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           form.setField('priority', draft.priority || 'normal')
           form.setField('tag', draft.tag || '')
           form.setField('projectId', draft.projectId || ((activeProject && activeProject !== 'ALL') ? activeProject : ''))
-          form.setField('selectedDate', draft.selectedDate || (initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')))
+          // Always use initialDate if provided, don't use draft.selectedDate to avoid wrong dates
+          form.setField('selectedDate', initialDate ? format(initialDate, 'yyyy-MM-dd') : (draft.selectedDate || format(new Date(), 'yyyy-MM-dd')))
           // Restore todos
           if (draft.todos && Array.isArray(draft.todos)) {
             todoManager.clearTodos()
@@ -122,6 +128,12 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
               type: typeof values.projectId 
             })
             
+            // Parse date in local timezone to avoid UTC shift issues
+            // values.selectedDate is in format 'yyyy-MM-dd'
+            const [year, month, day] = values.selectedDate.split('-').map(Number)
+            const localDate = new Date(year, month - 1, day) // month is 0-indexed
+            localDate.setHours(0, 0, 0, 0) // Normalize to start of day
+            
             await onSubmit(
               values.title,
               values.description,
@@ -129,7 +141,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
               values.tag,
               todoManager.todos,
               values.projectId,
-              new Date(values.selectedDate),
+              localDate,
               finalRecurringSettings
             )
         

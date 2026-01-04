@@ -1,4 +1,5 @@
 import { RecurringTask, RecurrenceType, RecurringTaskSettings } from '@/types/recurring'
+import { format } from 'date-fns'
 
 /**
  * Calculate the next occurrence date for a recurring task
@@ -73,19 +74,93 @@ export function generateTaskInstances(
 ): Array<{ date: string; isGenerated: boolean }> {
   const instances: Array<{ date: string; isGenerated: boolean }> = []
   
-  let currentDate = new Date(recurringTask.start_date)
-  const taskEndDate = recurringTask.end_date ? new Date(recurringTask.end_date) : null
+  // Start from the recurring task's start_date, not from the passed startDate
+  // This ensures we generate all instances according to the recurrence pattern
+  // CRITICAL: Parse date in local timezone to avoid UTC shift
+  const startDateStr = recurringTask.start_date
+  const [year, month, day] = startDateStr.split('-').map(Number)
+  let currentDate = new Date(year, month - 1, day) // month is 0-indexed, parse in local timezone
+  currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
   
-  while (currentDate <= endDate) {
-    // Check if we're within the date range and before end date
-    if (currentDate >= startDate && (!taskEndDate || currentDate <= taskEndDate)) {
-      instances.push({
-        date: currentDate.toISOString().split('T')[0],
-        isGenerated: true
-      })
+  console.log(`📅 generateTaskInstances: Parsed start_date "${startDateStr}" -> ${format(currentDate, 'yyyy-MM-dd')} (day=${currentDate.getDate()})`)
+  
+  // CRITICAL FIX: For monthly tasks with dayOfMonth, adjust the date FIRST
+  // Same logic as in generateRecurringTaskInstances
+  if (recurringTask.recurrence_type === 'monthly' && recurringTask.recurrence_day_of_month !== undefined) {
+    const dayOfMonth = recurringTask.recurrence_day_of_month
+    const currentDay = currentDate.getDate()
+    
+    console.log(`📅 generateTaskInstances: Monthly task "${recurringTask.title}", start_date=${format(currentDate, 'yyyy-MM-dd')} (day=${currentDay}), target dayOfMonth=${dayOfMonth}`)
+    
+    if (currentDay !== dayOfMonth) {
+      console.log(`⚠️ MISMATCH: start_date day (${currentDay}) != dayOfMonth (${dayOfMonth}), adjusting...`)
+      if (currentDay < dayOfMonth) {
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+        console.log(`📅 Adjusting: ${currentDay} < ${dayOfMonth}, setting to ${targetDay} of current month`)
+        currentDate.setDate(targetDay)
+      } else {
+        console.log(`📅 Adjusting: ${currentDay} > ${dayOfMonth}, moving to next month`)
+        currentDate.setMonth(currentDate.getMonth() + 1)
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+        currentDate.setDate(targetDay)
+        console.log(`📅 Set to ${targetDay} of next month (${format(currentDate, 'yyyy-MM-dd')})`)
+      }
+    }
+  }
+  
+  const taskEndDate = recurringTask.end_date ? new Date(recurringTask.end_date) : null
+  taskEndDate?.setHours(23, 59, 59, 999) // End of day if exists
+  
+  const normalizedStartDate = new Date(startDate)
+  normalizedStartDate.setHours(0, 0, 0, 0)
+  const normalizedEndDate = new Date(endDate)
+  normalizedEndDate.setHours(23, 59, 59, 999)
+  
+  // Safety counter to prevent infinite loops
+  let iterations = 0
+  const maxIterations = 10000
+  
+  while (currentDate <= normalizedEndDate && iterations < maxIterations) {
+    iterations++
+    
+    // CRITICAL CHECK: For monthly tasks with dayOfMonth, verify the date matches
+    let shouldAdd = true
+    if (recurringTask.recurrence_type === 'monthly' && recurringTask.recurrence_day_of_month !== undefined) {
+      const dayOfMonth = recurringTask.recurrence_day_of_month
+      const currentDay = currentDate.getDate()
+      if (currentDay !== dayOfMonth) {
+        console.log(`❌ REJECTING date ${format(currentDate, 'yyyy-MM-dd')}: day=${currentDay} != dayOfMonth=${dayOfMonth}`)
+        shouldAdd = false
+      }
+    }
+    
+    // Check if we're within the requested date range and before task end date
+    if (shouldAdd && 
+        currentDate >= normalizedStartDate && 
+        currentDate <= normalizedEndDate && 
+        (!taskEndDate || currentDate <= taskEndDate)) {
+      // Format date in local timezone to avoid UTC shift issues
+      const year = currentDate.getFullYear()
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+      const day = String(currentDate.getDate()).padStart(2, '0')
+      const dateStr = `${year}-${month}-${day}`
+      
+      // Only add if not already in instances (prevent duplicates)
+      if (!instances.some(inst => inst.date === dateStr)) {
+        instances.push({
+          date: dateStr,
+          isGenerated: true
+        })
+        console.log(`✅ Added instance: ${dateStr}`)
+      } else {
+        console.log(`⏭️ Skipping duplicate: ${dateStr}`)
+      }
     }
     
     // Calculate next occurrence
+    const previousDate = new Date(currentDate)
     currentDate = calculateNextOccurrence(
       currentDate,
       recurringTask.recurrence_type,
@@ -95,12 +170,36 @@ export function generateTaskInstances(
       recurringTask.recurrence_month_of_year
     )
     
-    // Safety check to prevent infinite loops
-    if (currentDate <= new Date(recurringTask.start_date)) {
+    // CRITICAL: For monthly tasks, verify the next occurrence also matches dayOfMonth
+    if (recurringTask.recurrence_type === 'monthly' && recurringTask.recurrence_day_of_month !== undefined) {
+      const dayOfMonth = recurringTask.recurrence_day_of_month
+      const nextDay = currentDate.getDate()
+      if (nextDay !== dayOfMonth) {
+        console.log(`⚠️ Next occurrence ${format(currentDate, 'yyyy-MM-dd')} doesn't match dayOfMonth (${dayOfMonth}), correcting...`)
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+        currentDate.setDate(targetDay)
+        console.log(`✅ Corrected to ${format(currentDate, 'yyyy-MM-dd')}`)
+      }
+    }
+    
+    // Safety check: if we didn't advance, break to prevent infinite loop
+    if (currentDate <= previousDate) {
+      console.warn(`⚠️ Recurrence calculation didn't advance for task ${recurringTask.id}, breaking loop`)
+      break
+    }
+    
+    // Additional safety: if we've gone past the end date significantly, break
+    if (currentDate > normalizedEndDate && currentDate > (taskEndDate || normalizedEndDate)) {
       break
     }
   }
   
+  if (iterations >= maxIterations) {
+    console.warn(`⚠️ Reached max iterations (${maxIterations}) for task ${recurringTask.id}`)
+  }
+  
+  console.log(`📊 generateTaskInstances final instances:`, instances.map(i => i.date))
   return instances
 }
 
@@ -221,20 +320,107 @@ export function generateRecurringTaskInstances(
   const endDate = new Date()
   endDate.setMonth(endDate.getMonth() + 6) // Generate for next 6 months
 
+  // CRITICAL FIX: For monthly tasks with dayOfMonth, we MUST adjust the date FIRST
+  // before adding to instances. We should NEVER add the startDate if it doesn't match the pattern.
   let currentDate = new Date(startDate)
+  currentDate.setHours(0, 0, 0, 0)
+  
+  const originalStartDate = new Date(startDate)
+  originalStartDate.setHours(0, 0, 0, 0)
+  
+  console.log(`🔍 generateRecurringTaskInstances called with startDate: ${format(originalStartDate, 'yyyy-MM-dd')}, recurrenceType: ${recurringSettings.recurrenceType}, dayOfMonth: ${recurringSettings.recurrenceDayOfMonth}`)
+  
+  // CRITICAL: For monthly tasks with dayOfMonth, ALWAYS adjust the date FIRST
+  // We NEVER add the original startDate if it doesn't match dayOfMonth
+  if (recurringSettings.recurrenceType === 'monthly' && recurringSettings.recurrenceDayOfMonth !== undefined) {
+    const dayOfMonth = recurringSettings.recurrenceDayOfMonth
+    const currentDay = currentDate.getDate()
+    
+    console.log(`📅 Monthly task: startDate=${format(originalStartDate, 'yyyy-MM-dd')} (day=${currentDay}), target dayOfMonth=${dayOfMonth}`)
+    
+    // ALWAYS adjust to match dayOfMonth - we NEVER use the original startDate if it doesn't match
+    if (currentDay !== dayOfMonth) {
+      console.log(`⚠️ MISMATCH: startDate day (${currentDay}) != dayOfMonth (${dayOfMonth}), adjusting...`)
+      // If current day is before target day, set to target day of current month
+      if (currentDay < dayOfMonth) {
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+        console.log(`📅 Adjusting: ${currentDay} < ${dayOfMonth}, setting to ${targetDay} of current month`)
+        currentDate.setDate(targetDay)
+      } else {
+        // If current day is after target day, set to target day of next month
+        console.log(`📅 Adjusting: ${currentDay} > ${dayOfMonth}, moving to next month`)
+        currentDate.setMonth(currentDate.getMonth() + 1)
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+        currentDate.setDate(targetDay)
+        console.log(`📅 Set to ${targetDay} of next month (${format(currentDate, 'yyyy-MM-dd')})`)
+      }
+    } else {
+      console.log(`✅ Start date matches dayOfMonth (${dayOfMonth}), will use it`)
+    }
+    
+    // VERIFY: After adjustment, currentDate MUST match dayOfMonth
+    const finalDay = currentDate.getDate()
+    if (finalDay !== dayOfMonth) {
+      console.error(`❌ ERROR: After adjustment, date still doesn't match! ${format(currentDate, 'yyyy-MM-dd')} (day=${finalDay}) != dayOfMonth=${dayOfMonth}`)
+      // Force correction
+      const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+      const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+      currentDate.setDate(targetDay)
+      console.log(`🔧 Force corrected to ${format(currentDate, 'yyyy-MM-dd')}`)
+    }
+  }
+  
   const taskEndDate = recurringSettings.endDate ? new Date(recurringSettings.endDate) : null
+  taskEndDate?.setHours(23, 59, 59, 999)
 
-  while (currentDate <= endDate) {
+  // Safety counter to prevent infinite loops
+  let iterations = 0
+  const maxIterations = 10000
+
+  // CRITICAL: Start loop with the ADJUSTED currentDate, not the original startDate
+  // This ensures we only add dates that match the recurrence pattern
+  while (currentDate <= endDate && iterations < maxIterations) {
+    iterations++
+    
+    // CRITICAL CHECK: For monthly tasks with dayOfMonth, verify the date matches
+    let shouldAdd = true
+    if (recurringSettings.recurrenceType === 'monthly' && recurringSettings.recurrenceDayOfMonth !== undefined) {
+      const dayOfMonth = recurringSettings.recurrenceDayOfMonth
+      const currentDay = currentDate.getDate()
+      if (currentDay !== dayOfMonth) {
+        console.log(`❌ REJECTING date ${format(currentDate, 'yyyy-MM-dd')}: day=${currentDay} != dayOfMonth=${dayOfMonth}`)
+        shouldAdd = false
+      } else {
+        console.log(`✅ ACCEPTING date ${format(currentDate, 'yyyy-MM-dd')}: day=${currentDay} == dayOfMonth=${dayOfMonth}`)
+      }
+    }
+    
     // Check if we're before end date
-    if (!taskEndDate || currentDate <= taskEndDate) {
-      const dateStr = currentDate.toISOString().split('T')[0]
-      instances.push({
-        date: dateStr,
-        isGenerated: true
-      })
+    if (shouldAdd && (!taskEndDate || currentDate <= taskEndDate)) {
+      // Format date in local timezone to avoid UTC shift issues
+      const year = currentDate.getFullYear()
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+      const day = String(currentDate.getDate()).padStart(2, '0')
+      const dateStr = `${year}-${month}-${day}`
+      
+      // CRITICAL: Only add if not already in instances (prevent duplicates)
+      if (!instances.some(inst => inst.date === dateStr)) {
+        instances.push({
+          date: dateStr,
+          isGenerated: true
+        })
+        console.log(`✅ Added instance: ${dateStr}`)
+      } else {
+        console.log(`⏭️ Skipping duplicate: ${dateStr}`)
+      }
+    } else if (!shouldAdd) {
+      console.log(`⏭️ Skipping date ${format(currentDate, 'yyyy-MM-dd')} - doesn't match pattern`)
     }
 
     // Calculate next occurrence
+    const previousDate = new Date(currentDate)
     currentDate = calculateNextOccurrence(
       currentDate,
       recurringSettings.recurrenceType,
@@ -243,12 +429,39 @@ export function generateRecurringTaskInstances(
       recurringSettings.recurrenceDayOfMonth,
       recurringSettings.recurrenceMonthOfYear
     )
+    
+    console.log(`📅 Next occurrence calculated: ${format(previousDate, 'yyyy-MM-dd')} -> ${format(currentDate, 'yyyy-MM-dd')}`)
 
     // Safety check to prevent infinite loops
-    if (currentDate <= new Date(startDate)) {
+    if (currentDate <= previousDate) {
+      console.warn(`⚠️ Recurrence calculation didn't advance, breaking loop`)
+      break
+    }
+    
+    // CRITICAL: For monthly tasks, verify the next occurrence also matches dayOfMonth
+    if (recurringSettings.recurrenceType === 'monthly' && recurringSettings.recurrenceDayOfMonth !== undefined) {
+      const dayOfMonth = recurringSettings.recurrenceDayOfMonth
+      const nextDay = currentDate.getDate()
+      if (nextDay !== dayOfMonth) {
+        console.log(`⚠️ Next occurrence ${format(currentDate, 'yyyy-MM-dd')} doesn't match dayOfMonth (${dayOfMonth}), correcting...`)
+        // Correct the date to match dayOfMonth
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+        currentDate.setDate(targetDay)
+        console.log(`✅ Corrected to ${format(currentDate, 'yyyy-MM-dd')}`)
+      }
+    }
+    
+    // Additional safety: if we've gone past the end date significantly, break
+    if (currentDate > endDate && currentDate > (taskEndDate || endDate)) {
       break
     }
   }
 
+  if (iterations >= maxIterations) {
+    console.warn(`⚠️ Reached max iterations (${maxIterations}) in generateRecurringTaskInstances`)
+  }
+
+  console.log(`📊 Final instances generated:`, instances.map(i => i.date))
   return instances
 }

@@ -819,6 +819,20 @@ const projectColorById = React.useMemo(() => {
     }
   }, [uid, activeProject, start, end, selectedProjectIds, refreshTrigger])
 
+  // Update all recurring tasks once on mount to create missing instances
+  // Use ref to ensure it only runs once
+  const hasUpdatedRecurringTasks = React.useRef(false)
+  React.useEffect(() => {
+    if (!uid || hasUpdatedRecurringTasks.current) return
+    
+    hasUpdatedRecurringTasks.current = true
+    console.log('🔄 Running updateAllRecurringTasks on mount...')
+    updateAllRecurringTasks().catch(err => {
+      console.error('Error updating recurring tasks on mount:', err)
+      hasUpdatedRecurringTasks.current = false // Reset on error so it can retry
+    })
+  }, [uid]) // Only run once when uid is available
+
   // Load all tasks for calendar (based on calendar month)
   React.useEffect(() => {
     if (!uid || !activeProject) { 
@@ -949,17 +963,24 @@ const projectColorById = React.useMemo(() => {
   async function deleteTask(task: TaskItem, dayKey: string){
     // Check if this is a recurring task
     if (task.recurring_task_id) {
-      // Count how many tasks have the same recurring_task_id
-      const recurringTasks = Object.values(tasks)
-        .flat()
-        .filter(t => t.recurring_task_id === task.recurring_task_id)
+      // Check in database how many tasks have the same recurring_task_id
+      // This is more reliable than checking local state, which may only have current week's tasks
+      const { count, error: countError } = await supabase
+        .from('tasks_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('recurring_task_id', task.recurring_task_id)
       
-      if (recurringTasks.length > 1) {
-        // Show recurring delete modal
-        setTaskToDelete({ task, dayKey })
-        setShowRecurringDelete(true)
-        setCtx(c => ({ ...c, open: false }))
-        return
+      if (!countError && count !== null) {
+        const taskCount = count
+        console.log(`🔍 Found ${taskCount} tasks with recurring_task_id: ${task.recurring_task_id}`)
+        
+        if (taskCount > 1) {
+          // Show recurring delete modal
+          setTaskToDelete({ task, dayKey })
+          setShowRecurringDelete(true)
+          setCtx(c => ({ ...c, open: false }))
+          return
+        }
       }
     }
     
@@ -969,18 +990,123 @@ const projectColorById = React.useMemo(() => {
   
   async function deleteSingleTask(task: TaskItem, dayKey: string) {
     try{
-      const { error: deleteError } = await supabase.from('tasks_items').delete().eq('id', task.id)
+      console.log(`🗑️ Deleting single task: ${task.id}`)
+      
+      // If this is a recurring task, check if it's the last one
+      if (task.recurring_task_id) {
+        // Count remaining tasks with this recurring_task_id (including the one we're about to delete)
+        const { count, error: countError } = await supabase
+          .from('tasks_items')
+          .select('*', { count: 'exact', head: true })
+          .eq('recurring_task_id', task.recurring_task_id)
+        
+        if (!countError && count !== null) {
+          console.log(`🔍 Total tasks with recurring_task_id ${task.recurring_task_id}: ${count}`)
+          
+          // If this is the last task (count === 1), also deactivate the recurring task
+          if (count === 1) {
+            console.log(`⚠️ This is the last task, deactivating recurring task...`)
+            const { error: deactivateError } = await supabase
+              .from('recurring_tasks')
+              .update({ is_active: false })
+              .eq('id', task.recurring_task_id)
+            
+            if (deactivateError) {
+              console.error('Error deactivating recurring task:', deactivateError)
+            } else {
+              console.log(`✅ Deactivated recurring task: ${task.recurring_task_id}`)
+            }
+          }
+        }
+      }
+      
+      // IMPORTANT: Delete only this specific task by ID, not by recurring_task_id
+      // This ensures we don't accidentally delete other tasks with the same recurring_task_id
+      console.log(`🔍 About to delete task with ID: ${task.id}, date: ${task.date}, recurring_task_id: ${task.recurring_task_id}`)
+      
+      // First, verify the task exists and get its details
+      const { data: taskToDelete, error: fetchError } = await supabase
+        .from('tasks_items')
+        .select('id, date, recurring_task_id, title')
+        .eq('id', task.id)
+        .single()
+      
+      if (fetchError || !taskToDelete) {
+        console.error('❌ Task not found or error fetching:', fetchError)
+        throw fetchError || new Error('Task not found')
+      }
+      
+      console.log(`📋 Task to delete:`, taskToDelete)
+      
+      // Verify there are other tasks with the same recurring_task_id
+      if (task.recurring_task_id) {
+        const { data: otherTasks, error: otherTasksError } = await supabase
+          .from('tasks_items')
+          .select('id, date')
+          .eq('recurring_task_id', task.recurring_task_id)
+          .neq('id', task.id) // Exclude the task we're about to delete
+        
+        console.log(`🔍 Other tasks with same recurring_task_id:`, otherTasks)
+        
+        if (otherTasksError) {
+          console.error('Error fetching other tasks:', otherTasksError)
+        }
+      }
+      
+      const { error: deleteError, data: deleteResult } = await supabase
+        .from('tasks_items')
+        .delete()
+        .eq('id', task.id) // Delete ONLY this specific task
+        .select() // Return deleted rows to verify
+      
       if (deleteError) {
         logger.error('Error deleting task:', deleteError)
+        console.error('❌ Delete error:', deleteError)
         throw deleteError
       }
+      
+      console.log(`✅ Deleted task: ${task.id} (date: ${task.date})`)
+      console.log(`📊 Delete result:`, deleteResult)
+      
+      // Verify the task was actually deleted and others remain
+      if (task.recurring_task_id) {
+        const { data: remainingTasks, error: remainingError } = await supabase
+          .from('tasks_items')
+          .select('id, date')
+          .eq('recurring_task_id', task.recurring_task_id)
+        
+        console.log(`🔍 Remaining tasks with same recurring_task_id:`, remainingTasks)
+        
+        if (remainingError) {
+          console.error('Error fetching remaining tasks:', remainingError)
+        }
+      }
+      
+      // Update local state
       const map = { ...tasks }
       const list = map[dayKey] || []
       const idx = list.findIndex(x => x.id === task.id)
       if (idx >= 0){ list.splice(idx,1); map[dayKey] = list }
       setTasks(map)
+      
+      // Also update allTasks for calendar view
+      const allTasksMap = { ...allTasks }
+      const allTasksList = allTasksMap[dayKey] || []
+      const allTasksIdx = allTasksList.findIndex(x => x.id === task.id)
+      if (allTasksIdx >= 0) {
+        allTasksList.splice(allTasksIdx, 1)
+        allTasksMap[dayKey] = allTasksList
+        if (allTasksList.length === 0) {
+          delete allTasksMap[dayKey]
+        }
+      }
+      setAllTasks(allTasksMap)
+      
+      // Trigger refresh
+      setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       logger.error('Error deleting task:', error)
+      console.error('❌ Error deleting task:', error)
     } finally {
       setCtx(c => ({ ...c, open: false }))
       setShowRecurringDelete(false)
@@ -992,11 +1118,44 @@ const projectColorById = React.useMemo(() => {
     if (!task.recurring_task_id) return
     
     try {
-      // Delete all tasks with the same recurring_task_id
-      await supabase
+      console.log(`🗑️ Deleting all recurring tasks with id: ${task.recurring_task_id}`)
+      
+      // First, delete all task instances with the same recurring_task_id
+      const { error: deleteTasksError } = await supabase
         .from('tasks_items')
         .delete()
         .eq('recurring_task_id', task.recurring_task_id)
+      
+      if (deleteTasksError) {
+        console.error('Error deleting task instances:', deleteTasksError)
+        throw deleteTasksError
+      }
+      
+      console.log(`✅ Deleted all task instances for recurring_task_id: ${task.recurring_task_id}`)
+      
+      // Then, deactivate or delete the recurring task itself
+      // Deactivating is safer in case of foreign key constraints
+      const { error: deactivateError } = await supabase
+        .from('recurring_tasks')
+        .update({ is_active: false })
+        .eq('id', task.recurring_task_id)
+      
+      if (deactivateError) {
+        console.error('Error deactivating recurring task:', deactivateError)
+        // Try to delete instead if update fails
+        const { error: deleteRecurringError } = await supabase
+          .from('recurring_tasks')
+          .delete()
+          .eq('id', task.recurring_task_id)
+        
+        if (deleteRecurringError) {
+          console.error('Error deleting recurring task:', deleteRecurringError)
+          throw deleteRecurringError
+        }
+        console.log(`✅ Deleted recurring task record: ${task.recurring_task_id}`)
+      } else {
+        console.log(`✅ Deactivated recurring task: ${task.recurring_task_id}`)
+      }
       
       // Update local state - remove all tasks with this recurring_task_id
       const map = { ...tasks }
@@ -1008,8 +1167,23 @@ const projectColorById = React.useMemo(() => {
       })
       setTasks(map)
       
-      logger.debug(`Deleted recurring tasks with id: ${task.recurring_task_id}`)
+      // Also update allTasks for calendar view
+      const allTasksMap = { ...allTasks }
+      Object.keys(allTasksMap).forEach(date => {
+        allTasksMap[date] = allTasksMap[date].filter(t => t.recurring_task_id !== task.recurring_task_id)
+        if (allTasksMap[date].length === 0) {
+          delete allTasksMap[date]
+        }
+      })
+      setAllTasks(allTasksMap)
+      
+      // Trigger refresh to ensure UI is updated
+      setRefreshTrigger(prev => prev + 1)
+      
+      logger.debug(`✅ Deleted all recurring tasks with id: ${task.recurring_task_id}`)
+      console.log(`✅ Successfully deleted all recurring tasks`)
     } catch (error) {
+      console.error('❌ Error deleting recurring tasks:', error)
       logger.error('Error deleting recurring tasks:', error)
     } finally {
       setShowRecurringDelete(false)
@@ -1187,12 +1361,14 @@ const projectColorById = React.useMemo(() => {
       const { generateRecurringTaskInstances } = await import('@/utils/recurringUtils')
       
       // Generate all task instances
+      console.log(`🔄 Generating instances for startDate: ${format(startDate, 'yyyy-MM-dd')}, settings:`, recurringSettings)
       const instances = generateRecurringTaskInstances(startDate, recurringSettings)
+      console.log(`📅 Generated ${instances.length} instances:`, instances.map(i => i.date))
       
       logger.debug('🔄 Creating recurring tasks:', { 
         title, 
         instancesCount: instances.length,
-        startDate: startDate.toISOString().split('T')[0]
+        startDate: format(startDate, 'yyyy-MM-dd')
       })
 
       // First, create a record in recurring_tasks table with the settings
@@ -1210,8 +1386,35 @@ const projectColorById = React.useMemo(() => {
           recurrence_interval: recurringSettings.interval || recurringSettings.recurrenceInterval || 1,
           recurrence_day_of_week: recurringSettings.dayOfWeek || recurringSettings.recurrenceDayOfWeek,
           recurrence_day_of_month: recurringSettings.dayOfMonth || recurringSettings.recurrenceDayOfMonth,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: typeof recurringSettings.endDate === 'string' ? recurringSettings.endDate : recurringSettings.endDate?.toISOString().split('T')[0],
+          // Format date as YYYY-MM-DD in local timezone to avoid UTC shift
+          // CRITICAL: Use the CORRECTED date for monthly tasks, not the original startDate
+          start_date: (() => {
+            // For monthly tasks with dayOfMonth, use the corrected date
+            if (recurringSettings.recurrenceType === 'monthly' && recurringSettings.recurrenceDayOfMonth !== undefined) {
+              const dayOfMonth = recurringSettings.recurrenceDayOfMonth
+              const startDay = startDate.getDate()
+              let correctedDate = new Date(startDate)
+              
+              if (startDay !== dayOfMonth) {
+                if (startDay < dayOfMonth) {
+                  const lastDayOfMonth = new Date(correctedDate.getFullYear(), correctedDate.getMonth() + 1, 0).getDate()
+                  const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+                  correctedDate.setDate(targetDay)
+                } else {
+                  correctedDate.setMonth(correctedDate.getMonth() + 1)
+                  const lastDayOfMonth = new Date(correctedDate.getFullYear(), correctedDate.getMonth() + 1, 0).getDate()
+                  const targetDay = Math.min(dayOfMonth, lastDayOfMonth)
+                  correctedDate.setDate(targetDay)
+                }
+              }
+              console.log(`📅 Saving start_date for monthly task: ${format(startDate, 'yyyy-MM-dd')} -> ${format(correctedDate, 'yyyy-MM-dd')}`)
+              return format(correctedDate, 'yyyy-MM-dd')
+            }
+            return format(startDate, 'yyyy-MM-dd')
+          })(),
+          end_date: typeof recurringSettings.endDate === 'string' 
+            ? recurringSettings.endDate 
+            : (recurringSettings.endDate ? format(recurringSettings.endDate, 'yyyy-MM-dd') : null),
           is_active: true
         })
         .select()
@@ -1228,8 +1431,28 @@ const projectColorById = React.useMemo(() => {
       // Create tasks for each instance
       const createdTasks: TaskItem[] = []
       const taskMap = { ...tasks }
+      
+      // Check for duplicates before creating tasks
+      const instanceDates = instances.map(inst => inst.date)
+      console.log('📅 Generated instance dates:', instanceDates)
+      
+      // Check which dates already have tasks with this recurring_task_id
+      const { data: existingTasks } = await supabase
+        .from('tasks_items')
+        .select('date')
+        .eq('recurring_task_id', recurringTaskId)
+        .in('date', instanceDates)
+      
+      const existingDatesSet = new Set(existingTasks?.map(t => t.date) || [])
+      console.log('🔍 Existing dates:', Array.from(existingDatesSet))
 
       for (const instance of instances) {
+        // Skip if task already exists for this date and recurring_task_id
+        if (existingDatesSet.has(instance.date)) {
+          console.log(`⏭️ Skipping duplicate: ${instance.date}`)
+          continue
+        }
+        
         const nextPos = (taskMap[instance.date]?.length || 0)
         
         const { data, error } = await supabase.from('tasks_items')
@@ -1264,8 +1487,10 @@ const projectColorById = React.useMemo(() => {
           }
           createdTasks.push(newTask)
           ;(taskMap[instance.date] ||= []).push(newTask)
+          console.log(`✅ Created task for ${instance.date}`)
         } else if (error) {
           logger.error('❌ Error creating recurring task instance:', error)
+          console.error(`❌ Error creating task for ${instance.date}:`, error)
         }
       }
 
@@ -1337,9 +1562,14 @@ const projectColorById = React.useMemo(() => {
     const key = format(targetDate, 'yyyy-MM-dd')
     const nextPos = (tasks[key]?.length || 0)
 
+    console.log(`📅 createTask called with dateFromModal: ${dateFromModal ? format(dateFromModal, 'yyyy-MM-dd') : 'null'}, taskDate: ${taskDate ? format(taskDate, 'yyyy-MM-dd') : 'null'}, targetDate: ${format(targetDate, 'yyyy-MM-dd')}`)
+
     // Handle recurring tasks
     if (recurringSettings?.isRecurring && recurringSettings.recurrenceType) {
+      console.log(`🔄 Creating RECURRING task only (not creating single task)`)
+      console.log(`📅 Target date for recurring task: ${format(targetDate, 'yyyy-MM-dd')} (day=${targetDate.getDate()})`)
       await createRecurringTasks(targetDate, resolvedProject, title, desc, priority, tag, todos, recurringSettings)
+      return // CRITICAL: Don't create a single task if it's recurring!
     } else {
       // Create single task
     const { data, error } = await supabase.from('tasks_items')
@@ -1388,16 +1618,40 @@ const projectColorById = React.useMemo(() => {
       console.log('✅ Task found:', task)
 
       if (task.recurring_task_id) {
-        // Task is already recurring - just update settings
+        // Task is already recurring - get old settings first
+        const { data: oldRecurringTask, error: fetchError } = await supabase
+          .from('recurring_tasks')
+          .select('*')
+          .eq('id', task.recurring_task_id)
+          .single()
+
+        if (fetchError) {
+          console.error('Error fetching old recurring task:', fetchError)
+          throw fetchError
+        }
+
+        const oldEndDate = oldRecurringTask?.end_date ? new Date(oldRecurringTask.end_date) : null
+        const newEndDate = settings.endDate ? (typeof settings.endDate === 'string' ? new Date(settings.endDate) : settings.endDate) : null
+        const newEndDateStr = settings.endDate 
+          ? (typeof settings.endDate === 'string' ? settings.endDate : settings.endDate.toISOString().split('T')[0])
+          : null
+
+        // Update recurring task settings
+        const updateData: any = {
+          recurrence_type: settings.recurrenceType,
+          recurrence_interval: settings.interval || settings.recurrenceInterval || 1,
+          recurrence_day_of_week: settings.dayOfWeek || settings.recurrenceDayOfWeek,
+          recurrence_day_of_month: settings.dayOfMonth || settings.recurrenceDayOfMonth
+        }
+        
+        // Only include end_date if it's set (null is valid to remove end date)
+        if (settings.endDate !== undefined) {
+          updateData.end_date = newEndDateStr
+        }
+
         const { error } = await supabase
           .from('recurring_tasks')
-          .update({
-            recurrence_type: settings.recurrenceType,
-            recurrence_interval: settings.interval || settings.recurrenceInterval || 1,
-            recurrence_day_of_week: settings.dayOfWeek || settings.recurrenceDayOfWeek,
-            recurrence_day_of_month: settings.dayOfMonth || settings.recurrenceDayOfMonth,
-            end_date: typeof settings.endDate === 'string' ? settings.endDate : settings.endDate?.toISOString().split('T')[0]
-          })
+          .update(updateData)
           .eq('id', task.recurring_task_id)
 
         if (error) {
@@ -1405,7 +1659,157 @@ const projectColorById = React.useMemo(() => {
           throw error
         }
 
+        // Handle end date changes: create or delete tasks
+        if (oldEndDate && newEndDate && newEndDate > oldEndDate) {
+          // End date increased - create tasks from old end date to new end date
+          console.log('📅 End date increased, creating new tasks...')
+          const { generateRecurringTaskInstances } = await import('@/utils/recurringUtils')
+          
+          // Generate instances for the new date range
+          const startDate = new Date(oldEndDate)
+          startDate.setDate(startDate.getDate() + 1) // Start from day after old end date
+          
+          const instances = generateRecurringTaskInstances(startDate, {
+            ...settings,
+            endDate: newEndDate
+          })
+
+          // Filter to only dates between old and new end date
+          const tasksToCreate = instances
+            .filter(inst => {
+              const instDate = new Date(inst.date)
+              return instDate > oldEndDate && instDate <= newEndDate
+            })
+            .map(inst => ({
+              user_id: uid,
+              project_id: task.project_id,
+              title: task.title,
+              description: task.description || '',
+              priority: task.priority || 'normal',
+              tag: task.tag || '',
+              date: inst.date,
+              position: 0,
+              todos: task.todos || [],
+              status: 'open',
+              recurring_task_id: task.recurring_task_id
+            }))
+
+          if (tasksToCreate.length > 0) {
+            // Check which tasks already exist - check by both date AND recurring_task_id
+            const existingDates = tasksToCreate.map(t => t.date)
+            const { data: existingTasks } = await supabase
+              .from('tasks_items')
+              .select('date, recurring_task_id')
+              .eq('recurring_task_id', task.recurring_task_id)
+              .in('date', existingDates)
+
+            // Create a set of existing date+recurring_task_id combinations
+            const existingKeys = new Set(
+              existingTasks?.map(t => `${t.date}_${t.recurring_task_id}`) || []
+            )
+            
+            const tasksToInsert = tasksToCreate.filter(t => {
+              const key = `${t.date}_${t.recurring_task_id}`
+              return !existingKeys.has(key)
+            })
+
+            if (tasksToInsert.length > 0) {
+              const { error: insertError } = await supabase
+                .from('tasks_items')
+                .insert(tasksToInsert)
+
+              if (insertError) {
+                console.error('Error creating new task instances:', insertError)
+                throw insertError
+              }
+              console.log(`✅ Created ${tasksToInsert.length} new task instances`)
+            }
+          }
+        } else if (oldEndDate && newEndDate && newEndDate < oldEndDate) {
+          // End date decreased - delete tasks after new end date
+          console.log('📅 End date decreased, deleting tasks after new end date...')
+          const { error: deleteError } = await supabase
+            .from('tasks_items')
+            .delete()
+            .eq('recurring_task_id', task.recurring_task_id)
+            .gt('date', newEndDateStr)
+
+          if (deleteError) {
+            console.error('Error deleting task instances:', deleteError)
+            throw deleteError
+          }
+          console.log('✅ Deleted tasks after new end date')
+        } else if (!oldEndDate && newEndDate) {
+          // End date was added - create tasks from today to new end date
+          console.log('📅 End date added, creating tasks...')
+          const { generateRecurringTaskInstances } = await import('@/utils/recurringUtils')
+          
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const instances = generateRecurringTaskInstances(today, {
+            ...settings,
+            endDate: newEndDate
+          })
+
+          const tasksToCreate = instances
+            .filter(inst => {
+              const instDate = new Date(inst.date)
+              return instDate <= newEndDate
+            })
+            .map(inst => ({
+              user_id: uid,
+              project_id: task.project_id,
+              title: task.title,
+              description: task.description || '',
+              priority: task.priority || 'normal',
+              tag: task.tag || '',
+              date: inst.date,
+              position: 0,
+              todos: task.todos || [],
+              status: 'open',
+              recurring_task_id: task.recurring_task_id
+            }))
+
+          if (tasksToCreate.length > 0) {
+            // Check which tasks already exist - check by both date AND recurring_task_id
+            const existingDates = tasksToCreate.map(t => t.date)
+            const { data: existingTasks } = await supabase
+              .from('tasks_items')
+              .select('date, recurring_task_id')
+              .eq('recurring_task_id', task.recurring_task_id)
+              .in('date', existingDates)
+
+            // Create a set of existing date+recurring_task_id combinations
+            const existingKeys = new Set(
+              existingTasks?.map(t => `${t.date}_${t.recurring_task_id}`) || []
+            )
+            
+            const tasksToInsert = tasksToCreate.filter(t => {
+              const key = `${t.date}_${t.recurring_task_id}`
+              return !existingKeys.has(key)
+            })
+
+            if (tasksToInsert.length > 0) {
+              const { error: insertError } = await supabase
+                .from('tasks_items')
+                .insert(tasksToInsert)
+
+              if (insertError) {
+                console.error('Error creating new task instances:', insertError)
+                throw insertError
+              }
+              console.log(`✅ Created ${tasksToInsert.length} new task instances`)
+            }
+          }
+        } else if (oldEndDate && !newEndDate) {
+          // End date was removed - no need to delete, just allow unlimited recurrence
+          console.log('📅 End date removed, keeping all existing tasks')
+        }
+
         console.log('✅ Recurring task settings updated')
+        
+        // Reload tasks to show new instances
+        setRefreshTrigger(prev => prev + 1)
       } else {
         // Task is not recurring yet - create recurring task
         console.log('🔄 Creating recurring task from existing task')
@@ -1499,14 +1903,522 @@ const projectColorById = React.useMemo(() => {
         console.log(`✅ Created ${tasksToCreate.length} recurring task instances`)
         
         // Reload tasks to show new instances
-        await new Promise(resolve => setTimeout(resolve, 500))
-        window.location.reload()
+        setRefreshTrigger(prev => prev + 1)
       }
 
       if (import.meta.env.DEV) console.log('✅ Recurring task settings updated')
     } catch (error) {
       console.error('❌ Error updating recurring task settings:', error)
       throw error
+    }
+  }
+
+  // Function to update all recurring tasks and create missing instances
+  const updateAllRecurringTasks = async () => {
+    if (!uid) return
+
+    console.log('🔄 Updating all recurring tasks...')
+
+    try {
+      // Get all active recurring tasks
+      const { data: recurringTasks, error: fetchError } = await supabase
+        .from('recurring_tasks')
+        .select('*')
+        .eq('user_id', uid)
+        .eq('is_active', true)
+
+      if (fetchError) {
+        console.error('Error fetching recurring tasks:', fetchError)
+        throw fetchError
+      }
+
+      if (!recurringTasks || recurringTasks.length === 0) {
+        console.log('ℹ️ No active recurring tasks found')
+        return
+      }
+
+      console.log(`📋 Found ${recurringTasks.length} active recurring tasks`)
+
+      const { generateTaskInstances } = await import('@/utils/recurringUtils')
+      let totalCreated = 0
+
+      for (const recurringTask of recurringTasks) {
+        try {
+          // Determine start date: always start from recurring task start_date
+          // This ensures we generate ALL instances, not just ones after the last created task
+          // CRITICAL: Parse date in local timezone to avoid UTC shift
+          const startDateStr = recurringTask.start_date
+          const [year, month, day] = startDateStr.split('-').map(Number)
+          const startDate = new Date(year, month - 1, day) // month is 0-indexed
+          startDate.setHours(0, 0, 0, 0) // Normalize to start of day
+          
+          console.log(`📅 Parsed start_date: "${startDateStr}" -> ${format(startDate, 'yyyy-MM-dd')} (day=${startDate.getDate()})`)
+
+          // Determine end date: use end_date if set, otherwise generate for next 6 months
+          const taskEndDate = recurringTask.end_date ? new Date(recurringTask.end_date) : null
+          const endDate = taskEndDate || (() => {
+            const future = new Date()
+            future.setMonth(future.getMonth() + 6)
+            future.setHours(23, 59, 59, 999) // End of day
+            return future
+          })()
+
+          // Don't generate if start date is after end date
+          if (startDate > endDate) {
+            console.log(`⏭️ Skipping ${recurringTask.title}: start date after end date`)
+            continue
+          }
+
+          console.log(`🔄 Generating tasks for "${recurringTask.title}" from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`)
+
+          // Generate ALL instances from start_date to end_date
+          const instances = generateTaskInstances(recurringTask, startDate, endDate)
+          
+          console.log(`📅 Generated ${instances.length} instances for "${recurringTask.title}"`)
+
+          if (instances.length === 0) {
+            console.log(`ℹ️ No new instances for ${recurringTask.title}`)
+            continue
+          }
+
+          // Check which tasks already exist - check by both date AND recurring_task_id
+          const instanceDates = instances.map(inst => inst.date)
+          
+          if (instanceDates.length === 0) {
+            console.log(`ℹ️ No dates to check for ${recurringTask.title}`)
+            continue
+          }
+          
+          const { data: existingTasks, error: checkError } = await supabase
+            .from('tasks_items')
+            .select('id, date, recurring_task_id')
+            .eq('recurring_task_id', recurringTask.id)
+            .in('date', instanceDates)
+
+          if (checkError) {
+            console.error(`Error checking existing tasks for ${recurringTask.title}:`, checkError)
+            continue
+          }
+
+          // Create a set of existing date+recurring_task_id combinations
+          const existingKeys = new Set(
+            existingTasks?.map(t => `${t.date}_${t.recurring_task_id}`) || []
+          )
+          
+          console.log(`🔍 For "${recurringTask.title}": checking ${instanceDates.length} dates, found ${existingKeys.size} existing tasks`)
+          
+          const tasksToCreate = instances
+            .filter(inst => {
+              const key = `${inst.date}_${recurringTask.id}`
+              const exists = existingKeys.has(key)
+              if (exists) {
+                console.log(`⏭️ Skipping duplicate: ${inst.date} for recurring_task_id ${recurringTask.id}`)
+              }
+              return !exists
+            })
+            .map(inst => ({
+              user_id: uid,
+              project_id: recurringTask.project_id,
+              title: recurringTask.title,
+              description: recurringTask.description || '',
+              priority: recurringTask.priority || 'normal',
+              tag: recurringTask.tag || '',
+              date: inst.date,
+              position: 0,
+              todos: recurringTask.todos || [],
+              status: 'open',
+              recurring_task_id: recurringTask.id
+            }))
+
+          if (tasksToCreate.length > 0) {
+            // Get positions for each date
+            const datePositions = new Map<string, number>()
+            for (const task of tasksToCreate) {
+              const { data: lastTaskForDate } = await supabase
+                .from('tasks_items')
+                .select('position')
+                .eq('date', task.date)
+                .order('position', { ascending: false })
+                .limit(1)
+                .single()
+
+              const currentMax = datePositions.get(task.date) || (lastTaskForDate?.position || 0)
+              datePositions.set(task.date, currentMax + 1)
+              task.position = currentMax
+            }
+
+            const { error: insertError } = await supabase
+              .from('tasks_items')
+              .insert(tasksToCreate)
+
+            if (insertError) {
+              console.error(`Error creating tasks for ${recurringTask.title}:`, insertError)
+              continue
+            }
+
+            console.log(`✅ Created ${tasksToCreate.length} tasks for "${recurringTask.title}"`)
+            totalCreated += tasksToCreate.length
+          } else {
+            console.log(`ℹ️ All instances already exist for "${recurringTask.title}"`)
+          }
+        } catch (error) {
+          console.error(`Error processing recurring task ${recurringTask.id}:`, error)
+          continue
+        }
+      }
+
+      console.log(`✅ Total: Created ${totalCreated} new task instances`)
+
+      // Remove duplicates if any were created
+      await removeDuplicateRecurringTasks()
+
+      // Reload tasks to show new instances
+      setRefreshTrigger(prev => prev + 1)
+
+      return totalCreated
+    } catch (error) {
+      console.error('❌ Error updating recurring tasks:', error)
+      throw error
+    }
+  }
+
+  // Force regenerate all recurring tasks (useful for debugging or fixing missing tasks)
+  const forceRegenerateAllRecurringTasks = async () => {
+    if (!uid) return
+
+    console.log('🔄 Force regenerating all recurring tasks...')
+
+    try {
+      // Get all active recurring tasks
+      const { data: recurringTasks, error: fetchError } = await supabase
+        .from('recurring_tasks')
+        .select('*')
+        .eq('user_id', uid)
+        .eq('is_active', true)
+
+      if (fetchError) {
+        console.error('Error fetching recurring tasks:', fetchError)
+        throw fetchError
+      }
+
+      if (!recurringTasks || recurringTasks.length === 0) {
+        console.log('ℹ️ No active recurring tasks found')
+        return
+      }
+
+      console.log(`📋 Found ${recurringTasks.length} active recurring tasks`)
+
+      const { generateTaskInstances } = await import('@/utils/recurringUtils')
+      let totalCreated = 0
+
+      for (const recurringTask of recurringTasks) {
+        try {
+          // Always start from recurring task start_date
+          const startDate = new Date(recurringTask.start_date)
+          startDate.setHours(0, 0, 0, 0)
+
+          // Determine end date: use end_date if set, otherwise generate for next 6 months
+          const taskEndDate = recurringTask.end_date ? new Date(recurringTask.end_date) : null
+          const endDate = taskEndDate || (() => {
+            const future = new Date()
+            future.setMonth(future.getMonth() + 6)
+            future.setHours(23, 59, 59, 999)
+            return future
+          })()
+
+          if (startDate > endDate) {
+            console.log(`⏭️ Skipping ${recurringTask.title}: start date after end date`)
+            continue
+          }
+
+          console.log(`🔄 Generating ALL tasks for "${recurringTask.title}" from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`)
+
+          // Generate ALL instances
+          const instances = generateTaskInstances(recurringTask, startDate, endDate)
+          
+          console.log(`📅 Generated ${instances.length} instances for "${recurringTask.title}"`)
+
+          if (instances.length === 0) {
+            console.log(`ℹ️ No instances for ${recurringTask.title}`)
+            continue
+          }
+
+          // Check which tasks already exist
+          const instanceDates = instances.map(inst => inst.date)
+          
+          if (instanceDates.length === 0) {
+            console.log(`ℹ️ No dates to check for ${recurringTask.title}`)
+            continue
+          }
+          
+          const { data: existingTasks, error: checkError } = await supabase
+            .from('tasks_items')
+            .select('id, date, recurring_task_id')
+            .eq('recurring_task_id', recurringTask.id)
+            .in('date', instanceDates)
+
+          if (checkError) {
+            console.error(`Error checking existing tasks for ${recurringTask.title}:`, checkError)
+            continue
+          }
+
+          // Create a set of existing date+recurring_task_id combinations
+          const existingKeys = new Set(
+            existingTasks?.map(t => `${t.date}_${t.recurring_task_id}`) || []
+          )
+          
+          console.log(`🔍 For "${recurringTask.title}": checking ${instanceDates.length} dates, found ${existingKeys.size} existing tasks`)
+          
+          const tasksToCreate = instances
+            .filter(inst => {
+              const key = `${inst.date}_${recurringTask.id}`
+              const exists = existingKeys.has(key)
+              if (exists) {
+                console.log(`⏭️ Skipping duplicate: ${inst.date} for recurring_task_id ${recurringTask.id}`)
+              }
+              return !exists
+            })
+            .map(inst => ({
+              user_id: uid,
+              project_id: recurringTask.project_id,
+              title: recurringTask.title,
+              description: recurringTask.description || '',
+              priority: recurringTask.priority || 'normal',
+              tag: recurringTask.tag || '',
+              date: inst.date,
+              position: 0,
+              todos: recurringTask.todos || [],
+              status: 'open',
+              recurring_task_id: recurringTask.id
+            }))
+
+          if (tasksToCreate.length > 0) {
+            // Get positions for each date
+            const datePositions = new Map<string, number>()
+            for (const task of tasksToCreate) {
+              const { data: lastTaskForDate } = await supabase
+                .from('tasks_items')
+                .select('position')
+                .eq('date', task.date)
+                .order('position', { ascending: false })
+                .limit(1)
+                .single()
+
+              const currentMax = datePositions.get(task.date) || (lastTaskForDate?.position || 0)
+              datePositions.set(task.date, currentMax + 1)
+              task.position = currentMax
+            }
+
+            const { error: insertError } = await supabase
+              .from('tasks_items')
+              .insert(tasksToCreate)
+
+            if (insertError) {
+              console.error(`Error creating tasks for ${recurringTask.title}:`, insertError)
+              continue
+            }
+
+            console.log(`✅ Created ${tasksToCreate.length} tasks for "${recurringTask.title}"`)
+            totalCreated += tasksToCreate.length
+          } else {
+            console.log(`ℹ️ All instances already exist for "${recurringTask.title}"`)
+          }
+        } catch (error) {
+          console.error(`Error processing recurring task ${recurringTask.id}:`, error)
+          continue
+        }
+      }
+
+      console.log(`✅ Total: Created ${totalCreated} new task instances`)
+
+      // Remove duplicates if any were created
+      await removeDuplicateRecurringTasks()
+
+      // Reload tasks to show new instances
+      setRefreshTrigger(prev => prev + 1)
+
+      return totalCreated
+    } catch (error) {
+      console.error('❌ Error updating recurring tasks:', error)
+      throw error
+    }
+  }
+
+  // Function to find and remove duplicate recurring tasks on adjacent dates
+  // This helps fix cases where tasks were created on wrong dates (e.g., 8 and 9 instead of just 9)
+  const findAndRemoveDuplicateRecurringTasks = async () => {
+    if (!uid) return
+
+    try {
+      console.log('🔍 Searching for duplicate recurring tasks on adjacent dates...')
+
+      // Get all tasks with recurring_task_id
+      const { data: allRecurringTasks, error: fetchError } = await supabase
+        .from('tasks_items')
+        .select('id, date, recurring_task_id, created_at, title')
+        .eq('user_id', uid)
+        .not('recurring_task_id', 'is', null)
+        .order('recurring_task_id', { ascending: true })
+        .order('date', { ascending: true })
+
+      if (fetchError) {
+        console.error('Error fetching recurring tasks:', fetchError)
+        return
+      }
+
+      if (!allRecurringTasks || allRecurringTasks.length === 0) {
+        console.log('ℹ️ No recurring tasks found')
+        return
+      }
+
+      // Group by recurring_task_id
+      const groupedByRecurringId = new Map<string, typeof allRecurringTasks>()
+      for (const task of allRecurringTasks) {
+        if (!task.recurring_task_id) continue
+        if (!groupedByRecurringId.has(task.recurring_task_id)) {
+          groupedByRecurringId.set(task.recurring_task_id, [])
+        }
+        groupedByRecurringId.get(task.recurring_task_id)!.push(task)
+      }
+
+      const duplicatesToDelete: string[] = []
+
+      // Check each recurring task group for adjacent dates
+      for (const [recurringTaskId, tasks] of groupedByRecurringId.entries()) {
+        if (tasks.length < 2) continue
+
+        // Sort by date
+        tasks.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+        // Check for adjacent dates (same day or next day)
+        for (let i = 0; i < tasks.length - 1; i++) {
+          const task1 = tasks[i]
+          const task2 = tasks[i + 1]
+          
+          const date1 = new Date(task1.date)
+          const date2 = new Date(task2.date)
+          const daysDiff = Math.abs((date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24))
+
+          // If tasks are on adjacent dates (0 or 1 day apart), mark one for deletion
+          if (daysDiff <= 1) {
+            // Keep the one created later (it's likely the correct one after fix)
+            // Or keep the one with the date that matches the pattern better
+            const taskToDelete = date1 > date2 ? task2 : task1
+            duplicatesToDelete.push(taskToDelete.id)
+            console.log(`🔍 Found duplicate: ${task1.title} on ${task1.date} and ${task2.date}, will delete ${taskToDelete.date}`)
+          }
+        }
+      }
+
+      if (duplicatesToDelete.length > 0) {
+        console.log(`🗑️ Deleting ${duplicatesToDelete.length} duplicate tasks...`)
+        
+        // Delete in batches
+        const batchSize = 100
+        for (let i = 0; i < duplicatesToDelete.length; i += batchSize) {
+          const batch = duplicatesToDelete.slice(i, i + batchSize)
+          const { error: deleteError } = await supabase
+            .from('tasks_items')
+            .delete()
+            .in('id', batch)
+
+          if (deleteError) {
+            console.error('Error deleting duplicates:', deleteError)
+            continue
+          }
+        }
+
+        console.log(`✅ Deleted ${duplicatesToDelete.length} duplicate tasks`)
+        // Reload tasks after deleting duplicates
+        setRefreshTrigger(prev => prev + 1)
+      } else {
+        console.log('✅ No duplicates found on adjacent dates')
+      }
+    } catch (error) {
+      console.error('❌ Error removing duplicates:', error)
+    }
+  }
+
+  // Function to remove duplicate recurring tasks (keep only the first one for each date+recurring_task_id)
+  const removeDuplicateRecurringTasks = async () => {
+    if (!uid) return
+
+    try {
+      console.log('🔍 Checking for duplicate recurring tasks...')
+
+      // Get all tasks with recurring_task_id
+      const { data: allRecurringTasks, error: fetchError } = await supabase
+        .from('tasks_items')
+        .select('id, date, recurring_task_id, created_at')
+        .eq('user_id', uid)
+        .not('recurring_task_id', 'is', null)
+
+      if (fetchError) {
+        console.error('Error fetching recurring tasks:', fetchError)
+        return
+      }
+
+      if (!allRecurringTasks || allRecurringTasks.length === 0) {
+        console.log('ℹ️ No recurring tasks found')
+        return
+      }
+
+      // Group by date + recurring_task_id
+      const grouped = new Map<string, Array<{ id: string; created_at: string }>>()
+      
+      for (const task of allRecurringTasks) {
+        const key = `${task.date}_${task.recurring_task_id}`
+        if (!grouped.has(key)) {
+          grouped.set(key, [])
+        }
+        grouped.get(key)!.push({ id: task.id, created_at: task.created_at || '' })
+      }
+
+      // Find duplicates (more than 1 task for same date+recurring_task_id)
+      const duplicatesToDelete: string[] = []
+      
+      for (const [key, tasks] of grouped.entries()) {
+        if (tasks.length > 1) {
+          // Sort by created_at (oldest first) and keep the first one
+          const sorted = tasks.sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          )
+          
+          // Mark all except the first one for deletion
+          for (let i = 1; i < sorted.length; i++) {
+            duplicatesToDelete.push(sorted[i].id)
+          }
+          
+          console.log(`🔍 Found ${tasks.length} duplicates for ${key}, will delete ${sorted.length - 1}`)
+        }
+      }
+
+      if (duplicatesToDelete.length > 0) {
+        console.log(`🗑️ Deleting ${duplicatesToDelete.length} duplicate tasks...`)
+        
+        // Delete in batches to avoid query size limits
+        const batchSize = 100
+        for (let i = 0; i < duplicatesToDelete.length; i += batchSize) {
+          const batch = duplicatesToDelete.slice(i, i + batchSize)
+          const { error: deleteError } = await supabase
+            .from('tasks_items')
+            .delete()
+            .in('id', batch)
+
+          if (deleteError) {
+            console.error('Error deleting duplicates:', deleteError)
+            continue
+          }
+        }
+
+        console.log(`✅ Deleted ${duplicatesToDelete.length} duplicate tasks`)
+        // Reload tasks after deleting duplicates
+        setRefreshTrigger(prev => prev + 1)
+      } else {
+        console.log('✅ No duplicates found')
+      }
+    } catch (error) {
+      console.error('❌ Error removing duplicates:', error)
     }
   }
 
@@ -1842,7 +2754,11 @@ const projectColorById = React.useMemo(() => {
                   <span>{format(d,'EEE, d MMM')}</span>
                   <button
                     className="btn btn-outline btn-xs add-on-hover flex items-center gap-1"
-                    onClick={()=>{ setTaskDate(d); setOpenNewTask(true) }}
+                    onClick={()=>{ 
+                      console.log('📅 Button clicked, day:', d, 'formatted:', format(d, 'yyyy-MM-dd'))
+                      setTaskDate(new Date(d)) // Ensure it's a proper Date object
+                      setOpenNewTask(true) 
+                    }}
                   >
                     <Plus className="w-3 h-3" />
                     {t('tasks.task')}
@@ -2126,6 +3042,20 @@ const projectColorById = React.useMemo(() => {
         initialDate={taskDate || new Date()}
         onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
       />
+
+      {/* Expose function to window for manual cleanup of duplicates */}
+      {React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+          (window as any).findAndRemoveDuplicateRecurringTasks = findAndRemoveDuplicateRecurringTasks
+          (window as any).removeDuplicateRecurringTasks = removeDuplicateRecurringTasks
+        }
+        return () => {
+          if (typeof window !== 'undefined') {
+            delete (window as any).findAndRemoveDuplicateRecurringTasks
+            delete (window as any).removeDuplicateRecurringTasks
+          }
+        }
+      }, [])}
 
       {/* Main task modal - right side - always has backdrop */}
       {viewTask && (

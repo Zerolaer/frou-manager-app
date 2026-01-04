@@ -25,8 +25,7 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-    'process.env': JSON.stringify(process.env)
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
   },
   build: {
     target: 'esnext',
@@ -101,15 +100,15 @@ export default defineConfig({
       strict: false
     },
     headers: {
-      'Cache-Control': 'public, max-age=31536000, immutable'
-    },
-    // Ensure proper module resolution for embedded browsers like Cursor
-    hmr: {
-      protocol: 'ws',
-      host: 'localhost'
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
     },
     // Fix for dynamic imports
-    cors: true
+    cors: true,
+    port: 5173,
+    strictPort: false,
+    hmr: {
+      port: 5173
+    }
   },
   // Ensure React is always available - important for Cursor browser compatibility
   esbuild: {

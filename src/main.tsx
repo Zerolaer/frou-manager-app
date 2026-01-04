@@ -38,24 +38,45 @@ const Protected = ({children}: {children: React.ReactNode}) => {
   useEffect(() => {
     // Check if supabase is properly configured
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (import.meta.env.DEV) {
+      console.log('🔍 Protected Route - Supabase Config:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'missing'
+      });
+    }
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('⚠️ Missing Supabase config - allowing access for development');
       // If no Supabase config, allow access (for development)
       setAuthed(true);
       setLoading(false);
       return;
     }
     
-    supabase.auth.getSession().then(({ data }) => {
+    console.log('🔐 Checking session...');
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error('❌ Error getting session:', error);
+        setAuthed(false);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('✅ Session check:', { hasSession: !!data.session, userId: data.session?.user?.id });
       setAuthed(!!data.session);
       setLoading(false);
     }).catch((error) => {
-      console.error('Error getting session:', error);
+      console.error('❌ Exception getting session:', error);
       setLoading(false);
-      // Allow access on error (for development)
-      setAuthed(true);
+      // Don't allow access on error - redirect to login
+      setAuthed(false);
     });
     
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
+      console.log('🔄 Auth state changed:', event, { hasSession: !!sess });
       setAuthed(!!sess);
     });
     return () => { sub?.subscription?.unsubscribe() }

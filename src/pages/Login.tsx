@@ -30,11 +30,61 @@ export default function Login() {
     e.preventDefault()
     setError(null); setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-      navigate('/', { replace: true })
+      console.log('🔐 Attempting login for:', email)
+      console.log('🔍 Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Set' : '❌ Missing')
+      console.log('🔍 Supabase Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing')
+      
+      const startTime = Date.now()
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const duration = Date.now() - startTime
+      
+      console.log(`⏱️ Login request took ${duration}ms`)
+      
+      if (error) {
+        console.error('❌ Login error:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          stack: error.stack
+        })
+        // More specific error messages
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Неверный email или пароль')
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Email не подтвержден. Проверьте почту.')
+        } else if (error.message.includes('upgrade required') || error.message.includes('Upgrade Required') || error.status === 426) {
+          setError('Проект Supabase требует обновления. Зайдите в Supabase Dashboard → Settings → General и обновите проект, или создайте новый проект.')
+        } else if (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          setError('Ошибка подключения к серверу. Проверьте интернет-соединение и настройки Supabase.')
+        } else {
+          setError(error.message || t('errors.networkError'))
+        }
+        return
+      }
+      
+      if (data?.session) {
+        console.log('✅ Login successful, session:', {
+          userId: data.session.user.id,
+          email: data.session.user.email,
+          expiresAt: data.session.expires_at
+        })
+        navigate('/', { replace: true })
+      } else {
+        console.error('❌ No session in response:', data)
+        setError('Не удалось создать сессию')
+      }
     } catch (err: any) {
-      setError(err?.message || t('errors.networkError'))
+      console.error('❌ Login exception:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        cause: err?.cause
+      })
+      if (err?.message?.includes('fetch') || err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        setError('Ошибка подключения к серверу. Проверьте, что файл .env настроен и сервер перезапущен. Также проверьте консоль браузера (F12) для деталей.')
+      } else {
+        setError(err?.message || t('errors.networkError'))
+      }
     } finally {
       setLoading(false)
     }
