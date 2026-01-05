@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { Building2, Edit2, Trash2, Plus } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
+import { useModalConfirm } from '@/utils/modalConfirm'
+import WidgetHeader from '@/components/dashboard/widgets/WidgetHeader'
 
 interface FromTemplate {
   id: string
@@ -30,6 +32,7 @@ interface Props {
 export default function InvoiceFromTemplatesPanel({ userId, onSelectTemplate, onEditClient }: Props) {
   const { t } = useSafeTranslation()
   const { createSimpleFooter } = useModalActions()
+  const { confirm, alert } = useModalConfirm()
   const [templates, setTemplates] = useState<FromTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -127,7 +130,7 @@ export default function InvoiceFromTemplatesPanel({ userId, onSelectTemplate, on
 
   const handleSave = async () => {
     if (!userId || !name.trim()) {
-      alert((t('invoice.fromName') || 'Имя') + ' ' + (t('common.required') || 'обязательно'))
+      await alert((t('invoice.fromName') || 'Имя') + ' ' + (t('common.required') || 'обязательно'), 'Внимание')
       return
     }
 
@@ -176,12 +179,13 @@ export default function InvoiceFromTemplatesPanel({ userId, onSelectTemplate, on
       loadTemplates()
     } catch (error) {
       console.error('Error saving from template:', error)
-      alert(`Ошибка сохранения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка сохранения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
   const handleDelete = async (template: FromTemplate) => {
-    if (!confirm(t('invoice.confirmDelete') || 'Вы уверены, что хотите удалить этот шаблон?')) {
+    const result = await confirm(t('invoice.confirmDelete') || 'Вы уверены, что хотите удалить этот шаблон?', t('invoice.deleteTemplateTitle') || 'Delete Template')
+    if (!result) {
       return
     }
 
@@ -197,7 +201,7 @@ export default function InvoiceFromTemplatesPanel({ userId, onSelectTemplate, on
       loadTemplates()
     } catch (error) {
       console.error('Error deleting from template:', error)
-      alert(`Ошибка удаления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка удаления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
@@ -212,14 +216,20 @@ export default function InvoiceFromTemplatesPanel({ userId, onSelectTemplate, on
   return (
     <>
       <div className="invoice-clients-panel">
-        <div className="invoice-clients-header">
-          <h3 className="invoice-clients-title">
-            <Building2 className="w-5 h-5" />
-            {t('invoice.fromTemplate') || 'Мои данные'}
-          </h3>
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-gray-500">
-              {templates.length} {templates.length === 1 ? 'шаблон' : 'шаблонов'}
+        <div className="px-6 pt-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gray-50">
+                <div className="text-black">
+                  <Building2 className="w-5 h-5" />
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base leading-tight !m-0 block">{t('invoice.fromTemplate') || 'Sender Template'}</h3>
+                <p className="text-sm text-gray-500 leading-tight mt-1 !m-0 block">
+                  {templates.length} {templates.length === 1 ? (t('invoice.template') || 'template') : (t('invoice.templates') || 'templates')}
+                </p>
+              </div>
             </div>
             <button
               onClick={handleCreate}

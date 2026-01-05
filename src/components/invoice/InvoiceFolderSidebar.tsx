@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { ModalInput } from '@/components/ui/ModalForm'
 import { ChevronLeft, Plus } from 'lucide-react'
+import { useModalConfirm } from '@/utils/modalConfirm'
 
 type Folder = {
   id: string
@@ -24,7 +25,8 @@ type Props = {
 const COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e','#64748b']
 
 export default function InvoiceFolderSidebar({ userId, activeId, onChange, collapsed = false, onToggleCollapse }: Props){
-  const { t } = useTranslation()
+  const { t } = useSafeTranslation()
+  const { alert } = useModalConfirm()
   const [items, setItems] = useState<Folder[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [hasColor, setHasColor] = useState(false)
@@ -154,14 +156,14 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       const { error } = await supabase.from('invoice_folders').update({ name }).eq('id', ctxFolder.id)
       if (error) {
         console.error('Error renaming folder:', error)
-        alert(`Ошибка переименования: ${error.message}`)
+        await alert(`Ошибка переименования: ${error.message}`, t('common.error') || 'Error')
         return
       }
       setItems(items.map(p=> p.id===ctxFolder.id ? {...p, name} : p))
       setRenameOpen(false)
     } catch (error) {
       console.error('Error renaming folder:', error)
-      alert(`Ошибка переименования: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка переименования: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
   async function deleteOk(){
@@ -170,7 +172,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       const { error } = await supabase.from('invoice_folders').delete().eq('id', ctxFolder.id)
       if (error) {
         console.error('Error deleting folder:', error)
-        alert(`Ошибка удаления: ${error.message}`)
+        await alert(`Ошибка удаления: ${error.message}`, t('common.error') || 'Error')
         return
       }
       setItems(items.filter(p=> p.id!==ctxFolder.id))
@@ -178,7 +180,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       setDelOpen(false)
     } catch (error) {
       console.error('Error deleting folder:', error)
-      alert(`Ошибка удаления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка удаления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
@@ -217,7 +219,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       
       if (error) {
         console.error('Error creating folder:', error)
-        alert(`Ошибка создания папки: ${error.message}`)
+        await alert(`Ошибка создания папки: ${error.message}`, t('common.error') || 'Error')
         return
       }
       
@@ -241,7 +243,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       }
     } catch (error) {
       console.error('Error creating folder:', error)
-      alert(`Ошибка создания папки: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка создания папки: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 

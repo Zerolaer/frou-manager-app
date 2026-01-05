@@ -7,6 +7,7 @@ import { ModalButton } from '@/components/ui/ModalSystem'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/lib/monitoring'
+import { useModalConfirm } from '@/utils/modalConfirm'
 import type { Todo, Project } from '@/types/shared'
 
 type Task = {
@@ -33,6 +34,7 @@ type Props = {
 
 export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence }: Props) {
   const { t } = useSafeTranslation()
+  const { confirm } = useModalConfirm()
   
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -190,7 +192,9 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
   }
 
   const handleDelete = async () => {
-    if (!task || !window.confirm(t('tasks.deleteConfirm'))) return
+    if (!task) return
+    const result = await confirm(t('tasks.deleteConfirm') || 'Вы уверены, что хотите удалить эту задачу?', t('tasks.deleteTaskTitle') || 'Delete Task')
+    if (!result) return
     
     try {
       const { error } = await supabase

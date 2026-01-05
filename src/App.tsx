@@ -4,6 +4,7 @@ import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { SkipLinks } from './components/AccessibleComponents'
 import AppLoader from './components/AppLoader'
 import { useMobileDetection } from './hooks/useMobileDetection'
+import { ModalConfirmProvider } from './utils/modalConfirm'
 
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
@@ -196,7 +197,8 @@ export default function App(){
   // Handle preloader completion
   return (
     <AppErrorBoundary>
-      <SkipLinks />
+      <ModalConfirmProvider>
+        <SkipLinks />
       <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
         {!isMobile && (
           <Header 
@@ -233,9 +235,10 @@ export default function App(){
           <Outlet />
         </main>
       </div>
-      <KeyboardShortcuts />
-      <OfflineSupport />
-      <PWAInstallPrompt />
+        <KeyboardShortcuts />
+        <OfflineSupport />
+        <PWAInstallPrompt />
+      </ModalConfirmProvider>
     </AppErrorBoundary>
   )
 }

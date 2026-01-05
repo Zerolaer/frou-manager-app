@@ -109,7 +109,7 @@ export function TaskCard({
             <div className="flex items-center gap-2">
               {task.priority && priorityLabel ? (
                 <span 
-                  className="text-xs font-medium px-2 py-1"
+                  className="text-xs font-medium px-2 py-1 rounded-full"
                   style={{
                     backgroundColor: getPriorityColor(task.priority).background,
                     color: getPriorityColor(task.priority).text,
@@ -146,7 +146,7 @@ export function TaskCard({
             {task.tag && (
               <div className="flex flex-wrap gap-1 mt-1">
                 <span 
-                  className="text-xs px-3 py-1 font-medium"
+                  className="text-xs px-3 py-1 font-medium rounded-full"
                   style={{ backgroundColor: '#e5e7eb', color: '#4b5563', borderRadius: '999px' }}
                 >
                   {task.tag}

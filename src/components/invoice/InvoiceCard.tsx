@@ -1,7 +1,8 @@
 import React from 'react'
 import { Edit2, Download, Calendar, User, FileText, X } from 'lucide-react'
-import { formatCurrencyEUR } from '@/lib/format'
+import { formatCurrencyEUR, formatCurrency } from '@/lib/format'
 import { useSafeTranslation } from '@/utils/safeTranslation'
+import { useModalConfirm } from '@/utils/modalConfirm'
 
 interface InvoiceItem {
   id: string
@@ -20,6 +21,7 @@ interface Invoice {
   date: string
   due_date: string
   notes: string
+  currency?: 'EUR' | 'USD' | 'GEL' | 'RUB'
   subtotal: number
   tax_rate: number
   tax_amount: number
@@ -39,6 +41,7 @@ type Props = {
 
 const InvoiceCard = ({ invoice, onEdit, onDelete, onExport, onView }: Props) => {
   const { t } = useSafeTranslation()
+  const { confirm } = useModalConfirm()
 
   const handleClick = () => {
     onView(invoice)
@@ -49,9 +52,10 @@ const InvoiceCard = ({ invoice, onEdit, onDelete, onExport, onView }: Props) => 
     onEdit(invoice)
   }
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm(t('invoice.confirmDelete'))) {
+    const result = await confirm(t('invoice.confirmDelete') || 'Вы уверены, что хотите удалить этот инвойс?', t('invoice.deleteInvoiceTitle') || 'Delete Invoice')
+    if (result) {
       onDelete(invoice.id)
     }
   }
@@ -131,7 +135,7 @@ const InvoiceCard = ({ invoice, onEdit, onDelete, onExport, onView }: Props) => 
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <span className="text-xs text-gray-500">{t('invoice.total')}</span>
         <span className="text-base font-bold text-gray-900">
-          {formatCurrencyEUR(invoice.total)}
+          {formatCurrency(invoice.total, invoice.currency || 'EUR')}
         </span>
       </div>
 

@@ -3,6 +3,7 @@ import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { formatCurrencyEUR } from '@/lib/format'
 import { User, DollarSign, FileText, TrendingUp, Edit2, Trash2 } from 'lucide-react'
+import WidgetHeader from '@/components/dashboard/widgets/WidgetHeader'
 
 interface ClientStats {
   id: string
@@ -142,17 +143,11 @@ export default function InvoiceClientsPanel({ userId, onSelectClient, onEditClie
 
   return (
     <div className="invoice-clients-panel">
-      <div className="invoice-clients-header">
-        <h3 className="invoice-clients-title">
-          <User className="w-5 h-5" />
-          {t('invoice.clients')}
-        </h3>
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-gray-500">
-            {clients.length} {t('invoice.clientsCount')}
-          </div>
-        </div>
-      </div>
+      <WidgetHeader
+        icon={<User className="w-5 h-5" />}
+        title={t('invoice.clients') || 'Clients'}
+        subtitle={`${clients.length} ${t('invoice.clientsCount') || 'clients'}`}
+      />
 
       <div className="invoice-clients-list">
         {clients.length === 0 ? (

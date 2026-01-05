@@ -28,6 +28,7 @@ import { useFinanceCache } from '@/hooks/useFinanceCache'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { logger } from '@/lib/monitoring'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
+import { useModalConfirm } from '@/utils/modalConfirm'
 import { 
   CACHE_VERSION, 
   MONTHS_IN_YEAR, 
@@ -69,6 +70,7 @@ export default function Finance(){
   const { writeCache, readCache } = useFinanceCache()
   const { createSimpleFooter, createDangerFooter } = useModalActions()
   const { isMobile } = useMobileDetection()
+  const { confirm } = useModalConfirm()
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
@@ -505,12 +507,12 @@ export default function Finance(){
   }
 
   // Export functionality
-  function handleExport() {
+  async function handleExport() {
     const timestamp = new Date().toISOString().slice(0, 10)
     
     // Show export options
-    const exportFormat = window.confirm(
-      t('finance.exportFormat') || 'Экспортировать в JSON? (Отмена = CSV)'
+    const exportFormat = await confirm(
+      t('finance.exportFormat') || 'Экспортировать в JSON? (Отмена = CSV)', 'Экспорт данных'
     )
     
     if (exportFormat) {
@@ -546,12 +548,12 @@ export default function Finance(){
         }
         
         // Confirm import
-        const confirm = window.confirm(
+        const importConfirm = await confirm(
           t('finance.confirmImport', { year: data.year }) || 
-          `Импортировать данные за ${data.year}? Это перезапишет текущие данные.`
+          `Импортировать данные за ${data.year}? Это перезапишет текущие данные.`, 'Импорт данных'
         )
         
-        if (!confirm) return
+        if (!importConfirm) return
         
         // Apply imported data
         setIncomeRaw(data.income)

@@ -15,6 +15,7 @@ import RecurringTaskBlock from './RecurringTaskBlock'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import { format, parseISO, isAfter, isEqual } from 'date-fns'
 import { sanitizeRichTextHtml } from '@/lib/dataValidation'
+import { useModalConfirm } from '@/utils/modalConfirm'
 import '@/notes.css'
 
 // CSS animations for checkboxes
@@ -106,6 +107,7 @@ type Props = {
 
 export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence, onOpenTask, onCancel, noBackdrop, position, customZIndex, disableBackdropClick, splitView, onUpdateBoard, onSubtaskDateChange }: Props) {
   const { t, i18n } = useSafeTranslation()
+  const { alert } = useModalConfirm()
   const modalContentRef = useRef<HTMLDivElement>(null)
   
   
@@ -722,7 +724,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     }
   }
 
-  function addTodo() {
+  async function addTodo() {
     const text = newTodo.trim()
     if (!text) return
     
@@ -733,7 +735,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       
       // Check if todo date is before parent date
       if (isAfter(parentDate, todoDate) && !isEqual(parentDate, todoDate)) {
-        alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`)
+        await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`, t('common.validationError') || 'Validation Error')
         return
       }
     }
@@ -1234,7 +1236,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       
       // Check if todo date is before parent date
       if (isAfter(parentDate, todoDate) && !isEqual(parentDate, todoDate)) {
-        alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`)
+        await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`, t('common.validationError') || 'Validation Error')
         return
       }
     }
@@ -1417,7 +1419,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         
         // Check if todo date is before parent date
         if (isAfter(parentDate, todoDate) && !isEqual(parentDate, todoDate)) {
-          alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`)
+          await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`, t('common.validationError') || 'Validation Error')
           return
         }
       }
@@ -1897,9 +1899,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   return (
                     <div 
                       key={todo.id} 
-                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:border-gray-300 transition-all relative overflow-hidden"
+                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:border-gray-300 transition-all relative overflow-hidden cursor-pointer"
                       style={{
-                        backgroundColor: todo.done ? '#F3F4F6' : 'transparent'
+                        backgroundColor: todo.done ? '#F3F4F6' : 'transparent',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none'
                       }}
                       onMouseDown={(e) => {
                         // Always prevent backdrop click when clicking on todo card
@@ -2026,7 +2030,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                           />
                         ) : (
                           <div
-                            className={`text-sm ${subtaskMode === 'todos' ? 'cursor-text' : ''}`}
+                            className="text-sm cursor-pointer"
                             style={{ 
                               textDecoration: todo.done ? 'line-through' : 'none', 
                               opacity: todo.done ? 0.6 : 1
@@ -2380,7 +2384,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             <div className="text-sm font-medium text-gray-700">{t('tasks.date')}</div>
             <DateDropdown
               value={date}
-              onChange={(newDate) => {
+              onChange={async (newDate) => {
                 // Validate date if this is a subtask
                 if (isSubtask && newDate && parentTaskDate) {
                   const subtaskDate = parseISO(newDate)
@@ -2388,7 +2392,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   
                   // Check if subtask date is before parent date
                   if (isAfter(parentDate, subtaskDate) && !isEqual(parentDate, subtaskDate)) {
-                    alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${parentTaskDate})`)
+                    await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${parentTaskDate})`, t('common.validationError') || 'Validation Error')
                     return
                   }
                 }

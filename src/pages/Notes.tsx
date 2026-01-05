@@ -14,6 +14,7 @@ import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { downloadNotes } from '@/lib/notesExport';
 import { logger } from '@/lib/monitoring';
 import { supabase } from '@/lib/supabaseClient';
+import { useModalConfirm } from '@/utils/modalConfirm';
 import '@/notes.css';
 
 type Folder = {
@@ -26,6 +27,7 @@ function NotesPageContent() {
   const { t } = useSafeTranslation();
   const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
+  const { confirm } = useModalConfirm();
   const [notes, setNotes] = useState<Note[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
@@ -196,9 +198,9 @@ function NotesPageContent() {
   }, []);
 
   // Export functionality
-  const handleExportNotes = useCallback(() => {
-    const exportFormat = window.confirm(
-      t('notes.exportFormat') || 'Экспортировать в JSON? (Отмена = Markdown)'
+  const handleExportNotes = useCallback(async () => {
+    const exportFormat = await confirm(
+      t('notes.exportFormat') || 'Экспортировать в JSON? (Отмена = Markdown)', 'Экспорт заметок'
     )
     
     const notesToExport = activeFolder === 'ALL' 

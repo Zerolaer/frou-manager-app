@@ -5,6 +5,7 @@ import { RecurringTaskSettings } from '@/types/recurring'
 import { getRecurrenceDescription as getRecurrenceDescriptionUtil } from '@/utils/recurringUtils'
 import RecurringEditModal from './RecurringSettingsModal'
 import { supabase } from '@/lib/supabaseClient'
+import { useModalConfirm } from '@/utils/modalConfirm'
 
 type Task = {
   id: string
@@ -19,6 +20,7 @@ type Props = {
 
 export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) {
   const { t } = useSafeTranslation()
+  const { alert } = useModalConfirm()
   const [showEditModal, setShowEditModal] = useState(false)
   const [recurringSettings, setRecurringSettings] = useState<RecurringTaskSettings | null>(null)
   const [loading, setLoading] = useState(false)
@@ -107,7 +109,7 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
       console.log('✅ Recurrence settings saved successfully')
     } catch (error) {
       console.error('❌ Error saving recurrence:', error)
-      alert('Ошибка при сохранении настроек повторения. Проверьте консоль для деталей.')
+      await alert('Ошибка при сохранении настроек повторения. Проверьте консоль для деталей.', t('common.error') || 'Error')
     } finally {
       setSaving(false)
     }

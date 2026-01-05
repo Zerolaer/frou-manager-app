@@ -337,7 +337,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
               zIndex: 1000
             }}
           >
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-72">
               <button
                 onClick={()=>{ setRenameValue(ctxFolder.name); setRenameOpen(true); setCtxOpen(false) }}
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
@@ -447,16 +447,24 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
         open={delOpen}
         onClose={()=>setDelOpen(false)}
         title={t('notes.deleteFolder') || 'Delete Folder?'}
-        footer={createDangerFooter(
-          { 
-            label: t('actions.delete'), 
-            onClick: deleteOk
-          },
-          { 
-            label: t('actions.cancel'), 
-            onClick: () => setDelOpen(false)
-          }
-        )}
+        footer={
+          <>
+            <button
+              onClick={() => setDelOpen(false)}
+              className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
+              style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
+            >
+              {t('actions.cancel')}
+            </button>
+            <button
+              onClick={deleteOk}
+              className="inline-flex items-center justify-center px-4 font-medium text-white bg-red-600 hover:bg-red-700 transition-colors leading-none h-10"
+              style={{ borderRadius: '12px', fontSize: '13px' }}
+            >
+              {t('actions.delete')}
+            </button>
+          </>
+        }
       >
         <div className="text-sm text-gray-600">{t('notes.deleteFolderWarning') || 'Folder and related notes will be deleted.'}</div>
       </UnifiedModal>

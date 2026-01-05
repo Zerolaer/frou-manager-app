@@ -2,17 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { Plus, FileText, Edit2, Download, X, Upload, Save, Edit2 as EditIcon, Trash2, ChevronDown, ChevronUp, Search, Filter, TrendingUp, MoreVertical } from 'lucide-react'
+import { Plus, FileText, Edit2, Download, X, Upload, Save, Edit2 as EditIcon, Trash2, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import SideModal from '@/components/ui/SideModal'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
-import { formatCurrencyEUR } from '@/lib/format'
+import { formatCurrencyEUR, formatCurrency } from '@/lib/format'
+import { useModalConfirm } from '@/utils/modalConfirm'
 import { exportInvoiceToPDF } from '@/utils/invoicePdf'
 import InvoiceFolderSidebar from '@/components/invoice/InvoiceFolderSidebar'
 import InvoiceCard from '@/components/invoice/InvoiceCard'
 import InvoiceClientsPanel from '@/components/invoice/InvoiceClientsPanel'
 import InvoiceFromTemplatesPanel from '@/components/invoice/InvoiceFromTemplatesPanel'
 import InvoicePreview from '@/components/invoice/InvoicePreview'
-import CreateInvoiceWizard from '@/components/invoice/CreateInvoiceWizard'
+import CreateInvoiceModal from '@/components/invoice/CreateInvoiceModal'
 import Dropdown from '@/components/ui/Dropdown'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import '@/invoice.css'
@@ -37,6 +39,8 @@ interface Invoice {
   date: string
   due_date: string
   notes: string
+  currency?: 'EUR' | 'USD' | 'GEL' | 'RUB'
+  status?: 'Waiting' | 'Paid' | 'Canceled'
   // FROM (отправитель) данные
   from_name?: string
   from_country?: string
@@ -74,9 +78,13 @@ interface ClientTemplate {
 }
 
 function InvoicePageContent() {
-  const { t } = useSafeTranslation()
+  const { t, i18n } = useSafeTranslation()
   const { userId } = useSupabaseAuth()
   const { createSimpleFooter } = useModalActions()
+  const { confirm, alert } = useModalConfirm()
+  
+  // Get locale based on current language
+  const locale = i18n?.language === 'ru' ? 'ru-RU' : 'en-US'
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL')
@@ -85,7 +93,7 @@ function InvoicePageContent() {
   const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<Invoice | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showCreateWizard, setShowCreateWizard] = useState(false)
+  const [openInRightPanel, setOpenInRightPanel] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Collapsible sections state
@@ -116,6 +124,7 @@ function InvoicePageContent() {
   })
   const [notes, setNotes] = useState('')
   const [taxRate, setTaxRate] = useState(0)
+  const [currency, setCurrency] = useState<'EUR' | 'USD' | 'GEL' | 'RUB'>('EUR')
   const [items, setItems] = useState<Omit<InvoiceItem, 'id'>[]>([])
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [folders, setFolders] = useState<Array<{ id: string; name: string; color?: string }>>([])
@@ -264,9 +273,9 @@ function InvoicePageContent() {
       if (error) {
         console.error('Error loading invoices:', error)
         if (error.code === '42P01' || error.message.includes('does not exist')) {
-          alert('Таблица invoices не существует!\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor')
+          await alert('Таблица invoices не существует!\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor', t('common.error') || 'Error')
         } else {
-          alert(`Ошибка загрузки инвойсов: ${error.message}`)
+          await alert(`Ошибка загрузки инвойсов: ${error.message}`, t('common.error') || 'Error')
         }
         setInvoices([])
         setLoading(false)
@@ -284,6 +293,7 @@ function InvoicePageContent() {
 
           return {
             ...inv,
+            status: (inv.status && ['Waiting', 'Paid', 'Canceled'].includes(inv.status)) ? inv.status : 'Waiting',
             items: (itemsData || []).map(item => ({
               id: item.id,
               description: item.description,
@@ -307,9 +317,9 @@ function InvoicePageContent() {
       setInvoices([])
       if (error instanceof Error) {
         if (error.message.includes('does not exist') || error.message.includes('42P01')) {
-          alert('Таблица invoices не существует!\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor')
+          await alert('Таблица invoices не существует!\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor', t('common.error') || 'Error')
         } else {
-          alert(`Ошибка загрузки инвойсов: ${error.message}`)
+          await alert(`Ошибка загрузки инвойсов: ${error.message}`, t('common.error') || 'Error')
         }
       }
     } finally {
@@ -338,6 +348,8 @@ function InvoicePageContent() {
           date,
           due_date: dueDate,
           notes,
+          currency,
+          status: 'Waiting',
           // FROM fields
           from_name: fromName || null,
           from_country: fromCountry || null,
@@ -367,12 +379,12 @@ function InvoicePageContent() {
 
       if (invoiceError) {
         console.error('Error creating invoice:', invoiceError)
-        alert(`Ошибка создания инвойса: ${invoiceError.message}\n\nПроверьте:\n1. Выполнен ли SQL скрипт create-invoice-tables.sql в Supabase?\n2. Существуют ли таблицы invoices и invoice_folders?`)
+        await alert(`Ошибка создания инвойса: ${invoiceError.message}\n\nПроверьте:\n1. Выполнен ли SQL скрипт create-invoice-tables.sql в Supabase?\n2. Существуют ли таблицы invoices и invoice_folders?`, t('common.error') || 'Error')
         return
       }
 
       if (!invoiceData) {
-        alert('Ошибка: инвойс не был создан')
+        await alert('Ошибка: инвойс не был создан', t('common.error') || 'Error')
         return
       }
 
@@ -399,13 +411,44 @@ function InvoicePageContent() {
 
         if (itemsError) {
           console.error('Error creating invoice items:', itemsError)
-          alert(`Ошибка создания позиций: ${itemsError.message}`)
+          await alert(`Ошибка создания позиций: ${itemsError.message}`, t('common.error') || 'Error')
           // Удаляем созданный инвойс, если не удалось создать позиции
           await supabase.from('invoices').delete().eq('id', invoiceData.id)
           return
         }
       }
 
+      // Load full invoice with items
+      const { data: invoiceItems, error: itemsLoadError } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', invoiceData.id)
+        .order('position')
+
+      if (itemsLoadError) {
+        console.error('Error loading invoice items:', itemsLoadError)
+      }
+
+      const fullInvoice: Invoice = {
+        ...invoiceData,
+        items: (invoiceItems || []).map((item: any) => ({
+          id: item.id,
+          description: item.description,
+          period: item.period || null,
+          quantity: item.quantity,
+          price: item.price,
+          price_per_hour: item.price_per_hour || null,
+          hours: item.hours || null,
+          item_type: item.item_type || 'product',
+          total: item.quantity * item.price
+        }))
+      }
+
+      // Open invoice in right panel for editing (not full-page mode)
+      setSelectedInvoice(fullInvoice)
+      setIsEditing(true)
+      setOpenInRightPanel(true)
+      
       await loadInvoices()
       // Reload client stats after creating invoice
       if (userId) {
@@ -416,7 +459,7 @@ function InvoicePageContent() {
       setShowCreateModal(false)
     } catch (error) {
       console.error('Error creating invoice:', error)
-      alert(`Ошибка создания инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка создания инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
@@ -431,9 +474,11 @@ function InvoicePageContent() {
         .insert({
           user_id: userId,
           invoice_number: wizardData.invoiceNumber,
+          status: 'Waiting',
           date: wizardData.date,
           due_date: wizardData.dueDate,
           notes: wizardData.notes || '',
+          currency: wizardData.currency || 'EUR',
           // FROM fields from template
           from_name: wizardData.selectedFromTemplate?.name || null,
           from_country: wizardData.selectedFromTemplate?.country || null,
@@ -495,6 +540,37 @@ function InvoicePageContent() {
         }
       }
 
+      // Load full invoice with items
+      const { data: invoiceItems, error: itemsLoadError } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', invoiceData.id)
+        .order('position')
+
+      if (itemsLoadError) {
+        console.error('Error loading invoice items:', itemsLoadError)
+      }
+
+      const fullInvoice: Invoice = {
+        ...invoiceData,
+        items: (invoiceItems || []).map((item: any) => ({
+          id: item.id,
+          description: item.description,
+          period: item.period || null,
+          quantity: item.quantity,
+          price: item.price,
+          price_per_hour: item.price_per_hour || null,
+          hours: item.hours || null,
+          item_type: item.item_type || 'product',
+          total: item.quantity * item.price
+        }))
+      }
+
+      // Open invoice in right panel for editing (not full-page mode)
+      setSelectedInvoice(fullInvoice)
+      setIsEditing(true)
+      setOpenInRightPanel(true)
+      
       await loadInvoices()
       if (userId) {
         window.dispatchEvent(new CustomEvent('invoice-created'))
@@ -518,6 +594,7 @@ function InvoicePageContent() {
           date,
           due_date: dueDate,
           notes,
+          currency,
           // FROM fields
           from_name: fromName || null,
           from_country: fromCountry || null,
@@ -546,7 +623,7 @@ function InvoicePageContent() {
 
       if (invoiceError) {
         console.error('Error updating invoice:', invoiceError)
-        alert(`Ошибка обновления инвойса: ${invoiceError.message}`)
+        await alert(`Ошибка обновления инвойса: ${invoiceError.message}`, t('common.error') || 'Error')
         return
       }
 
@@ -579,9 +656,9 @@ function InvoicePageContent() {
         if (itemsError) {
           console.error('Error updating invoice items:', itemsError)
           if (itemsError.message.includes('item_type')) {
-            alert('Ошибка: колонка item_type не найдена в таблице invoice_items.\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor')
+            await alert('Ошибка: колонка item_type не найдена в таблице invoice_items.\n\nПожалуйста, выполните SQL скрипт:\nscripts/create-invoice-tables.sql\n\nв Supabase Dashboard → SQL Editor', t('common.error') || 'Error')
           } else {
-            alert(`Ошибка обновления позиций: ${itemsError.message}`)
+            await alert(`Ошибка обновления позиций: ${itemsError.message}`, t('common.error') || 'Error')
           }
           return
         }
@@ -590,9 +667,76 @@ function InvoicePageContent() {
       await loadInvoices()
       setIsEditing(false)
       setSelectedInvoice(null)
+      setOpenInRightPanel(false)
     } catch (error) {
       console.error('Error updating invoice:', error)
-      alert(`Ошибка обновления инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка обновления инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
+    }
+  }
+
+  const handleUpdateInvoiceStatus = async (invoiceId: string, newStatus: 'Waiting' | 'Paid' | 'Canceled') => {
+    try {
+      console.log('Updating invoice status:', { invoiceId, newStatus, userId })
+      
+      const { data, error } = await supabase
+        .from('invoices')
+        .update({ status: newStatus })
+        .eq('id', invoiceId)
+        .eq('user_id', userId)
+        .select()
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        
+        // Check if column doesn't exist
+        if (error.code === '42703' || error.code === 'PGRST204' || (error.message.includes('column') && error.message.includes('does not exist')) || error.message.includes('schema cache')) {
+          throw new Error(`Колонка 'status' не существует в таблице invoices.\n\nПожалуйста, выполните SQL скрипт:\nscripts/add-status-to-invoices.sql\n\nв Supabase Dashboard → SQL Editor`)
+        }
+        
+        throw error
+      }
+      
+      console.log('Status updated successfully:', data)
+      
+      // Update local state
+      setInvoices(prev => prev.map(inv => 
+        inv.id === invoiceId ? { ...inv, status: newStatus } : inv
+      ))
+      
+      // Update selected invoice if it's the same
+      if (selectedInvoiceForView?.id === invoiceId) {
+        setSelectedInvoiceForView(prev => prev ? { ...prev, status: newStatus } : null)
+      }
+      
+      if (selectedInvoice?.id === invoiceId) {
+        setSelectedInvoice(prev => prev ? { ...prev, status: newStatus } : null)
+      }
+      
+      // Show success message
+      await alert(t('invoice.statusUpdated') || 'Статус успешно обновлен', t('common.success') || 'Success')
+    } catch (error) {
+      console.error('Error updating invoice status:', error)
+      
+      let errorMessage = 'Неизвестная ошибка'
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (typeof error === 'object' && error !== null) {
+        const supabaseError = error as any
+        errorMessage = supabaseError.message || supabaseError.details || 'Неизвестная ошибка'
+        
+        if (supabaseError.code) {
+          errorMessage += ` (код: ${supabaseError.code})`
+        }
+      }
+      
+      await alert(`Ошибка обновления статуса: ${errorMessage}`, t('common.error') || 'Error')
     }
   }
 
@@ -616,12 +760,14 @@ function InvoicePageContent() {
   }
 
   const handleEditInvoice = (invoice: Invoice) => {
+    setOpenInRightPanel(false) // Explicit edit opens in full-page mode
     setSelectedInvoice(invoice)
     setInvoiceNumber(invoice.invoice_number)
     setDate(invoice.date)
     setDueDate(invoice.due_date)
     setNotes(invoice.notes || '')
     setTaxRate(invoice.tax_rate || 0)
+    setCurrency(invoice.currency || 'EUR')
     
     // FROM fields
     setFromName(invoice.from_name || '')
@@ -693,7 +839,7 @@ function InvoicePageContent() {
   }, [showCreateModal, isEditing, fromDataSaved, isEditingFrom])
 
   // Save FROM template to localStorage
-  const saveFromTemplate = () => {
+  const saveFromTemplate = async () => {
     try {
       const template = {
         fromName,
@@ -727,7 +873,7 @@ function InvoicePageContent() {
       }, 2000)
     } catch (error) {
       console.error('Error saving FROM template:', error)
-      alert('Ошибка сохранения данных')
+      await alert('Ошибка сохранения данных', t('common.error') || 'Error')
     }
   }
   
@@ -752,7 +898,7 @@ function InvoicePageContent() {
   // Save TO template (used in TO section)
   const saveToTemplate = async () => {
     if (!userId || !clientName.trim()) {
-      alert('Введите имя клиента')
+      await alert('Введите имя клиента', 'Внимание')
       return
     }
     try {
@@ -774,7 +920,7 @@ function InvoicePageContent() {
       setToDataChanged(false)
       // Show notification
       const notification = document.createElement('div')
-      notification.textContent = 'Клиент сохранен'
+      notification.textContent = t('invoice.clientSaved') || 'Client saved'
       notification.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #059669; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
       document.body.appendChild(notification)
       setTimeout(() => {
@@ -784,7 +930,7 @@ function InvoicePageContent() {
       }, 2000)
     } catch (error) {
       console.error('Error saving client template:', error)
-      alert(`Ошибка сохранения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка сохранения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
   
@@ -822,7 +968,7 @@ function InvoicePageContent() {
   // Save client template
   const saveClientTemplate = async () => {
     if (!userId || !clientName.trim()) {
-      alert('Введите имя клиента')
+      await alert('Введите имя клиента', 'Внимание')
       return
     }
     try {
@@ -851,17 +997,17 @@ function InvoicePageContent() {
       setClientEmail('')
       setClientAddress('')
       setClientPhone('')
-      alert(t('invoice.clientTemplates') + ' ' + t('invoice.saved'))
+      await alert(t('invoice.clientTemplates') + ' ' + t('invoice.saved'), 'Успешно')
     } catch (error) {
       console.error('Error saving client template:', error)
-      alert(`Ошибка сохранения шаблона: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка сохранения шаблона: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
   // Update client template
   const updateClientTemplate = async () => {
     if (!userId || !editingClient || !clientName.trim()) {
-      alert('Введите имя клиента')
+      await alert('Введите имя клиента', 'Внимание')
       return
     }
     try {
@@ -902,14 +1048,15 @@ function InvoicePageContent() {
       }, 2000)
     } catch (error) {
       console.error('Error updating client template:', error)
-      alert(`Ошибка обновления клиента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка обновления клиента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
   // Delete client template
   const handleDeleteClient = async (clientId: string) => {
     if (!userId) return
-    if (!confirm(t('invoice.confirmDeleteClient') || 'Вы уверены, что хотите удалить этого клиента?')) {
+    const result = await confirm(t('invoice.confirmDeleteClient') || 'Вы уверены, что хотите удалить этого клиента?', t('invoice.deleteClientTitle') || 'Delete Client')
+    if (!result) {
       return
     }
     try {
@@ -938,7 +1085,7 @@ function InvoicePageContent() {
       }, 2000)
     } catch (error) {
       console.error('Error deleting client template:', error)
-      alert(`Ошибка удаления клиента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка удаления клиента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     }
   }
 
@@ -960,6 +1107,7 @@ function InvoicePageContent() {
     setDueDate(d.toISOString().split('T')[0])
     setNotes('')
     setTaxRate(0)
+    setCurrency('EUR')
     setItems([])
     setSelectedFolderId(null)
     
@@ -1067,7 +1215,7 @@ function InvoicePageContent() {
       await exportInvoiceToPDF(invoice, pdfThemeColor)
     } catch (error) {
       console.error('Error exporting PDF:', error)
-      alert(t('invoice.exportError'))
+      await alert(t('invoice.exportError'), t('common.error') || 'Error')
     }
   }
 
@@ -1106,65 +1254,30 @@ function InvoicePageContent() {
     const currentMonth = now.getMonth()
     const currentYear = now.getFullYear()
     
+    // Все инвойсы
+    const totalCount = filteredInvoices.length
+    
+    // Общий доход со всех инвойсов
+    const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+    
+    // Инвойсы этого месяца
     const thisMonthInvoices = filteredInvoices.filter(inv => {
       const invDate = new Date(inv.date)
       return invDate.getMonth() === currentMonth && invDate.getFullYear() === currentYear
     })
     
-    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
-    
-    // Determine paid/unpaid based on due_date (if due_date is past, consider unpaid)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    const paidInvoices = filteredInvoices.filter(inv => {
-      if (!inv.due_date) return false
-      const dueDate = new Date(inv.due_date)
-      dueDate.setHours(0, 0, 0, 0)
-      // For now, consider invoices with due_date in the past as potentially unpaid
-      // In real app, you'd have a status field
-      return dueDate >= today
-    })
-    
-    const unpaidInvoices = filteredInvoices.filter(inv => {
-      if (!inv.due_date) return true
-      const dueDate = new Date(inv.due_date)
-      dueDate.setHours(0, 0, 0, 0)
-      return dueDate < today
-    })
-    
-    const paidAmount = paidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
-    const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
-    
-    const thisMonthPaid = thisMonthInvoices.filter(inv => {
-      if (!inv.due_date) return false
-      const dueDate = new Date(inv.due_date)
-      dueDate.setHours(0, 0, 0, 0)
-      return dueDate >= today
-    })
-    
-    const thisMonthUnpaid = thisMonthInvoices.filter(inv => {
-      if (!inv.due_date) return true
-      const dueDate = new Date(inv.due_date)
-      dueDate.setHours(0, 0, 0, 0)
-      return dueDate < today
-    })
+    // Доход с инвойсов этого месяца
+    const thisMonthRevenue = thisMonthInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
     
     return {
-      total: totalAmount,
-      totalCount: filteredInvoices.length,
-      paid: paidAmount,
-      paidCount: paidInvoices.length,
-      unpaid: unpaidAmount,
-      unpaidCount: unpaidInvoices.length,
-      thisMonthCount: thisMonthInvoices.length,
-      thisMonthPaidCount: thisMonthPaid.length,
-      thisMonthUnpaidCount: thisMonthUnpaid.length
+      totalCount,
+      totalRevenue,
+      thisMonthRevenue
     }
   }, [filteredInvoices])
 
-  // Show full-page create/edit mode
-  if (showCreateModal || isEditing) {
+  // Show full-page create/edit mode (only for editing, not for creating - creating uses modal)
+  if (isEditing && !openInRightPanel && !showCreateModal) {
     return (
       <div className="invoice-create-page" style={{ height: 'calc(100vh - 96px)', display: 'flex', flexDirection: 'column' }}>
         {/* Header with actions */}
@@ -1175,6 +1288,7 @@ function InvoicePageContent() {
                 setShowCreateModal(false)
                 setIsEditing(false)
                 setSelectedInvoice(null)
+                setOpenInRightPanel(false)
                 resetForm()
               }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1191,6 +1305,7 @@ function InvoicePageContent() {
                 setShowCreateModal(false)
                 setIsEditing(false)
                 setSelectedInvoice(null)
+                setOpenInRightPanel(false)
                 resetForm()
               }}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1759,7 +1874,7 @@ function InvoicePageContent() {
                               </div>
                             )}
                             <div className="mt-2 text-sm font-medium text-gray-700">
-                              {t('invoice.total')}: {formatCurrencyEUR(item.total || item.quantity * item.price)}
+                              {t('invoice.total')}: {formatCurrency(item.total || item.quantity * item.price, selectedInvoice?.currency || 'EUR')}
                             </div>
                           </div>
                           <button
@@ -1819,6 +1934,7 @@ function InvoicePageContent() {
               dueDate={dueDate}
               notes={notes}
               taxRate={taxRate}
+              currency={currency}
               fromName={fromName}
               fromCountry={fromCountry}
               fromCity={fromCity}
@@ -1874,60 +1990,39 @@ function InvoicePageContent() {
           <div className="flex flex-col h-full">
             {/* Summary Cards */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              {/* Total Invoices */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5 relative">
-                <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-400" />
-                </button>
+              {/* Количество инвойсов */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="mb-2">
                   <div className="text-2xl font-bold text-gray-900">
-                    {formatCurrencyEUR(invoiceStats.total)}
+                    {invoiceStats.totalCount}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    Invoices this month
+                    {t('invoice.totalInvoices') || 'Всего инвойсов'}
                   </div>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>8%</span>
                 </div>
               </div>
 
-              {/* Paid Invoices */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5 relative">
-                <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-400" />
-                </button>
+              {/* Общий доход */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="mb-2">
                   <div className="text-2xl font-bold text-gray-900">
-                    {formatCurrencyEUR(invoiceStats.paid)}
+                    {formatCurrency(invoiceStats.totalRevenue, 'EUR')}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    from {invoiceStats.thisMonthPaidCount} invoices this month
+                    {t('invoice.totalRevenue') || 'Общий доход'}
                   </div>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>8%</span>
                 </div>
               </div>
 
-              {/* Unpaid Invoices */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5 relative">
-                <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-400" />
-                </button>
+              {/* Доход этого месяца */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="mb-2">
                   <div className="text-2xl font-bold text-gray-900">
-                    {formatCurrencyEUR(invoiceStats.unpaid)}
+                    {formatCurrency(invoiceStats.thisMonthRevenue, 'EUR')}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    from {invoiceStats.thisMonthUnpaidCount} invoices this month
+                    {t('invoice.thisMonthRevenue') || 'Доход за этот месяц'}
                   </div>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>8%</span>
                 </div>
               </div>
             </div>
@@ -2005,20 +2100,27 @@ function InvoicePageContent() {
                             <ChevronDown className="w-3 h-3" />
                           </div>
                         </th>
+                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {filteredInvoices.map((invoice) => {
                         const isSelected = selectedInvoiceForView?.id === invoice.id
-                        const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date()
-                        const status = isOverdue ? 'Unpaid' : 'Paid'
+                        const status = invoice.status || 'Waiting'
+                        const statusColors = {
+                          Waiting: 'bg-yellow-100 text-yellow-800',
+                          Paid: 'bg-green-100 text-green-800',
+                          Canceled: 'bg-red-100 text-red-800'
+                        }
                         
                         return (
                           <tr
                             key={invoice.id}
                             onClick={() => setSelectedInvoiceForView(invoice)}
                             className={`cursor-pointer hover:bg-gray-50 transition-colors ${
-                              isSelected ? 'bg-blue-50' : ''
+                              isSelected ? 'bg-gray-100' : ''
                             }`}
                           >
                             <td className="px-6 py-4">
@@ -2045,15 +2147,29 @@ function InvoicePageContent() {
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                status === 'Paid' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-orange-100 text-orange-800'
+                                statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'
                               }`}>
                                 {status}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                              {formatCurrencyEUR(invoice.total)}
+                              {formatCurrency(invoice.total, invoice.currency || 'EUR')}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  const confirmMessage = t('invoice.confirmDelete') || 'Вы уверены, что хотите удалить этот инвойс?'
+                                  const result = await confirm(confirmMessage, t('invoice.deleteInvoiceTitle') || 'Delete Invoice')
+                                  if (result) {
+                                    handleDeleteInvoice(invoice.id)
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-red-600"
+                                title={t('actions.delete') || 'Удалить'}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </td>
                           </tr>
                         )
@@ -2071,25 +2187,42 @@ function InvoicePageContent() {
       {userId && (
         <div className="invoice-right-sidebar">
           {selectedInvoiceForView ? (
-            /* Invoices Detail Panel */
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col h-full">
+            <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden flex flex-col h-full">
+              {/* Header */}
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Invoices Detail</h3>
-                <button
-                  onClick={() => setSelectedInvoiceForView(null)}
-                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
+                <h3 className="text-lg font-semibold text-gray-900">{t('invoice.invoiceDetailsTitle') || 'Invoice Details'}</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      const confirmMessage = t('invoice.confirmDelete') || 'Вы уверены, что хотите удалить этот инвойс?'
+                      const result = await confirm(confirmMessage, t('invoice.deleteInvoiceTitle') || 'Delete Invoice')
+                      if (result) {
+                        handleDeleteInvoice(selectedInvoiceForView.id)
+                        setSelectedInvoiceForView(null)
+                      }
+                    }}
+                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-600"
+                    title={t('actions.delete') || 'Удалить'}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setSelectedInvoiceForView(null)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
               </div>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* From/To */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">From</div>
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('invoice.from') || 'From'}</div>
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                           {selectedInvoiceForView.from_name?.charAt(0) || 'P'}
                         </span>
@@ -2102,9 +2235,9 @@ function InvoicePageContent() {
                   </div>
                   
                   <div>
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">To</div>
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('invoice.to') || 'To'}</div>
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                           {selectedInvoiceForView.client_name?.charAt(0) || 'F'}
                         </span>
@@ -2120,9 +2253,9 @@ function InvoicePageContent() {
                 {/* Key Details */}
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Due Date</span>
+                    <span className="text-sm text-gray-500">{t('invoice.dueDate') || 'Due Date'}</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {new Date(selectedInvoiceForView.due_date).toLocaleDateString('en-GB', {
+                      {new Date(selectedInvoiceForView.due_date).toLocaleDateString(locale, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric'
@@ -2130,38 +2263,40 @@ function InvoicePageContent() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Subject</span>
+                    <span className="text-sm text-gray-500">{t('invoice.subject') || 'Subject'}</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {selectedInvoiceForView.invoice_number} - {new Date(selectedInvoiceForView.date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                      {selectedInvoiceForView.invoice_number} - {new Date(selectedInvoiceForView.date).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Billed to</span>
+                    <span className="text-sm text-gray-500">{t('invoice.billTo') || 'Billed to'}</span>
                     <span className="text-sm font-medium text-gray-900">{selectedInvoiceForView.client_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Currency</span>
-                    <span className="text-sm font-medium text-gray-900">EUR - Euro</span>
+                    <span className="text-sm text-gray-500">{t('invoice.currencyLabel') || 'Currency'}</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {selectedInvoiceForView.currency || 'EUR'} - {selectedInvoiceForView.currency === 'USD' ? 'Dollar' : selectedInvoiceForView.currency === 'EUR' ? 'Euro' : selectedInvoiceForView.currency || 'Euro'}
+                    </span>
                   </div>
                 </div>
 
                 {/* Items Table */}
                 <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Items</div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('invoice.itemsLabel') || 'Items'}</div>
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 text-xs font-semibold text-gray-700">Description</th>
-                        <th className="text-right py-2 text-xs font-semibold text-gray-700">Price</th>
-                        <th className="text-right py-2 text-xs font-semibold text-gray-700">Amount</th>
+                        <th className="text-left py-2 text-xs font-semibold text-gray-700">{t('invoice.description') || 'Description'}</th>
+                        <th className="text-right py-2 text-xs font-semibold text-gray-700">{t('invoice.priceLabel') || 'Price'}</th>
+                        <th className="text-right py-2 text-xs font-semibold text-gray-700">{t('invoice.amount') || 'Amount'}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedInvoiceForView.items.map((item, index) => (
                         <tr key={index} className="border-b border-gray-100">
                           <td className="py-2 text-sm text-gray-700">{item.description}</td>
-                          <td className="py-2 text-sm text-gray-700 text-right">{formatCurrencyEUR(item.price)}</td>
-                          <td className="py-2 text-sm font-medium text-gray-900 text-right">{formatCurrencyEUR(item.total)}</td>
+                          <td className="py-2 text-sm text-gray-700 text-right">{formatCurrency(item.price, selectedInvoiceForView.currency || 'EUR')}</td>
+                          <td className="py-2 text-sm font-medium text-gray-900 text-right">{formatCurrency(item.total, selectedInvoiceForView.currency || 'EUR')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2171,26 +2306,60 @@ function InvoicePageContent() {
                 {/* Summary */}
                 <div className="space-y-2 pt-4 border-t border-gray-200">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium text-gray-900">{formatCurrencyEUR(selectedInvoiceForView.subtotal)}</span>
+                    <span className="text-gray-600">{t('invoice.subtotalLabel') || 'Subtotal'}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(selectedInvoiceForView.subtotal, selectedInvoiceForView.currency || 'EUR')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Discount %</span>
-                    <span className="font-medium text-gray-900">$0</span>
+                    <span className="text-gray-600">{t('invoice.discount') || 'Discount %'}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(0, selectedInvoiceForView.currency || 'EUR')}</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold pt-2 border-t border-gray-200">
-                    <span>Total</span>
-                    <span>{formatCurrencyEUR(selectedInvoiceForView.total)}</span>
+                    <span>{t('invoice.totalLabel') || 'Total'}</span>
+                    <span>{formatCurrency(selectedInvoiceForView.total, selectedInvoiceForView.currency || 'EUR')}</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold pt-2">
-                    <span>Amount due</span>
-                    <span>{formatCurrencyEUR(selectedInvoiceForView.total)}</span>
+                    <span>{t('invoice.amountDue') || 'Amount due'}</span>
+                    <span>{formatCurrency(selectedInvoiceForView.total, selectedInvoiceForView.currency || 'EUR')}</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Action Button */}
-                <button className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Paid Now
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-4 bg-gray-50">
+                <div className="flex-1 max-w-xs">
+                  <Dropdown
+                    options={[
+                      { value: 'Waiting', label: t('invoice.statusWaiting') || 'Waiting' },
+                      { value: 'Paid', label: t('invoice.statusPaid') || 'Paid' },
+                      { value: 'Canceled', label: t('invoice.statusCanceled') || 'Canceled' }
+                    ]}
+                    value={(selectedInvoiceForView.status && ['Waiting', 'Paid', 'Canceled'].includes(selectedInvoiceForView.status)) ? selectedInvoiceForView.status : 'Waiting'}
+                    onChange={(value) => {
+                      const status = value as 'Waiting' | 'Paid' | 'Canceled'
+                      if (['Waiting', 'Paid', 'Canceled'].includes(status)) {
+                        handleUpdateInvoiceStatus(selectedInvoiceForView.id, status)
+                      }
+                    }}
+                    placeholder={t('invoice.status') || 'Status'}
+                    className="w-full"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await exportInvoiceToPDF(selectedInvoiceForView, pdfThemeColor)
+                    } catch (error) {
+                      console.error('Error exporting PDF:', error)
+                      await alert(
+                        t('invoice.pdfExportError') || 'Ошибка при экспорте PDF',
+                        t('common.error') || 'Error'
+                      )
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  {t('invoice.downloadPDF') || 'Download PDF'}
                 </button>
               </div>
             </div>
@@ -2329,6 +2498,20 @@ function InvoicePageContent() {
                     step="0.01"
                   />
                 </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.currency') || 'Валюта'}</label>
+                <Dropdown
+                  value={currency}
+                  onChange={(value) => setCurrency(value as 'EUR' | 'USD' | 'GEL' | 'RUB')}
+                  options={[
+                    { value: 'EUR', label: 'EUR (€)' },
+                    { value: 'USD', label: 'USD ($)' },
+                    { value: 'GEL', label: 'GEL (₾)' },
+                    { value: 'RUB', label: 'RUB (₽)' }
+                  ]}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -2826,7 +3009,7 @@ function InvoicePageContent() {
                           )}
                           
                           <div className="mt-2 text-sm font-medium text-gray-700">
-                            {t('invoice.total')}: {formatCurrencyEUR(item.total || item.quantity * item.price)}
+                            {t('invoice.total')}: {formatCurrency(item.total || item.quantity * item.price, selectedInvoice?.currency || 'EUR')}
                           </div>
                         </div>
                         <button
@@ -2862,6 +3045,7 @@ function InvoicePageContent() {
               dueDate={dueDate}
               notes={notes}
               taxRate={taxRate}
+              currency={currency}
               fromName={fromName}
               fromCountry={fromCountry}
               fromCity={fromCity}
@@ -2961,8 +3145,8 @@ function InvoicePageContent() {
                     <tr key={index} className="border-b">
                       <td className="py-2 px-3 text-sm">{item.description}</td>
                       <td className="py-2 px-3 text-sm text-right">{item.quantity}</td>
-                      <td className="py-2 px-3 text-sm text-right">{formatCurrencyEUR(item.price)}</td>
-                      <td className="py-2 px-3 text-sm text-right font-medium">{formatCurrencyEUR(item.total)}</td>
+                      <td className="py-2 px-3 text-sm text-right">{formatCurrency(item.price, selectedInvoice.currency || 'EUR')}</td>
+                      <td className="py-2 px-3 text-sm text-right font-medium">{formatCurrency(item.total, selectedInvoice.currency || 'EUR')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2972,17 +3156,17 @@ function InvoicePageContent() {
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('invoice.subtotal')}:</span>
-                <span className="font-medium">{formatCurrencyEUR(selectedInvoice.subtotal)}</span>
+                <span className="font-medium">{formatCurrency(selectedInvoice.subtotal, selectedInvoice.currency || 'EUR')}</span>
               </div>
               {selectedInvoice.tax_rate > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t('invoice.tax')} ({selectedInvoice.tax_rate}%):</span>
-                  <span className="font-medium">{formatCurrencyEUR(selectedInvoice.tax_amount)}</span>
+                  <span className="font-medium">{formatCurrency(selectedInvoice.tax_amount, selectedInvoice.currency || 'EUR')}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>{t('invoice.total')}:</span>
-                <span>{formatCurrencyEUR(selectedInvoice.total)}</span>
+                <span>{formatCurrency(selectedInvoice.total, selectedInvoice.currency || 'EUR')}</span>
               </div>
             </div>
 
@@ -3187,11 +3371,11 @@ function InvoicePageContent() {
         </div>
       </UnifiedModal>
 
-      {/* Create Invoice Wizard */}
+      {/* Create Invoice Modal */}
       {userId && (
-        <CreateInvoiceWizard
-          open={showCreateWizard}
-          onClose={() => setShowCreateWizard(false)}
+        <CreateInvoiceModal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
           onCreateInvoice={handleCreateInvoiceFromWizard}
           userId={userId}
           folders={folders}

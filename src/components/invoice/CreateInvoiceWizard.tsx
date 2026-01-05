@@ -8,6 +8,7 @@ import Dropdown from '@/components/ui/Dropdown'
 import InvoicePreview from './InvoicePreview'
 import { ChevronRight, ChevronLeft, Check, Folder, User, Building2, Plus } from 'lucide-react'
 import { formatCurrencyEUR } from '@/lib/format'
+import { useModalConfirm } from '@/utils/modalConfirm'
 
 interface ClientTemplate {
   id: string
@@ -61,6 +62,7 @@ interface Props {
 export default function CreateInvoiceWizard({ open, onClose, onCreateInvoice, userId, folders }: Props) {
   const { t } = useSafeTranslation()
   const { createSimpleFooter } = useModalActions()
+  const { alert } = useModalConfirm()
   
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -144,13 +146,13 @@ export default function CreateInvoiceWizard({ open, onClose, onCreateInvoice, us
   
   const { subtotal, taxAmount, total } = useMemo(() => calculateTotals(), [items, taxRate])
   
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1 && !selectedClientId) {
-      alert('Выберите клиента')
+      await alert('Выберите клиента', 'Внимание')
       return
     }
     if (step === 2 && !selectedFromTemplateId) {
-      alert('Выберите данные отправителя')
+      await alert('Выберите данные отправителя', 'Внимание')
       return
     }
     if (step < 3) {
@@ -166,7 +168,7 @@ export default function CreateInvoiceWizard({ open, onClose, onCreateInvoice, us
   
   const handleFinish = async () => {
     if (!selectedClientId || !selectedFromTemplateId || !invoiceNumber.trim()) {
-      alert('Заполните все обязательные поля')
+      await alert('Заполните все обязательные поля', 'Внимание')
       return
     }
     
@@ -189,7 +191,7 @@ export default function CreateInvoiceWizard({ open, onClose, onCreateInvoice, us
       handleClose()
     } catch (error) {
       console.error('Error creating invoice:', error)
-      alert(`Ошибка создания инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
+      await alert(`Ошибка создания инвойса: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
     } finally {
       setLoading(false)
     }

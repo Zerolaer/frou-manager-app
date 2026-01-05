@@ -228,10 +228,7 @@ body.tasks-mode #main-content {
   border-bottom-right-radius: 24px !important;
 }
 
-/* Force rounded corners for task priority and tags */
-.task-card .text-xs {
-  border-radius: 999px !important;
-}
+/* Force rounded corners for task priority and tags - removed, using inline styles instead */
 
 .board-grid {
   display: grid;

@@ -2,7 +2,7 @@
 .invoice-page {
   height: calc(100vh - 96px); /* 100vh - Header (80px) - padding (16px) */
   display: grid;
-  grid-template-columns: 280px 1fr 320px;
+  grid-template-columns: 280px 1fr 480px;
   gap: 16px;
   box-sizing: border-box;
   overflow: hidden;
@@ -10,7 +10,7 @@
 }
 
 .invoice-page.is-collapsed {
-  grid-template-columns: 72px 1fr 320px;
+  grid-template-columns: 72px 1fr 480px;
 }
 
 /* Disable page scroll when on invoice page */
@@ -185,8 +185,8 @@ body.invoice-mode #main-content {
   background: #fff;
   border-radius: 24px;
   border: 1px solid #E9F2F6;
-  padding: 16px;
-  overflow-y: auto;
+  padding: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -235,6 +235,7 @@ body.invoice-mode #main-content {
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
+  padding: 16px;
 }
 
 .invoice-clients-empty {

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
-import { formatCurrencyEUR } from '@/lib/format'
+import { formatCurrencyEUR, formatCurrency } from '@/lib/format'
 
 type ItemType = 'product' | 'service_period' | 'hourly'
 
@@ -21,6 +21,7 @@ interface InvoicePreviewProps {
   dueDate: string
   notes: string
   taxRate: number
+  currency?: 'EUR' | 'USD' | 'GEL' | 'RUB'
   // FROM fields
   fromName?: string
   fromCountry?: string
@@ -52,6 +53,7 @@ export default function InvoicePreview({
   dueDate,
   notes,
   taxRate,
+  currency = 'EUR',
   fromName,
   fromCountry,
   fromCity,
@@ -202,10 +204,10 @@ export default function InvoicePreview({
                         </td>
                       )}
                       <td className="invoice-preview-td text-right">
-                        {formatCurrencyEUR(item.price)}
+                        {formatCurrency(item.price, currency)}
                       </td>
                       <td className="invoice-preview-td text-right font-semibold">
-                        {formatCurrencyEUR(item.total || item.quantity * item.price)}
+                        {formatCurrency(item.total || item.quantity * item.price, currency)}
                       </td>
                     </tr>
                   )
@@ -225,18 +227,18 @@ export default function InvoicePreview({
         <div className="invoice-preview-totals">
           <div className="invoice-preview-total-row">
             <span>Subtotal:</span>
-            <span className="font-semibold">{formatCurrencyEUR(subtotal)}</span>
+            <span className="font-semibold">{formatCurrency(subtotal, currency)}</span>
           </div>
           {taxRate > 0 && (
             <div className="invoice-preview-total-row">
               <span>Tax ({taxRate}%):</span>
-              <span className="font-semibold">{formatCurrencyEUR(taxAmount)}</span>
+              <span className="font-semibold">{formatCurrency(taxAmount, currency)}</span>
             </div>
           )}
           <div className="invoice-preview-total-divider"></div>
           <div className="invoice-preview-total-row invoice-preview-total-final">
             <span className="font-bold text-lg">Total:</span>
-            <span className="font-bold text-lg">{formatCurrencyEUR(total)}</span>
+            <span className="font-bold text-lg">{formatCurrency(total, currency)}</span>
           </div>
         </div>
 

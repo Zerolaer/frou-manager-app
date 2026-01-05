@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProjectCreateModal from '@/components/ProjectCreateModal'
-import Modal from '@/components/ui/Modal'
-import { CoreInput } from '@/components/ui/CoreInput'
+import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
+import { ModalInput } from '@/components/ui/ModalForm'
 import { ChevronLeft, Plus } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 
@@ -25,6 +25,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
   const [hasColor, setHasColor] = useState(false)
   const [hasPosition, setHasPosition] = useState(false)
   const [hoveredProject, setHoveredProject] = useState<string | null>(null)
+  const { createSimpleFooter, createDangerFooter } = useModalActions()
 
   // load with feature detection
   useEffect(()=>{
@@ -345,7 +346,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               zIndex: 1000
             }}
           >
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-72">
               <button
                 onClick={()=>{ setRenameValue(ctxProject.name); setRenameOpen(true); setCtxOpen(false) }}
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
@@ -386,36 +387,26 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
 
       <ProjectCreateModal open={showCreate} onClose={()=>setShowCreate(false)} userId={userId} onCreated={createOk} />
 
-      <Modal
+      <UnifiedModal
         open={renameOpen}
         onClose={()=>setRenameOpen(false)}
         title={t('projects.renameProject')}
-        footer={
-          <>
-            <button
-              onClick={() => setRenameOpen(false)}
-              className="inline-flex items-center justify-center px-4 font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors leading-none h-10"
-              style={{ borderRadius: '12px', fontSize: '13px', border: '1px solid #E5E7EB' }}
-            >
-              {t('actions.cancel')}
-            </button>
-            <button
-              onClick={renameOk}
-              disabled={!renameValue.trim()}
-              className="inline-flex items-center justify-center px-4 font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed leading-none h-10"
-              style={{ borderRadius: '12px', fontSize: '13px', backgroundColor: '#171717' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0d0d0d'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#171717'}
-            >
-              {t('actions.save')}
-            </button>
-          </>
-        }
+        footer={createSimpleFooter(
+          { 
+            label: t('actions.save'), 
+            onClick: renameOk,
+            disabled: !renameValue.trim()
+          },
+          { 
+            label: t('actions.cancel'), 
+            onClick: () => setRenameOpen(false)
+          }
+        )}
       >
-        <CoreInput value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
-      </Modal>
+        <ModalInput value={renameValue} onChange={(e)=>setRenameValue(e.target.value)} />
+      </UnifiedModal>
 
-      <Modal
+      <UnifiedModal
         open={delOpen}
         onClose={()=>setDelOpen(false)}
         title={t('projects.deleteProject')}
@@ -439,7 +430,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
         }
       >
         <div className="text-sm text-gray-600">{t('projects.deleteWarning')}</div>
-      </Modal>
+      </UnifiedModal>
     </aside>
   )
 }

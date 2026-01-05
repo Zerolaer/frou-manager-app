@@ -17,6 +17,8 @@ type SideModalProps = {
   customZIndex?: number // Custom z-index
   disableBackdropClick?: boolean // Don't close on backdrop click
   splitView?: boolean // Enable 50/50 split view mode
+  fullWidth?: boolean // Use full width instead of 50vw when splitView is true
+  splitViewWidth?: string // Custom width for splitView (e.g., '60%', '40%')
 }
 
 const SideModal = ({
@@ -33,6 +35,8 @@ const SideModal = ({
   customZIndex,
   disableBackdropClick = false,
   splitView = false,
+  fullWidth = false,
+  splitViewWidth,
 }: SideModalProps) => {
   const panelRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
@@ -171,7 +175,8 @@ const SideModal = ({
         <div
           ref={panelRef}
           data-modal-content
-          className={`${splitView ? 'w-[calc(50vw-24px)] h-[calc(100vh-32px)] my-4 rounded-2xl' : 'w-[50vw] h-[calc(100vh-32px)] my-4 rounded-2xl'} bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
+          style={splitView && splitViewWidth ? { width: splitViewWidth } : undefined}
+          className={`${splitView && fullWidth ? 'w-[calc(95vw-48px)] h-[calc(100vh-32px)] my-4 rounded-2xl' : splitView && splitViewWidth ? `h-[calc(100vh-32px)] my-4 rounded-2xl` : splitView ? 'w-[calc(50vw-24px)] h-[calc(100vh-32px)] my-4 rounded-2xl' : 'w-[calc(50vw-24px)] h-[calc(100vh-32px)] my-4 rounded-2xl'} bg-white shadow-2xl ring-1 ring-black/10 border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ease-out ${
             !isAnimating 
               ? 'opacity-100 translate-x-0' 
               : isLeft

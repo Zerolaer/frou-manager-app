@@ -8,6 +8,7 @@ import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
 import Dropdown from '@/components/ui/Dropdown'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useModalConfirm } from '@/utils/modalConfirm'
 import '@/settings.css'
 
 type SettingsSection = 'profile' | 'security' | 'system' | 'notifications' | 'billing' | 'data' | 'delete'
@@ -17,6 +18,7 @@ export default function Settings() {
   const { user, email } = useSupabaseAuth()
   const { theme, setTheme, getAvailableThemes } = useTheme()
   const { createSimpleFooter } = useModalActions()
+  const { alert } = useModalConfirm()
   
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile')
   const [collapsed, setCollapsed] = useState(() => {
@@ -151,11 +153,11 @@ export default function Settings() {
   // Save password
   const handleSavePassword = async () => {
     if (!newPassword || newPassword !== confirmPassword) {
-      alert('Пароли не совпадают')
+      await alert('Пароли не совпадают', t('common.error') || 'Error')
       return
     }
     if (newPassword.length < 6) {
-      alert('Пароль должен быть минимум 6 символов')
+      await alert('Пароль должен быть минимум 6 символов', t('common.error') || 'Error')
       return
     }
     setSaving(true)

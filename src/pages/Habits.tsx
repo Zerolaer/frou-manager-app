@@ -4,6 +4,7 @@ import '@/home.css';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { logger } from '@/lib/monitoring';
+import { useModalConfirm } from '@/utils/modalConfirm';
 import HabitCard from '@/components/habits/HabitCard';
 import HabitModal from '@/components/habits/HabitModal';
 import {
@@ -22,6 +23,7 @@ import { CheckSquare, Flame, Target, Activity } from 'lucide-react';
 export default function Habits() {
   const { t } = useSafeTranslation();
   const { userId } = useSupabaseAuth();
+  const { confirm } = useModalConfirm();
   const [habits, setHabits] = useState<HabitWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -90,7 +92,8 @@ export default function Habits() {
 
   // Handle delete
   const handleDelete = useCallback(async (id: string) => {
-    if (!window.confirm(t('habits.deleteConfirm') || 'Вы уверены, что хотите удалить эту привычку?')) return;
+    const result = await confirm(t('habits.deleteConfirm') || 'Вы уверены, что хотите удалить эту привычку?', t('habits.deleteHabitTitle') || 'Delete Habit')
+    if (!result) return;
     
     try {
       await deleteHabit(id);

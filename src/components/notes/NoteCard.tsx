@@ -3,6 +3,8 @@ import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom';
 import { Pin, Copy, Trash2 } from 'lucide-react';
 import type { Note } from '@/features/notes/types';
+import { useModalConfirm } from '@/utils/modalConfirm';
+import { useSafeTranslation } from '@/utils/safeTranslation';
 
 type Folder = {
   id: string;
@@ -20,6 +22,9 @@ type Props = {
 };
 
 const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: Props) => {
+  const { confirm } = useModalConfirm()
+  const { t } = useSafeTranslation()
+  
   // Strip HTML tags for preview
   const preview = useMemo(() => {
     const content = note.content ?? '';
@@ -43,12 +48,13 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
     onDuplicate?.(note);
   }, [note, onDuplicate]);
 
-  const handleDelete = useCallback((e: React.MouseEvent) => {
+  const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Удалить заметку?')) {
+    const result = await confirm(t('notes.confirmDeleteNote') || 'Удалить заметку?', t('notes.deleteNoteTitle') || 'Delete Note');
+    if (result) {
       onDelete?.(note);
     }
-  }, [note, onDelete]);
+  }, [note, onDelete, confirm, t]);
 
   // Format date
   const formattedDate = useMemo(() => {

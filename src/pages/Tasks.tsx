@@ -2918,11 +2918,11 @@ const projectColorById = React.useMemo(() => {
                             <div className="flex items-center gap-2 flex-wrap mb-2">
                               {taskItem.priority && getPriorityText(taskItem.priority) ? (
                                 <span 
-                                  className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                  className={`text-xs font-medium px-2 py-1 rounded-full ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                   style={{
                                     backgroundColor: getPriorityColor(taskItem.priority).background,
                                     color: getPriorityColor(taskItem.priority).text,
-                                    borderRadius: '999px !important'
+                                    borderRadius: '999px'
                                   }}
                                 >
                                   {getPriorityText(taskItem.priority)}
@@ -2932,11 +2932,11 @@ const projectColorById = React.useMemo(() => {
                               )}
                               {taskItem.tag && (
                                 <span 
-                                  className={`text-xs font-medium px-2 py-1 ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                  className={`text-xs font-medium px-2 py-1 rounded-full ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                   style={{
                                     backgroundColor: '#f3f4f6',
                                     color: '#6b7280',
-                                    borderRadius: '999px !important'
+                                    borderRadius: '999px'
                                   }}
                                 >
                                   {taskItem.tag}
