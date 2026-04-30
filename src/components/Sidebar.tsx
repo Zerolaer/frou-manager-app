@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, Home, Wallet, ListTodo, StickyNote, Goal, Receipt, Sparkles } from "lucide-react";
+import { ChevronLeft, Home, Wallet, ListTodo, StickyNote, LayoutDashboard, Goal, Receipt, Sparkles } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import SidebarItem from "./SidebarItem";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -19,6 +19,7 @@ export default function Sidebar() {
     { to: "/finance", label: t('nav.finance'), icon: Wallet },
     { to: "/tasks", label: t('nav.tasks'), icon: ListTodo },
     { to: "/notes", label: t('nav.notes'), icon: StickyNote },
+    { to: "/canvas", label: t('nav.canvas'), icon: LayoutDashboard },
     { to: "/invoice", label: t('nav.invoice'), icon: Receipt },
     { to: "/habits", label: t('nav.habits'), icon: Sparkles },
     { to: "/goals", label: t('nav.goals'), icon: Goal },

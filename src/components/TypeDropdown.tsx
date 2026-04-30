@@ -22,6 +22,7 @@ export default function TypeDropdown({ value, onChange, fullWidth }: Props){
       onChange={(newValue) => onChange(String(newValue) as 'income' | 'expense')}
       placeholder={t('finance.type')}
       aria-label={t('aria.selectType')}
+      renderInPortal
       className={fullWidth ? 'w-full' : ''}
     />
   )

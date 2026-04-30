@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from 'date-fns'
@@ -22,20 +22,16 @@ export default function TaskCalendarModal({
 }: TaskCalendarModalProps) {
   const { t } = useTranslation()
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  
-  // Reset to current month when modal opens
+  const onMonthChangeRef = useRef(onMonthChange)
+  onMonthChangeRef.current = onMonthChange
+
+  // Sync month once when modal opens (ref avoids effect re-running when parent passes new callback identity)
   useEffect(() => {
-    if (open) {
-      setCurrentMonth(new Date())
-    }
+    if (!open) return
+    const m = new Date()
+    setCurrentMonth(m)
+    onMonthChangeRef.current?.(m)
   }, [open])
-  
-  // Notify parent when month changes
-  useEffect(() => {
-    if (open && onMonthChange) {
-      onMonthChange(currentMonth)
-    }
-  }, [currentMonth, open, onMonthChange])
 
   const monthDays = useMemo(() => {
     const start = startOfMonth(currentMonth)
@@ -90,7 +86,14 @@ export default function TaskCalendarModal({
       {/* Month navigation */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b bg-gray-50">
         <button
-          onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+          type="button"
+          onClick={() => {
+            setCurrentMonth(prev => {
+              const next = subMonths(prev, 1)
+              onMonthChange?.(next)
+              return next
+            })
+          }}
           className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
           aria-label="Previous month"
         >
@@ -102,7 +105,14 @@ export default function TaskCalendarModal({
         </h3>
         
         <button
-          onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+          type="button"
+          onClick={() => {
+            setCurrentMonth(prev => {
+              const next = addMonths(prev, 1)
+              onMonthChange?.(next)
+              return next
+            })
+          }}
           className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
           aria-label="Next month"
         >

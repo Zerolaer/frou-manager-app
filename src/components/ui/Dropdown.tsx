@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown } from 'lucide-react'
 
 // Add keyframe animation for dropdown appearance
@@ -41,6 +42,7 @@ interface DropdownProps {
   dropdownClassName?: string
   icon?: React.ReactNode
   hideChevron?: boolean
+  renderInPortal?: boolean
   'aria-label'?: string
 }
 
@@ -56,6 +58,7 @@ export default function Dropdown({
   dropdownClassName = '',
   icon,
   hideChevron = false,
+  renderInPortal = false,
   'aria-label': ariaLabel
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
@@ -177,6 +180,70 @@ export default function Dropdown({
     setOpen(false)
   }
 
+  const dropdownContent = (
+    <div
+      ref={dropdownRef}
+      className={`bg-white border border-gray-200 rounded-xl shadow-lg z-[140] max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
+      style={{
+        ...(renderInPortal
+          ? (() => {
+              const rect = btnRef.current?.getBoundingClientRect()
+              const width = buttonWidth > 0 ? buttonWidth : rect?.width || 240
+              const top =
+                dropdownPosition === 'bottom'
+                  ? (rect?.bottom || 0) + 8
+                  : (rect?.top || 0) - 8
+              const left =
+                dropdownAlignment === 'left'
+                  ? (rect?.left || 0)
+                  : (rect?.right || 0) - width
+              return {
+                position: 'fixed' as const,
+                top,
+                left,
+                minWidth: `${width}px`,
+                width: 'auto',
+                transform:
+                  dropdownPosition === 'bottom'
+                    ? 'translateY(0)'
+                    : 'translateY(calc(-100%))',
+              }
+            })()
+          : {
+              position: 'absolute' as const,
+              [dropdownPosition === 'bottom' ? 'top' : 'bottom']: '100%',
+              [dropdownPosition === 'bottom' ? 'marginTop' : 'marginBottom']: '8px',
+              [dropdownAlignment === 'left' ? 'left' : 'right']: '0',
+              minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
+              width: 'auto',
+            }),
+        animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+        transformOrigin: dropdownPosition === 'bottom' ? 'top' : 'bottom',
+      }}
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          ref={option.value === value ? selectedOptionRef : null}
+          onClick={() => !option.disabled && handleOptionSelect(option.value)}
+          disabled={option.disabled}
+          style={{ fontSize: '13px' }}
+          className={`w-full px-2 py-3 text-left transition-colors ${
+            option.value === value 
+              ? 'bg-black text-white font-medium' 
+              : option.disabled
+              ? 'text-gray-400 cursor-not-allowed'
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+          role="option"
+          aria-selected={option.value === value}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className={`relative w-full ${className}`}>
       <button
@@ -201,41 +268,8 @@ export default function Dropdown({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div 
-            ref={dropdownRef}
-            className={`absolute bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
-            style={{
-              [dropdownPosition === 'bottom' ? 'top' : 'bottom']: '100%',
-              [dropdownPosition === 'bottom' ? 'marginTop' : 'marginBottom']: '8px',
-              [dropdownAlignment === 'left' ? 'left' : 'right']: '0',
-              minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
-              width: 'auto',
-              animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-              transformOrigin: dropdownPosition === 'bottom' ? 'top' : 'bottom'
-            }}
-          >
-            {options.map((option) => (
-              <button
-                key={option.value}
-                ref={option.value === value ? selectedOptionRef : null}
-                onClick={() => !option.disabled && handleOptionSelect(option.value)}
-                disabled={option.disabled}
-                style={{ fontSize: '13px' }}
-                className={`w-full px-2 py-3 text-left transition-colors ${
-                  option.value === value 
-                    ? 'bg-black text-white font-medium' 
-                    : option.disabled
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                role="option"
-                aria-selected={option.value === value}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <div className="fixed inset-0 z-[130]" onClick={() => setOpen(false)} />
+          {renderInPortal ? createPortal(dropdownContent, document.body) : dropdownContent}
         </>
       )}
     </div>

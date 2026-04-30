@@ -12,8 +12,6 @@ import RecurringEditModal from '@/components/RecurringEditModal'
 import MobileDayNavigator from '@/components/MobileDayNavigator'
 import MobileTasksDay from '@/components/tasks/MobileTasksDay'
 import TaskCalendarModal from '@/components/TaskCalendarModal'
-import TasksListView from '@/components/tasks/TasksListView'
-import TasksGanttView from '@/components/tasks/TasksGanttView'
 import '@/tasks.css'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
@@ -24,7 +22,8 @@ import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 import { logger } from '@/lib/monitoring'
-import { Repeat, Plus, Calendar } from 'lucide-react'
+import { Repeat, Plus } from 'lucide-react'
+import { registerTasksSubheaderHandler } from '@/lib/tasksSubheaderBridge'
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
@@ -177,7 +176,6 @@ export default function Tasks(){
   const [taskStack, setTaskStack] = React.useState<TaskItem[]>([]) // Stack of opened tasks
   const [isSubtaskOpen, setIsSubtaskOpen] = React.useState(false) // Flag for subtask modal
   const [mobileDate, setMobileDate] = React.useState(new Date())
-  const [viewMode, setViewMode] = React.useState<'weekly' | 'list' | 'gantt'>('weekly') // View mode: weekly, list, or gantt
   const lastParentUpdateRef = React.useRef<string>('') // Track last parent update to prevent loops
   const isSyncingRef = React.useRef<boolean>(false) // Prevent double sync calls
   const lastClickTimeRef = React.useRef<number>(0) // Track last click time to prevent double clicks
@@ -185,8 +183,9 @@ export default function Tasks(){
   const isOpeningModalRef = React.useRef<boolean>(false) // Track if modal is currently opening
   
   
-  // Calendar state
+  // Calendar state (guard avoids duplicate opens from repeated subheader events before React flushes)
   const [showCalendar, setShowCalendar] = React.useState(false)
+  const calendarOpenGuardRef = React.useRef(false)
   
   
   // Recurring delete modal state
@@ -206,30 +205,16 @@ export default function Tasks(){
         setOpenNewTask(true)
         break
       case 'calendar':
-        setShowCalendar(true)
+        setShowCalendar((prev) => {
+          if (prev) return prev
+          calendarOpenGuardRef.current = true
+          return true
+        })
         break
       default:
         // Unknown action
     }
   }
-
-  // Listen for view mode changes from Header
-  React.useEffect(() => {
-    const handleViewModeSelect = (event: CustomEvent) => {
-      const newMode = event.detail as 'weekly' | 'list' | 'gantt'
-      setViewMode(newMode)
-    }
-    
-    window.addEventListener('tasks-view-mode-select', handleViewModeSelect as EventListener)
-    return () => {
-      window.removeEventListener('tasks-view-mode-select', handleViewModeSelect as EventListener)
-    }
-  }, [])
-
-  // Notify Header about view mode changes
-  React.useEffect(() => {
-    window.dispatchEvent(new CustomEvent('tasks-view-mode-changed', { detail: viewMode }))
-  }, [viewMode])
 
   // New DnD system with mouse events
   const [draggedTask, setDraggedTask] = React.useState<TaskItem | null>(null)
@@ -615,16 +600,24 @@ export default function Tasks(){
     setEnd(endOfWeek(start, { weekStartsOn:1 }))
   }, [start])
 
-  // Listen for SubHeader actions
+  // Single subheader handler slot (see tasksSubheaderBridge + Header) — no duplicate window listeners
+  const handleSubHeaderActionRef = React.useRef(handleSubHeaderAction)
+  handleSubHeaderActionRef.current = handleSubHeaderAction
   React.useEffect(() => {
-    const handleSubHeaderActionEvent = (event: CustomEvent) => {
-      handleSubHeaderAction(event.detail)
-    }
-    
-    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    return () => {
-      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    }
+    const bridge = (action: string) => handleSubHeaderActionRef.current(action)
+    registerTasksSubheaderHandler(bridge)
+    return () => registerTasksSubheaderHandler(null)
+  }, [])
+
+  const closeTaskCalendar = React.useCallback(() => {
+    calendarOpenGuardRef.current = false
+    setShowCalendar(false)
+  }, [])
+
+  const onCalendarDateSelect = React.useCallback((date: Date) => {
+    setStart(startOfWeek(date, { weekStartsOn: 1 }))
+    calendarOpenGuardRef.current = false
+    setShowCalendar(false)
   }, [])
 
   // Global mouse event handlers for drag and drop
@@ -2701,6 +2694,22 @@ const projectColorById = React.useMemo(() => {
     }
   }
 
+  // Expose duplicate-cleanup helpers on window (dev / console only)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const w = window as unknown as {
+      findAndRemoveDuplicateRecurringTasks: typeof findAndRemoveDuplicateRecurringTasks
+      removeDuplicateRecurringTasks: typeof removeDuplicateRecurringTasks
+    }
+    w.findAndRemoveDuplicateRecurringTasks = findAndRemoveDuplicateRecurringTasks
+    w.removeDuplicateRecurringTasks = removeDuplicateRecurringTasks
+    return () => {
+      delete w.findAndRemoveDuplicateRecurringTasks
+      delete w.removeDuplicateRecurringTasks
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- dev helpers: attach once per mount
+  }, [])
+
   // Get tasks for mobile date
   const mobileTasks = React.useMemo(() => {
     const dayKey = format(mobileDate, 'yyyy-MM-dd')
@@ -2731,9 +2740,7 @@ const projectColorById = React.useMemo(() => {
 
       {/* Right area: content */}
       <section className="tasks-board">
-        {/* View content */}
-        {viewMode === 'weekly' && (
-          <div className="week-grid">
+        <div className="week-grid">
             <div className="week-head">
               <WeekTimeline
                 anchor={start}
@@ -3009,27 +3016,6 @@ const projectColorById = React.useMemo(() => {
             )
           })}
           </div>
-        )}
-
-        {viewMode === 'list' && (
-          <TasksListView 
-            tasks={tasks}
-            start={start}
-            onTaskClick={(task) => setViewTask(task)}
-            onTaskUpdate={handleTaskUpdate}
-            t={t}
-          />
-        )}
-
-        {viewMode === 'gantt' && (
-          <TasksGanttView 
-            tasks={tasks}
-            start={start}
-            onTaskClick={(task) => setViewTask(task)}
-            onTaskUpdate={handleTaskUpdate}
-            t={t}
-          />
-        )}
       </section>
 
       {/* Modal: new project */}
@@ -3042,20 +3028,6 @@ const projectColorById = React.useMemo(() => {
         initialDate={taskDate || new Date()}
         onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
       />
-
-      {/* Expose function to window for manual cleanup of duplicates */}
-      {React.useEffect(() => {
-        if (typeof window !== 'undefined') {
-          (window as any).findAndRemoveDuplicateRecurringTasks = findAndRemoveDuplicateRecurringTasks
-          (window as any).removeDuplicateRecurringTasks = removeDuplicateRecurringTasks
-        }
-        return () => {
-          if (typeof window !== 'undefined') {
-            delete (window as any).findAndRemoveDuplicateRecurringTasks
-            delete (window as any).removeDuplicateRecurringTasks
-          }
-        }
-      }, [])}
 
       {/* Main task modal - right side - always has backdrop */}
       {viewTask && (
@@ -3146,22 +3118,16 @@ const projectColorById = React.useMemo(() => {
       />}
 
 
-      {/* Calendar modal */}
-      <TaskCalendarModal
-        open={showCalendar}
-        onClose={() => setShowCalendar(false)}
-        tasks={allTasks}
-        onDateSelect={(date) => {
-          if (isMobile) {
-            setMobileDate(date)
-          } else {
-            // Set the week containing the selected date
-            setStart(startOfWeek(date, { weekStartsOn: 1 }))
-          }
-          setShowCalendar(false)
-        }}
-        onMonthChange={setCalendarMonth}
-      />
+      {/* Calendar: mount only while open so Modal portals/effects cannot stack */}
+      {showCalendar && (
+        <TaskCalendarModal
+          open
+          onClose={closeTaskCalendar}
+          tasks={allTasks}
+          onDateSelect={onCalendarDateSelect}
+          onMonthChange={setCalendarMonth}
+        />
+      )}
 
 
       {/* Recurring delete modal */}

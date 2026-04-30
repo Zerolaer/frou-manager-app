@@ -7,6 +7,7 @@
     "finance": "Finance",
     "tasks": "Tasks",
     "notes": "Notes",
+    "canvas": "Canvas",
     "storybook": "Storybook",
     "goals": "Goals",
     "invoice": "Invoices",
@@ -35,6 +36,7 @@
     "finance": "Finance",
     "tasks": "Tasks",
     "notes": "Notes",
+    "canvas": "Canvas",
     "invoice": "Invoices",
     "habits": "Habits"
   },
@@ -736,6 +738,42 @@
     "delete": {
       "warning": "Deleting your account will permanently remove all your data. This action cannot be undone.",
       "confirm": "Delete Account"
+    }
+  },
+  "canvas": {
+    "projects": "Projects",
+    "projectsAria": "Canvas projects",
+    "newProject": "New project",
+    "newProjectName": "New project",
+    "noProjects": "Create your first canvas project. Each project is a separate board stored in the cloud.",
+    "createFirst": "Create project",
+    "loadingProjects": "Loading projects…",
+    "loadingBoard": "Loading board…",
+    "loginRequired": "Sign in to use canvas projects.",
+    "deleteProject": "Delete project",
+    "openProjectsPanel": "Projects",
+    "collapseProjectsPanel": "Collapse project list",
+    "activeProject": "Current project",
+    "projectName": "Project name",
+    "addCard": "Add card",
+    "connect": "Connect",
+    "connectActive": "Tap another card",
+    "fitView": "Fit view",
+    "placeholder": "Write a note…",
+    "card": "Card",
+    "dragCard": "Drag card",
+    "ariaBoard": "Infinite canvas with notes and connections",
+    "groupIntoSection": "Group into section",
+    "ungroupSection": "Remove from section",
+    "sectionDefaultName": "Section",
+    "sectionNamePlaceholder": "Untitled group",
+    "renameSectionAria": "Section name",
+    "sectionBubbleAria": "Group {{name}}. Drag to move all cards. Double-click to rename.",
+    "port": {
+      "n": "Top connection point",
+      "e": "Right connection point",
+      "s": "Bottom connection point",
+      "w": "Left connection point"
     }
   },
   "habits": {

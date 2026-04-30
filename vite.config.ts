@@ -82,7 +82,6 @@ export default defineConfig({
       '@monaco-editor/react',
       'chart.js'
     ],
-    force: true,
     esbuildOptions: {
       target: 'esnext',
       supported: {

@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, DollarSign, CheckSquare, FileText, Target, Plus, Settings, Calendar, FileCheck, UserPlus, Sparkles } from 'lucide-react'
+import { Home, DollarSign, CheckSquare, FileText, LayoutDashboard, Target, Plus, Calendar, Sparkles } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
 import UserMenu from './UserMenu'
 import WeekSelector from './WeekSelector'
 import ProjectFilterDropdown from './ProjectFilterDropdown'
-import TasksViewSelector from './TasksViewSelector'
 import { TASK_PROJECT_ALL } from '@/lib/constants'
+import { dispatchTasksSubheaderAction } from '@/lib/tasksSubheaderBridge'
 import type { Project } from '@/types/shared'
 
 interface HeaderProps {
@@ -33,12 +33,15 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
   const itemRefs = useRef<{ [key: string]: HTMLAnchorElement | null }>({})
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
+  const resolveNavRefPath = (pathname: string) =>
+    pathname.startsWith('/canvas') ? '/canvas' : pathname
+
   const NAV_ITEMS = [
     { to: '/', icon: Home, label: t('nav.home') },
     { to: '/finance', icon: DollarSign, label: t('nav.finance') },
     { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
     { to: '/notes', icon: FileText, label: t('nav.notes') },
-    { to: '/invoice', icon: FileCheck, label: t('nav.invoice') },
+    { to: '/canvas', icon: LayoutDashboard, label: t('nav.canvas') },
     { to: '/habits', icon: Sparkles, label: t('nav.habits') },
   ]
 
@@ -65,7 +68,8 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
   // Update slider on route change and initial render
   useEffect(() => {
     const updatePosition = () => {
-      const activeItem = itemRefs.current[location.pathname]
+      const activeItem =
+        itemRefs.current[resolveNavRefPath(location.pathname)]
       if (activeItem) {
         // Use requestAnimationFrame to ensure layout is complete
         requestAnimationFrame(() => {
@@ -100,7 +104,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
 
   const handleContainerMouseLeave = () => {
     setHoveredItem(null)
-    const activeItem = itemRefs.current[location.pathname]
+    const activeItem = itemRefs.current[resolveNavRefPath(location.pathname)]
     if (activeItem && sliderRef.current) {
       updateSliderPosition(activeItem)
     }
@@ -116,9 +120,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
       case '/':
         return {
           title: t('pages.overview'),
-          actions: [
-            { id: 'settings', label: t('actions.settings'), icon: Settings, variant: 'secondary' }
-          ]
+          actions: []
         }
 
       case '/finance':
@@ -147,15 +149,6 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
           ]
         }
 
-      case '/invoice':
-        return {
-          title: t('pages.invoice'),
-          actions: [
-            { id: 'add-client', label: t('invoice.newClient'), icon: UserPlus, variant: 'secondary' },
-            { id: 'add-invoice', label: t('invoice.newInvoice'), icon: Plus, variant: 'primary' }
-          ]
-        }
-
       case '/habits':
         return {
           title: t('pages.habits'),
@@ -172,9 +165,11 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
   const subHeaderContent = getSubHeaderContent()
 
   const handleAction = (actionId: string) => {
-    if (onAction) {
-      onAction(actionId)
+    // Tasks: direct bridge (one handler) — never rely on window CustomEvent for this
+    if (location.pathname === '/tasks') {
+      dispatchTasksSubheaderAction(actionId)
     }
+    onAction?.(actionId)
   }
 
   return (
@@ -218,7 +213,10 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
             />
             
             {NAV_ITEMS.map((item) => {
-              const isActive = location.pathname === item.to
+              const isActive =
+                item.to === '/canvas'
+                  ? location.pathname.startsWith('/canvas')
+                  : location.pathname === item.to
               const isHovered = hoveredItem === item.to
               const isUnderSlider = isActive && !hoveredItem || isHovered
               const Icon = item.icon
@@ -271,11 +269,6 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
                   <YearSelector currentYear={currentYear} onYearChange={onYearChange} />
                 )}
                 
-                {/* View selector for Tasks page */}
-                {location.pathname === '/tasks' && (
-                  <TasksViewSelector />
-                )}
-                
                 {/* Project filter dropdown for Tasks page when in "All Projects" mode */}
                 {location.pathname === '/tasks' && tasksProjectsData && tasksProjectsData.activeProject === TASK_PROJECT_ALL && (
                   <ProjectFilterDropdown
@@ -299,8 +292,13 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
                   
                   return (
                     <button
+                      type="button"
                       key={action.id}
-                      onClick={() => handleAction(action.id)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleAction(action.id)
+                      }}
                       className={`subheader-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex-shrink-0 whitespace-nowrap ${
                         isPrimary
                           ? 'bg-black text-white hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-md'

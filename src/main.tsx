@@ -8,24 +8,24 @@ import App from './App'
 import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
 
-// Import all pages directly to avoid React null issues in lazy loading
+// Eager page imports keep React/router initialization predictable in this setup
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Finance from './pages/Finance'
 import Tasks from './pages/Tasks'
 import Notes from './pages/Notes'
-import Invoice from './pages/Invoice'
+import Canvas from './pages/Canvas'
 import Habits from './pages/Habits'
 import Settings from './pages/Settings'
 import Storybook from './pages/Storybook'
 
-const LazyPages = {
+const Pages = {
   Login,
   Home,
   Finance,
   Tasks,
   Notes,
-  Invoice,
+  Canvas,
   Habits,
   Settings,
   Storybook,
@@ -56,8 +56,22 @@ const Protected = ({children}: {children: React.ReactNode}) => {
       return;
     }
     
-    console.log('🔐 Checking session...');
+    if (import.meta.env.DEV) console.log('Checking session…')
+    // Keep auth bootstrap responsive: long timeouts make the app feel frozen.
+    const SESSION_CHECK_MS = import.meta.env.DEV ? 3_000 : 8_000
+    let sessionDone = false
+    const timer = window.setTimeout(() => {
+      if (sessionDone) return
+      sessionDone = true
+      console.warn('⚠️ Session check timed out — opening app as signed out (check network / Supabase).')
+      setAuthed(false)
+      setLoading(false)
+    }, SESSION_CHECK_MS)
+
     supabase.auth.getSession().then(({ data, error }) => {
+      if (sessionDone) return
+      sessionDone = true
+      window.clearTimeout(timer)
       if (error) {
         console.error('❌ Error getting session:', error);
         setAuthed(false);
@@ -65,10 +79,15 @@ const Protected = ({children}: {children: React.ReactNode}) => {
         return;
       }
       
-      console.log('✅ Session check:', { hasSession: !!data.session, userId: data.session?.user?.id });
+      if (import.meta.env.DEV) {
+        console.log('Session check:', { hasSession: !!data.session, userId: data.session?.user?.id })
+      }
       setAuthed(!!data.session);
       setLoading(false);
     }).catch((error) => {
+      if (sessionDone) return
+      sessionDone = true
+      window.clearTimeout(timer)
       console.error('❌ Exception getting session:', error);
       setLoading(false);
       // Don't allow access on error - redirect to login
@@ -76,10 +95,16 @@ const Protected = ({children}: {children: React.ReactNode}) => {
     });
     
     const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
-      console.log('🔄 Auth state changed:', event, { hasSession: !!sess });
+      if (import.meta.env.DEV) {
+        console.log('Auth state:', event, { hasSession: !!sess })
+      }
       setAuthed(!!sess);
     });
-    return () => { sub?.subscription?.unsubscribe() }
+    return () => {
+      sessionDone = true
+      window.clearTimeout(timer)
+      sub?.subscription?.unsubscribe()
+    }
   }, []);
   if (loading) return <AppLoader />;
   return authed ? <Fragment>{children}</Fragment> : <Navigate to="/login" replace />;
@@ -88,7 +113,7 @@ const Protected = ({children}: {children: React.ReactNode}) => {
 const router = createBrowserRouter([
   { 
     path: '/login', 
-    element: <LazyPages.Login />
+    element: <Pages.Login />
   },
   {
     path: '/',
@@ -100,36 +125,44 @@ const router = createBrowserRouter([
     children: [
       { 
         index: true, 
-        element: <LazyPages.Home />
+        element: <Pages.Home />
       },
       { 
         path: 'finance', 
-        element: <LazyPages.Finance />
+        element: <Pages.Finance />
       },
       { 
         path: 'tasks', 
-        element: <LazyPages.Tasks />
+        element: <Pages.Tasks />
       },
       { 
         path: 'notes', 
-        element: <LazyPages.Notes />
+        element: <Pages.Notes />
+      },
+      { 
+        path: 'canvas', 
+        element: <Pages.Canvas />
+      },
+      { 
+        path: 'canvas/:projectId', 
+        element: <Pages.Canvas />
       },
       { 
         path: 'invoice', 
-        element: <LazyPages.Invoice />
+        element: <Navigate to="/" replace />
       },
       { 
         path: 'habits', 
-        element: <LazyPages.Habits />
+        element: <Pages.Habits />
       },
       { 
         path: 'settings', 
-        element: <LazyPages.Settings />
+        element: <Pages.Settings />
       },
       // Storybook route only available in development
       ...(import.meta.env.DEV ? [{
         path: 'storybook', 
-        element: <LazyPages.Storybook />
+        element: <Pages.Storybook />
       }] : []),
     ]
   },
