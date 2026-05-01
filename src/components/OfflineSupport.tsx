@@ -7,16 +7,18 @@ import { logger } from '@/lib/monitoring'
 
 // Hook for detecting online/offline status
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const [wasOffline, setWasOffline] = useState(false)
 
+  // Эффект подписан только один раз: использование функционального setState
+  // вместо чтения `wasOffline` через замыкание убирает лишнюю переподписку.
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true)
-      if (wasOffline) {
-        announceToScreenReader('Соединение восстановлено', 'polite')
-        setWasOffline(false)
-      }
+      setWasOffline((prev) => {
+        if (prev) announceToScreenReader('Соединение восстановлено', 'polite')
+        return false
+      })
     }
 
     const handleOffline = () => {
@@ -32,7 +34,7 @@ export function useOnlineStatus() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [wasOffline])
+  }, [])
 
   return { isOnline, wasOffline }
 }
@@ -134,22 +136,24 @@ class OfflineQueue {
     return [...this.queue]
   }
 
+  // Persist только сериализуемые поля. Сам `operation` (функция) не сохраняется —
+  // её нельзя восстановить после перезагрузки. Очередь остаётся in-memory.
   private saveToStorage() {
     try {
-      localStorage.setItem('offlineQueue', JSON.stringify(this.queue))
+      const serializable = this.queue.map(({ id, timestamp, retries }) => ({ id, timestamp, retries }))
+      localStorage.setItem('offlineQueue', JSON.stringify(serializable))
     } catch (error) {
       logger.error('Failed to save offline queue:', error)
     }
   }
 
   loadFromStorage() {
+    // Намеренно ничего не восстанавливаем из storage: операции — это замыкания,
+    // их нельзя десериализовать. Если что-то лежит — чистим, чтобы process() не падал.
     try {
-      const stored = localStorage.getItem('offlineQueue')
-      if (stored) {
-        this.queue = JSON.parse(stored)
-      }
+      localStorage.removeItem('offlineQueue')
     } catch (error) {
-      logger.error('Failed to load offline queue:', error)
+      logger.error('Failed to clear offline queue:', error)
     }
   }
 }

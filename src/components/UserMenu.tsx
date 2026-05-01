@@ -56,33 +56,32 @@ export default function UserMenu() {
   const handleSignOut = async () => {
     setOpen(false)
     try {
-      localStorage.removeItem('frovo_has_visited')
-      localStorage.removeItem('frovo_last_page')
-      
-      const localStorageKeysToRemove = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) {
-          localStorageKeysToRemove.push(key)
+      // Сначала корректно завершаем сессию в Supabase, чтобы токен в другой вкладке тоже инвалидировался.
+      await signOut().catch((error) => {
+        if (import.meta.env.DEV) {
+          console.error('[auth] signOut failed:', error)
         }
-      }
-      localStorageKeysToRemove.forEach(key => localStorage.removeItem(key))
-      
-      const sessionStorageKeysToRemove = []
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i)
-        if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) {
-          sessionStorageKeysToRemove.push(key)
-        }
-      }
-      sessionStorageKeysToRemove.forEach(key => sessionStorage.removeItem(key))
-      
-      navigate('/login', { replace: true })
-      signOut().catch(error => {
-        console.error('Background signOut error:', error)
       })
+
+      // Затем чистим локальные ключи нашего приложения и кэши Supabase.
+      const drop = (storage: Storage) => {
+        const keys: string[] = []
+        for (let i = 0; i < storage.length; i++) {
+          const key = storage.key(i)
+          if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) {
+            keys.push(key)
+          }
+        }
+        keys.forEach((key) => storage.removeItem(key))
+      }
+      drop(localStorage)
+      drop(sessionStorage)
+
+      navigate('/login', { replace: true })
     } catch (error) {
-      console.error('Error during logout:', error)
+      if (import.meta.env.DEV) {
+        console.error('[auth] logout error:', error)
+      }
       navigate('/login', { replace: true })
     }
   }

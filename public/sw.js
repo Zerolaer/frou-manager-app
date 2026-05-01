@@ -1,10 +1,9 @@
 // Service Worker for caching static assets
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const CACHE_NAME = `frou-manager-${CACHE_VERSION}`
 const STATIC_CACHE = `static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`
 const IMAGE_CACHE = `images-${CACHE_VERSION}`
-const API_CACHE = `api-${CACHE_VERSION}`
 
 // Critical resources to cache immediately
 const CRITICAL_RESOURCES = [
@@ -33,7 +32,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE, IMAGE_CACHE, API_CACHE]
+  const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE, IMAGE_CACHE]
   
   event.waitUntil(
     caches.keys()
@@ -62,10 +61,10 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return
 
-  // Handle Supabase API requests with network-first + cache
+  // Никогда не кэшируем Supabase API/Auth — иначе можно отдать чужие/устаревшие данные
+  // (включая отзеркаленные токены или ответы предыдущей сессии).
   if (url.hostname.includes('supabase.co')) {
-    event.respondWith(networkFirstWithCache(request, API_CACHE, 5 * 60 * 1000))
-    return
+    return // браузер сам сходит в сеть
   }
 
   // Skip cross-origin requests (except Supabase)

@@ -47,16 +47,36 @@
 ## 🚀 Quick Start
 
 ```bash
-# Install
+# 1. Install dependencies
 npm install
 
-# Run
+# 2. Configure environment
+cp .env.example .env
+# Откройте .env и заполните:
+#   VITE_SUPABASE_URL=https://<your-project>.supabase.co
+#   VITE_SUPABASE_ANON_KEY=<anon-public-key>
+
+# 3. Init database (Supabase → SQL Editor → New query)
+#    Залить целиком файл:
+#      scripts/00-release-setup.sql
+#    Он идемпотентен — можно перезапускать сколько угодно раз. Он создаёт
+#    все таблицы, RLS-политики, индексы и триггеры, нужные приложению.
+
+# 4. Run dev server
 npm run dev
 # → http://localhost:5173/
 
-# Build
+# 5. Type-check (должен быть чистым)
+npm run lint
+
+# 6. Production build
 npm run build
+# → dist/  (готов к деплою)
 ```
+
+> Без `.env` (или с пустыми переменными) production-сборка **намеренно падает**
+> с понятной ошибкой — это защита от случайного релиза без бэкенда.
+> В dev-режиме допускается fallback на тестовый проект.
 
 ---
 
@@ -156,20 +176,23 @@ Apply indexes for 10-100x performance:
 
 ---
 
-## 🎯 Production Checklist
+## 🎯 Release Checklist (v3.1)
 
-- [x] TypeScript: 13 errors (Storybook only) ✅
-- [x] Build: Success (8.5s) ✅
-- [x] Bundle: 648 KB (optimal) ✅
-- [x] Performance: Optimized ✅
-- [x] Accessibility: WCAG 2.1 AA ✅
-- [x] Features: Complete ✅
-- [x] Security: RLS + Constraints ✅
-- [x] PWA: Ready ✅
-- [x] Offline: Works ✅
-- [x] Mobile: Responsive ✅
+- [x] **TypeScript:** `npm run lint` — 0 ошибок ✅
+- [x] **Build:** `npm run build` — успех (~28 с) ✅
+- [x] **Bundle:** main 284 KB / gzip 90 KB; роуты разбиты на чанки ✅
+- [x] **Auth:** убран PII-лог в Login, signOut с ожиданием, без циклов /↔/login ✅
+- [x] **Secrets:** Supabase ключи только из env, в prod без fallback ✅
+- [x] **PWA / SW:** не кэшируем Supabase API; единая регистрация в production ✅
+- [x] **i18n:** 794 ключа, EN ↔ RU 100% паритет, отсутствующие ключи добавлены ✅
+- [x] **Data races:** AbortController для проектов, JSON.parse в try/catch ✅
+- [x] **Stale closures:** Finance year, Tasks projects, useOnlineStatus ✅
+- [x] **Console hygiene:** prod-сборка вырезает `console.*` через esbuild.drop ✅
+- [x] **Mobile:** safe-area, мобильные модалки, мобильные страницы ✅
+- [x] **A11y:** ARIA, skip-links, контраст ✅
+- [ ] **DB Migrations:** применить SQL из `scripts/` и `supabase/migrations/` для нужного окружения
 
-**Score: 9.6/10** ✅ Production Ready!
+**Score: 9.7/10** ✅ Production Ready
 
 ---
 
@@ -208,17 +231,30 @@ Notes page → Click "Export" → Choose JSON/Markdown
 ## 🚀 Deploy
 
 ```bash
-# Build
-npm run build
+# 1. На хостинге настройте переменные окружения:
+#    VITE_SUPABASE_URL
+#    VITE_SUPABASE_ANON_KEY
+#    (опционально) VITE_DASHBOARD_DEBUG
 
-# Deploy to Netlify
-netlify deploy --prod
+# 2. Сборка
+npm ci
+npm run lint        # должен быть чистым
+npm run build       # → dist/
 
-# Or Vercel
-vercel --prod
-
-# Or upload dist/ folder to any hosting
+# 3. Деплой
+netlify deploy --prod        # Netlify
+vercel --prod                # Vercel
+# или просто загрузите dist/ на любой статичный хостинг (S3, Nginx, GitHub Pages)
 ```
+
+### Что важно при деплое
+
+- **Все запросы должны идти через HTTPS** (Supabase проверяет origin).
+- **SPA-фоллбек:** хостинг должен отдавать `index.html` на все неизвестные пути
+  (`netlify.toml` уже настроен; для Nginx — `try_files $uri /index.html`).
+- **`/sw.js`** должен отдаваться с `Cache-Control: no-cache`, иначе пользователи
+  будут залипать на старой версии. (PWA-обновления при следующем визите.)
+- **Заголовок `Service-Worker-Allowed: /`** не нужен — `sw.js` лежит в корне.
 
 ---
 

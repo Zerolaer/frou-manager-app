@@ -1,5 +1,8 @@
 export type PortSide = 'n' | 'e' | 's' | 'w'
 
+/** Обводка и шапка карточки; по умолчанию нейтральная «бумага» */
+export type CanvasCardAccent = 'default' | 'red' | 'blue' | 'green'
+
 export type CanvasNode = {
   id: string
   title: string
@@ -8,6 +11,7 @@ export type CanvasNode = {
   w: number
   h: number
   text: string
+  accent?: CanvasCardAccent
 }
 
 export type CanvasEdge = {
@@ -48,6 +52,15 @@ export function isPortSide(v: unknown): v is PortSide {
   return v === 'n' || v === 'e' || v === 's' || v === 'w'
 }
 
+export function isCanvasCardAccent(v: unknown): v is CanvasCardAccent {
+  return v === 'default' || v === 'red' || v === 'blue' || v === 'green'
+}
+
+function normalizeAccent(raw: unknown): CanvasCardAccent | undefined {
+  if (raw === undefined || raw === null) return undefined
+  return isCanvasCardAccent(raw) ? raw : undefined
+}
+
 const DEFAULT_W = 240
 const DEFAULT_H = 160
 
@@ -67,6 +80,7 @@ export function normalizeBoardState(raw: unknown): CanvasBoardState {
   return {
     nodes: p.nodes.map((n) => {
       const entry = n as Record<string, unknown>
+      const accent = normalizeAccent(entry.accent)
       return {
         id: String(entry.id),
         title: typeof entry.title === 'string' ? entry.title : '',
@@ -75,6 +89,7 @@ export function normalizeBoardState(raw: unknown): CanvasBoardState {
         w: Math.max(160, Number(entry.w) || DEFAULT_W),
         h: Math.max(80, Number(entry.h) || DEFAULT_H),
         text: typeof entry.text === 'string' ? entry.text : '',
+        ...(accent ? { accent } : {}),
       }
     }),
     edges: Array.isArray(p.edges)

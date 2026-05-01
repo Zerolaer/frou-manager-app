@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, differenceInDays, addDays, parseISO } from 'date-fns'
 import type { TaskItem } from '@/types/shared'
 import { supabase } from '@/lib/supabaseClient'
-import TaskCard from '../TaskCard'
+import { TaskCard } from '../TaskCard'
 
 interface TasksGanttViewProps {
   tasks: Record<string, TaskItem[]>

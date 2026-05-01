@@ -172,7 +172,8 @@ export default function Finance(){
 
   // Auth loading handled by useSupabaseAuth hook
 
-  // Listen for SubHeader actions
+  // Listen for SubHeader actions.
+  // Подписка пересоздаётся при смене userId/year, чтобы handler видел свежий year (иначе — stale closure → грузим прошлогодние данные).
   useEffect(() => {
     const handleSubHeaderActionEvent = (event: CustomEvent) => {
       handleSubHeaderAction(event.detail)
@@ -183,7 +184,6 @@ export default function Finance(){
     }
     
     const handleFinanceDataUpdated = () => {
-      // Reload data when updated via AI assistant
       if (userId) {
         reloadFinanceData()
       }
@@ -197,7 +197,7 @@ export default function Finance(){
       window.removeEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
       window.removeEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
     }
-  }, [userId])
+  }, [userId, year])
 
   // Notify App.tsx about current year
   useEffect(() => {

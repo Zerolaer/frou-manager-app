@@ -215,19 +215,8 @@ export function preloadCriticalResources() {
   })
 }
 
-// Service Worker registration for caching
-export function registerServiceWorker() {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
-
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        logger.info('SW registered: ', registration)
-      })
-      .catch(registrationError => {
-        logger.error('SW registration failed: ', registrationError)
-      })
-  })
-}
+// NOTE: SW registration moved to a single source — `OfflineSupport.ts.registerServiceWorker`,
+// которая вызывается из `main.tsx` только в production. Двойную регистрацию убрали,
+// чтобы не плодить разные SW-стратегии и не получать гонок при обновлении.
 
 

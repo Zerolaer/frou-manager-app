@@ -26,6 +26,8 @@
     "src"
   ],
   "exclude": [
-    "src/tests"
+    "src/tests",
+    "src/pages/Storybook.tsx",
+    ".backups"
   ]
 }

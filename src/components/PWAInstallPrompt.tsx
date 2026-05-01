@@ -26,23 +26,21 @@ export default function PWAInstallPrompt() {
   })
 
   useEffect(() => {
-    // Check if already dismissed
     const isDismissed = localStorage.getItem('pwa_install_dismissed')
     if (isDismissed) {
       setDismissed(true)
       return
     }
 
-    // Listen for install prompt
+    let timerId: number | null = null
+
     const handler = (e: Event) => {
       e.preventDefault()
       setInstallPrompt(e as BeforeInstallPromptEvent)
-      
-      // Show notification first
-      console.log('PWA install available')
-      
-      // Show banner after 10 seconds of usage
-      setTimeout(() => {
+      if (import.meta.env.DEV) {
+        console.log('[pwa] install prompt available')
+      }
+      timerId = window.setTimeout(() => {
         if (!dismissed) {
           bannerModal.open()
         }
@@ -53,6 +51,7 @@ export default function PWAInstallPrompt() {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler)
+      if (timerId !== null) window.clearTimeout(timerId)
     }
   }, [dismissed, bannerModal])
 
@@ -67,10 +66,9 @@ export default function PWAInstallPrompt() {
       const { outcome } = await installPrompt.userChoice
 
       if (outcome === 'accepted') {
-        logger.debug('✅ User accepted PWA install')
-        console.log('PWA install accepted')
+        logger.debug('PWA install accepted')
       } else {
-        logger.debug('❌ User dismissed PWA install')
+        logger.debug('PWA install dismissed')
       }
     } catch (error) {
       logger.error('PWA install failed:', error)
@@ -83,7 +81,6 @@ export default function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     bannerModal.close()
-    console.log('PWA install dismissed')
     setDismissed(true)
     localStorage.setItem('pwa_install_dismissed', 'true')
   }

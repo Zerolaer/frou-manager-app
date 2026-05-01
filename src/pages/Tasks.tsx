@@ -644,8 +644,16 @@ export default function Tasks(){
   const [projects, setProjects] = React.useState<Project[]>([])
   const [activeProject, setActiveProject] = React.useState<string|null>(TASK_PROJECT_ALL)
   const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>(() => {
-    const saved = localStorage.getItem('frovo_selected_projects')
-    return saved ? JSON.parse(saved) : []
+    try {
+      const saved = localStorage.getItem('frovo_selected_projects')
+      if (!saved) return []
+      const parsed = JSON.parse(saved)
+      return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+    } catch {
+      // битый JSON в localStorage не должен ломать рендер всей страницы
+      try { localStorage.removeItem('frovo_selected_projects') } catch { /* noop */ }
+      return []
+    }
   })
   const [projectsCollapsed, setProjectsCollapsed] = React.useState(() => {
     const saved = localStorage.getItem('frovo_projects_collapsed')
@@ -659,51 +667,53 @@ const projectColorById = React.useMemo(() => {
 
   React.useEffect(() => {
     if (!uid) return
-    
-    ;(async()=>{
-      // try extended (color)
-      const ext = await supabase.from('tasks_projects').select('id,name,color').order('created_at', { ascending:true })
-      if (!ext.error){
+
+    let cancelled = false
+
+    const readSavedIds = (list: Project[]): string[] => {
+      try {
+        const saved = localStorage.getItem('frovo_selected_projects')
+        if (!saved) return list.map((p) => p.id)
+        const parsed = JSON.parse(saved)
+        if (!Array.isArray(parsed)) return list.map((p) => p.id)
+        const ids = parsed.filter((v): v is string => typeof v === 'string')
+        const valid = ids.filter((id) => list.some((p) => p.id === id))
+        return valid.length > 0 ? valid : list.map((p) => p.id)
+      } catch {
+        return list.map((p) => p.id)
+      }
+    }
+
+    ;(async () => {
+      const ext = await supabase
+        .from('tasks_projects')
+        .select('id,name,color')
+        .order('created_at', { ascending: true })
+      if (cancelled) return
+      if (!ext.error) {
         const list = (ext.data || []) as Project[]
         setProjects(list)
-        
-        // Check if we have saved selection in localStorage
-        const saved = localStorage.getItem('frovo_selected_projects')
-        if (saved) {
-          const savedIds = JSON.parse(saved)
-          // Filter to only include projects that still exist
-          const validIds = savedIds.filter((id: string) => list.some(p => p.id === id))
-          setSelectedProjectIds(validIds.length > 0 ? validIds : list.map(p => p.id))
-        } else {
-          // First time - select all projects
-          setSelectedProjectIds(list.map(p => p.id))
-        }
-        
+        setSelectedProjectIds(readSavedIds(list))
         if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
         return
       }
-      // fallback to id,name only
-      const basic = await supabase.from('tasks_projects').select('id,name').order('created_at', { ascending:true })
-      if (!basic.error){
+      const basic = await supabase
+        .from('tasks_projects')
+        .select('id,name')
+        .order('created_at', { ascending: true })
+      if (cancelled) return
+      if (!basic.error) {
         const list = (basic.data || []) as Project[]
         setProjects(list)
-        
-        // Check if we have saved selection in localStorage
-        const saved = localStorage.getItem('frovo_selected_projects')
-        if (saved) {
-          const savedIds = JSON.parse(saved)
-          // Filter to only include projects that still exist
-          const validIds = savedIds.filter((id: string) => list.some(p => p.id === id))
-          setSelectedProjectIds(validIds.length > 0 ? validIds : list.map(p => p.id))
-        } else {
-          // First time - select all projects
-          setSelectedProjectIds(list.map(p => p.id))
-        }
-        
+        setSelectedProjectIds(readSavedIds(list))
         if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
       }
     })()
-}, [uid])
+
+    return () => {
+      cancelled = true
+    }
+  }, [uid])
 
   // tasks for the week of active project
   const [tasks, setTasks] = React.useState<Record<string, TaskItem[]>>({})
@@ -2704,8 +2714,8 @@ const projectColorById = React.useMemo(() => {
     w.findAndRemoveDuplicateRecurringTasks = findAndRemoveDuplicateRecurringTasks
     w.removeDuplicateRecurringTasks = removeDuplicateRecurringTasks
     return () => {
-      delete w.findAndRemoveDuplicateRecurringTasks
-      delete w.removeDuplicateRecurringTasks
+      delete (w as any).findAndRemoveDuplicateRecurringTasks
+      delete (w as any).removeDuplicateRecurringTasks
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- dev helpers: attach once per mount
   }, [])

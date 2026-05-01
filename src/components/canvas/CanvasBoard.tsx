@@ -6,21 +6,46 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { GripHorizontal, Group, Plus, Scan, Ungroup } from 'lucide-react'
+import {
+  Focus,
+  GripHorizontal,
+  Group,
+  Plus,
+  Redo2,
+  Scan,
+  Undo2,
+  Ungroup,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import {
   isPortSide,
   type CanvasBoardState,
+  type CanvasCardAccent,
   type CanvasEdge,
   type CanvasNode,
   type CanvasSection,
   type CanvasViewport,
   type PortSide,
 } from '@/features/canvas/types'
+
+const CARD_ACCENTS: CanvasCardAccent[] = ['default', 'red', 'blue', 'green']
+import {
+  cloneBoardSnapshot,
+  MAX_BOARD_HISTORY,
+  type BoardHistorySnapshot,
+} from '@/features/canvas/history'
 import '@/canvas.css'
 
 /** Порог в px: меньше — считаем тапом, больше — начинаем перетаскивание карточки */
 const CARD_DRAG_THRESHOLD_SQ = 8 * 8
+
+/** Диапазон масштаба доски (колесо, fit, кнопки зума) */
+const CANVAS_SCALE_MIN = 0.25
+const CANVAS_SCALE_MAX = 2.5
+/** Один шаг кнопок + / − */
+const CANVAS_ZOOM_STEP = 1.12
 
 /** Движение мыши по пустому месту — начать рамку выделения (не панораму) */
 const MARQUEE_THRESHOLD_SQ = 6 * 6
@@ -438,6 +463,77 @@ export function CanvasBoard({
     sectionsRef.current = sections
   }, [sections])
 
+  const edgesRef = useRef(edges)
+  useEffect(() => {
+    edgesRef.current = edges
+  }, [edges])
+
+  const historyPastRef = useRef<BoardHistorySnapshot[]>([])
+  const historyFutureRef = useRef<BoardHistorySnapshot[]>([])
+  const [historyTick, setHistoryTick] = useState(0)
+
+  const pushHistory = useCallback(() => {
+    const snap = cloneBoardSnapshot(
+      nodesRef.current,
+      edgesRef.current,
+      sectionsRef.current
+    )
+    const key = JSON.stringify(snap)
+    const past = historyPastRef.current
+    const last = past[past.length - 1]
+    if (last && JSON.stringify(last) === key) return
+    past.push(snap)
+    if (past.length > MAX_BOARD_HISTORY) past.shift()
+    historyFutureRef.current = []
+    setHistoryTick((n) => n + 1)
+  }, [])
+
+  const undo = useCallback(() => {
+    const past = historyPastRef.current
+    if (past.length === 0) return
+    const current = cloneBoardSnapshot(
+      nodesRef.current,
+      edgesRef.current,
+      sectionsRef.current
+    )
+    const prevSnap = past.pop()!
+    historyFutureRef.current.push(current)
+    setNodes(prevSnap.nodes)
+    setEdges(prevSnap.edges)
+    setSections(prevSnap.sections)
+    setSelectedIds([])
+    setSelectedEdgeId(null)
+    setEditingCardId(null)
+    setEditingSectionTitleId(null)
+    setEdgeDraft(null)
+    setDraftPoint(null)
+    setPostDragLeaveWatch(false)
+    setHistoryTick((n) => n + 1)
+  }, [])
+
+  const redo = useCallback(() => {
+    const future = historyFutureRef.current
+    if (future.length === 0) return
+    const current = cloneBoardSnapshot(
+      nodesRef.current,
+      edgesRef.current,
+      sectionsRef.current
+    )
+    const nextSnap = future.pop()!
+    historyPastRef.current.push(current)
+    setNodes(nextSnap.nodes)
+    setEdges(nextSnap.edges)
+    setSections(nextSnap.sections)
+    setSelectedIds([])
+    setSelectedEdgeId(null)
+    setEditingCardId(null)
+    setEditingSectionTitleId(null)
+    setEdgeDraft(null)
+    setDraftPoint(null)
+    setPostDragLeaveWatch(false)
+    setHistoryTick((n) => n + 1)
+  }, [])
+
   const marqueeRef = useRef<{
     pointerId: number
     startWx: number
@@ -489,6 +585,7 @@ export function CanvasBoard({
   /** Enter в карточке: сразу сохранить и выйти из редактирования + снять выделение */
   const flushSaveAndExitCardEdit = useCallback(
     (nodeId: string) => {
+      pushHistory()
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current)
         saveTimerRef.current = null
@@ -523,7 +620,7 @@ export function CanvasBoard({
       setPostDragLeaveWatch(false)
       ;(document.activeElement as HTMLElement | null)?.blur()
     },
-    [projectId, edges, viewport, sections, onPersist]
+    [pushHistory, projectId, edges, viewport, sections, onPersist]
   )
 
   /** После загрузки доски подогнать высоты карточек под текст (без скролла внутри) */
@@ -634,6 +731,7 @@ export function CanvasBoard({
   }, [])
 
   const addCardAt = useCallback((worldX: number, worldY: number) => {
+    pushHistory()
     const id = newId()
     const card: CanvasNode = {
       id,
@@ -649,7 +747,7 @@ export function CanvasBoard({
     setSelectedIds([id])
     setEditingCardId(id)
     focusNewCardTitle(id)
-  }, [focusNewCardTitle])
+  }, [pushHistory, focusNewCardTitle])
 
   const addCardCenterVisible = useCallback(() => {
     const el = viewportRef.current
@@ -671,14 +769,15 @@ export function CanvasBoard({
     (toId: string, toSide: PortSide, fromSideOverride?: PortSide) => {
       const draft = edgeDraftRef.current
       if (!draft || draft.kind !== 'new' || draft.fromId === toId) return
+      const a = draft.fromId
+      const b = toId
+      const exists = edgesRef.current.some(
+        (ed) =>
+          (ed.from === a && ed.to === b) || (ed.from === b && ed.to === a)
+      )
+      if (exists) return
+      pushHistory()
       setEdges((prev) => {
-        const a = draft.fromId
-        const b = toId
-        const exists = prev.some(
-          (ed) =>
-            (ed.from === a && ed.to === b) || (ed.from === b && ed.to === a)
-        )
-        if (exists) return prev
         return [
           ...prev,
           {
@@ -691,7 +790,7 @@ export function CanvasBoard({
         ]
       })
     },
-    []
+    [pushHistory]
   )
 
   useEffect(() => {
@@ -720,6 +819,7 @@ export function CanvasBoard({
           const portNodeId = portEl.dataset.nodeId
           const portSide = portEl.dataset.side as PortSide | undefined
           if (portNodeId && isPortSide(portSide)) {
+            pushHistory()
             setEdges((prev) => {
               const ix = prev.findIndex((ed) => ed.id === d.edgeId)
               if (ix < 0) return prev
@@ -773,6 +873,8 @@ export function CanvasBoard({
           (el) =>
             el instanceof HTMLElement &&
             (!!el.closest('.canvas-floating-bar') ||
+              !!el.closest('.canvas-control-bubble') ||
+              !!el.closest('.canvas-group-bubble') ||
               !!el.closest('.canvas-projects-dock') ||
               !!el.closest('header'))
         )
@@ -809,6 +911,7 @@ export function CanvasBoard({
             el instanceof HTMLElement && !!el.closest('.canvas-node-wrap')
         )
         if (!overChrome && !hitAnyCard && vpEl) {
+          pushHistory()
           const rect = vpEl.getBoundingClientRect()
           const { x: wx, y: wy } = clientToWorld(
             e.clientX,
@@ -862,7 +965,7 @@ export function CanvasBoard({
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
     }
-  }, [edgeDraft, focusNewCardTitle, tryCommitEdge])
+  }, [edgeDraft, focusNewCardTitle, pushHistory, tryCommitEdge])
 
   const startPortDrag = useCallback(
     (e: React.PointerEvent, node: CanvasNode, side: PortSide) => {
@@ -927,6 +1030,27 @@ export function CanvasBoard({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
+      const editingField =
+        tag === 'TEXTAREA' ||
+        tag === 'INPUT' ||
+        !!(e.target as HTMLElement)?.isContentEditable
+
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+        if (!editingField) {
+          e.preventDefault()
+          if (e.shiftKey) redo()
+          else undo()
+        }
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') {
+        if (!editingField) {
+          e.preventDefault()
+          redo()
+        }
+        return
+      }
+
       if (
         e.code === 'Space' &&
         tag !== 'TEXTAREA' &&
@@ -964,12 +1088,14 @@ export function CanvasBoard({
         }
         if (selectedEdgeId) {
           e.preventDefault()
+          pushHistory()
           setEdges((prev) => prev.filter((ed) => ed.id !== selectedEdgeId))
           setSelectedEdgeId(null)
           return
         }
         if (selectedIds.length > 0) {
           e.preventDefault()
+          pushHistory()
           const remove = new Set(selectedIds)
           setEdges((prev) =>
             prev.filter((ed) => !remove.has(ed.from) && !remove.has(ed.to))
@@ -990,7 +1116,15 @@ export function CanvasBoard({
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [selectedIds, selectedEdgeId, editingCardId, editingSectionTitleId])
+  }, [
+    selectedIds,
+    selectedEdgeId,
+    editingCardId,
+    editingSectionTitleId,
+    pushHistory,
+    redo,
+    undo,
+  ])
 
   useEffect(() => {
     const vp = viewportRef.current
@@ -1004,8 +1138,8 @@ export function CanvasBoard({
         setViewport((v) => {
           const delta = -e.deltaY * 0.002
           const nextScale = Math.min(
-            2.5,
-            Math.max(0.25, v.scale * (1 + delta))
+            CANVAS_SCALE_MAX,
+            Math.max(CANVAS_SCALE_MIN, v.scale * (1 + delta))
           )
           const wx = (mx - v.tx) / v.scale
           const wy = (my - v.ty) / v.scale
@@ -1168,6 +1302,7 @@ export function CanvasBoard({
               e.ctrlKey || e.metaKey || cg.duplicateDrag
             let origins = new Map<string, { x: number; y: number }>()
             if (wantDuplicate) {
+              pushHistory()
               const nid = newId()
               const clone: CanvasNode = {
                 id: nid,
@@ -1177,11 +1312,13 @@ export function CanvasBoard({
                 y: node.y,
                 w: node.w,
                 h: node.h,
+                ...(node.accent ? { accent: node.accent } : {}),
               }
               setNodes((prev) => [...prev, clone])
               setSelectedIds([nid])
               origins.set(nid, { x: node.x, y: node.y })
             } else {
+              pushHistory()
               const sel = selectedIdsRef.current
               if (sel.includes(node.id) && sel.length > 1) {
                 for (const id of sel) {
@@ -1226,6 +1363,7 @@ export function CanvasBoard({
               if (nn) origins.set(id, { x: nn.x, y: nn.y })
             }
             if (origins.size > 0) {
+              pushHistory()
               dragRef.current = {
                 startClientX: sg.startX,
                 startClientY: sg.startY,
@@ -1263,7 +1401,7 @@ export function CanvasBoard({
         ty: p.origTy + pdy,
       }))
     },
-    [viewport.scale]
+    [pushHistory, viewport.scale]
   )
 
   const endPanOrDrag = useCallback(() => {
@@ -1394,7 +1532,10 @@ export function CanvasBoard({
     const bh = maxY - minY + pad * 2
     const sx = rect.width / bw
     const sy = rect.height / bh
-    const scale = Math.min(2.5, Math.max(0.25, Math.min(sx, sy) * 0.92))
+    const scale = Math.min(
+      CANVAS_SCALE_MAX,
+      Math.max(CANVAS_SCALE_MIN, Math.min(sx, sy) * 0.92)
+    )
     const cx = (minX + maxX) / 2
     const cy = (minY + maxY) / 2
     setViewport({
@@ -1412,6 +1553,60 @@ export function CanvasBoard({
     [selectedIds, nodeMap]
   )
 
+  const focusSelection = useCallback(() => {
+    const el = viewportRef.current
+    if (!el || selectedNodes.length === 0) return
+    const rect = el.getBoundingClientRect()
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const n of selectedNodes) {
+      minX = Math.min(minX, n.x)
+      minY = Math.min(minY, n.y)
+      maxX = Math.max(maxX, n.x + n.w)
+      maxY = Math.max(maxY, n.y + n.h)
+    }
+    const pad = 72
+    const bw = maxX - minX + pad * 2
+    const bh = maxY - minY + pad * 2
+    const sx = rect.width / bw
+    const sy = rect.height / bh
+    const scale = Math.min(
+      CANVAS_SCALE_MAX,
+      Math.max(CANVAS_SCALE_MIN, Math.min(sx, sy) * 0.92)
+    )
+    const cx = (minX + maxX) / 2
+    const cy = (minY + maxY) / 2
+    setViewport({
+      scale,
+      tx: rect.width / 2 - cx * scale,
+      ty: rect.height / 2 - cy * scale,
+    })
+  }, [selectedNodes])
+
+  const zoomFromViewportCenter = useCallback((factor: number) => {
+    setViewport((v) => {
+      const el = viewportRef.current
+      if (!el) return v
+      const rect = el.getBoundingClientRect()
+      const mx = rect.width / 2
+      const my = rect.height / 2
+      const nextScale = Math.min(
+        CANVAS_SCALE_MAX,
+        Math.max(CANVAS_SCALE_MIN, v.scale * factor)
+      )
+      if (Math.abs(nextScale - v.scale) < 1e-6) return v
+      const wx = (mx - v.tx) / v.scale
+      const wy = (my - v.ty) / v.scale
+      return {
+        scale: nextScale,
+        tx: mx - wx * nextScale,
+        ty: my - wy * nextScale,
+      }
+    })
+  }, [])
+
   const alignSelected = useCallback(
     (
       mode:
@@ -1423,6 +1618,7 @@ export function CanvasBoard({
         | 'h-bottom'
     ) => {
       if (selectedNodes.length < 2) return
+      pushHistory()
       let minX = Infinity
       let minY = Infinity
       let maxX = -Infinity
@@ -1456,7 +1652,7 @@ export function CanvasBoard({
         })
       )
     },
-    [selectedIds, selectedNodes]
+    [pushHistory, selectedIds, selectedNodes]
   )
 
   const distributeSelected = useCallback(
@@ -1469,6 +1665,8 @@ export function CanvasBoard({
       const last = sorted[sorted.length - 1]
       const inner = sorted.slice(1, -1)
       if (inner.length === 0) return
+
+      pushHistory()
 
       if (axis === 'x') {
         const totalInner = inner.reduce((acc, n) => acc + n.w, 0)
@@ -1498,7 +1696,26 @@ export function CanvasBoard({
         )
       }
     },
-    [selectedNodes]
+    [pushHistory, selectedNodes]
+  )
+
+  const applyAccentToSelection = useCallback(
+    (accent: CanvasCardAccent) => {
+      if (selectedIds.length === 0) return
+      pushHistory()
+      const sel = new Set(selectedIds)
+      setNodes((prev) =>
+        prev.map((n) => {
+          if (!sel.has(n.id)) return n
+          if (accent === 'default') {
+            const { accent: _removed, ...rest } = n
+            return rest as CanvasNode
+          }
+          return { ...n, accent }
+        })
+      )
+    },
+    [pushHistory, selectedIds]
   )
 
   const beginEditSectionTitle = useCallback(
@@ -1514,6 +1731,7 @@ export function CanvasBoard({
 
   const commitSectionTitle = useCallback(
     (sectionId: string, raw: string) => {
+      pushHistory()
       const v = raw.trim()
       setSections((prev) =>
         prev.map((s) => (s.id === sectionId ? { ...s, title: v } : s))
@@ -1522,12 +1740,13 @@ export function CanvasBoard({
         cur === sectionId ? null : cur
       )
     },
-    []
+    [pushHistory]
   )
 
   const groupSelectedIntoSection = useCallback(() => {
     const ids = uniqIdsPreserve(selectedIds)
     if (ids.length < 2) return
+    pushHistory()
     const idSet = new Set(ids)
     setSections((prev) => {
       const stripped = prev
@@ -1545,11 +1764,12 @@ export function CanvasBoard({
         },
       ]
     })
-  }, [selectedIds, t])
+  }, [pushHistory, selectedIds, t])
 
   const removeSelectedFromSections = useCallback(() => {
     const sel = new Set(selectedIds)
     if (sel.size === 0) return
+    pushHistory()
     setSections((prev) =>
       prev
         .map((s) => ({
@@ -1558,7 +1778,7 @@ export function CanvasBoard({
         }))
         .filter((s) => s.nodeIds.length >= 2)
     )
-  }, [selectedIds])
+  }, [pushHistory, selectedIds])
 
   const selectionIsWholeSection = useMemo(() => {
     if (selectedIds.length < 2) return false
@@ -1576,8 +1796,8 @@ export function CanvasBoard({
     return sections.some((s) => s.nodeIds.some((id) => sel.has(id)))
   }, [selectedIds, sections])
 
-  const groupBubblePos = useMemo(() => {
-    if (selectedNodes.length < 2) return null
+  const selectionBubblePos = useMemo(() => {
+    if (selectedNodes.length === 0) return null
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
@@ -1630,6 +1850,10 @@ export function CanvasBoard({
     const p = portWorldPos(toNode, edgeDraft.anchorToSide)
     return flexibleDraftPath(p, draftPoint, edgeDraft.anchorToSide)
   }, [edgeDraft, draftPoint, nodeMap])
+
+  void historyTick
+  const canUndo = historyPastRef.current.length > 0
+  const canRedo = historyFutureRef.current.length > 0
 
   return (
     <div className="canvas-page">
@@ -1737,6 +1961,7 @@ export function CanvasBoard({
           </div>
 
           {nodes.map((node) => {
+            const accent = node.accent ?? 'default'
             const showPorts = showPortsFor(node.id)
             return (
               <div
@@ -1848,7 +2073,7 @@ export function CanvasBoard({
                   }}
                 >
                 <div
-                  className={`canvas-node ${selectedIds.includes(node.id) ? 'is-selected' : ''}`}
+                  className={`canvas-node canvas-node--accent-${accent} ${selectedIds.includes(node.id) ? 'is-selected' : ''}`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -1856,13 +2081,13 @@ export function CanvasBoard({
                   }}
                 >
                   <div
-                    className="canvas-node-drag flex shrink-0 items-center gap-1.5 px-2 py-1.5 rounded-t-[11px] bg-stone-100/90 border-b border-stone-200/80 min-h-[36px]"
+                    className="canvas-node-drag"
                     data-card-title-zone=""
                     data-card-header=""
                   >
                     <button
                       type="button"
-                      className="canvas-node-drag-grip flex shrink-0 cursor-grab touch-none rounded p-0.5 text-stone-400 hover:text-stone-600 active:cursor-grabbing border-0 bg-transparent"
+                      className="canvas-node-drag-grip"
                       aria-label={t('canvas.dragCard')}
                       tabIndex={-1}
                     >
@@ -2074,12 +2299,35 @@ export function CanvasBoard({
           </div>
         </div>
 
-        {groupBubblePos && (
+        {selectionBubblePos && (
           <div
             className="canvas-group-bubble"
-            style={{ left: groupBubblePos.left, top: groupBubblePos.top }}
+            style={{
+              left: selectionBubblePos.left,
+              top: selectionBubblePos.top,
+            }}
             onPointerDown={(e) => e.stopPropagation()}
           >
+            <div
+              className="canvas-accent-swatches"
+              role="group"
+              aria-label={t('canvas.cardAccentGroupAria')}
+            >
+              {CARD_ACCENTS.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  className={`canvas-accent-swatch canvas-accent-swatch--${a}`}
+                  title={t(`canvas.accent.${a}`)}
+                  aria-label={t(`canvas.accent.${a}`)}
+                  aria-pressed={
+                    selectedNodes.length > 0 &&
+                    selectedNodes.every((n) => (n.accent ?? 'default') === a)
+                  }
+                  onClick={() => applyAccentToSelection(a)}
+                />
+              ))}
+            </div>
             {selectedNodes.length >= 2 && !selectionIsWholeSection ? (
               <button
                 type="button"
@@ -2100,107 +2348,178 @@ export function CanvasBoard({
                 <Ungroup className="w-4 h-4" strokeWidth={1.5} aria-hidden />
               </button>
             ) : null}
-            <button
-              type="button"
-              title="Align left"
-              aria-label="Align left"
-              onClick={() => alignSelected('v-left')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M3 2v12M5 4h8M5 8h6M5 12h8" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Align vertical center"
-              aria-label="Align vertical center"
-              onClick={() => alignSelected('v-center')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M8 2v12M2 4h12M4 8h8M2 12h12" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Align right"
-              aria-label="Align right"
-              onClick={() => alignSelected('v-right')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M13 2v12M3 4h8M5 8h8M3 12h8" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Align top"
-              aria-label="Align top"
-              onClick={() => alignSelected('h-top')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M2 3h12M4 5v8M8 5v6M12 5v8" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Align horizontal center"
-              aria-label="Align horizontal center"
-              onClick={() => alignSelected('h-center')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M2 8h12M4 2v12M8 4v8M12 2v12" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Align bottom"
-              aria-label="Align bottom"
-              onClick={() => alignSelected('h-bottom')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M2 13h12M4 3v8M8 5v8M12 3v8" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Distribute horizontal spacing"
-              aria-label="Distribute horizontal spacing"
-              onClick={() => distributeSelected('x')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M2 2v12M14 2v12M5 5h2v6H5zM9 5h2v6H9z" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              title="Distribute vertical spacing"
-              aria-label="Distribute vertical spacing"
-              onClick={() => distributeSelected('y')}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                <path d="M2 2h12M2 14h12M5 5h6v2H5zM5 9h6v2H5z" />
-              </svg>
-            </button>
+            {selectedNodes.length >= 2 ? (
+              <>
+                <button
+                  type="button"
+                  title="Align left"
+                  aria-label="Align left"
+                  onClick={() => alignSelected('v-left')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M3 2v12M5 4h8M5 8h6M5 12h8" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Align vertical center"
+                  aria-label="Align vertical center"
+                  onClick={() => alignSelected('v-center')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M8 2v12M2 4h12M4 8h8M2 12h12" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Align right"
+                  aria-label="Align right"
+                  onClick={() => alignSelected('v-right')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M13 2v12M3 4h8M5 8h8M3 12h8" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Align top"
+                  aria-label="Align top"
+                  onClick={() => alignSelected('h-top')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M2 3h12M4 5v8M8 5v6M12 5v8" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Align horizontal center"
+                  aria-label="Align horizontal center"
+                  onClick={() => alignSelected('h-center')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M2 8h12M4 2v12M8 4v8M12 2v12" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Align bottom"
+                  aria-label="Align bottom"
+                  onClick={() => alignSelected('h-bottom')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M2 13h12M4 3v8M8 5v8M12 3v8" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Distribute horizontal spacing"
+                  aria-label="Distribute horizontal spacing"
+                  onClick={() => distributeSelected('x')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M2 2v12M14 2v12M5 5h2v6H5zM9 5h2v6H9z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  title="Distribute vertical spacing"
+                  aria-label="Distribute vertical spacing"
+                  onClick={() => distributeSelected('y')}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden>
+                    <path d="M2 2h12M2 14h12M5 5h6v2H5zM5 9h6v2H5z" />
+                  </svg>
+                </button>
+              </>
+            ) : null}
           </div>
         )}
+
+        <div
+          className="canvas-control-bubble"
+          role="toolbar"
+          aria-label={t('canvas.controlBubbleAria')}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="canvas-control-bubble-group" role="group" aria-label={t('canvas.historyGroupAria')}>
+            <button
+              type="button"
+              className="canvas-control-bubble-btn"
+              onClick={undo}
+              disabled={!canUndo}
+              title={t('canvas.undo')}
+              aria-label={t('canvas.undo')}
+            >
+              <Undo2 className="w-4 h-4" strokeWidth={1.65} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="canvas-control-bubble-btn"
+              onClick={redo}
+              disabled={!canRedo}
+              title={t('canvas.redo')}
+              aria-label={t('canvas.redo')}
+            >
+              <Redo2 className="w-4 h-4" strokeWidth={1.65} aria-hidden />
+            </button>
+          </div>
+          <span className="canvas-control-bubble-sep" aria-hidden />
+          <div className="canvas-control-bubble-group" role="group" aria-label={t('canvas.viewGroupAria')}>
+            <button
+              type="button"
+              className="canvas-control-bubble-btn"
+              onClick={fitView}
+              disabled={nodes.length === 0}
+              title={t('canvas.fitView')}
+              aria-label={t('canvas.fitView')}
+            >
+              <Scan className="w-4 h-4" strokeWidth={1.65} aria-hidden />
+            </button>
+          </div>
+          <span className="canvas-control-bubble-sep" aria-hidden />
+          <div className="canvas-control-bubble-group" role="group" aria-label={t('canvas.zoomGroupAria')}>
+            <button
+              type="button"
+              className="canvas-control-bubble-btn"
+              onClick={() => zoomFromViewportCenter(CANVAS_ZOOM_STEP)}
+              disabled={viewport.scale >= CANVAS_SCALE_MAX - 1e-4}
+              title={t('canvas.zoomIn')}
+              aria-label={t('canvas.zoomIn')}
+            >
+              <ZoomIn className="w-4 h-4" strokeWidth={1.65} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="canvas-control-bubble-btn"
+              onClick={() => zoomFromViewportCenter(1 / CANVAS_ZOOM_STEP)}
+              disabled={viewport.scale <= CANVAS_SCALE_MIN + 1e-4}
+              title={t('canvas.zoomOut')}
+              aria-label={t('canvas.zoomOut')}
+            >
+              <ZoomOut className="w-4 h-4" strokeWidth={1.65} aria-hidden />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="canvas-floating-bar">
+      <div className="canvas-floating-bar" role="toolbar" aria-label={t('canvas.toolbarAria')}>
         <button
           type="button"
           onClick={addCardCenterVisible}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-black text-white hover:bg-gray-800 shadow-sm"
+          className="canvas-floating-bar-btn canvas-floating-bar-btn--primary"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden />
           {t('canvas.addCard')}
         </button>
         <button
           type="button"
-          onClick={fitView}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 shadow-sm disabled:opacity-40"
-          disabled={nodes.length === 0}
+          onClick={focusSelection}
+          className="canvas-floating-bar-btn canvas-floating-bar-btn--secondary"
+          disabled={selectedIds.length === 0}
+          title={t('canvas.frameSelection')}
         >
-          <Scan className="w-4 h-4" />
-          {t('canvas.fitView')}
+          <Focus className="w-4 h-4" aria-hidden />
+          {t('canvas.frameSelection')}
         </button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, DollarSign, CheckSquare, FileText, LayoutDashboard, Target, Plus, Calendar, Sparkles } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
@@ -26,6 +26,7 @@ interface HeaderProps {
 
 export default function Header({ onAction, currentYear, onYearChange, selectedWeek, onWeekChange, tasksProjectsData, onProjectsFilterChange }: HeaderProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const { t } = useSafeTranslation()
   
   const navContainerRef = useRef<HTMLDivElement>(null)
@@ -112,7 +113,7 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    window.location.href = '/'
+    navigate('/', { replace: false })
   }
 
   const getSubHeaderContent = () => {
@@ -286,9 +287,6 @@ export default function Header({ onAction, currentYear, onYearChange, selectedWe
                   const Icon = action.icon
                   const isPrimary = action.variant === 'primary'
                   
-                  if (import.meta.env.DEV) {
-                    console.log('🔘 Button:', action.label, '| variant:', action.variant, '| isPrimary:', isPrimary)
-                  }
                   
                   return (
                     <button

@@ -70,7 +70,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           // Restore todos
           if (draft.todos && Array.isArray(draft.todos)) {
             todoManager.clearTodos()
-            draft.todos.forEach((todo: Todo) => todoManager.addTodo(todo.text, todo.done))
+            draft.todos.forEach((todo: Todo) => todoManager.addTodo(todo.text))
           }
           // Restore recurring settings
           if (draft.recurringSettings) {

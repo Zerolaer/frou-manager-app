@@ -112,6 +112,10 @@ export default defineConfig({
   // Ensure React is always available - important for Cursor browser compatibility
   esbuild: {
     jsx: 'automatic',
-    jsxImportSource: 'react'
+    jsxImportSource: 'react',
+    // В production-сборке вырезаем console.* и debugger,
+    // чтобы случайный console.log не светил данные пользователей в DevTools.
+    // Сообщения через `logger` остаются — они отправляются на /api/logs.
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
   }
 })

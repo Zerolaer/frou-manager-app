@@ -46,3 +46,11 @@ temp/
 
 # Local Netlify folder
 .netlify
+
+# Playwright e2e artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Legacy backups (никогда не коммитим)
+.backups/

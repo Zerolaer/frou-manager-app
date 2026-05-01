@@ -25,35 +25,27 @@ export default function App(){
     activeProject: string | null
   } | null>(null)
 
-  // Redirect to last visited page on app load (only once)
+  // Первый визит: помечаем localStorage. Автовосстановление last_page через navigate ОТКЛЮЧЕНО —
+  // оно давало циклы / ↔ /login при любых рассинхронах сессии и маршрута.
   useEffect(() => {
     const hasRedirected = sessionStorage.getItem('frovo_redirected')
-    
     if (!hasRedirected && window.location.pathname === '/') {
       const isFirstVisit = !localStorage.getItem('frovo_has_visited')
-      const lastPage = localStorage.getItem('frovo_last_page')
-      
       if (isFirstVisit) {
-        // First visit - stay on home and mark as visited
         localStorage.setItem('frovo_has_visited', 'true')
         localStorage.setItem('frovo_last_page', '/')
-      } else if (lastPage && lastPage !== '/') {
-        // Returning user - redirect to last page (only once per session)
-        window.location.href = lastPage
       }
-      
-      // Mark that we've done the initial redirect check
       sessionStorage.setItem('frovo_redirected', 'true')
     }
-  }, []) // Run only once on mount
+  }, [])
 
-  // Save current page to localStorage when navigating
+  // Save current page when navigating (SPA), not only on первый mount
   useEffect(() => {
-    const pathname = window.location.pathname
+    const pathname = location.pathname
     if (pathname !== '/login') {
       localStorage.setItem('frovo_last_page', pathname)
     }
-  }, [])
+  }, [location.pathname])
 
   // Supabase is now hardcoded, no need to check
 
@@ -92,7 +84,9 @@ export default function App(){
     const isSettings = pathname.includes('settings')
     const isHome = pathname === '/'
 
-    console.log('🎨 Applying mode class:', { pathname, isFinance, isTasks, isNotes, isInvoice, isSettings, isHome })
+    if (import.meta.env.DEV) {
+      console.log('[mode]', { pathname, isFinance, isTasks, isNotes, isInvoice, isSettings, isHome })
+    }
 
     // Remove all mode classes
     document.body.classList.remove('tasks-mode', 'finance-mode', 'notes-mode', 'canvas-mode', 'invoice-mode', 'settings-mode', 'home-mode')
@@ -120,7 +114,9 @@ export default function App(){
           mainContent.style.overflowY = 'auto'
           mainContent.style.overflowX = 'auto'
           mainContent.style.maxHeight = 'calc(100vh - 172px)'
-          console.log('🔧 Applied finance scroll styles to #main-content')
+          if (import.meta.env.DEV) {
+            console.log('[mode] applied finance scroll styles')
+          }
         }
       }, 100)
     } else if (isNotes) {

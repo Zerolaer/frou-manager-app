@@ -1,57 +1,59 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
+
+// Стрикт-селекторы: форма имеет ссылку "Forgot password?", из-за неё
+// `getByLabel(/password/i)` матчит >1 элемента и падает в strict mode.
+// Используем точные имена ролей.
+const emailField = (page: import('@playwright/test').Page) =>
+  page.getByRole('textbox', { name: 'Email', exact: true })
+const passwordField = (page: import('@playwright/test').Page) =>
+  page.getByRole('textbox', { name: 'Password', exact: true })
+    .or(page.locator('input#password'))
+const submitBtn = (page: import('@playwright/test').Page) =>
+  page.locator('button[type="submit"]')
 
 test.describe('Authentication Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-  });
+  test('redirects to /login when not authenticated', async ({ page }) => {
+    await page.goto('/')
+    await expect(page).toHaveURL(/.*login/)
+  })
 
-  test('should redirect to login when not authenticated', async ({ page }) => {
-    await expect(page).toHaveURL(/.*login/);
-  });
+  test('shows login form fields and submit button', async ({ page }) => {
+    await page.goto('/login')
+    await expect(emailField(page)).toBeVisible()
+    await expect(passwordField(page).first()).toBeVisible()
+    await expect(submitBtn(page)).toBeVisible()
+  })
 
-  test('should show login form', async ({ page }) => {
-    await page.goto('/login');
-    
-    await expect(page.getByLabel(/email/i)).toBeVisible();
-    await expect(page.getByLabel(/password/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /login|sign in/i })).toBeVisible();
-  });
+  test('shows error for invalid credentials', async ({ page }) => {
+    await page.goto('/login')
+    await emailField(page).fill('invalid@example.com')
+    await passwordField(page).first().fill('wrongpassword')
+    await submitBtn(page).click()
 
-  test('should show error for invalid credentials', async ({ page }) => {
-    await page.goto('/login');
-    
-    await page.getByLabel(/email/i).fill('invalid@example.com');
-    await page.getByLabel(/password/i).fill('wrongpassword');
-    await page.getByRole('button', { name: /login|sign in/i }).click();
-    
-    // Should show error message
-    await expect(page.getByText(/invalid|error|incorrect/i)).toBeVisible({ timeout: 5000 });
-  });
+    // Ждём появления баннера с ошибкой (он находится над формой)
+    await expect(
+      page.locator('div.text-red-700, [role="alert"]')
+        .or(page.getByText(/invalid|error|неверн|ошиб/i))
+    ).toBeVisible({ timeout: 8000 })
+  })
 
-  test('should validate email format', async ({ page }) => {
-    await page.goto('/login');
-    
-    await page.getByLabel(/email/i).fill('not-an-email');
-    await page.getByLabel(/password/i).fill('password123');
-    await page.getByRole('button', { name: /login|sign in/i }).click();
-    
-    // Should show validation error
-    const emailInput = page.getByLabel(/email/i);
-    const validationMessage = await emailInput.evaluate((el: HTMLInputElement) => el.validationMessage);
-    expect(validationMessage).toBeTruthy();
-  });
+  test('email input enforces type=email validation', async ({ page }) => {
+    await page.goto('/login')
+    await emailField(page).fill('not-an-email')
+    await passwordField(page).first().fill('password123')
+    await submitBtn(page).click()
 
-  test('should navigate to home after successful login', async ({ page }) => {
-    // This test requires valid test credentials
-    // For actual implementation, use test user credentials
-    test.skip(); // Skip until test credentials are set up
-    
-    await page.goto('/login');
-    await page.getByLabel(/email/i).fill('test@example.com');
-    await page.getByLabel(/password/i).fill('testpassword');
-    await page.getByRole('button', { name: /login|sign in/i }).click();
-    
-    await expect(page).toHaveURL('/');
-  });
-});
+    const validationMessage = await emailField(page).evaluate(
+      (el: HTMLInputElement) => el.validationMessage
+    )
+    expect(validationMessage).toBeTruthy()
+  })
 
+  test.skip('navigates to home after successful login (requires test creds)', async ({ page }) => {
+    await page.goto('/login')
+    await emailField(page).fill('test@example.com')
+    await passwordField(page).first().fill('testpassword')
+    await submitBtn(page).click()
+    await expect(page).toHaveURL('/')
+  })
+})

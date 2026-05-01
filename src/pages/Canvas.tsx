@@ -185,18 +185,6 @@ function CanvasProjectsShell() {
     [flushPersistQueue]
   )
 
-  const handleRenameProject = async (id: string, name: string) => {
-    try {
-      await canvasApi.updateCanvasProjectName(id, name)
-      setSummaries((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, name } : p))
-      )
-      setActiveProject((p) => (p?.id === id ? { ...p, name } : p))
-    } catch (e) {
-      logger.error('rename canvas project', e)
-    }
-  }
-
   const handleDeleteProject = async (id: string) => {
     try {
       await canvasApi.deleteCanvasProject(id)
@@ -243,53 +231,33 @@ function CanvasProjectsShell() {
           aria-label={t('canvas.projects')}
         >
           <div className="canvas-projects-dock-header">
-            <h2 className="text-sm font-semibold text-gray-800 truncate pr-2">
+            <h2 className="canvas-projects-dock-title">
               {t('canvas.projects')}
             </h2>
-            <div className="flex items-center gap-0.5 shrink-0">
+            <div className="canvas-projects-dock-header-actions">
               <button
                 type="button"
                 onClick={handleCreateProject}
-                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                className="canvas-projects-dock-icon-btn"
                 title={t('canvas.newProject')}
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-5 h-5" strokeWidth={1.75} aria-hidden />
               </button>
               <button
                 type="button"
-                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                className="canvas-projects-dock-icon-btn"
                 onClick={() => setProjectsPanelOpen(false)}
                 title={t('canvas.collapseProjectsPanel')}
                 aria-expanded={true}
               >
-                <ChevronLeft className="w-5 h-5" aria-hidden />
+                <ChevronLeft className="w-5 h-5" strokeWidth={1.75} aria-hidden />
               </button>
             </div>
           </div>
 
-          {activeProject && projectId && (
-            <div className="canvas-projects-dock-active">
-              <label className="canvas-projects-dock-active-label">
-                {t('canvas.activeProject')}
-              </label>
-              <input
-                type="text"
-                className="canvas-project-name-input canvas-project-name-input--dock"
-                value={activeProject.name}
-                onChange={(e) =>
-                  setActiveProject({ ...activeProject, name: e.target.value })
-                }
-                onBlur={() =>
-                  handleRenameProject(activeProject.id, activeProject.name)
-                }
-                aria-label={t('canvas.projectName')}
-              />
-            </div>
-          )}
-
           <nav className="canvas-project-list">
             {loadingList && (
-              <p className="text-xs text-gray-500 px-2">
+              <p className="canvas-project-list-hint">
                 {t('canvas.loadingProjects')}
               </p>
             )}
@@ -323,9 +291,9 @@ function CanvasProjectsShell() {
             <button
               type="button"
               onClick={handleCreateProject}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-black text-white text-sm py-2.5 hover:bg-gray-800"
+              className="canvas-projects-dock-primary-btn"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" strokeWidth={2} aria-hidden />
               {t('canvas.newProject')}
             </button>
           </div>

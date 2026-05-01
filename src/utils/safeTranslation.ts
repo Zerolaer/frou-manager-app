@@ -36,7 +36,7 @@ export function useSafeTranslation() {
   }
   
   // Use fallback if context is null or undefined
-  const safeCtx = ctx || fallbackTranslator
+  const safeCtx: any = ctx || fallbackTranslator
   
   const tFn =
     safeCtx?.t ||

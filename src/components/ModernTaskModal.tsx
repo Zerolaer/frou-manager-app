@@ -202,7 +202,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 const statusMap = new Map(subtasks.map(s => [s.id, s.status]))
                 
                 // Update todos with actual statuses
-                const syncedTodos = task.todos.map((todo: Todo) => {
+                const syncedTodos = (task.todos ?? []).map((todo: Todo) => {
                   const taskId = (todo as any).taskId
                   if (taskId && statusMap.has(taskId)) {
                     const actualStatus = statusMap.get(taskId)
@@ -244,7 +244,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 }
               }
             })
-            .catch((error) => {
+            .then(undefined, (error: unknown) => {
               console.error('❌ Error loading subtask statuses for sync:', error)
             })
         }
@@ -297,14 +297,16 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         .select('date')
         .eq('id', (task as any).parent_task_id)
         .single()
-        .then(({ data: parentTask }) => {
-          if (parentTask?.date) {
-            setParentTaskDate(parentTask.date)
+        .then(
+          ({ data: parentTask }) => {
+            if (parentTask?.date) {
+              setParentTaskDate(parentTask.date)
+            }
+          },
+          (error: unknown) => {
+            logger.error('Error loading parent task date:', error)
           }
-        })
-        .catch((error) => {
-          logger.error('Error loading parent task date:', error)
-        })
+        )
     } else {
       setParentTaskDate(null)
     }
@@ -1490,7 +1492,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         if (onUpdated) {
           logger.debug('📢 Notifying parent about new subtask:', { id: newTask.id, date: newTask.date })
           // Convert to TaskItem format with parent_task_title
-          const subtaskItem: TaskItem & { parent_task_title?: string | null } = {
+          const subtaskItem: import('@/types/shared').TaskItem & { parent_task_title?: string | null } = {
             id: newTask.id,
             title: newTask.title,
             description: newTask.description || null,
