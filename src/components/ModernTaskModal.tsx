@@ -597,8 +597,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       priority: priority || 'normal',
       tag: tag.trim() || '',
       date: date || null, // Allow null dates
-      start_date: startDate || null, // Start date for Gantt
-      due_date: dueDate || null, // Due date for Gantt
       todos,
       status,
       project_id: projectId || null,
@@ -611,7 +609,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         .from('tasks_items')
         .update(updates)
         .eq('id', task.id)
-        .select('id,project_id,title,description,date,start_date,due_date,position,priority,tag,todos,status')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status')
         .single()
 
       if (error) {

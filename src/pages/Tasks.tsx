@@ -745,7 +745,7 @@ const projectColorById = React.useMemo(() => {
       const endDate = format(end, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,start_date,due_date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
+        .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date',     { ascending:true })

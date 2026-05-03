@@ -80,28 +80,18 @@ export default function TasksGanttView({ tasks, start, onTaskClick, onTaskUpdate
     const dayWidth = (bodyRect.width - 200) / 7
     const dayIndex = Math.max(0, Math.min(6, Math.floor(relativeX / dayWidth)))
     const newStartDate = addDays(weekStart, dayIndex)
-    
-    // Calculate task duration
-    const currentStart = draggedTask.start_date || draggedTask.date
-    const currentDue = draggedTask.due_date || draggedTask.date || currentStart
-    const taskDuration = currentStart && currentDue
-      ? differenceInDays(parseISO(currentDue), parseISO(currentStart))
-      : 0
-    const newDueDate = addDays(newStartDate, taskDuration)
 
-    // Update in database
+    // Persist only `date` — many DBs lack start_date/due_date on tasks_items (42703 otherwise).
+    // Gantt still reads start_date/due_date from task when present; otherwise uses `date`.
+    const newDateKey = format(newStartDate, 'yyyy-MM-dd')
     supabase
       .from('tasks_items')
-      .update({
-        start_date: format(newStartDate, 'yyyy-MM-dd'),
-        due_date: format(newDueDate, 'yyyy-MM-dd')
-      })
+      .update({ date: newDateKey })
       .eq('id', draggedTask.id)
       .then(() => {
         onTaskUpdate({
           ...draggedTask,
-          start_date: format(newStartDate, 'yyyy-MM-dd'),
-          due_date: format(newDueDate, 'yyyy-MM-dd')
+          date: newDateKey,
         }, false)
       })
   }, [draggedTask, weekStart, onTaskUpdate])
