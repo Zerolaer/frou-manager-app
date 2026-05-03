@@ -68,8 +68,24 @@ export default function TasksMobile() {
 
   const toggleTask = async (task: TaskItem) => {
     const newStatus = task.status === TASK_STATUSES.CLOSED ? TASK_STATUSES.OPEN : TASK_STATUSES.CLOSED
-    await supabase.from('tasks_items').update({ status: newStatus }).eq('id', task.id)
-    setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t))
+    const { error } = await supabase.from('tasks_items').update({ status: newStatus }).eq('id', task.id)
+    if (error) {
+      const { data } = await supabase
+        .from('tasks_items')
+        .select('id,title,description,status,priority,tag,todos,date,position,tasks_projects(name)')
+        .eq('date', dateKey)
+        .order('position')
+      if (data) {
+        setTasks(
+          data.map((t) => ({
+            ...t,
+            project_name: (t as any).tasks_projects?.name,
+          }))
+        )
+      }
+      return
+    }
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)))
   }
   
   const createTask = async (title: string, desc: string, prio: string, tag: string, todos: any[], projId: string, date?: Date) => {

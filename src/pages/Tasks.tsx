@@ -570,23 +570,34 @@ export default function Tasks(){
       [dayKey]: toList
     }))
 
-    // Persist to database
+    // Persist to database (Supabase does not throw on HTTP errors — check `error`)
     try {
-      await supabase
+      const { error: moveErr } = await supabase
         .from('tasks_items')
         .update({ date: dayKey, position: toList.findIndex(item => item.id === movedItem.id) })
         .eq('id', movedItem.id)
 
-      // Update all affected items
-      const allItems = [...fromList, ...toList]
+      if (moveErr) {
+        logger.error('handleDrop: failed to move task', moveErr)
+        setRefreshTrigger((t) => t + 1)
+        return
+      }
+
+      const allItems = dayKey === fromDayKey ? fromList : [...fromList, ...toList]
       for (const item of allItems) {
-        await supabase
+        const { error: posErr } = await supabase
           .from('tasks_items')
           .update({ position: item.position })
           .eq('id', item.id)
+        if (posErr) {
+          logger.error('handleDrop: failed to update position', posErr)
+          setRefreshTrigger((t) => t + 1)
+          return
+        }
       }
     } catch (error) {
       logger.error('Error updating task positions:', error)
+      setRefreshTrigger((t) => t + 1)
     }
   }
 
@@ -721,6 +732,8 @@ const projectColorById = React.useMemo(() => {
   const [allTasks, setAllTasks] = React.useState<Record<string, TaskItem[]>>({})
   // Force refresh trigger
   const [refreshTrigger, setRefreshTrigger] = React.useState(0)
+  /** Bumped on effect cleanup so in-flight week fetches never overwrite fresher UI (DnD / status). */
+  const tasksWeekFetchGenRef = React.useRef(0)
   // Track last active project to clear cache on project switch
   const lastActiveProject = React.useRef(activeProject)
   // Track current month for calendar
@@ -739,6 +752,7 @@ const projectColorById = React.useMemo(() => {
     }
     
     let cancelled = false
+    const fetchGen = ++tasksWeekFetchGenRef.current
     
     const fetchTasks = async () => {
       const startDate = format(start, 'yyyy-MM-dd')
@@ -756,7 +770,10 @@ const projectColorById = React.useMemo(() => {
       if (activeProject === TASK_PROJECT_ALL) {
         // If in "All Projects" mode, filter by selected projects
         if (selectedProjectIds.length > 0) {
-          query = q.in('project_id', selectedProjectIds)
+          // Include tasks with no project — plain `.in()` excludes NULL in SQL
+          query = q.or(
+            `project_id.is.null,project_id.in.(${selectedProjectIds.join(',')})`
+          )
         }
         // If no projects selected, we'll get empty result (which is correct)
       } else {
@@ -768,6 +785,7 @@ const projectColorById = React.useMemo(() => {
       
       
       if (cancelled) return
+      if (fetchGen !== tasksWeekFetchGenRef.current) return
       
       if (error) {
         logger.error('❌ Error fetching tasks:', error)
@@ -793,6 +811,8 @@ const projectColorById = React.useMemo(() => {
         })
       })
       
+      if (fetchGen !== tasksWeekFetchGenRef.current) return
+
       // Update state with new data for this week's date range
       setTasks(prev => {
         const next = { ...prev }
@@ -819,6 +839,7 @@ const projectColorById = React.useMemo(() => {
     
     return () => {
       cancelled = true
+      tasksWeekFetchGenRef.current++
     }
   }, [uid, activeProject, start, end, selectedProjectIds, refreshTrigger])
 
@@ -863,7 +884,9 @@ const projectColorById = React.useMemo(() => {
       let query = q
       if (activeProject === TASK_PROJECT_ALL) {
         if (selectedProjectIds.length > 0) {
-          query = q.in('project_id', selectedProjectIds)
+          query = q.or(
+            `project_id.is.null,project_id.in.(${selectedProjectIds.join(',')})`
+          )
         }
       } else {
         query = q.eq('project_id', activeProject)
@@ -1262,15 +1285,22 @@ const projectColorById = React.useMemo(() => {
   async function toggleTaskStatus(task: TaskItem, dayKey: string){
     try{
       const newStatus = task.status === TASK_STATUSES.CLOSED ? TASK_STATUSES.OPEN : TASK_STATUSES.CLOSED
-      await supabase.from('tasks_items').update({status: newStatus}).eq('id', task.id)
-      const map = { ...tasks }
-      const list = map[dayKey] || []
-      const idx = list.findIndex(x => x.id === task.id)
-      if (idx >= 0){ 
-        list[idx] = { ...list[idx], status: newStatus }
-        map[dayKey] = list
-        setTasks(map)
+      const { error } = await supabase.from('tasks_items').update({ status: newStatus }).eq('id', task.id)
+      if (error) {
+        logger.error('toggleTaskStatus: update failed', error)
+        setRefreshTrigger((t) => t + 1)
+        return
       }
+      setTasks((prev) => {
+        const map = { ...prev }
+        const list = [...(map[dayKey] || [])]
+        const idx = list.findIndex((x) => x.id === task.id)
+        if (idx >= 0) {
+          list[idx] = { ...list[idx], status: newStatus }
+          map[dayKey] = list
+        }
+        return map
+      })
     } finally {
       setCtx(c => ({ ...c, open: false }))
     }

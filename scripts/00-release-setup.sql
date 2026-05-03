@@ -160,7 +160,11 @@ drop policy if exists "tasks_items_update_own" on public.tasks_items;
 drop policy if exists "tasks_items_delete_own" on public.tasks_items;
 create policy "tasks_items_select_own" on public.tasks_items for select using (auth.uid() = user_id);
 create policy "tasks_items_insert_own" on public.tasks_items for insert with check (auth.uid() = user_id);
-create policy "tasks_items_update_own" on public.tasks_items for update using (auth.uid() = user_id);
+-- WITH CHECK avoids silent 0-row updates on some Postgres/RLS combos when the row must stay "own"
+create policy "tasks_items_update_own" on public.tasks_items
+  for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 create policy "tasks_items_delete_own" on public.tasks_items for delete using (auth.uid() = user_id);
 
 drop trigger if exists trg_tasks_items_updated_at on public.tasks_items;
