@@ -572,25 +572,44 @@ export default function Tasks(){
 
     // Persist to database (Supabase does not throw on HTTP errors — check `error`)
     try {
-      const { error: moveErr } = await supabase
+      const { data: sess } = await supabase.auth.getSession()
+      if (!sess.session) {
+        logger.error('handleDrop: no auth session — drag not saved')
+        setRefreshTrigger((t) => t + 1)
+        return
+      }
+
+      const { error: moveErr, data: movedRows } = await supabase
         .from('tasks_items')
         .update({ date: dayKey, position: toList.findIndex(item => item.id === movedItem.id) })
         .eq('id', movedItem.id)
+        .select('id')
 
       if (moveErr) {
         logger.error('handleDrop: failed to move task', moveErr)
         setRefreshTrigger((t) => t + 1)
         return
       }
+      if (!movedRows?.length) {
+        logger.error('handleDrop: update returned 0 rows (RLS or wrong id)', { id: movedItem.id })
+        setRefreshTrigger((t) => t + 1)
+        return
+      }
 
       const allItems = dayKey === fromDayKey ? fromList : [...fromList, ...toList]
       for (const item of allItems) {
-        const { error: posErr } = await supabase
+        const { error: posErr, data: posData } = await supabase
           .from('tasks_items')
           .update({ position: item.position })
           .eq('id', item.id)
+          .select('id')
         if (posErr) {
           logger.error('handleDrop: failed to update position', posErr)
+          setRefreshTrigger((t) => t + 1)
+          return
+        }
+        if (!posData?.length) {
+          logger.error('handleDrop: position update returned 0 rows', { id: item.id })
           setRefreshTrigger((t) => t + 1)
           return
         }
@@ -740,6 +759,7 @@ const projectColorById = React.useMemo(() => {
   const [calendarMonth, setCalendarMonth] = React.useState(new Date())
   
   React.useEffect(() => {
+    if (authLoading) return
     if (!uid || !activeProject) { 
       setTasks({})
       return
@@ -765,19 +785,9 @@ const projectColorById = React.useMemo(() => {
         .order('date',     { ascending:true })
         .order('position', { ascending:true })
       
-      // Filter: 'ALL' shows tasks from selected projects, specific project shows only that project's tasks
+      // Filter: 'ALL' = fetch user's week then filter by selected projects in JS (PostgREST `or+in` is fragile).
       let query = q
-      if (activeProject === TASK_PROJECT_ALL) {
-        // If in "All Projects" mode, filter by selected projects
-        if (selectedProjectIds.length > 0) {
-          // Include tasks with no project — plain `.in()` excludes NULL in SQL
-          query = q.or(
-            `project_id.is.null,project_id.in.(${selectedProjectIds.join(',')})`
-          )
-        }
-        // If no projects selected, we'll get empty result (which is correct)
-      } else {
-        // Specific project selected
+      if (activeProject !== TASK_PROJECT_ALL) {
         query = q.eq('project_id', activeProject)
       }
       
@@ -792,8 +802,16 @@ const projectColorById = React.useMemo(() => {
         return
       }
       
+      let rows: any[] = data || []
+      if (activeProject === TASK_PROJECT_ALL && selectedProjectIds.length > 0) {
+        const allowed = new Set(selectedProjectIds)
+        rows = rows.filter(
+          (t) => t.project_id == null || allowed.has(t.project_id as string)
+        )
+      }
+      
       const map: Record<string, TaskItem[]> = {}
-      ;(data || []).forEach((t: any) => {
+      rows.forEach((t: any) => {
         const key = t.date as string
         ;(map[key] ||= []).push({ 
           id: t.id, 
@@ -841,7 +859,7 @@ const projectColorById = React.useMemo(() => {
       cancelled = true
       tasksWeekFetchGenRef.current++
     }
-  }, [uid, activeProject, start, end, selectedProjectIds, refreshTrigger])
+  }, [uid, activeProject, start, end, selectedProjectIds, refreshTrigger, authLoading])
 
   // Update all recurring tasks once on mount to create missing instances
   // Use ref to ensure it only runs once
@@ -859,6 +877,7 @@ const projectColorById = React.useMemo(() => {
 
   // Load all tasks for calendar (based on calendar month)
   React.useEffect(() => {
+    if (authLoading) return
     if (!uid || !activeProject) { 
       setAllTasks({})
       return
@@ -880,15 +899,8 @@ const projectColorById = React.useMemo(() => {
         .order('date', { ascending: true })
         .order('position', { ascending: true })
       
-      // Filter logic similar to main tasks fetch
       let query = q
-      if (activeProject === TASK_PROJECT_ALL) {
-        if (selectedProjectIds.length > 0) {
-          query = q.or(
-            `project_id.is.null,project_id.in.(${selectedProjectIds.join(',')})`
-          )
-        }
-      } else {
+      if (activeProject !== TASK_PROJECT_ALL) {
         query = q.eq('project_id', activeProject)
       }
       
@@ -901,23 +913,29 @@ const projectColorById = React.useMemo(() => {
         return
       }
       
-      if (data) {
-        const taskMap: Record<string, TaskItem[]> = {}
-        
-        data.forEach((task: any) => {
-          const dayKey = task.date
-          if (!taskMap[dayKey]) {
-            taskMap[dayKey] = []
-          }
-          
-          taskMap[dayKey].push({
-            ...task,
-            project_name: task.tasks_projects?.name || 'No Project'
-          })
-        })
-        
-        setAllTasks(taskMap)
+      let rows: any[] = data || []
+      if (activeProject === TASK_PROJECT_ALL && selectedProjectIds.length > 0) {
+        const allowed = new Set(selectedProjectIds)
+        rows = rows.filter(
+          (t) => t.project_id == null || allowed.has(t.project_id as string)
+        )
       }
+      
+      const taskMap: Record<string, TaskItem[]> = {}
+      
+      rows.forEach((task: any) => {
+        const dayKey = task.date
+        if (!taskMap[dayKey]) {
+          taskMap[dayKey] = []
+        }
+        
+        taskMap[dayKey].push({
+          ...task,
+          project_name: task.tasks_projects?.name || 'No Project'
+        })
+      })
+      
+      setAllTasks(taskMap)
     }
     
     fetchAllTasks()
@@ -925,7 +943,7 @@ const projectColorById = React.useMemo(() => {
     return () => {
       cancelled = true
     }
-  }, [uid, activeProject, calendarMonth, selectedProjectIds])
+  }, [uid, activeProject, calendarMonth, selectedProjectIds, authLoading])
 
 // context menu state for task cards
   const [ctx, setCtx] = React.useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
@@ -1284,10 +1302,25 @@ const projectColorById = React.useMemo(() => {
 
   async function toggleTaskStatus(task: TaskItem, dayKey: string){
     try{
+      const { data: sess } = await supabase.auth.getSession()
+      if (!sess.session) {
+        logger.error('toggleTaskStatus: no auth session')
+        setRefreshTrigger((t) => t + 1)
+        return
+      }
       const newStatus = task.status === TASK_STATUSES.CLOSED ? TASK_STATUSES.OPEN : TASK_STATUSES.CLOSED
-      const { error } = await supabase.from('tasks_items').update({ status: newStatus }).eq('id', task.id)
+      const { error, data } = await supabase
+        .from('tasks_items')
+        .update({ status: newStatus })
+        .eq('id', task.id)
+        .select('id')
       if (error) {
         logger.error('toggleTaskStatus: update failed', error)
+        setRefreshTrigger((t) => t + 1)
+        return
+      }
+      if (!data?.length) {
+        logger.error('toggleTaskStatus: 0 rows updated (RLS / session)', { id: task.id })
         setRefreshTrigger((t) => t + 1)
         return
       }

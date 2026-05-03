@@ -34,7 +34,7 @@ type Props = {
 
 export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpdateRecurrence }: Props) {
   const { t } = useSafeTranslation()
-  const { confirm } = useModalConfirm()
+  const { confirm, alert } = useModalConfirm()
   
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -82,6 +82,15 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
 
     setIsSaving(true)
     try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        await alert(
+          t('tasks.sessionRequired') || 'Войдите в аккаунт ещё раз — сессия не найдена.',
+          t('common.error') || 'Ошибка'
+        )
+        return
+      }
+
       const finalTitle = title.trim() || task.title || 'Untitled Task'
 
       logger.debug('💾 Saving task:', { 
@@ -113,20 +122,34 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
         .update(updates)
         .eq('id', task.id)
         .select('id,project_id,title,description,date,position,priority,tag,todos,status')
-        .single()
 
       if (error) {
         logger.error('❌ Supabase error:', error)
+        await alert(
+          `${t('tasks.saveFailed') || 'Не удалось сохранить'}: ${error.message}`,
+          t('common.error') || 'Ошибка'
+        )
         throw error
       }
 
-      logger.debug('✅ Task saved successfully:', data)
+      const row = Array.isArray(data) ? data[0] : data
+      if (!row) {
+        logger.error('❌ Task save returned 0 rows', { id: task.id })
+        await alert(
+          t('tasks.saveNoRows') ||
+            'Сервер не сохранил задачу (часто RLS). Проверьте политики tasks_items в Supabase.',
+          t('common.error') || 'Ошибка'
+        )
+        return
+      }
+
+      logger.debug('✅ Task saved successfully:', row)
       
-      if (data) {
+      {
         const updatedTask = { 
           ...task, 
-          ...data,
-          project_id: data.project_id || projectId || null
+          ...row,
+          project_id: row.project_id || projectId || null
         }
         
         if (onUpdated) {

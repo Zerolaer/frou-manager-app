@@ -605,23 +605,46 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     logger.debug('📤 Updates payload:', updates)
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        await alert(
+          t('tasks.sessionRequired') || 'Войдите в аккаунт ещё раз — сессия не найдена, сохранение отменено.',
+          t('common.error') || 'Ошибка'
+        )
+        return
+      }
+
       const { data, error } = await supabase
         .from('tasks_items')
         .update(updates)
         .eq('id', task.id)
         .select('id,project_id,title,description,date,position,priority,tag,todos,status')
-        .single()
 
       if (error) {
         logger.error('❌ Supabase error:', error)
+        await alert(
+          `${t('tasks.saveFailed') || 'Не удалось сохранить'}: ${error.message}`,
+          t('common.error') || 'Ошибка'
+        )
         throw error
       }
 
-      logger.debug('✅ Task saved successfully:', data)
+      const row = Array.isArray(data) ? data[0] : (data as Record<string, unknown> | null)
+      if (!row) {
+        logger.error('❌ Task save returned 0 rows (RLS / wrong id)', { id: task.id })
+        await alert(
+          t('tasks.saveNoRows') ||
+            'Сервер не сохранил строку (часто RLS: нет прав на UPDATE или задача чужая). Проверьте политики tasks_items в Supabase.',
+          t('common.error') || 'Ошибка'
+        )
+        return
+      }
+
+      logger.debug('✅ Task saved successfully:', row)
       
       // If this is a subtask, sync changes back to parent task's todos array
       // Sync status changes immediately (even on auto-save) to update parent task's checkbox
-      if (data && (task as any)?.parent_task_id) {
+      if (row && (task as any)?.parent_task_id) {
         try {
           // Load parent task
           const { data: parentTask } = await supabase
@@ -668,13 +691,14 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       
       // Update local task with actual data from database
       // Only call onUpdated if data actually changed to prevent loops
-      if (data && !skipOnUpdated) {
+      if (row && !skipOnUpdated) {
+        const r = row as Task & Record<string, unknown>
         const updatedTask = { 
           ...task, 
-          ...data,
-          project_id: data.project_id || projectId || null,
+          ...r,
+          project_id: r.project_id || projectId || null,
           // Ensure status is explicitly set (important for subtasks)
-          status: data.status || status
+          status: r.status || status
         }
         
         // CRITICAL: If this is a subtask, call onUpdated to update board immediately
