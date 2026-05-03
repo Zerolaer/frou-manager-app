@@ -1,5 +1,9 @@
--- Run in Supabase SQL Editor if task updates return 0 rows / nothing persists.
--- Safe to run multiple times.
+-- Fix: "record new has no field updated_at" on tasks_items UPDATE
+-- (триггер trg_tasks_items_updated_at + функция set_updated_at, а колонки не было в старой таблице)
+-- Выполни в Supabase → SQL Editor. Безопасно запускать повторно.
+
+alter table public.tasks_items add column if not exists created_at timestamptz not null default now();
+alter table public.tasks_items add column if not exists updated_at timestamptz not null default now();
 
 drop policy if exists "tasks_items_update_own" on public.tasks_items;
 

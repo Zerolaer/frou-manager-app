@@ -145,6 +145,9 @@ alter table public.tasks_items add column if not exists due_date date;
 alter table public.tasks_items add column if not exists todos jsonb not null default '[]'::jsonb;
 alter table public.tasks_items add column if not exists status text not null default 'open';
 alter table public.tasks_items add column if not exists tag text;
+-- Старые БД без timestamps: триггер set_updated_at() падает с "record new has no field updated_at"
+alter table public.tasks_items add column if not exists created_at timestamptz not null default now();
+alter table public.tasks_items add column if not exists updated_at timestamptz not null default now();
 
 create index if not exists idx_tasks_items_user_id on public.tasks_items(user_id);
 create index if not exists idx_tasks_items_project_id on public.tasks_items(project_id);
