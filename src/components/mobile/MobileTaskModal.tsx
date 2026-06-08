@@ -5,9 +5,11 @@ import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
 import MobileModal from '@/components/ui/MobileModal'
 import { ModalButton } from '@/components/ui/ModalSystem'
 import { useSafeTranslation } from '@/utils/safeTranslation'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
 import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/lib/monitoring'
 import { useModalConfirm } from '@/utils/modalConfirm'
+import RecurringTaskBlock from '@/components/RecurringTaskBlock'
 import type { Todo, Project } from '@/types/shared'
 
 type Task = {
@@ -20,6 +22,7 @@ type Task = {
   date?: string | null
   todos?: Todo[]
   status?: string
+  recurring_task_id?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -71,11 +74,11 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
         .order('name')
       
       if (!error && data) {
-        setProjects(data)
+        setProjects(filterVisibleTaskProjects(data, t('projects.uncategorized')))
       }
     }
     loadProjects()
-  }, [])
+  }, [t])
 
   const save = async (isAutoSave = false) => {
     if (!task) return
@@ -85,9 +88,8 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
       const { data: sessionData } = await supabase.auth.getSession()
       if (!sessionData.session) {
         await alert(
-          t('tasks.sessionRequired') || 'Войдите в аккаунт ещё раз — сессия не найдена.',
-          t('common.error') || 'Ошибка'
-        )
+          t('tasks.sessionRequired'),
+          t('common.error')        )
         return
       }
 
@@ -126,9 +128,8 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
       if (error) {
         logger.error('❌ Supabase error:', error)
         await alert(
-          `${t('tasks.saveFailed') || 'Не удалось сохранить'}: ${error.message}`,
-          t('common.error') || 'Ошибка'
-        )
+          `${t('tasks.saveFailed')}: ${error.message}`,
+          t('common.error')        )
         throw error
       }
 
@@ -137,9 +138,8 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
         logger.error('❌ Task save returned 0 rows', { id: task.id })
         await alert(
           t('tasks.saveNoRows') ||
-            'Сервер не сохранил задачу (часто RLS). Проверьте политики tasks_items в Supabase.',
-          t('common.error') || 'Ошибка'
-        )
+            t('tasks.saveNoRows'),
+          t('common.error')        )
         return
       }
 
@@ -216,7 +216,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
 
   const handleDelete = async () => {
     if (!task) return
-    const result = await confirm(t('tasks.deleteConfirm') || 'Вы уверены, что хотите удалить эту задачу?', t('tasks.deleteTaskTitle') || 'Delete Task')
+    const result = await confirm(t('tasks.deleteConfirm'), t('tasks.deleteTaskTitle'))
     if (!result) return
     
     try {
@@ -346,6 +346,14 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
             <option value="closed">{t('tasks.closed')}</option>
           </select>
         </div>
+
+        {onUpdateRecurrence && (
+          <RecurringTaskBlock
+            task={task}
+            onUpdateRecurrence={onUpdateRecurrence}
+            containerClassName="space-y-3 rounded-xl border border-outline bg-background-card p-4"
+          />
+        )}
 
         {/* Подзадачи */}
         <div>

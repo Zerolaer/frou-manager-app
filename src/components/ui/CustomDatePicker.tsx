@@ -138,11 +138,10 @@ export default function CustomDatePicker({
   }, [isOpen])
 
   const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return placeholder || t('tasks.selectDate') || 'Выбрать дату'
+    if (!dateStr) return placeholder || t('tasks.selectDate')
     const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return placeholder || t('tasks.selectDate') || 'Выбрать дату'
-    
-    return date.toLocaleDateString('ru-RU', {
+    if (isNaN(date.getTime())) return placeholder || t('tasks.selectDate')
+    return date.toLocaleDateString(undefined, {
       day: 'numeric',
       month: 'long',
       year: 'numeric'

@@ -62,17 +62,49 @@ cp .env.example .env
 #    Он идемпотентен — можно перезапускать сколько угодно раз. Он создаёт
 #    все таблицы, RLS-политики, индексы и триггеры, нужные приложению.
 
-# 4. Run dev server
+# 4. (Optional) Supabase Auth — Google OAuth, email confirm, password reset
+#    See docs/SUPABASE_AUTH_SETUP.md for dashboard redirect URLs and providers.
+
+# 5. Run dev server
 npm run dev
 # → http://localhost:5173/
 
-# 5. Type-check (должен быть чистым)
+# 6. Type-check (должен быть чистым)
 npm run lint
 
-# 6. Production build
+# 7. Production build
 npm run build
 # → dist/  (готов к деплою)
 ```
+
+### iOS (Capacitor)
+
+Native shell for Tasks + Finance mobile UI. Requires **macOS + Xcode** to run on device or simulator.
+
+```bash
+# Build web assets and sync into ios/
+npm run build:ios
+
+# Open Xcode project (on Mac)
+npm run cap:open:ios
+
+# After web changes only
+npm run cap:sync
+```
+
+- App ID: `com.frovo.manager`, URL scheme: `frovo://` (OAuth deep links)
+- Add `frovo://login` to Supabase Auth redirect URLs when testing native OAuth
+- `ios/` is committed; run `npm run build:ios` before opening Xcode
+- Native plugins (StatusBar, Keyboard, SplashScreen) init in `src/platform/capacitorInit.ts` on app start; splash hides after first paint via `NativeSplashGate`
+- CI skeleton: `.github/workflows/ios-build.yml` (macOS runner, build + cap sync)
+
+**Xcode (on Mac):**
+
+1. Run `npm run build:ios` from the repo root
+2. Open `ios/App/App.xcworkspace` in Xcode (`npm run cap:open:ios`)
+3. Select your Team under Signing & Capabilities for target **App**
+4. Choose a simulator or connected device, then Run (⌘R)
+5. After web-only changes, re-run `npm run build:ios` before testing in Xcode
 
 > Без `.env` (или с пустыми переменными) production-сборка **намеренно падает**
 > с понятной ошибкой — это защита от случайного релиза без бэкенда.

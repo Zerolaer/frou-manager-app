@@ -1,6 +1,6 @@
 /* ===== Notes layout (no page vertical scroll) ===== */
 .notes-page {
-  height: calc(100vh - 96px); /* 100vh - Header (80px) - padding (16px) */
+  height: 100%;
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 16px;
@@ -18,9 +18,9 @@ body.notes-mode {
   overflow: hidden !important;
 }
 
-body.notes-mode #main-content {
+body.notes-mode #main-content,
+body.notes-mode #app-content-body {
   overflow: hidden !important;
-  padding-bottom: 16px !important;
 }
 
 /* Mobile responsiveness */
@@ -54,24 +54,6 @@ body.notes-mode #main-content {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.notes-folders::-webkit-scrollbar {
-  width: 6px;
-}
-
-.notes-folders::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.notes-folders::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.notes-folders::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
 /* Notes content area */
 .notes-content {
   background: #fff;
@@ -83,24 +65,6 @@ body.notes-mode #main-content {
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.notes-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.notes-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.notes-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.notes-content::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
 
 /* Notes toolbar */

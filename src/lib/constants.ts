@@ -34,6 +34,9 @@ export const TASK_STATUSES = {
 
 export const TASK_PROJECT_ALL = 'ALL'
 
+/** Auto-created default folder names (en/ru) — hidden from sidebar; tasks use null project_id instead */
+export const LEGACY_UNCATEGORIZED_PROJECT_NAMES = ['Uncategorized', 'Без категории'] as const
+
 // Goal constants
 export const GOAL_STATUSES = {
   ACTIVE: 'active',

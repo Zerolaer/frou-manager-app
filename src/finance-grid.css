@@ -186,13 +186,8 @@
   font-size: 13px;
   font-weight: 400;
   color: #111827;
-  cursor: pointer;
-  transition: background 120ms, box-shadow 120ms;
+  cursor: default;
   text-align: left;
-}
-.cell-name:hover {
-  background: #f8fafc !important;
-  box-shadow: inset 0 0 0 1px #e5e7eb;
 }
 
 /* Collapse button styles */
@@ -343,17 +338,20 @@
   background: transparent !important; 
 }
 
-/* Disable any hover effects on finance-cell that contains cell-name */
-.finance-grid > .finance-cell:has(.cell-name):hover {
-  background: transparent !important;
+/* System cells: category name column + indicator/summary/header (no .cell-btn) */
+.finance-grid .finance-cell:has(.cell-name):hover,
+.finance-grid .finance-cell:has(.cell-head):not(:has(.cell-btn)):hover {
+  background: #ffffff !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-/* More specific rule to disable all hover effects on category cells */
 .finance-cell:has(.cell-name) {
   pointer-events: none;
 }
 
-.finance-cell:has(.cell-name) .cell-name {
+.finance-cell:has(.cell-name) .cell-name,
+.finance-cell:has(.cell-name) .cell-name button {
   pointer-events: auto;
 }
 .finance-grid > .finance-cell.finance-head,
@@ -389,14 +387,15 @@
   pointer-events: none !important;
 }
 
-/* Show "three dots" menu only on hover over category name cell */
+/* Category menu: visible on focus or when hovering the button itself */
 .finance-grid .cell-name .menu-btn {
-  opacity: 0;
+  opacity: 0.35;
   transition: opacity 120ms ease;
   cursor: pointer;
 }
-.finance-grid .cell-name:hover .menu-btn,
-.finance-grid .cell-name:focus-within .menu-btn {
+.finance-grid .cell-name:focus-within .menu-btn,
+.finance-grid .cell-name .menu-btn:hover,
+.finance-grid .cell-name .menu-btn:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
@@ -414,7 +413,9 @@
   z-index: 51;
   background: #fff;  
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  min-width: 180px; 
+  width: max-content;
+  min-width: 0;
+  max-width: min(320px, calc(100vw - 16px));
   padding: 8px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -438,6 +439,11 @@
 
 .ctx-item:active,
 .ctx-item[data-active="true"] { 
-  background: #000000 !important;
-  color: #ffffff !important;
+  background: #e5e7eb;
+  color: #111827;
+}
+.ctx-item--danger:active,
+.ctx-item--danger[data-active="true"] {
+  background: #fee2e2;
+  color: #dc2626;
 }

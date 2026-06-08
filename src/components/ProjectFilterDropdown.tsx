@@ -97,13 +97,12 @@ export default function ProjectFilterDropdown({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div 
-            className="absolute bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto p-2"
+            className="absolute bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto p-2 w-max min-w-0 max-w-[min(320px,calc(100vw-16px))]"
             style={{
               top: '100%',
               marginTop: '8px',
               right: '0',
-              minWidth: '240px',
-              width: 'auto',
+              width: 'max-content',
               animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
               transformOrigin: 'top'
             }}

@@ -57,7 +57,7 @@ export default function NotesFilterModal({
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-700" />
             <h2 className="text-lg font-semibold text-gray-900">
-              {t('notes.filterNotes') || 'Фильтр заметок'}
+              {t('notes.filterNotes')}
             </h2>
           </div>
           <button
@@ -80,7 +80,7 @@ export default function NotesFilterModal({
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-700">
-                📌 {t('notes.showOnlyPinned') || 'Только закрепленные'}
+                📌 {t('notes.showOnlyPinned')}
               </span>
             </label>
 
@@ -92,7 +92,7 @@ export default function NotesFilterModal({
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-700">
-                📝 {t('notes.showOnlyWithContent') || 'Только с содержимым'}
+                📝 {t('notes.showOnlyWithContent')}
               </span>
             </label>
 
@@ -104,7 +104,7 @@ export default function NotesFilterModal({
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-700">
-                🔍 {t('notes.searchInContent') || 'Искать в содержимом'}
+                🔍 {t('notes.searchInContent')}
               </span>
             </label>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Modal from '@/components/ui/Modal'
+import { ModalButton } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
 import Dropdown from '@/components/ui/Dropdown'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
@@ -21,7 +22,7 @@ export default function CellEditor({
   categoryName: string
   monthIndex: number
   year: number
-  onApply: (newSum: number) => void
+  onApply: (newSum: number, hasEntriesInCell: boolean) => void
 }) {
   const { t } = useSafeTranslation()
   const [loading, setLoading] = useState(true)
@@ -138,7 +139,7 @@ export default function CellEditor({
       position: data.position ?? items.length 
     }]
     setItems(next); setAmount(''); setNote(''); setCurrency('EUR')
-    onApply(sumIncluded(next))
+    onApply(sumIncluded(next), next.length > 0)
     // Focus back to amount input after adding
     setTimeout(() => {
       amountInputRef.current?.focus()
@@ -155,7 +156,7 @@ export default function CellEditor({
   function updateItemLocal(id: string, patch: Partial<Entry>) {
     setItems(prev => {
       const next = prev.map(i => i.id === id ? { ...i, ...patch } : i)
-      onApply(sumIncluded(next))
+      onApply(sumIncluded(next), next.length > 0)
       return next
     })
   }
@@ -217,7 +218,7 @@ export default function CellEditor({
     const next = items.filter(i => i.id !== id)
     next.forEach((it, idx) => { it.position = idx })
     setItems(next)
-    onApply(sumIncluded(next))
+    onApply(sumIncluded(next), next.length > 0)
     await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
   }
 
@@ -235,7 +236,7 @@ export default function CellEditor({
     next.splice(overIdx, 0, moved)
     next.forEach((it, idx) => { it.position = idx })
     setItems(next)
-    onApply(sumIncluded(next))
+    onApply(sumIncluded(next), next.length > 0)
     await Promise.all(next.map((it, idx) => supabase.from('finance_entries').update({ position: idx }).eq('id', it.id)))
   }
 
@@ -295,9 +296,9 @@ export default function CellEditor({
       }}>
         <span style={{ fontWeight: 400 }}>{t('finance.total')}:</span> {fmt.format(sumIncluded(items))}
       </div>
-      <button className="btn btn-outline" onClick={onClose}>
+      <ModalButton variant="secondary" onClick={onClose}>
         {t('actions.close')}
-      </button>
+      </ModalButton>
     </div>
   }
   size="cell"
@@ -322,8 +323,9 @@ export default function CellEditor({
                 { value: 'USD', label: 'USD' },
                 { value: 'GEL', label: 'GEL' }
               ]}
-              className="editor-input currency"
+              className="editor-input currency shrink-0 !w-[72px]"
               dropdownClassName="currency-dropdown"
+              renderInPortal
             />
             <CoreInput 
               placeholder={t('finance.descriptionOptional')} 
@@ -384,7 +386,7 @@ export default function CellEditor({
                   value={String(i.amount)} 
                   onChange={e=>changeAmount(i.id, e.target.value)}
                 />
-                <div onClick={() => handleDropdownOpen(i.id)}>
+                <div className="entry-currency-wrap" onClick={() => handleDropdownOpen(i.id)}>
                   <Dropdown
                     value={i.currency}
                     onChange={(value) => {
@@ -396,8 +398,9 @@ export default function CellEditor({
                       { value: 'USD', label: 'USD' },
                       { value: 'GEL', label: 'GEL' }
                     ]}
-                    className="editor-input entry-currency"
+                    className="editor-input entry-currency shrink-0 !w-[72px]"
                     dropdownClassName="currency-dropdown"
+                    renderInPortal
                   />
                 </div>
                 <CoreInput className="editor-input entry-note" value={i.note || ""} onChange={e=>changeNote(i.id, e.target.value)} />

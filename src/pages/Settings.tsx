@@ -153,11 +153,11 @@ export default function Settings() {
   // Save password
   const handleSavePassword = async () => {
     if (!newPassword || newPassword !== confirmPassword) {
-      await alert('Пароли не совпадают', t('common.error') || 'Error')
+      await alert(t('settings.account.passwordsDontMatch'), t('common.error'))
       return
     }
     if (newPassword.length < 6) {
-      await alert('Пароль должен быть минимум 6 символов', t('common.error') || 'Error')
+      await alert(t('auth.passwordTooShort'), t('common.error'))
       return
     }
     setSaving(true)
@@ -321,7 +321,7 @@ export default function Settings() {
                           : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                     >
-                      <div className="font-medium text-sm">{themeOption.displayName}</div>
+                      <div className="font-medium text-sm">{t(`settings.system.themes.${themeOption.name}`, { defaultValue: themeOption.displayName })}</div>
                     </button>
                   ))}
                 </div>

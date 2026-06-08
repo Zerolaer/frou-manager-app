@@ -7,6 +7,10 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+
+# Capacitor — commit ios/ per Capacitor workflow; ignore local Xcode artifacts
+ios/App/App/public/
+ios/DerivedData/
 .next/
 out/
 

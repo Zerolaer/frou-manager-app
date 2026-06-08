@@ -2,6 +2,7 @@ import React from 'react'
 import { format as formatDate } from 'date-fns'
 import { useModal } from '@/hooks/useModal'
 import Dropdown, { DropdownOption } from './Dropdown'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import CustomDatePicker from './CustomDatePicker'
 
@@ -33,10 +34,11 @@ export function ProjectDropdown({
   ...props 
 }: ProjectDropdownProps) {
   const { t } = useSafeTranslation()
-  
+  const visibleProjects = filterVisibleTaskProjects(projects, t('projects.uncategorized'))
+
   const options: DropdownOption[] = [
     { value: '', label: t('projects.noProject') },
-    ...projects.map(project => ({
+    ...visibleProjects.map(project => ({
       value: project.id,
       label: project.name
     }))
@@ -141,7 +143,7 @@ export function DateDropdown({
   maxDate,
   value, 
   onChange, 
-  placeholder = 'Выберите дату...',
+  placeholder = 'Select date...',
   ...props 
 }: DateDropdownProps) {
   // Use custom date picker for 'date' format, fallback to native input for time/datetime
@@ -186,7 +188,7 @@ export function YearDropdown({
   years,
   value, 
   onChange, 
-  placeholder = 'Выберите год...',
+  placeholder = 'Select year...',
   ...props 
 }: YearDropdownProps) {
   const options: DropdownOption[] = years.map(year => ({
@@ -200,6 +202,7 @@ export function YearDropdown({
       value={value.toString()}
       onChange={(newValue) => onChange(typeof newValue === 'number' ? newValue : parseInt(String(newValue)))}
       placeholder={placeholder}
+      menuWidth="trigger"
       {...props}
     />
   )
@@ -212,16 +215,19 @@ export interface TypeDropdownProps extends UnifiedDropdownProps {
 }
 
 export function TypeDropdown({ 
-  types = [
-    { value: 'income', label: 'Доход' },
-    { value: 'expense', label: 'Расход' }
-  ],
+  types: typesProp,
   fullWidth = false,
   value, 
   onChange, 
-  placeholder = 'Выберите тип...',
+  placeholder,
   ...props 
 }: TypeDropdownProps) {
+  const { t } = useSafeTranslation()
+  const types = typesProp ?? [
+    { value: 'income', label: t('finance.income') },
+    { value: 'expense', label: t('finance.expense') },
+  ]
+  const resolvedPlaceholder = placeholder ?? t('common.selectTypePlaceholder')
   const options: DropdownOption[] = types.map(type => ({
     value: type.value,
     label: type.label
@@ -232,7 +238,7 @@ export function TypeDropdown({
       options={options}
       value={value}
       onChange={onChange}
-      placeholder={placeholder}
+      placeholder={resolvedPlaceholder}
       className={fullWidth ? 'w-full' : props.className}
       {...props}
     />
@@ -244,7 +250,7 @@ export function UnifiedDropdown({
   options,
   value,
   onChange,
-  placeholder = 'Выберите...',
+  placeholder,
   variant = 'default',
   size = 'md',
   searchable = false,
@@ -252,8 +258,10 @@ export function UnifiedDropdown({
   clearable = false,
   ...props
 }: UnifiedDropdownProps & { options: DropdownOption[] }) {
+  const { t } = useSafeTranslation()
+  const resolvedPlaceholder = placeholder ?? t('common.selectPlaceholder')
   const dropdownOptions: DropdownOption[] = [
-    ...(clearable ? [{ value: '', label: 'Очистить' }] : []),
+    ...(clearable ? [{ value: '', label: t('common.clear') }] : []),
     ...options
   ]
 
@@ -280,7 +288,7 @@ export function UnifiedDropdown({
           onChange(newValue)
         }
       }}
-      placeholder={placeholder}
+      placeholder={resolvedPlaceholder}
       buttonClassName={`${sizeClasses[size]} ${variantClasses[variant]}`}
       {...props}
     />

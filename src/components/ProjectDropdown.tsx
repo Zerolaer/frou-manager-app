@@ -1,5 +1,5 @@
 import Dropdown from './ui/Dropdown'
-import type { Project } from '@/types/shared'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 
 export default function ProjectDropdown({
@@ -10,10 +10,11 @@ export default function ProjectDropdown({
   onChange: (v: string) => void
 }){
   const { t } = useSafeTranslation()
-  
+  const visibleProjects = filterVisibleTaskProjects(projects, t('projects.uncategorized'))
+
   const options = [
     { value: '', label: t('projects.noProject') },
-    ...projects.map(p => ({ value: p.id, label: p.name }))
+    ...visibleProjects.map(p => ({ value: p.id, label: p.name }))
   ]
 
   return (

@@ -50,7 +50,7 @@ export default function HomeMobile() {
   )
 
   return (
-    <MobileLayout title={t('nav.home')}>
+    <MobileLayout>
       <div className="p-4 space-y-3">
         <StatCard
           icon={ListTodo}

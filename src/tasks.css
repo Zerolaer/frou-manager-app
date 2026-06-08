@@ -1,7 +1,7 @@
 
 /* ===== Tasks layout (no page vertical scroll) ===== */
 .tasks-page {
-  height: calc(100vh - 112px); /* Фиксированная высота */
+  height: 100%;
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 16px;
@@ -20,9 +20,9 @@ body.tasks-mode {
   overflow: hidden !important;
 }
 
-body.tasks-mode #main-content {
+body.tasks-mode #main-content,
+body.tasks-mode #app-content-body {
   overflow: hidden !important;
-  padding-bottom: 16px !important;
 }
 
 .tasks-page.is-collapsed {
@@ -137,19 +137,41 @@ body.tasks-mode #main-content {
   background: #fff;  
   box-shadow: 0 12px 30px rgba(0,0,0,.12);
   border-radius: 8px;
-  min-width: 150px; 
+  width: max-content;
+  min-width: 0;
+  max-width: min(320px, calc(100vw - 16px));
   padding: 6px;
   border: 1px solid #e5e7eb;
 }
 .ctx-item { 
+  display: block;
+  width: 100%;
   padding: 8px 12px; 
   font-size: 13px;  
   cursor: pointer; 
+  border: none;
+  background: transparent;
   border-radius: 4px;
   transition: background-color 120ms ease;
 }
 .ctx-item:hover { 
   background: #f3f4f6; 
+}
+.ctx-item:active,
+.ctx-item[data-active="true"] {
+  background: #e5e7eb;
+  color: inherit;
+}
+.ctx-item--danger {
+  color: #dc2626;
+}
+.ctx-item--danger:hover {
+  background: #fef2f2;
+}
+.ctx-item--danger:active,
+.ctx-item--danger[data-active="true"] {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* Main column */
@@ -163,12 +185,10 @@ body.tasks-mode #main-content {
   overflow: hidden; /* no page-level scroll */
 }
 
-/* Tasks board (right side) */
+/* Tasks board (week grid host — flush on gray well, no outer card) */
 .tasks-board {
   height: 100%;
-  background: #fff;
-  border-radius: 24px; /* Same as widgets */
-  box-shadow: 0 8px 30px rgba(0,0,0,.05);
+  background: transparent;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -218,15 +238,7 @@ body.tasks-mode #main-content {
   border-radius: 0 !important; /* Remove individual day rounding */
 }
 
-.day-col:first-child {
-  border-top-left-radius: 24px !important;
-  border-bottom-left-radius: 24px !important;
-}
-
-.day-col:last-child {
-  border-top-right-radius: 24px !important;
-  border-bottom-right-radius: 24px !important;
-}
+/* Corner radius handled by .week-grid overflow */
 
 /* Force rounded corners for task priority and tags - removed, using inline styles instead */
 
@@ -268,13 +280,6 @@ body.tasks-mode #main-content {
   min-height: 0;
   max-height: 100%;
   position: relative;
-  /* Use global scrollbar-hide */
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.day-body::-webkit-scrollbar {
-  display: none;
 }
 .day-add {
   margin: 10px; display:none; 
@@ -286,17 +291,109 @@ body.tasks-mode #main-content {
 .day-add .btn:hover { background:#f3f4f6; }
 
 /* Task card base styles */
+.task-card {
+  position: relative;
+  background-color: #ffffff;
+  transition:
+    background-color 0.35s ease,
+    opacity 0.35s ease,
+    border-color 0.2s ease;
+}
+
+.task-card > *:not(.task-card__menu-btn) {
+  position: relative;
+  z-index: 1;
+}
+
+.task-card__menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
 .task-card:hover {
   border-color: #000000 !important;
 }
 
-.task-card.is-dragging {
-  /* Dragging styles are handled inline to preserve original appearance */
+.task-card__title {
+  color: #000000;
+  text-decoration: none;
+  text-decoration-thickness: 1px;
+  transition:
+    color 0.35s ease,
+    opacity 0.35s ease,
+    text-decoration-color 0.35s ease;
 }
 
-/* Completed/closed task styles - только 30% opacity */
+.task-card.is-dragging {
+  /* Dragging styles are handled inline to preserve original appearance */
+  transition: none;
+}
+
 .task-card.is-closed {
-  opacity: 0.3;
+  background-color: #f2f7fa;
+  opacity: 0.6;
+}
+
+.task-card.is-closed .task-card__title,
+.task-card.is-closed .text-sm,
+.task-card.is-closed .font-medium {
+  color: #6b7280;
+  text-decoration: line-through;
+  text-decoration-color: #9ca3af;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .task-card.is-completing:not(.is-dragging)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: #f2f7fa;
+    transform-origin: left center;
+    animation: taskCardCompleteFill 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .task-card.is-completing:not(.is-dragging) {
+    animation: taskCardCompletePulse 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes taskCardCompleteFill {
+    0% {
+      transform: scaleX(0);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes taskCardCompletePulse {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(0.985);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-card,
+  .task-card__title {
+    transition: none;
+  }
+
+  .task-card.is-completing::after {
+    display: none;
+  }
 }
 
 /* Task pill (ÃÂ·ÃÂ°ÃÂ³ÃÂ»Ã‘Æ’Ã‘Ë†ÃÂºÃÂ°) */
@@ -309,7 +406,9 @@ body.tasks-mode #main-content {
 
 /* Projects panel card */
 .tasks-projects{
+  height: 100%;
   background:#fff;
+  border: 1px solid #E9F2F6;
   border-radius: 24px;
   padding: 12px;
   display:flex;
@@ -512,6 +611,8 @@ body.tasks-mode #main-content {
   gap:0; 
   border-radius: 24px; 
   border: 1px solid #E9F2F6;
+  overflow: hidden;
+  box-shadow: none;
 }
 
 
@@ -657,7 +758,4 @@ body.tasks-mode #main-content {
 }
 
 
-/* Closed task visual */
-.task-card.is-closed { opacity: .6; }
-.task-card.is-closed .text-sm,
-.task-card.is-closed .font-medium { color: #6b7280; }
+/* Closed task visual — see .task-card.is-closed above */

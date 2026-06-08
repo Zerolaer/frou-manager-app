@@ -18,8 +18,7 @@ import { LazyComponent, LazyFinanceRow } from '@/components/ui/LazyComponent'
 import { FinanceRowSkeleton } from '@/components/ui/LoadingStates'
 import CellEditor from '@/components/CellEditor'
 import type { Cat, CtxCat, CellCtx, EntryLite, FinanceCellCtx } from '@/types/shared'
-function findCatById(id: string, list: Cat[]): Cat | undefined { return list.find(c => c.id === id) }
-import { clampToViewport, computeDescendantSums } from '@/features/finance/utils'
+import { clampToViewport, computeDescendantSums, canAddSubcategory, buildCategoryHasDirectEntries, toFinanceCacheCat, buildChildrenMap, applyCollapse } from '@/features/finance/utils'
 import { months, monthCount, isCurrentYear as isCurrentYearUtil } from '@/features/finance/utils'
 import { formatCurrencyEUR } from '@/lib/format'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
@@ -29,6 +28,7 @@ import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { logger } from '@/lib/monitoring'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
 import { useModalConfirm } from '@/utils/modalConfirm'
+import { registerFinanceSubheaderHandler } from '@/lib/financeSubheaderBridge'
 import { 
   CACHE_VERSION, 
   MONTHS_IN_YEAR, 
@@ -40,6 +40,27 @@ import {
   CACHE_KEYS
 } from '@/lib/constants'
 
+function findCatById(id: string, list: Cat[]): Cat | undefined {
+  return list.find((c) => c.id === id)
+}
+
+async function resolveCategoryHasDirectEntries(
+  categoryId: string,
+  year: number,
+  hasEntriesInCell: boolean
+): Promise<boolean> {
+  if (hasEntriesInCell) return true
+  const { count, error } = await supabase
+    .from('finance_entries')
+    .select('id', { count: 'exact', head: true })
+    .eq('category_id', categoryId)
+    .eq('year', year)
+  if (error) {
+    logger.error('Error checking category entries:', error)
+    return true
+  }
+  return (count ?? 0) > 0
+}
 
 // Added: accessible trigger for context menu
 function ContextMenuButton({ onOpen }: { onOpen: (e: React.MouseEvent | React.KeyboardEvent) => void }) {
@@ -68,7 +89,7 @@ export default function Finance(){
   const { t } = useSafeTranslation()
   const { userId, loading: authLoading } = useSupabaseAuth()
   const { writeCache, readCache } = useFinanceCache()
-  const { createSimpleFooter, createDangerFooter } = useModalActions()
+  const { createSimpleFooter, createDeleteFooter } = useModalActions()
   const { isMobile } = useMobileDetection()
   const { confirm } = useModalConfirm()
   const now = new Date()
@@ -102,6 +123,7 @@ export default function Finance(){
   const expenseCategories = useMemo(()=>applyCollapse(expenseRaw, collapsed), [expenseRaw, collapsed])
 
   const [loading, setLoading] = useState(true)
+  const dataReadyRef = useRef(false)
 
   const [showAdd, setShowAdd] = useState(false)
   const [newType, setNewType] = useState<'income'|'expense'>(FINANCE_TYPES.INCOME)
@@ -111,19 +133,6 @@ export default function Finance(){
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorCat, setEditorCat] = useState<CtxCat|null>(null)
 
-  // Force apply finance scroll styles when component mounts
-  useEffect(() => {
-    if (!isMobile) {
-      const mainContent = document.getElementById('main-content')
-      if (mainContent) {
-        mainContent.style.height = 'calc(100vh - 172px)'
-        mainContent.style.overflowY = 'auto'
-        mainContent.style.overflowX = 'auto'
-        mainContent.style.maxHeight = 'calc(100vh - 172px)'
-        logger.debug('Applied scroll styles to main-content')
-      }
-    }
-  }, [isMobile])
   const [editorMonth, setEditorMonth] = useState<number>(0)
 
   const [ctxOpen, setCtxOpen] = useState(false)
@@ -172,32 +181,14 @@ export default function Finance(){
 
   // Auth loading handled by useSupabaseAuth hook
 
-  // Listen for SubHeader actions.
-  // Подписка пересоздаётся при смене userId/year, чтобы handler видел свежий year (иначе — stale closure → грузим прошлогодние данные).
+  // Single subheader handler slot (see financeSubheaderBridge) — avoids duplicate window listeners / stacked modals
+  const handleSubHeaderActionRef = useRef(handleSubHeaderAction)
+  handleSubHeaderActionRef.current = handleSubHeaderAction
   useEffect(() => {
-    const handleSubHeaderActionEvent = (event: CustomEvent) => {
-      handleSubHeaderAction(event.detail)
-    }
-    
-    const handleYearChangeEvent = (event: CustomEvent) => {
-      setYear(event.detail)
-    }
-    
-    const handleFinanceDataUpdated = () => {
-      if (userId) {
-        reloadFinanceData()
-      }
-    }
-    
-    window.addEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-    window.addEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
-    window.addEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
-    return () => {
-      window.removeEventListener('subheader-action', handleSubHeaderActionEvent as EventListener)
-      window.removeEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
-      window.removeEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
-    }
-  }, [userId, year])
+    const bridge = (action: string) => handleSubHeaderActionRef.current(action)
+    registerFinanceSubheaderHandler(bridge)
+    return () => registerFinanceSubheaderHandler(null)
+  }, [])
 
   // Notify App.tsx about current year
   useEffect(() => {
@@ -207,8 +198,10 @@ export default function Finance(){
   // Function to load financial data
   const reloadFinanceData = async (signal?: AbortSignal) => {
     if (!userId) return
-    
-    setLoading(true)
+
+    if (!dataReadyRef.current) {
+      setLoading(true)
+    }
     
     try {
       // Initialize exchange rates before loading data
@@ -230,6 +223,7 @@ export default function Finance(){
       const cats = catsRes.data || []
       const entries = entriesRes.data || []
       const byId: Record<string, number[]> = {}
+      const entryFlags = buildCategoryHasDirectEntries(entries)
       
       for (const c of cats) byId[c.id] = Array(MONTHS_IN_YEAR).fill(0)
       for (const e of entries) {
@@ -243,18 +237,19 @@ export default function Finance(){
         byId[id][i] += amountInEUR
       }
       
-      const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, type: 'income' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
-      const expense = cats.filter((c)=>c.type===FINANCE_TYPES.EXPENSE).map((c)=>({ id:c.id, name:c.name, type: 'expense' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0) }))
+      const income = cats.filter((c)=>c.type===FINANCE_TYPES.INCOME).map((c)=>({ id:c.id, name:c.name, type: 'income' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0), hasDirectEntries: !!entryFlags[c.id] }))
+      const expense = cats.filter((c)=>c.type===FINANCE_TYPES.EXPENSE).map((c)=>({ id:c.id, name:c.name, type: 'expense' as const, parent_id:c.parent_id, values: byId[c.id] || Array(MONTHS_IN_YEAR).fill(0), hasDirectEntries: !!entryFlags[c.id] }))
       
       if (!signal?.aborted) {
         setIncomeRaw(income)
         setExpenseRaw(expense)
+        dataReadyRef.current = true
         setLoading(false)
         
         // Update cache
         writeCache(userId, year, {
-          income: income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
-          expense: expense.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
+          income: income.map(toFinanceCacheCat),
+          expense: expense.map(toFinanceCacheCat),
         })
       }
     } catch (error) {
@@ -265,13 +260,38 @@ export default function Finance(){
     }
   }
 
+  const userIdRef = useRef(userId)
+  userIdRef.current = userId
+  const reloadFinanceDataRef = useRef(reloadFinanceData)
+  reloadFinanceDataRef.current = reloadFinanceData
+
+  useEffect(() => {
+    const handleYearChangeEvent = (event: CustomEvent) => {
+      setYear(event.detail)
+    }
+    const handleFinanceDataUpdated = () => {
+      if (userIdRef.current) {
+        reloadFinanceDataRef.current()
+      }
+    }
+    window.addEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
+    window.addEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
+    return () => {
+      window.removeEventListener('subheader-year-change', handleYearChangeEvent as EventListener)
+      window.removeEventListener('finance-data-updated', handleFinanceDataUpdated as EventListener)
+    }
+  }, [])
+
   useEffect(() => {
     if (!userId) return
     const cached = readCache(userId, year)
     if (cached) {
-      setIncomeRaw((cached.income ?? []).map(c => ({ ...c, type: 'income' as const })))
-      setExpenseRaw((cached.expense ?? []).map(c => ({ ...c, type: 'expense' as const })))
+      setIncomeRaw((cached.income ?? []).map(c => ({ ...c, type: 'income' as const, hasDirectEntries: c.hasDirectEntries ?? false })))
+      setExpenseRaw((cached.expense ?? []).map(c => ({ ...c, type: 'expense' as const, hasDirectEntries: c.hasDirectEntries ?? false })))
       setLoading(false)
+      dataReadyRef.current = true
+    } else {
+      dataReadyRef.current = false
     }
     
     const ctl = new AbortController()
@@ -283,50 +303,20 @@ export default function Finance(){
   const totalExpenseByMonth = useMemo(() => months.map((_, i) => expenseRaw.reduce((s, c) => s + (c.values?.[i] ?? 0), 0)), [expenseRaw])
   const balanceByMonth = useMemo(() => totalIncomeByMonth.map((v, i) => v - totalExpenseByMonth[i]), [totalIncomeByMonth, totalExpenseByMonth])
 
-  const childrenMapIncome = useMemo(()=>{
-    const map: Record<string, number> = {}
-    incomeRaw.forEach(c => { if (c.parent_id) map[c.parent_id] = (map[c.parent_id]||0) + 1 })
-    return map
-  }, [incomeRaw])
-  const childrenMapExpense = useMemo(()=>{
-    const map: Record<string, number> = {}
-    expenseRaw.forEach(c => { if (c.parent_id) map[c.parent_id] = (map[c.parent_id]||0) + 1 })
-    return map
-  }, [expenseRaw])
+  const childrenMapIncome = useMemo(() => buildChildrenMap(incomeRaw), [incomeRaw])
+  const childrenMapExpense = useMemo(() => buildChildrenMap(expenseRaw), [expenseRaw])
 
   const aggregatedIncomeByParent = useMemo(() => computeDescendantSums(incomeRaw), [incomeRaw])
   const aggregatedExpenseByParent = useMemo(() => computeDescendantSums(expenseRaw), [expenseRaw])
-
-  function applyCollapse(list: Cat[], collapsed: Record<string, boolean>): Cat[]{
-    // Group categories with their children and add collapse state
-    const parents = list.filter(c => !c.parent_id)
-    const byParent: Record<string, Cat[]> = {}
-    list.forEach(c => { if (c.parent_id) (byParent[c.parent_id] ||= []).push(c) })
-    
-    const result: Cat[] = []
-    parents.forEach(p => { 
-      // Add parent category
-      result.push({ ...p, isCollapsed: false })
-      
-      // Add children with collapse state
-      const children = byParent[p.id] || []
-      children.forEach(child => {
-        result.push({ ...child, isCollapsed: !!collapsed[p.id] })
-      })
-    })
-    
-    // Add orphaned children (if any)
-    list.filter(c=>c.parent_id && !parents.find(p=>p.id===c.parent_id)).forEach(ch=>{
-      result.push({ ...ch, isCollapsed: false })
-    })
-    
-    return result
-  }
 
   async function addCategory(){
     const name = newName.trim()
     if (!name || !userId) return
     const type = newType
+    if (newParent) {
+      const parent = (type === FINANCE_TYPES.INCOME ? incomeRaw : expenseRaw).find((c) => c.id === newParent.id)
+      if (!parent || !canAddSubcategory(parent)) return
+    }
     const payload: { user_id: string; type: 'income' | 'expense'; name: string; parent_id?: string } = { user_id: userId, type, name }
     if (newParent) payload.parent_id = newParent.id
     const { data, error } = await supabase.from('finance_categories').insert(payload).select('id,name,type,parent_id').single()
@@ -334,10 +324,10 @@ export default function Finance(){
     const cat: Cat = { id: data.id, name: data.name, type: data.type, parent_id: data.parent_id, values: Array(MONTHS_IN_YEAR).fill(0) }
     if (type === FINANCE_TYPES.INCOME) {
       const raw = [...incomeRaw, cat]; setIncomeRaw(raw)
-      writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
+      writeCache(userId!, year, { income: raw.map(toFinanceCacheCat), expense: expenseRaw.map(toFinanceCacheCat) })
     } else {
       const raw = [...expenseRaw, cat]; setExpenseRaw(raw)
-      writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
+      writeCache(userId!, year, { income: incomeRaw.map(toFinanceCacheCat), expense: raw.map(toFinanceCacheCat) })
     }
     setShowAdd(false); setNewName(''); setNewType(FINANCE_TYPES.INCOME); setNewParent(null)
   }
@@ -370,10 +360,10 @@ export default function Finance(){
     if (error) { logger.error('Error updating category:', error); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setIncomeRaw(raw)
-      writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
+      writeCache(userId!, year, { income: raw.map(toFinanceCacheCat), expense: expenseRaw.map(toFinanceCacheCat) })
     } else {
       const raw = expenseRaw.map(c => c.id === ctxCat.id ? { ...c, name } : c); setExpenseRaw(raw)
-      writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
+      writeCache(userId!, year, { income: incomeRaw.map(toFinanceCacheCat), expense: raw.map(toFinanceCacheCat) })
     }
     setRenameOpen(false)
   }
@@ -384,10 +374,10 @@ export default function Finance(){
     if (error) { logger.error('Error deleting category:', error); return }
     if (ctxCat.type === 'income') {
       const raw = incomeRaw.filter(c => c.id !== ctxCat.id); setIncomeRaw(raw)
-      writeCache(userId!, year, { income: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
+      writeCache(userId!, year, { income: raw.map(toFinanceCacheCat), expense: expenseRaw.map(toFinanceCacheCat) })
     } else {
       const raw = expenseRaw.filter(c => c.id !== ctxCat.id); setExpenseRaw(raw)
-      writeCache(userId!, year, { income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), expense: raw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) })
+      writeCache(userId!, year, { income: incomeRaw.map(toFinanceCacheCat), expense: raw.map(toFinanceCacheCat) })
     }
     setDeleteOpen(false)
   }
@@ -424,7 +414,8 @@ export default function Finance(){
             month: e.month,
             category_id: e.category_id,
             note: e.note,
-            included: e.included
+            included: e.included,
+            currency: (e.currency || 'EUR') as 'EUR' | 'USD' | 'GEL',
           })))
         }
       } catch (error) {
@@ -472,6 +463,7 @@ export default function Finance(){
         month: month+1, 
         user_id: userId, 
         amount: e.amount, 
+        currency: e.currency || 'EUR',
         note: e.note, 
         included: e.included, 
         position: idx 
@@ -480,21 +472,24 @@ export default function Finance(){
       const { error } = await supabase.from('finance_entries').insert(rows)
       if (error) throw error
       
-      // Update local state
-      const sum = rows.filter(r=>r.included).reduce((s,r)=>s + (r.amount||0), 0)
-      const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { ...c, values: c.values.map((v,i)=> i===month ? sum : v) } : c)
+      // Update local state (displayed totals are EUR-converted)
+      const sum = rows.filter(r => r.included).reduce((s, r) => {
+        const cur = (r.currency || 'EUR') as 'EUR' | 'USD' | 'GEL'
+        return s + convertToEUR(Number(r.amount) || 0, cur)
+      }, 0)
+      const updateRaw = (raw: Cat[]) => raw.map(c => c.id === catId ? { ...c, values: c.values.map((v,i)=> i===month ? sum : v), hasDirectEntries: rows.length > 0 ? true : c.hasDirectEntries } : c)
       
       if (type === 'income') {
         setIncomeRaw(updateRaw(incomeRaw))
         writeCache(userId, year, { 
-          income: updateRaw(incomeRaw).map(({id,name,values,parent_id})=>({id,name,values,parent_id})), 
-          expense: expenseRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})) 
+          income: updateRaw(incomeRaw).map(toFinanceCacheCat), 
+          expense: expenseRaw.map(toFinanceCacheCat) 
         })
       } else {
         setExpenseRaw(updateRaw(expenseRaw))
         writeCache(userId, year, { 
-          income: incomeRaw.map(({id,name,values,parent_id})=>({id,name,values,parent_id})), 
-          expense: updateRaw(expenseRaw).map(({id,name,values,parent_id})=>({id,name,values,parent_id})) 
+          income: incomeRaw.map(toFinanceCacheCat), 
+          expense: updateRaw(expenseRaw).map(toFinanceCacheCat) 
         })
       }
       
@@ -512,7 +507,7 @@ export default function Finance(){
     
     // Show export options
     const exportFormat = await confirm(
-      t('finance.exportFormat') || 'Экспортировать в JSON? (Отмена = CSV)', 'Экспорт данных'
+      t('finance.exportFormat'), t('finance.exportData')
     )
     
     if (exportFormat) {
@@ -549,8 +544,8 @@ export default function Finance(){
         
         // Confirm import
         const importConfirm = await confirm(
-          t('finance.confirmImport', { year: data.year }) || 
-          `Импортировать данные за ${data.year}? Это перезапишет текущие данные.`, 'Импорт данных'
+          t('finance.confirmImport', { year: data.year }),
+          t('finance.importData')
         )
         
         if (!importConfirm) return
@@ -563,8 +558,8 @@ export default function Finance(){
         // Save to cache
         if (userId) {
           writeCache(userId, data.year, {
-            income: data.income.map(({id,name,values,parent_id})=>({id,name,values,parent_id})),
-            expense: data.expense.map(({id,name,values,parent_id})=>({id,name,values,parent_id}))
+            income: data.income.map(toFinanceCacheCat),
+            expense: data.expense.map(toFinanceCacheCat)
           })
         }
         
@@ -585,19 +580,17 @@ export default function Finance(){
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel) }
   }, [])
 
-  if (loading) return null;
-
   const isCurrentYear = year === currentYear
-  const yearOptions = Array.from({length:7}).map((_,i)=> currentYear - 3 + i)
 
   // Mobile view
   if (isMobile) {
     return <FinanceMobile />
   }
 
-  // Desktop view - original grid layout
+  // Desktop view — modals stay mounted during loading to avoid orphaned overlay portals
   return (
     <Fragment>
+      {!loading && (
       <div className="finance-page" onContextMenu={(e)=>{ e.preventDefault() }}>
       <div className="finance-grid">
         <div className="finance-cell"><div className="cell-head">{t('finance.category')}</div></div>
@@ -719,17 +712,23 @@ export default function Finance(){
         </div>
       </div>
 
-      {ctxOpen && ctxCat && (
+      {ctxOpen && ctxCat && (() => {
+        const ctxCatFull = ctxCat.type === 'income' ? findCatById(ctxCat.id, incomeRaw) : findCatById(ctxCat.id, expenseRaw)
+        const canAdd = ctxCatFull ? canAddSubcategory(ctxCatFull) : false
+        const addBlocked = ctxCatFull ? !ctxCatFull.parent_id && !canAdd : false
+        return (
         <NewCategoryMenu
           x={ctxMouseX}
           y={ctxMouseY}
-          canAddSub={!Boolean((ctxCat.type === 'income' ? findCatById(ctxCat.id, incomeRaw) : findCatById(ctxCat.id, expenseRaw))?.parent_id)}
+          canAddSub={canAdd}
+          addSubBlocked={addBlocked}
           onClose={closeCtx}
           onRename={()=>{ setRenameValue(ctxCat.name); setRenameOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
           onAddSub={()=>{ setNewType(ctxCat.type as 'income' | 'expense'); setNewParent({ id: ctxCat.id, name: ctxCat.name }); setShowAdd(true); setCtxOpen(false); setCtxCatHighlight(null) }}
           onDelete={()=>{ setDeleteOpen(true); setCtxOpen(false); setCtxCatHighlight(null) }}
         />
-      )}{cellCtxOpen && cellCtx && (
+        )
+      })()}{cellCtxOpen && cellCtx && (
         <NewCellMenu
           x={cellCtxMouseX}
           y={cellCtxMouseY}
@@ -739,7 +738,11 @@ export default function Finance(){
           onCopy={copyCell}
           onPaste={pasteCell}
         />
-      )}<UnifiedModal
+      )}
+      </div>
+      )}
+
+      <UnifiedModal
         open={showAdd}
         onClose={()=>{ setShowAdd(false); setNewParent(null) }}
         title={newParent ? t('finance.newSubcategory') : t('finance.newCategory')}
@@ -798,14 +801,14 @@ export default function Finance(){
         open={deleteOpen}
         onClose={()=>setDeleteOpen(false)}
         title={t('finance.deleteCategory')}
-        footer={createDangerFooter(
-          { 
-            label: t('actions.delete'), 
-            onClick: confirmDelete
+        footer={createDeleteFooter(
+          {
+            label: t('actions.delete'),
+            onClick: confirmDelete,
           },
-          { 
-            label: t('actions.cancel'), 
-            onClick: () => setDeleteOpen(false)
+          {
+            label: t('actions.cancel'),
+            onClick: () => setDeleteOpen(false),
           }
         )}
       >
@@ -821,9 +824,18 @@ export default function Finance(){
           categoryName={editorCat.name}
           monthIndex={editorMonth}
           year={year}
-          onApply={(sum)=>{
-            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v) } : c)
-            if (editorCat.type === 'income') setIncomeRaw(updateRaw(incomeRaw)); else setExpenseRaw(updateRaw(expenseRaw))
+          onApply={async (sum, hasEntriesInCell) => {
+            const hasDirectEntries = await resolveCategoryHasDirectEntries(editorCat.id, year, hasEntriesInCell)
+            const updateRaw = (raw: Cat[]) => raw.map(c => c.id === editorCat.id ? { ...c, values: c.values.map((v,i)=> i===editorMonth ? sum : v), hasDirectEntries } : c)
+            if (editorCat.type === 'income') {
+              const next = updateRaw(incomeRaw)
+              setIncomeRaw(next)
+              if (userId) writeCache(userId, year, { income: next.map(toFinanceCacheCat), expense: expenseRaw.map(toFinanceCacheCat) })
+            } else {
+              const next = updateRaw(expenseRaw)
+              setExpenseRaw(next)
+              if (userId) writeCache(userId, year, { income: incomeRaw.map(toFinanceCacheCat), expense: next.map(toFinanceCacheCat) })
+            }
           }}
         />
       )}
@@ -835,7 +847,6 @@ export default function Finance(){
         incomeByMonth={totalIncomeByMonth}
         expenseByMonth={totalExpenseByMonth}
       />
-      </div>
     </Fragment>
   )
 }

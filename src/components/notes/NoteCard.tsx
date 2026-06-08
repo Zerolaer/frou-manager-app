@@ -50,7 +50,7 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
 
   const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const result = await confirm(t('notes.confirmDeleteNote') || 'Удалить заметку?', t('notes.deleteNoteTitle') || 'Delete Note');
+    const result = await confirm(t('notes.confirmDeleteNote'), t('notes.deleteNoteTitle'));
     if (result) {
       onDelete?.(note);
     }
@@ -223,12 +223,11 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
           {/* Menu */}
           <div
             ref={menuRef}
-            className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-[1000]"
+            className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-[1000] w-max min-w-0 max-w-[min(320px,calc(100vw-16px))]"
             style={{
               position: 'fixed',
               left: menuPos.x,
               top: menuPos.y,
-              minWidth: '160px'
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -244,7 +243,7 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
               }}
             >
               <Pin size={14} className={note.pinned ? 'text-gray-900' : 'text-gray-400'} style={{ transform: note.pinned ? 'rotate(45deg)' : 'none' }} />
-              <span>{note.pinned ? 'Открепить' : 'Закрепить'}</span>
+              <span>{note.pinned ? t('notes.unpin') : t('notes.pin')}</span>
             </button>
             {onDuplicate && (
               <button
@@ -257,7 +256,7 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
                 }}
               >
                 <Copy size={14} />
-                <span>Дублировать</span>
+                <span>{t('notes.duplicate')}</span>
               </button>
             )}
             {onDelete && (
@@ -271,7 +270,7 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
                 }}
               >
                 <Trash2 size={14} />
-                <span>Удалить</span>
+                <span>{t('actions.delete')}</span>
               </button>
             )}
           </div>
@@ -282,7 +281,7 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
         {/* Title */}
         <div className="space-y-1">
           <h3 className="font-medium text-sm text-black line-clamp-2 task-title">
-            {note.title || 'Без заголовка'}
+            {note.title || t('notes.untitled')}
           </h3>
 
           {/* Content preview */}

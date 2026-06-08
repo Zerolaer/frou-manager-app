@@ -235,7 +235,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
     <SideModal
       open={open}
       onClose={onClose}
-      title={note ? 'Редактировать заметку' : 'Новая заметка'}
+      title={note ? t('notes.editNote') : t('notes.newNote')}
       showCloseButton={false}
       noPadding={true}
       footer={
@@ -263,8 +263,8 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
           <div ref={menuRef}>
             <CoreMenu
               options={[
-                { value: 'duplicate', label: 'Дублировать' },
-                { value: 'delete', label: 'Удалить', destructive: true },
+                { value: 'duplicate', label: t('notes.duplicate') },
+                { value: 'delete', label: t('actions.delete'), destructive: true },
               ]}
               onSelect={(value) => {
                 if (value === 'duplicate') {
@@ -285,35 +285,35 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
           <div className="flex items-center justify-between text-sm text-gray-500">
           <div>
             {note?.updated_at && (
-              <span>Обновлено: {new Date(note.updated_at).toLocaleString()}</span>
+              <span>{t('notes.updatedAt', { date: new Date(note.updated_at).toLocaleString() })}</span>
             )}
           </div>
           <div>
             {saving && (
-              <span className="text-blue-500">Сохранение...</span>
+              <span className="text-blue-500">{t('notes.saving')}</span>
             )}
           </div>
         </div>
 
           <div className="grid grid-cols-2 gap-4">
-        <ModalField label="Заголовок" required>
+        <ModalField label={t('notes.noteTitle')} required>
           <ModalInput
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Заголовок заметки"
+            placeholder={t('notes.titlePlaceholder')}
             autoFocus
           />
         </ModalField>
 
-        <ModalField label="Папка">
+        <ModalField label={t('notes.folder')}>
           <Dropdown
             options={[
-              { value: '', label: 'Без папки' },
+              { value: '', label: t('notes.noFolder') },
               ...folders.map(f => ({ value: f.id, label: f.name }))
             ]}
             value={folderId}
             onChange={(value) => setFolderId(String(value))}
-            placeholder="Выберите папку"
+            placeholder={t('notes.selectFolder')}
             className="w-full"
             buttonClassName="w-full justify-between"
           />
@@ -322,7 +322,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
         </div>
         
         <div className="flex-1 flex flex-col px-6 pb-4 min-h-0 overflow-hidden">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Содержимое</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes.contentLabel')}</label>
           
           <div className="flex-1 flex flex-col border rounded-xl bg-white transition-all duration-200 hover:bg-gray-50 focus-within:ring-2 focus-within:ring-gray-500 focus-within:ring-offset-2 overflow-hidden" style={{ borderColor: '#E5E7EB' }}>
             {/* Formatting toolbar */}
@@ -404,7 +404,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
                   selection?.addRange(range);
                 }
               }}
-              data-placeholder="Текст заметки… Поддерживается форматирование."
+              data-placeholder={t('notes.contentPlaceholder')}
               className="flex-1 w-full px-4 py-3 bg-transparent text-gray-700 outline-none overflow-y-auto note-editor"
               style={{ 
                 minHeight: '100px',

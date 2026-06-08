@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 describe('Custom Hooks', () => {
   describe('useDebounce', () => {
-    it('should debounce value changes', async () => {
+    it('should debounce value changes', () => {
       vi.useFakeTimers();
-      
+
       const { result, rerender } = renderHook(
         ({ value, delay }) => useDebounce(value, delay),
         { initialProps: { value: 'initial', delay: 500 } }
@@ -15,25 +15,20 @@ describe('Custom Hooks', () => {
 
       expect(result.current).toBe('initial');
 
-      // Change value
       rerender({ value: 'changed', delay: 500 });
-      expect(result.current).toBe('initial'); // Still old value
+      expect(result.current).toBe('initial');
 
-      // Fast forward time
       act(() => {
         vi.advanceTimersByTime(500);
       });
 
-      await waitFor(() => {
-        expect(result.current).toBe('changed');
-      });
-
+      expect(result.current).toBe('changed');
       vi.useRealTimers();
     });
 
-    it('should cancel previous timeout on rapid changes', async () => {
+    it('should cancel previous timeout on rapid changes', () => {
       vi.useFakeTimers();
-      
+
       const { result, rerender } = renderHook(
         ({ value }) => useDebounce(value, 500),
         { initialProps: { value: 'initial' } }
@@ -49,17 +44,13 @@ describe('Custom Hooks', () => {
         vi.advanceTimersByTime(250);
       });
 
-      // After 500ms total, should still be 'initial' because timeout was reset
       expect(result.current).toBe('initial');
 
       act(() => {
         vi.advanceTimersByTime(250);
       });
 
-      await waitFor(() => {
-        expect(result.current).toBe('second');
-      });
-
+      expect(result.current).toBe('second');
       vi.useRealTimers();
     });
   });

@@ -192,7 +192,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
         <button 
           className="sidebar-btn btn-outline" 
           onClick={onToggleCollapse} 
-          aria-label={collapsed ? "Развернуть" : "Свернуть"}
+          aria-label={collapsed ? t('aria.expand') : t('aria.collapse')}
           style={{ 
             position: 'absolute',
             left: '0',
@@ -220,13 +220,13 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
             pointerEvents: 'none'
           }}
         >
-          Папки
+          {t('notes.foldersTitle')}
         </div>
         
         <button 
           className="sidebar-btn btn-outline" 
           onClick={()=>setShowCreate(true)} 
-          aria-label="Добавить папку" 
+          aria-label={t('notes.addFolder')} 
           style={{ 
             position: 'absolute',
             right: '0',
@@ -337,16 +337,17 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
               zIndex: 1000
             }}
           >
+            {/* w-72: fixed width for 7-column folder color picker grid */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-72">
               <button
                 onClick={()=>{ setRenameValue(ctxFolder.name); setRenameOpen(true); setCtxOpen(false) }}
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"
                 style={{ fontSize: '13px' }}
               >
-                Переименовать
+                {t('projects.rename')}
               </button>
               <div className="px-2 py-3">
-                <div className="mb-2 text-xs text-gray-500">Цвет</div>
+                <div className="mb-2 text-xs text-gray-500">{t('notes.color')}</div>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:6 }}>
                   {COLORS.map(c=>(
                     <button 

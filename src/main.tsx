@@ -8,36 +8,30 @@ import App from './App'
 import { supabase } from './lib/supabaseClient'
 import AppLoader from './components/AppLoader'
 import { registerServiceWorker } from './components/OfflineSupport'
+import { routeImports, prefetchDuringAuthBootstrap } from './lib/routePrefetch'
+import { isMobileUI } from './platform/nativeApp'
+import { initCapacitorNative } from './platform/capacitorInit'
+import { setupNativeApp } from './lib/nativeAppLifecycle'
+import NativeSplashGate from './components/NativeSplashGate'
 
-// Route-level code splitting. Login and Home keep eager paths via lazy import,
-// remaining pages download on demand to lower the initial bundle size for first paint.
-const Login = lazy(() => import('./pages/Login'))
-const Home = lazy(() => import('./pages/Home'))
-const Finance = lazy(() => import('./pages/Finance'))
-const Tasks = lazy(() => import('./pages/Tasks'))
-const Notes = lazy(() => import('./pages/Notes'))
-const Canvas = lazy(() => import('./pages/Canvas'))
-const Habits = lazy(() => import('./pages/Habits'))
-const Settings = lazy(() => import('./pages/Settings'))
-// Storybook доступен только в DEV — лениво грузим, чтобы не попадал в production-бандл
-const Storybook = lazy(() => import('./pages/Storybook'))
+// Default landing route — eager to avoid a second full-screen loader after auth.
+import Home from './pages/Home'
 
-const withSuspense = (node: React.ReactNode) => (
+const Login = lazy(routeImports.login)
+const Signup = lazy(routeImports.signup)
+const ForgotPassword = lazy(routeImports.forgotPassword)
+const ResetPassword = lazy(routeImports.resetPassword)
+const Finance = lazy(routeImports.finance)
+const Tasks = lazy(routeImports.tasks)
+const Notes = lazy(routeImports.notes)
+const Canvas = lazy(routeImports.canvas)
+const Habits = lazy(routeImports.habits)
+const Settings = lazy(routeImports.settings)
+const Storybook = lazy(routeImports.storybook)
+
+const withAuthSuspense = (node: React.ReactNode) => (
   <Suspense fallback={<AppLoader />}>{node}</Suspense>
 )
-
-const Pages = {
-  Login: () => withSuspense(<Login />),
-  Home: () => withSuspense(<Home />),
-  Finance: () => withSuspense(<Finance />),
-  Tasks: () => withSuspense(<Tasks />),
-  Notes: () => withSuspense(<Notes />),
-  Canvas: () => withSuspense(<Canvas />),
-  Habits: () => withSuspense(<Habits />),
-  Settings: () => withSuspense(<Settings />),
-  Storybook: () => withSuspense(<Storybook />),
-}
-
 
 const Protected = ({children}: {children: React.ReactNode}) => {
   const [loading, setLoading] = useState(true);
@@ -45,11 +39,11 @@ const Protected = ({children}: {children: React.ReactNode}) => {
   /** Пока false — не применяем onAuthStateChange (иначе часто приходит session=null раньше getSession → цикл /login ↔ /). */
   const initialSessionSyncedRef = useRef(false)
   useEffect(() => {
-    // Клиент в supabaseClient всегда имеет URL/key (в т.ч. fallback). Нельзя ставить authed=true
-    // только из-за отсутствия VITE_* в import.meta.env — это расходится с клиентом и ломает сессию.
     if (import.meta.env.DEV) {
       console.log('Checking session…')
     }
+
+    prefetchDuringAuthBootstrap(isMobileUI())
 
     initialSessionSyncedRef.current = false
 
@@ -133,9 +127,21 @@ const Protected = ({children}: {children: React.ReactNode}) => {
 }
 
 const router = createBrowserRouter([
-  { 
-    path: '/login', 
-    element: <Pages.Login />
+  {
+    path: '/login',
+    element: withAuthSuspense(<Login />),
+  },
+  {
+    path: '/signup',
+    element: withAuthSuspense(<Signup />),
+  },
+  {
+    path: '/forgot-password',
+    element: withAuthSuspense(<ForgotPassword />),
+  },
+  {
+    path: '/reset-password',
+    element: withAuthSuspense(<ResetPassword />),
   },
   {
     path: '/',
@@ -145,56 +151,61 @@ const router = createBrowserRouter([
       </Protected>
     ),
     children: [
-      { 
-        index: true, 
-        element: <Pages.Home />
+      {
+        index: true,
+        element: <Home />,
       },
-      { 
-        path: 'finance', 
-        element: <Pages.Finance />
+      {
+        path: 'finance',
+        element: <Finance />,
       },
-      { 
-        path: 'tasks', 
-        element: <Pages.Tasks />
+      {
+        path: 'tasks',
+        element: <Tasks />,
       },
-      { 
-        path: 'notes', 
-        element: <Pages.Notes />
+      {
+        path: 'notes',
+        element: <Notes />,
       },
-      { 
-        path: 'canvas', 
-        element: <Pages.Canvas />
+      {
+        path: 'canvas',
+        element: <Canvas />,
       },
-      { 
-        path: 'canvas/:projectId', 
-        element: <Pages.Canvas />
+      {
+        path: 'canvas/:projectId',
+        element: <Canvas />,
       },
-      { 
-        path: 'invoice', 
-        element: <Navigate to="/" replace />
+      {
+        path: 'invoice',
+        element: <Navigate to="/" replace />,
       },
-      { 
-        path: 'habits', 
-        element: <Pages.Habits />
+      {
+        path: 'habits',
+        element: <Habits />,
       },
-      { 
-        path: 'settings', 
-        element: <Pages.Settings />
+      {
+        path: 'settings',
+        element: <Settings />,
       },
-      // Storybook route only available in development
-      ...(import.meta.env.DEV ? [{
-        path: 'storybook', 
-        element: <Pages.Storybook />
-      }] : []),
-    ]
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: 'storybook',
+              element: <Storybook />,
+            },
+          ]
+        : []),
+    ],
   },
 ])
 
+void initCapacitorNative()
+void setupNativeApp()
+registerServiceWorker()
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <I18nextProvider i18n={i18n}>
+    <NativeSplashGate />
     <RouterProvider router={router} />
   </I18nextProvider>
 )
-
-// Регистрируем SW только в продакшен-сборке (см. реализацию в OfflineSupport)
-registerServiceWorker()

@@ -101,6 +101,8 @@
     "lowestIncome": "Lowest Income",
     "lowestExpense": "Lowest Expense",
     "exportData": "Export Data",
+    "exportFormat": "Export as JSON? (Cancel = CSV)",
+    "confirmImport": "Import data for {{year}}? This will overwrite current data.",
     "importData": "Import Data",
     "noData": "No data available",
     "loading": "Loading...",
@@ -159,7 +161,10 @@
       "expensesByMonths": "Expenses by months"
     },
     "descriptionOptional": "Description (optional)",
-    "noEntries": "No entries yet."
+    "noEntries": "No entries yet.",
+    "aggregatedTotal": "Sum of subcategories",
+    "aggregatedTotalHint": "This category aggregates its subcategories. Edit values in subcategories directly.",
+    "cannotAddSubcategory": "Cannot add subcategory — this category already has its own entries (including excluded ones)."
   },
   "tasks": {
     "months": {
@@ -206,7 +211,7 @@
     "createdAt": "Created At",
     "updatedAt": "Updated At",
     "todos": "Subtasks",
-    "addTodo": "Add subtask",
+    "addTodo": "Add to do",
     "todoPlaceholder": "Enter todo item...",
     "tagPlaceholder": "Enter tag...",
     "titlePlaceholder": "Enter task title...",
@@ -231,6 +236,9 @@
     "subtaskDateOptional": "Subtask date (optional)",
     "subtaskDateValidation": "Subtask date cannot be earlier than parent task date",
     "subtaskOf": "Subtask of",
+    "subtaskHint": "This task is a subtask of another task",
+    "deleteSubtask": "Delete subtask?",
+    "deleteSubtaskWarning": "Are you sure you want to delete this subtask? This action cannot be undone.",
     "created": "Created",
     "filterProjects": "Filter Projects",
     "noProjectsSelected": "No projects selected",
@@ -367,7 +375,25 @@
     "deleteFolderWarning": "Folder and related notes will be deleted.",
     "deleteNoteTitle": "Delete Note",
     "confirmDeleteNote": "Are you sure you want to delete this note?",
-    "color": "Color"
+    "color": "Color",
+    "loadError": "Failed to load notes",
+    "exportTitle": "Export notes",
+    "editNote": "Edit note",
+    "titlePlaceholder": "Note title",
+    "contentLabel": "Content",
+    "contentPlaceholder": "Note text… Formatting is supported.",
+    "updatedAt": "Updated: {{date}}",
+    "saving": "Saving...",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "untitled": "Untitled",
+    "foldersTitle": "Folders",
+    "addFolder": "Add folder",
+    "selectFolder": "Select folder",
+    "filterNotes": "Filter notes",
+    "showOnlyPinned": "Pinned only",
+    "showOnlyWithContent": "With content only",
+    "searchInContent": "Search in content"
   },
   "projects": {
     "newProject": "New Project",
@@ -406,6 +432,33 @@
     "emailNotConfirmed": "Email is not confirmed. Please check your inbox.",
     "projectUpgradeRequired": "Service is temporarily unavailable, please try again later.",
     "sessionCreateFailed": "Could not create a session. Please try again."
+  },
+  "auth": {
+    "orContinueWith": "Or Continue With",
+    "signInWithGoogle": "Sign in with Google",
+    "signInWithApple": "Sign in with Apple",
+    "appleSignInComingSoon": "Sign in with Apple — coming soon",
+    "signUpTitle": "Create your account",
+    "signUpSubtitle": "Sign up with email or Google to get started.",
+    "createAccount": "Create account",
+    "signUpConfirmEmail": "Check your inbox to confirm your email, then sign in.",
+    "signUpAlreadyRegistered": "This email is already registered. Try signing in.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "forgotPasswordTitle": "Reset your password",
+    "forgotPasswordSubtitle": "Enter your email and we'll send you a reset link.",
+    "sendResetLink": "Send reset link",
+    "forgotPasswordEmailSent": "If an account exists for this email, you'll receive a reset link shortly.",
+    "backToLogin": "Back to sign in",
+    "resetPasswordTitle": "Set a new password",
+    "resetPasswordSubtitle": "Choose a strong password for your account.",
+    "newPassword": "New password",
+    "updatePassword": "Update password",
+    "resetPasswordSuccess": "Password updated. Redirecting to sign in…",
+    "resetLinkInvalid": "This reset link is invalid or has expired.",
+    "requestNewResetLink": "Request a new reset link"
   },
   "validation": {
     "titleRequired": "Title is required",
@@ -473,7 +526,14 @@
     "currentMonth": "Current month",
     "delete": "Delete",
     "edit": "Edit",
-    "search": "Search"
+    "search": "Search",
+    "selectPlaceholder": "Select...",
+    "selectDatePlaceholder": "Select date...",
+    "selectYearPlaceholder": "Select year...",
+    "selectTypePlaceholder": "Select type...",
+    "clear": "Clear",
+    "attention": "Attention",
+    "unknownError": "Unknown error"
   },
   "dashboard": {
     "tasksToday": "Tasks Today",
@@ -605,6 +665,9 @@
     "folderName": "Folder Name",
     "deleteFolder": "Delete Folder?",
     "deleteFolderWarning": "Folder and related invoices will be deleted.",
+    "renameFolderError": "Rename failed: {{message}}",
+    "deleteFolderError": "Delete failed: {{message}}",
+    "createFolderError": "Could not create folder: {{message}}",
     "noFolder": "No Folder",
     "from": "From",
     "to": "To Client",
@@ -733,7 +796,18 @@
       "autoLoadLastPage": "Auto-load Last Page",
       "autoLoadLastPageDescription": "Automatically open the last visited page on login",
       "autoSaveDrafts": "Auto-save Drafts",
-      "autoSaveDraftsDescription": "Automatically save task drafts"
+      "autoSaveDraftsDescription": "Automatically save task drafts",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "blue": "Blue",
+        "green": "Green",
+        "purple": "Purple",
+        "highContrast": "High contrast"
+      },
+      "selectTheme": "Select theme",
+      "switchToLight": "Switch to light theme",
+      "switchToDark": "Switch to dark theme"
     },
     "notifications": {
       "pushTitle": "Push Notification Settings",

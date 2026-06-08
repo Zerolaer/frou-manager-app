@@ -9,15 +9,13 @@ import ModernTaskModal from '@/components/ModernTaskModal'
 import TaskAddModal from '@/components/TaskAddModal'
 import RecurringDeleteModal from '@/components/RecurringDeleteModal'
 import RecurringEditModal from '@/components/RecurringEditModal'
-import MobileDayNavigator from '@/components/MobileDayNavigator'
-import MobileTasksDay from '@/components/tasks/MobileTasksDay'
 import TaskCalendarModal from '@/components/TaskCalendarModal'
 import '@/tasks.css'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_PROJECT_ALL } from '@/lib/constants'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
 import { RecurringTaskSettings } from '@/types/recurring'
-import { clampToViewport } from '@/features/finance/utils'
 import { createPortal } from 'react-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
@@ -42,38 +40,30 @@ function TaskContextMenu({
   const menuRef = React.useRef<HTMLDivElement>(null)
   const [adjustedPos, setAdjustedPos] = React.useState({ x, y })
 
-  // Smart positioning - don't go off screen
-  React.useEffect(() => {
-    if (!menuRef.current) return
-
+  // Clamp to viewport after first layout (useLayoutEffect avoids off-screen flash)
+  React.useLayoutEffect(() => {
     const menu = menuRef.current
+    if (!menu) return
+
     const rect = menu.getBoundingClientRect()
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight
-    }
+    const pad = 8
+    const vw = window.innerWidth
+    const vh = window.innerHeight
 
     let adjustedX = x
     let adjustedY = y
 
-    // Check right edge
-    if (x + rect.width > viewport.width - 8) {
-      adjustedX = viewport.width - rect.width - 8
+    if (adjustedX + rect.width > vw - pad) {
+      adjustedX = vw - rect.width - pad
     }
-
-    // Check left edge
-    if (adjustedX < 8) {
-      adjustedX = 8
+    if (adjustedX < pad) {
+      adjustedX = pad
     }
-
-    // Check bottom edge
-    if (y + rect.height > viewport.height - 8) {
-      adjustedY = viewport.height - rect.height - 8
+    if (adjustedY + rect.height > vh - pad) {
+      adjustedY = vh - rect.height - pad
     }
-
-    // Check top edge
-    if (adjustedY < 8) {
-      adjustedY = 8
+    if (adjustedY < pad) {
+      adjustedY = pad
     }
 
     setAdjustedPos({ x: adjustedX, y: adjustedY })
@@ -90,15 +80,20 @@ function TaskContextMenu({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  // Close on click outside
+  // Close on click outside (defer so opening click does not immediately close)
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose()
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    const id = window.setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 0)
+    return () => {
+      window.clearTimeout(id)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [onClose])
 
   // Create portal in document.body like in finance
@@ -120,37 +115,25 @@ function TaskContextMenu({
       />
       <div
         ref={menuRef}
+        className="ctx-menu"
+        role="menu"
         style={{
           position: 'fixed',
           left: adjustedPos.x,
           top: adjustedPos.y,
-          zIndex: 1000
+          zIndex: 1000,
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
-          <button
-            onClick={onDuplicate}
-            className="w-full px-2 py-3 text-left transition-colors rounded-xl text-gray-700 hover:bg-gray-100"
-            style={{ fontSize: '13px' }}
-          >
-            {t('common.duplicate')}
-          </button>
-          <button
-            onClick={onToggleStatus}
-            className="w-full px-2 py-3 text-left transition-colors rounded-xl text-gray-700 hover:bg-gray-100"
-            style={{ fontSize: '13px' }}
-          >
-            {task?.status === TASK_STATUSES.CLOSED ? t('tasks.open') : t('tasks.markComplete')}
-          </button>
-          <button
-            onClick={onDelete}
-            className="w-full px-2 py-3 text-left transition-colors rounded-xl text-red-600 hover:bg-red-50"
-            style={{ fontSize: '13px' }}
-          >
-            {t('actions.delete')}
-          </button>
-        </div>
+        <button type="button" onClick={onDuplicate} className="ctx-item w-full text-left whitespace-nowrap">
+          {t('common.duplicate')}
+        </button>
+        <button type="button" onClick={onToggleStatus} className="ctx-item w-full text-left whitespace-nowrap">
+          {task?.status === TASK_STATUSES.CLOSED ? t('tasks.open') : t('tasks.markComplete')}
+        </button>
+        <button type="button" onClick={onDelete} className="ctx-item ctx-item--danger w-full text-left whitespace-nowrap">
+          {t('actions.delete')}
+        </button>
       </div>
     </>,
     document.body
@@ -175,7 +158,6 @@ export default function Tasks(){
   const [viewTask, setViewTask] = React.useState<TaskItem|null>(null)
   const [taskStack, setTaskStack] = React.useState<TaskItem[]>([]) // Stack of opened tasks
   const [isSubtaskOpen, setIsSubtaskOpen] = React.useState(false) // Flag for subtask modal
-  const [mobileDate, setMobileDate] = React.useState(new Date())
   const lastParentUpdateRef = React.useRef<string>('') // Track last parent update to prevent loops
   const isSyncingRef = React.useRef<boolean>(false) // Prevent double sync calls
   const lastClickTimeRef = React.useRef<number>(0) // Track last click time to prevent double clicks
@@ -721,10 +703,21 @@ const projectColorById = React.useMemo(() => {
         .order('created_at', { ascending: true })
       if (cancelled) return
       if (!ext.error) {
-        const list = (ext.data || []) as Project[]
+        const list = filterVisibleTaskProjects(
+          (ext.data || []) as Project[],
+          t('projects.uncategorized')
+        )
         setProjects(list)
         setSelectedProjectIds(readSavedIds(list))
-        if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
+        if (
+          activeProject &&
+          activeProject !== TASK_PROJECT_ALL &&
+          !list.some((p) => p.id === activeProject)
+        ) {
+          setActiveProject(TASK_PROJECT_ALL)
+        } else if (!activeProject) {
+          setActiveProject(TASK_PROJECT_ALL)
+        }
         return
       }
       const basic = await supabase
@@ -733,10 +726,21 @@ const projectColorById = React.useMemo(() => {
         .order('created_at', { ascending: true })
       if (cancelled) return
       if (!basic.error) {
-        const list = (basic.data || []) as Project[]
+        const list = filterVisibleTaskProjects(
+          (basic.data || []) as Project[],
+          t('projects.uncategorized')
+        )
         setProjects(list)
         setSelectedProjectIds(readSavedIds(list))
-        if (!activeProject) setActiveProject(TASK_PROJECT_ALL)
+        if (
+          activeProject &&
+          activeProject !== TASK_PROJECT_ALL &&
+          !list.some((p) => p.id === activeProject)
+        ) {
+          setActiveProject(TASK_PROJECT_ALL)
+        } else if (!activeProject) {
+          setActiveProject(TASK_PROJECT_ALL)
+        }
       }
     })()
 
@@ -949,6 +953,33 @@ const projectColorById = React.useMemo(() => {
   const [ctx, setCtx] = React.useState<{ open: boolean; x: number; y: number; task: TaskItem | null; dayKey?: string }>({
     open: false, x: 0, y: 0, task: null, dayKey: undefined
   })
+  const [completingTaskIds, setCompletingTaskIds] = React.useState<Set<string>>(() => new Set())
+
+  function openTaskContextMenu(
+    task: TaskItem,
+    dayKey: string,
+    anchor: { x: number; y: number } | HTMLElement,
+  ) {
+    const pad = 4
+    if (anchor instanceof HTMLElement) {
+      const rect = anchor.getBoundingClientRect()
+      setCtx({
+        open: true,
+        x: rect.right,
+        y: rect.bottom + pad,
+        task,
+        dayKey,
+      })
+      return
+    }
+    setCtx({
+      open: true,
+      x: anchor.x + pad,
+      y: anchor.y - pad,
+      task,
+      dayKey,
+    })
+  }
 
   React.useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setCtx(c => ({ ...c, open: false })) }
@@ -1300,6 +1331,21 @@ const projectColorById = React.useMemo(() => {
     }
   }
 
+  function triggerTaskCompleteAnimation(taskId: string) {
+    setCompletingTaskIds((prev) => {
+      const next = new Set(prev)
+      next.add(taskId)
+      return next
+    })
+    window.setTimeout(() => {
+      setCompletingTaskIds((prev) => {
+        const next = new Set(prev)
+        next.delete(taskId)
+        return next
+      })
+    }, 450)
+  }
+
   async function toggleTaskStatus(task: TaskItem, dayKey: string){
     try{
       const { data: sess } = await supabase.auth.getSession()
@@ -1309,6 +1355,9 @@ const projectColorById = React.useMemo(() => {
         return
       }
       const newStatus = task.status === TASK_STATUSES.CLOSED ? TASK_STATUSES.OPEN : TASK_STATUSES.CLOSED
+      if (newStatus === TASK_STATUSES.CLOSED) {
+        triggerTaskCompleteAnimation(task.id)
+      }
       const { error, data } = await supabase
         .from('tasks_items')
         .update({ status: newStatus })
@@ -1607,12 +1656,8 @@ const projectColorById = React.useMemo(() => {
       // Use active project if it's not "All projects"
       resolvedProject = activeProject
       logger.debug('✅ Using active project:', resolvedProject)
-    } else if (projects.length > 0) {
-      // Fallback to first project ("Uncategorized")
-      resolvedProject = projects[0].id
-      logger.debug('⚠️ Fallback to first project:', resolvedProject)
     }
-    // If no projects exist and no project selected, resolvedProject stays null
+    // On "All projects" with no explicit choice, task stays without project (null)
     
     logger.debug('🎯 Final resolvedProject:', resolvedProject)
     
@@ -2097,20 +2142,22 @@ const projectColorById = React.useMemo(() => {
             }))
 
           if (tasksToCreate.length > 0) {
-            // Get positions for each date
             const datePositions = new Map<string, number>()
-            for (const task of tasksToCreate) {
+            const uniqueDates = [...new Set(tasksToCreate.map((t) => t.date))]
+            for (const date of uniqueDates) {
               const { data: lastTaskForDate } = await supabase
                 .from('tasks_items')
                 .select('position')
-                .eq('date', task.date)
+                .eq('date', date)
                 .order('position', { ascending: false })
                 .limit(1)
-                .single()
-
-              const currentMax = datePositions.get(task.date) || (lastTaskForDate?.position || 0)
-              datePositions.set(task.date, currentMax + 1)
-              task.position = currentMax
+                .maybeSingle()
+              datePositions.set(date, lastTaskForDate?.position ?? 0)
+            }
+            for (const task of tasksToCreate) {
+              const nextPos = (datePositions.get(task.date) ?? 0) + 1
+              datePositions.set(task.date, nextPos)
+              task.position = nextPos
             }
 
             const { error: insertError } = await supabase
@@ -2259,20 +2306,22 @@ const projectColorById = React.useMemo(() => {
             }))
 
           if (tasksToCreate.length > 0) {
-            // Get positions for each date
             const datePositions = new Map<string, number>()
-            for (const task of tasksToCreate) {
+            const uniqueDates = [...new Set(tasksToCreate.map((t) => t.date))]
+            for (const date of uniqueDates) {
               const { data: lastTaskForDate } = await supabase
                 .from('tasks_items')
                 .select('position')
-                .eq('date', task.date)
+                .eq('date', date)
                 .order('position', { ascending: false })
                 .limit(1)
-                .single()
-
-              const currentMax = datePositions.get(task.date) || (lastTaskForDate?.position || 0)
-              datePositions.set(task.date, currentMax + 1)
-              task.position = currentMax
+                .maybeSingle()
+              datePositions.set(date, lastTaskForDate?.position ?? 0)
+            }
+            for (const task of tasksToCreate) {
+              const nextPos = (datePositions.get(task.date) ?? 0) + 1
+              datePositions.set(task.date, nextPos)
+              task.position = nextPos
             }
 
             const { error: insertError } = await supabase
@@ -2759,6 +2808,13 @@ const projectColorById = React.useMemo(() => {
       }
     }
     
+    if (
+      viewTask?.status !== TASK_STATUSES.CLOSED &&
+      updatedTask.status === TASK_STATUSES.CLOSED
+    ) {
+      triggerTaskCompleteAnimation(updatedTask.id)
+    }
+
     setTasks(map)
     
     // Only close modal for manual saves, not auto-saves
@@ -2782,12 +2838,6 @@ const projectColorById = React.useMemo(() => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- dev helpers: attach once per mount
   }, [])
-
-  // Get tasks for mobile date
-  const mobileTasks = React.useMemo(() => {
-    const dayKey = format(mobileDate, 'yyyy-MM-dd')
-    return tasks[dayKey] || []
-  }, [tasks, mobileDate])
 
   // Mobile view
   if (isMobile) {
@@ -2870,9 +2920,8 @@ const projectColorById = React.useMemo(() => {
                         
                         {/* Original task card */}
                         <div
-                          className={`task-card group transition-all duration-150 hover:border-black ${taskItem.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
+                          className={`task-card group hover:border-black ${taskItem.status === TASK_STATUSES.CLOSED ? 'is-closed' : ''} ${completingTaskIds.has(taskItem.id) ? 'is-completing' : ''} ${isDragged ? 'is-dragging' : ''} ${isGhost ? 'opacity-30' : ''}`}
                           style={{
-                            backgroundColor: taskItem.status === TASK_STATUSES.CLOSED ? '#F2F7FA' : '#ffffff',
                             border: '1px solid #e5e7eb',
                             borderRadius: '12px',
                             overflow: 'visible', // Allow tooltip to show outside card bounds
@@ -2896,21 +2945,7 @@ const projectColorById = React.useMemo(() => {
                           onContextMenu={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            const menuWidth = 160
-                            const menuHeight = 120
-                            const { x, y } = clampToViewport(
-                              e.clientX + 10, // Right of cursor
-                              e.clientY - 10, // Above cursor
-                              menuWidth,
-                              menuHeight
-                            );
-                            setCtx({
-                              open: true,
-                              x: e.clientX + 10, // Right of cursor
-                              y: e.clientY - 10, // Above cursor
-                              task: taskItem,
-                              dayKey: key,
-                            });
+                            openTaskContextMenu(taskItem, key, { x: e.clientX, y: e.clientY });
                           }}
                           onMouseDown={(e) => {
                             // Only prevent right click
@@ -2966,25 +3001,17 @@ const projectColorById = React.useMemo(() => {
                         >
                           {/* Menu button */}
                           <button
-                            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                            type="button"
+                            aria-label={t('aria.openMenu')}
+                            className="task-card__menu-btn w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              const menuWidth = 160
-                              const menuHeight = 120
-                              const { x, y } = clampToViewport(
-                                e.clientX + 10, // Right of cursor
-                                e.clientY - 10, // Above cursor
-                                menuWidth,
-                                menuHeight
-                              );
-                              setCtx({
-                                open: true,
-                                x: e.clientX + 10, // Right of cursor
-                                y: e.clientY - 10, // Above cursor
-                                task: taskItem,
-                                dayKey: key,
-                              });
+                              openTaskContextMenu(taskItem, key, e.currentTarget);
                             }}
                           >
                             <div className="w-4 h-4 flex items-center justify-center">
@@ -3024,9 +3051,7 @@ const projectColorById = React.useMemo(() => {
                               )}
                             </div>
                               <div className="leading-tight clamp-2 break-words mb-2">
-                                <span 
-                                  className="font-medium text-black text-sm"
-                                >
+                                <span className="task-card__title font-medium text-sm">
                                   {taskItem.title}
                                 </span>
                               </div>

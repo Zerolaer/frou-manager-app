@@ -90,7 +90,7 @@ export default function CategoryRow({
 
   return (
     <div 
-      className={`finance-row-wrapper ${isChild ? 'finance-row-child' : ''} ${isCollapsing ? 'collapsed' : 'expanded'}`}
+      className={`finance-row${isChild ? ' finance-row-child' : ''}`}
       style={{ 
         display: 'contents'
       }}

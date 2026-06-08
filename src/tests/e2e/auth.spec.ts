@@ -37,6 +37,16 @@ test.describe('Authentication Flow', () => {
     ).toBeVisible({ timeout: 8000 })
   })
 
+  test('navigates to signup and forgot-password', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole('link', { name: /sign up|регистрация/i }).click()
+    await expect(page).toHaveURL(/signup/)
+
+    await page.goto('/login')
+    await page.getByRole('link', { name: /forgot password|забыли пароль/i }).click()
+    await expect(page).toHaveURL(/forgot-password/)
+  })
+
   test('email input enforces type=email validation', async ({ page }) => {
     await page.goto('/login')
     await emailField(page).fill('not-an-email')

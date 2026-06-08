@@ -8,10 +8,14 @@ body.canvas-mode #main-content {
   padding: 0 !important;
 }
 
+body.canvas-mode #app-content-body {
+  overflow: hidden !important;
+}
+
 .canvas-page {
   box-sizing: border-box;
   /* одна строка шапки без сабшапки */
-  height: calc(100vh - 80px);
+  height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -735,7 +739,6 @@ body.canvas-mode #main-content {
   min-height: 72px;
   resize: none;
   overflow: hidden;
-  scrollbar-width: none;
   border: none;
   background: transparent;
   padding: 12px 14px;
@@ -748,12 +751,6 @@ body.canvas-mode #main-content {
   touch-action: auto;
 }
 
-.canvas-node textarea::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
 .canvas-node textarea::placeholder {
   color: #9ca3af;
 }
@@ -761,7 +758,7 @@ body.canvas-mode #main-content {
 /* Canvas: полноэкранная доска + плавающая панель проектов */
 .canvas-project-layout {
   position: relative;
-  height: calc(100vh - 80px);
+  height: 100%;
   min-height: 0;
   box-sizing: border-box;
 }
@@ -790,8 +787,8 @@ body.canvas-mode #main-content {
   position: fixed;
   z-index: 70;
   left: 24px;
-  top: calc(80px + 24px);
-  max-height: calc(100vh - 80px - 48px);
+  top: calc(56px + 24px);
+  max-height: calc(100vh - 56px - 16px - 48px);
   display: flex;
   flex-direction: column;
   pointer-events: none;
@@ -831,7 +828,7 @@ body.canvas-mode #main-content {
   display: flex;
   flex-direction: column;
   width: min(280px, calc(100vw - 48px));
-  max-height: calc(100vh - 80px - 48px);
+  max-height: calc(100vh - 56px - 16px - 48px);
   border-radius: 16px;
   border: 1px solid #e5e7eb;
   background: #ffffff;
@@ -903,24 +900,6 @@ body.canvas-mode #main-content {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.canvas-project-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.canvas-project-list::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.canvas-project-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.canvas-project-list::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
 
 .canvas-project-list-hint {

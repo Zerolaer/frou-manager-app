@@ -16,9 +16,14 @@ type Task = {
 type Props = {
   task: Task
   onUpdateRecurrence: (taskId: string, settings: RecurringTaskSettings) => Promise<void>
+  containerClassName?: string
 }
 
-export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) {
+export default function RecurringTaskBlock({
+  task,
+  onUpdateRecurrence,
+  containerClassName,
+}: Props) {
   const { t } = useSafeTranslation()
   const { alert } = useModalConfirm()
   const [showEditModal, setShowEditModal] = useState(false)
@@ -117,7 +122,12 @@ export default function RecurringTaskBlock({ task, onUpdateRecurrence }: Props) 
 
   return (
     <>
-      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
+      <section
+        className={
+          containerClassName ??
+          'space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6'
+        }
+      >
         {task.recurring_task_id ? (
           // Task is already recurring - show settings and edit button
           <>

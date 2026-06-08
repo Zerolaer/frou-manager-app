@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+﻿import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Plus, Trash2, Calendar, Tag, Check, Bold, Italic, Strikethrough, Underline as UnderlineIcon, List, ListOrdered } from 'lucide-react'
 import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
@@ -11,6 +11,7 @@ import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Todo, Project } from '@/types/shared'
 import { logger } from '@/lib/monitoring'
 import { TASK_STATUSES } from '@/lib/constants'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
 import RecurringTaskBlock from './RecurringTaskBlock'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 import { format, parseISO, isAfter, isEqual } from 'date-fns'
@@ -122,8 +123,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   const [priority, setPriority] = useState('')
   const [tag, setTag] = useState('')
   const [date, setDate] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [dueDate, setDueDate] = useState('')
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
   const [newTodoDate, setNewTodoDate] = useState<string>('')
@@ -271,8 +270,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       setPriority((task.priority as any) || 'normal')
       setTag(task.tag || '')
       setDate(task.date || '')
-      setStartDate((task as any).start_date || '')
-      setDueDate((task as any).due_date || '')
       // Todos are updated in separate useEffect for smooth real-time updates
       // Status is updated in separate useEffect for smooth real-time updates
       setProjectId(task.project_id || '')
@@ -417,9 +414,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         .from('tasks_projects')
         .select('id,name')
         .order('created_at', { ascending: true })
-      setProjects((data as Project[]) || [])
+      setProjects(
+        filterVisibleTaskProjects((data as Project[]) || [], t('projects.uncategorized'))
+      )
     })()
-  }, [open])
+  }, [open, t])
 
   // Auto-save title and description with debounce
   // Use ref to track if we're currently saving to prevent loops
@@ -467,7 +466,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       clearTimeout(saveTimeoutRef.current)
     }
     
-    logger.debug('⏱️ Fields changed, scheduling save in 500ms', { date, priority, tag, status, projectId, startDate, dueDate })
+    logger.debug('⏱️ Fields changed, scheduling save in 500ms', { date, priority, tag, status, projectId })
     saveTimeoutRef.current = setTimeout(() => {
       if (!isSavingRef.current) {
         isSavingRef.current = true
@@ -482,7 +481,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [priority, tag, date, startDate, dueDate, status, projectId, open, task?.id, task?.todos])
+  }, [priority, tag, date, status, projectId, open, task?.id, task?.todos])
 
   // Auto-save todos when they change
   useEffect(() => {
@@ -608,8 +607,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       const { data: sessionData } = await supabase.auth.getSession()
       if (!sessionData.session) {
         await alert(
-          t('tasks.sessionRequired') || 'Войдите в аккаунт ещё раз — сессия не найдена, сохранение отменено.',
-          t('common.error') || 'Ошибка'
+          t('tasks.sessionRequired'),
+          t('common.error')
         )
         return
       }
@@ -623,8 +622,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       if (error) {
         logger.error('❌ Supabase error:', error)
         await alert(
-          `${t('tasks.saveFailed') || 'Не удалось сохранить'}: ${error.message}`,
-          t('common.error') || 'Ошибка'
+          `${t('tasks.saveFailed')}: ${error.message}`,
+          t('common.error')
         )
         throw error
       }
@@ -634,8 +633,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         logger.error('❌ Task save returned 0 rows (RLS / wrong id)', { id: task.id })
         await alert(
           t('tasks.saveNoRows') ||
-            'Сервер не сохранил строку (часто RLS: нет прав на UPDATE или задача чужая). Проверьте политики tasks_items в Supabase.',
-          t('common.error') || 'Ошибка'
+            t('tasks.saveNoRows'),
+          t('common.error')
         )
         return
       }
@@ -759,7 +758,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       
       // Check if todo date is before parent date
       if (isAfter(parentDate, todoDate) && !isEqual(parentDate, todoDate)) {
-        await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`, t('common.validationError') || 'Validation Error')
+        await alert(t('tasks.subtaskDateValidation'), t('common.validationError'))
         return
       }
     }
@@ -1260,7 +1259,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       
       // Check if todo date is before parent date
       if (isAfter(parentDate, todoDate) && !isEqual(parentDate, todoDate)) {
-        await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`, t('common.validationError') || 'Validation Error')
+        await alert(t('tasks.subtaskDateValidation'), t('common.validationError'))
         return
       }
     }
@@ -1443,7 +1442,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         
         // Check if todo date is before parent date
         if (isAfter(parentDate, todoDate) && !isEqual(parentDate, todoDate)) {
-          await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${task.date})`, t('common.validationError') || 'Validation Error')
+          await alert(t('tasks.subtaskDateValidation'), t('common.validationError'))
           return
         }
       }
@@ -1591,8 +1590,8 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         <div ref={menuRef}>
           <CoreMenu
             options={[
-              { value: 'duplicate', label: i18n?.language === 'ru' ? 'Дублировать' : 'Duplicate' },
-              { value: 'delete', label: i18n?.language === 'ru' ? 'Удалить' : 'Delete', destructive: true },
+              { value: 'duplicate', label: t('tasks.duplicate') },
+              { value: 'delete', label: t('actions.delete'), destructive: true },
             ]}
             onSelect={(value) => {
               if (value === 'duplicate') {
@@ -1726,7 +1725,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                       selection?.addRange(range)
                     }
                   }}
-                  data-placeholder={t('tasks.taskDetails') || 'Описание задачи… Поддерживается форматирование.'}
+                  data-placeholder={t('tasks.taskDetails')}
                   className="w-full px-4 py-3 bg-transparent text-gray-700 outline-none overflow-y-auto note-editor"
                   style={{ 
                     minHeight: `${descriptionMinHeight - 40}px`,
@@ -1871,7 +1870,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 type="text"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
-                placeholder={subtaskMode === 'subtasks' ? t('tasks.addSubtask') : (t('tasks.addSubtask') || 'Добавить задачу')}
+                placeholder={subtaskMode === 'subtasks' ? t('tasks.addSubtask') : t('tasks.addTodo')}
                 className="flex-1"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
@@ -1889,7 +1888,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                 <CustomDatePicker
                   value={newTodoDate}
                   onChange={setNewTodoDate}
-                  placeholder={t('tasks.subtaskDateOptional') || 'Дата'}
+                  placeholder={t('tasks.subtaskDateOptional')}
                   minDate={task.date}
                   iconOnly={true}
                   buttonClassName="!w-10 !h-10 !p-0 !rounded-xl"
@@ -2080,7 +2079,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                                 <CustomDatePicker
                                   value={todo.date || ''}
                                   onChange={(newDate) => updateTodoDate(todo.id, newDate)}
-                                  placeholder={t('tasks.subtaskDateOptional') || 'Дата'}
+                                  placeholder={t('tasks.subtaskDateOptional')}
                                   minDate={task?.date || undefined}
                                   iconOnly={true}
                                   buttonClassName="!p-1.5 hover:bg-gray-100 rounded-lg transition-colors !border-0 !bg-transparent !w-auto !h-auto !min-w-0 !min-h-0"
@@ -2143,7 +2142,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   type="text"
                   value={newTodo}
                   onChange={(e) => setNewTodo(e.target.value)}
-                  placeholder={t('tasks.addSubtask') || 'Добавить задачу'}
+                  placeholder={t('tasks.addTodo')}
                   className="flex-1"
                   onKeyPress={(e) => e.key === 'Enter' && addSimpleTodo()}
                 />
@@ -2334,17 +2333,20 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             <div className="text-sm font-medium text-gray-700">{t('tasks.priority')}</div>
             <div className="relative rounded-xl h-10 flex p-1" style={{ backgroundColor: '#F8F8F8' }}>
               <div 
-                className={`absolute top-1 bottom-1 w-1/3 bg-black rounded-lg transition-transform duration-200 ${
-                  priority === 'low' 
-                    ? 'translate-x-0' 
-                    : priority === 'normal'
-                      ? 'translate-x-full'
-                      : 'translate-x-[200%]'
-                }`}
+                className="absolute top-1 bottom-1 rounded-lg bg-black transition-[left] duration-200 ease-out"
+                style={{
+                  width: 'calc((100% - 0.5rem) / 3)',
+                  left:
+                    priority === 'low'
+                      ? '0.25rem'
+                      : priority === 'normal'
+                        ? 'calc(0.25rem + (100% - 0.5rem) / 3)'
+                        : 'calc(0.25rem + 2 * (100% - 0.5rem) / 3)',
+                }}
               />
               <button
                 onClick={() => setPriority('low')}
-                className={`relative flex-1 py-2 text-sm font-medium rounded-lg transition-colors z-10 ${
+                className={`relative flex-1 flex items-center justify-center py-2 text-sm font-medium rounded-lg transition-colors z-10 ${
                   priority === 'low'
                     ? 'text-white'
                     : 'text-gray-700'
@@ -2354,7 +2356,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
               </button>
               <button
                 onClick={() => setPriority('normal')}
-                className={`relative flex-1 py-2 text-sm font-medium rounded-lg transition-colors z-10 ${
+                className={`relative flex-1 flex items-center justify-center py-2 text-sm font-medium rounded-lg transition-colors z-10 ${
                   priority === 'normal'
                     ? 'text-white'
                     : 'text-gray-700'
@@ -2364,7 +2366,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
               </button>
               <button
                 onClick={() => setPriority('high')}
-                className={`relative flex-1 py-2 text-sm font-medium rounded-lg transition-colors z-10 ${
+                className={`relative flex-1 flex items-center justify-center py-2 text-sm font-medium rounded-lg transition-colors z-10 ${
                   priority === 'high'
                     ? 'text-white'
                     : 'text-gray-700'
@@ -2380,11 +2382,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
             const parentTaskTitle = (task as any)?.parent_task_title || (task as any)?.parent_task?.title
             return (
             <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-              <div className="text-sm font-medium text-gray-700">{i18n?.language === 'ru' ? 'Подзадача' : 'Subtask'}</div>
+              <div className="text-sm font-medium text-gray-700">{t('tasks.subtask')}</div>
               <div className="text-sm text-gray-600">
                 {parentTaskTitle 
-                  ? (i18n?.language === 'ru' ? `Подзадача задачи: ${parentTaskTitle}` : `Subtask of: ${parentTaskTitle}`)
-                  : (i18n?.language === 'ru' ? 'Эта задача является подзадачей другой задачи' : 'This task is a subtask of another task')
+                  ? `${t('tasks.subtaskOf')}: ${parentTaskTitle}`
+                  : t('tasks.subtaskHint')
                 }
               </div>
             </section>
@@ -2416,7 +2418,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
                   
                   // Check if subtask date is before parent date
                   if (isAfter(parentDate, subtaskDate) && !isEqual(parentDate, subtaskDate)) {
-                    await alert(t('tasks.subtaskDateValidation') || `Дата подзадачи не может быть раньше даты родительской задачи (${parentTaskDate})`, t('common.validationError') || 'Validation Error')
+                    await alert(t('tasks.subtaskDateValidation'), t('common.validationError'))
                     return
                   }
                 }
@@ -2424,30 +2426,6 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
               }}
             />
           </section>
-
-          {/* Start Date & Due Date for Gantt */}
-          {!isSubtask && (
-            <>
-              <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-                <div className="text-sm font-medium text-gray-700">{t('tasks.startDate') || 'Start Date'}</div>
-                <CustomDatePicker
-                  value={startDate}
-                  onChange={setStartDate}
-                  placeholder={t('tasks.selectStartDate') || 'Select start date'}
-                />
-              </section>
-
-              <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
-                <div className="text-sm font-medium text-gray-700">{t('tasks.dueDate') || 'Due Date'}</div>
-                <CustomDatePicker
-                  value={dueDate}
-                  onChange={setDueDate}
-                  placeholder={t('tasks.selectDueDate') || 'Select due date'}
-                  minDate={startDate || undefined}
-                />
-              </section>
-            </>
-          )}
 
           {/* Tag */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
@@ -2477,7 +2455,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         size="sm"
         open={todoToDelete !== null}
         onClose={() => setTodoToDelete(null)}
-        title={t('tasks.deleteSubtask') || 'Удалить подзадачу?'}
+        title={t('tasks.deleteSubtask')}
         variant="center"
         footer={
           <div className="flex items-center justify-end gap-3">
@@ -2485,20 +2463,20 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
               variant="secondary"
               onClick={() => setTodoToDelete(null)}
             >
-              {t('actions.cancel') || 'Отмена'}
+              {t('actions.cancel')}
             </ModalButton>
             <ModalButton
               variant="danger"
               onClick={confirmDeleteTodo}
             >
-              {t('actions.delete') || 'Удалить'}
+              {t('actions.delete')}
             </ModalButton>
           </div>
         }
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            {t('tasks.deleteSubtaskWarning') || 'Вы уверены, что хотите удалить эту подзадачу? Это действие нельзя отменить.'}
+            {t('tasks.deleteSubtaskWarning')}
           </p>
           {todoToDelete && (() => {
             const todo = todos.find(t => t.id === todoToDelete)

@@ -86,14 +86,13 @@ export function TaskCard({
   return (
     <Card
       className={cn(
-        "task-card group cursor-pointer transition-all duration-150 hover:shadow-md",
+        "task-card group cursor-pointer hover:shadow-md",
         isDragged && "is-dragging",
         isGhost && "opacity-30",
         isCompleted && "is-closed",
         className
       )}
       style={{
-        backgroundColor: isCompleted ? '#F8F8F8' : '#ffffff',
         border: '1px solid #e5e7eb',
         borderRadius: '12px',
         ...style
@@ -123,7 +122,12 @@ export function TaskCard({
               )}
             </div>
             <button
-              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+              type="button"
+              className="task-card__menu-btn w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -138,7 +142,7 @@ export function TaskCard({
 
           {/* Title */}
           <div className="space-y-1">
-            <h3 className="font-medium text-sm text-black line-clamp-2 task-title">
+            <h3 className="task-card__title font-medium text-sm line-clamp-2 task-title">
               {task.title}
             </h3>
             

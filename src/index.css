@@ -41,24 +41,7 @@ body {
   transition: none !important;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+/* Scrollbars hidden globally (see styles.css) */
 
 /* Focus visible styles */
 :focus-visible {
@@ -85,3 +68,4 @@ body {
 
 /* Mobile responsive import */
 @import './mobile.css';
+@import './mobile-shell.css';

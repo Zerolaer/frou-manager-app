@@ -1,5 +1,7 @@
 import { logger } from '@/lib/monitoring'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useSafeTranslation } from '@/utils/safeTranslation'
+import { syncNativeStatusBar } from '@/platform/capacitorInit'
 
 // Theme system and dark mode utilities
 
@@ -26,7 +28,7 @@ export interface Theme {
 export const THEMES: Record<string, Theme> = {
   light: {
     name: 'light',
-    displayName: 'Светлая',
+    displayName: 'Light',
     dark: false,
     colors: {
       primary: '#3b82f6',
@@ -44,7 +46,7 @@ export const THEMES: Record<string, Theme> = {
   },
   dark: {
     name: 'dark',
-    displayName: 'Темная',
+    displayName: 'Dark',
     dark: true,
     colors: {
       primary: '#60a5fa',
@@ -62,7 +64,7 @@ export const THEMES: Record<string, Theme> = {
   },
   blue: {
     name: 'blue',
-    displayName: 'Синяя',
+    displayName: 'Blue',
     dark: false,
     colors: {
       primary: '#1e40af',
@@ -80,7 +82,7 @@ export const THEMES: Record<string, Theme> = {
   },
   green: {
     name: 'green',
-    displayName: 'Зеленая',
+    displayName: 'Green',
     dark: false,
     colors: {
       primary: '#059669',
@@ -98,7 +100,7 @@ export const THEMES: Record<string, Theme> = {
   },
   purple: {
     name: 'purple',
-    displayName: 'Фиолетовая',
+    displayName: 'Purple',
     dark: false,
     colors: {
       primary: '#7c3aed',
@@ -116,7 +118,7 @@ export const THEMES: Record<string, Theme> = {
   },
   highContrast: {
     name: 'highContrast',
-    displayName: 'Высокий контраст',
+    displayName: 'High contrast',
     dark: true,
     colors: {
       primary: '#ffffff',
@@ -219,6 +221,8 @@ class ThemeManager {
 
     // Update meta theme-color for mobile browsers
     this.updateMetaThemeColor(theme.colors.primary)
+
+    void syncNativeStatusBar(theme.dark)
   }
 
   private updateMetaThemeColor(color: string) {
@@ -352,8 +356,11 @@ export const ThemeProvider: React.FC<{
 export const ThemeSelector: React.FC<{
   className?: string
 }> = ({ className = '' }) => {
+  const { t } = useSafeTranslation()
   const { theme, setTheme, getAvailableThemes } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const themeLabel = (name: string, fallback: string) =>
+    t(`settings.system.themes.${name}`, { defaultValue: fallback })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -381,7 +388,7 @@ export const ThemeSelector: React.FC<{
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        aria-label="Выбрать тему"
+        aria-label={t('settings.system.selectTheme')}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -400,7 +407,7 @@ export const ThemeSelector: React.FC<{
       {isOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+          className="absolute right-0 mt-2 w-max min-w-0 max-w-[min(320px,calc(100vw-16px))] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
         >
           {themes.map((themeOption) => (
             <button
@@ -419,7 +426,7 @@ export const ThemeSelector: React.FC<{
                   themeOption.dark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
                 }`}
               />
-              {themeOption.displayName}
+              {themeLabel(themeOption.name, themeOption.displayName)}
             </button>
           ))}
         </div>
@@ -433,13 +440,14 @@ export const DarkModeToggle: React.FC<{
   className?: string
   showLabel?: boolean
 }> = ({ className = '', showLabel = true }) => {
+  const { t } = useSafeTranslation()
   const { isDarkMode, toggleDarkMode } = useTheme()
 
   return (
     <button
       onClick={toggleDarkMode}
       className={`flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors ${className}`}
-      aria-label={isDarkMode ? 'Переключить на светлую тему' : 'Переключить на темную тему'}
+      aria-label={isDarkMode ? t('settings.system.switchToLight') : t('settings.system.switchToDark')}
     >
       {isDarkMode ? (
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -451,7 +459,7 @@ export const DarkModeToggle: React.FC<{
         </svg>
       )}
       {showLabel && (
-        <span>{isDarkMode ? 'Светлая' : 'Темная'}</span>
+        <span>{isDarkMode ? t('settings.system.themes.light') : t('settings.system.themes.dark')}</span>
       )}
     </button>
   )

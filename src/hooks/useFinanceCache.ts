@@ -3,8 +3,8 @@ import { CACHE_KEYS } from '@/lib/constants'
 import { logger } from '@/lib/monitoring'
 
 interface CacheData {
-  income: { id: string; name: string; values: number[]; parent_id?: string | null }[]
-  expense: { id: string; name: string; values: number[]; parent_id?: string | null }[]
+  income: { id: string; name: string; values: number[]; parent_id?: string | null; hasDirectEntries?: boolean }[]
+  expense: { id: string; name: string; values: number[]; parent_id?: string | null; hasDirectEntries?: boolean }[]
 }
 
 export function useFinanceCache() {

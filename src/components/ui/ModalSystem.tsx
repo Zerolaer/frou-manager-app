@@ -283,9 +283,36 @@ export function useModalActions() {
     )
   }
 
+  // Delete confirmation: cancel (secondary) + delete (danger), both right-aligned
+  const createDeleteFooter = (
+    deleteAction: { label: string; onClick: () => void; loading?: boolean; disabled?: boolean },
+    cancelAction: { label: string; onClick: () => void }
+  ) => {
+    return (
+      <ModalFooter
+        right={
+          <>
+            <ModalButton variant="secondary" onClick={cancelAction.onClick}>
+              {cancelAction.label}
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              onClick={deleteAction.onClick}
+              loading={deleteAction.loading}
+              disabled={deleteAction.disabled}
+            >
+              {deleteAction.label}
+            </ModalButton>
+          </>
+        }
+      />
+    )
+  }
+
   return { 
     createStandardFooter, 
     createDangerFooter, 
-    createSimpleFooter 
+    createSimpleFooter,
+    createDeleteFooter,
   }
 }

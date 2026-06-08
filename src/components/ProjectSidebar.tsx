@@ -7,6 +7,8 @@ import { ChevronLeft, Plus } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 
 import type { Project } from '@/types/shared'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
+import { TASK_PROJECT_ALL } from '@/lib/constants'
 
 type Props = {
   userId: string
@@ -35,43 +37,27 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
       const ext = await supabase.from('tasks_projects').select('id,name,color,position').order('position', { ascending:true }).order('created_at', { ascending:true })
       if (!ext.error){
         setHasColor(true); setHasPosition(true)
-        const projectsList = (ext.data||[]) as Project[]
-        
-        // If user has no projects, create default "Uncategorized" project
-        if (projectsList.length === 0) {
-          const { data: newProject } = await supabase
-            .from('tasks_projects')
-            .insert({ user_id: userId, name: t('projects.uncategorized'), position: 0 })
-            .select('id,name,color,position')
-            .single()
-          
-          if (newProject) {
-            projectsList.push(newProject as Project)
-          }
+        const projectsList = filterVisibleTaskProjects(
+          (ext.data || []) as Project[],
+          t('projects.uncategorized')
+        )
+        setItems([{ id: TASK_PROJECT_ALL, name: t('projects.allProjects'), color: null } as Project, ...projectsList])
+        if (activeId && activeId !== TASK_PROJECT_ALL && !projectsList.some((p) => p.id === activeId)) {
+          onChange(TASK_PROJECT_ALL)
         }
-        
-        setItems(([{ id: 'ALL', name: t('projects.allProjects'), color: null } as any, ...projectsList]))
         return
       }
       // fallback to id,name only
       const basic = await supabase.from('tasks_projects').select('id,name').order('created_at', { ascending:true })
       if (!basic.error) {
-        const projectsList = (basic.data||[]) as Project[]
-        
-        // If user has no projects, create default "Uncategorized" project
-        if (projectsList.length === 0) {
-          const { data: newProject } = await supabase
-            .from('tasks_projects')
-            .insert({ user_id: userId, name: t('projects.uncategorized') })
-            .select('id,name')
-            .single()
-          
-          if (newProject) {
-            projectsList.push(newProject as Project)
-          }
+        const projectsList = filterVisibleTaskProjects(
+          (basic.data || []) as Project[],
+          t('projects.uncategorized')
+        )
+        setItems([{ id: TASK_PROJECT_ALL, name: t('projects.allProjects'), color: null } as Project, ...projectsList])
+        if (activeId && activeId !== TASK_PROJECT_ALL && !projectsList.some((p) => p.id === activeId)) {
+          onChange(TASK_PROJECT_ALL)
         }
-        
-        setItems(([{ id: 'ALL', name: t('projects.allProjects'), color: null } as any, ...projectsList]))
       }
     })()
   },[userId])
@@ -193,7 +179,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
   }
 
   return (
-    <aside className="tasks-projects rounded-3xl bg-white" style={{ width: collapsed ? 72 : 260, border: '1px solid #E9F2F6', transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+    <aside className="tasks-projects bg-white" style={{ width: collapsed ? 72 : 260, transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
       <div className="flex items-center mb-3" style={{ 
         position: 'relative',
         height: '34px'
@@ -346,6 +332,7 @@ const ProjectSidebar = ({ userId, activeId, onChange, collapsed = false, onToggl
               zIndex: 1000
             }}
           >
+            {/* w-72: fixed width for 7-column project color picker grid */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-72">
               <button
                 onClick={()=>{ setRenameValue(ctxProject.name); setRenameOpen(true); setCtxOpen(false) }}

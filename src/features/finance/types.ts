@@ -8,4 +8,5 @@ export type EntryLite = {
   note: string | null
   included: boolean
   position: number
+  currency?: 'EUR' | 'USD' | 'GEL'
 }

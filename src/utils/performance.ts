@@ -179,28 +179,10 @@ export function preloadCriticalResources() {
     importFn().catch(err => logger.error('Failed to preload critical component:', err))
   })
 
-  // Prefetch critical routes on idle
-  const criticalRoutes = ['/finance', '/tasks', '/notes']
-  
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      criticalRoutes.forEach(route => {
-        const link = document.createElement('link')
-        link.rel = 'prefetch'
-        link.href = route
-        document.head.appendChild(link)
-      })
-    })
-  } else {
-    setTimeout(() => {
-      criticalRoutes.forEach(route => {
-        const link = document.createElement('link')
-        link.rel = 'prefetch'
-        link.href = route
-        document.head.appendChild(link)
-      })
-    }, 1000)
-  }
+  // Warm route JS chunks (HTML prefetch does not load Vite chunks)
+  import('@/lib/routePrefetch').then(({ prefetchCommonRoutes }) => {
+    prefetchCommonRoutes()
+  })
 
   // Preload fonts if any
   const fonts = document.querySelectorAll('link[rel="stylesheet"]')

@@ -1,0 +1,233 @@
+/* Mobile app shell — floating bottom nav */
+
+.native-app .app-shell {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.native-app .mobile-bottom-nav {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.native-app.keyboard-open .mobile-bottom-nav,
+.native-app.keyboard-open .mobile-fab {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.mobile-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  pointer-events: none;
+  padding: 0 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-bottom-nav__dock {
+  pointer-events: auto;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.mobile-bottom-nav__track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+
+.mobile-bottom-nav__slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  background: #171717;
+  border-radius: 9999px;
+  transform: translate(0, 0);
+  transition:
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform, width, height;
+  pointer-events: none;
+}
+
+.mobile-bottom-nav__slider.is-ready {
+  opacity: 1;
+}
+
+.mobile-bottom-nav__bubble {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  height: 2.75rem;
+  padding: 0 1.125rem;
+  border-radius: 9999px;
+  color: #525252;
+  transition: color 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-bottom-nav__bubble.is-active {
+  color: #ffffff;
+}
+
+.mobile-bottom-nav__bubble:active {
+  transform: scale(0.94);
+}
+
+.mobile-bottom-nav__icon {
+  width: 1.625rem;
+  height: 1.625rem;
+  flex-shrink: 0;
+}
+
+/* Content offset under floating nav */
+.mobile-shell-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* FAB above bottom nav */
+.mobile-fab {
+  position: fixed;
+  right: calc(1rem + env(safe-area-inset-right, 0px));
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: #171717;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.mobile-fab:active {
+  transform: scale(0.96);
+}
+
+/* Finance mobile — category collapse chevron (override global button padding) */
+.finance-mobile-collapse-btn {
+  padding: 0 !important;
+}
+
+.finance-mobile-collapse-btn .finance-mobile-collapse-icon {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Finance mobile cell editor — uniform 44px entry row controls */
+.mobile-cell-entry-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+}
+
+.mobile-cell-entry-control {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.mobile-cell-entry-control--amount {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.mobile-cell-entry-control--currency {
+  flex: 0 0 76px;
+  width: 76px;
+  min-width: 76px;
+}
+
+.mobile-cell-entry-control--icon {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+}
+
+/* Every leaf control fills its 44px slot — overrides global button/input padding */
+.mobile-cell-entry-control > input,
+.mobile-cell-entry-control > button {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
+  flex: 1 1 auto;
+}
+
+.mobile-cell-entry-control > input {
+  display: block;
+}
+
+.mobile-cell-entry-control > .mobile-cell-entry-currency {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.mobile-cell-entry-control .mobile-cell-entry-currency > button,
+.mobile-cell-entry-control .mobile-cell-entry-currency-btn {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
+}
+
+.finance-mobile-entry-btn {
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}

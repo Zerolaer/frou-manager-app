@@ -53,6 +53,8 @@ export type Cat = {
   values: number[];
   parent_id?: string | null;
   isCollapsed?: boolean;
+  /** True when the category has any finance_entries rows (included or excluded). */
+  hasDirectEntries?: boolean;
 }
 
 export type CtxCat = {
@@ -73,6 +75,8 @@ export type FinanceCellCtx = {
   month: number;
 }
 
+export type FinanceCurrency = 'EUR' | 'USD' | 'GEL'
+
 export type EntryLite = {
   id: string;
   amount: number;
@@ -80,6 +84,7 @@ export type EntryLite = {
   category_id: string;
   included: boolean;
   note?: string | null;
+  currency?: FinanceCurrency;
 }
 
 // API Response types

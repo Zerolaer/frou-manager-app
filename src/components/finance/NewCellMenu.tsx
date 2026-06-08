@@ -61,7 +61,7 @@ export default function NewCellMenu({ x, y, onClose, canCopy, hasClipboard, onCo
           zIndex: 1000
         }}
       >
-        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-max min-w-0 max-w-[min(320px,calc(100vw-16px))]">
           {options.map((option) => (
             <button
               key={option.value}

@@ -92,7 +92,7 @@ export default function Habits() {
 
   // Handle delete
   const handleDelete = useCallback(async (id: string) => {
-    const result = await confirm(t('habits.deleteConfirm') || 'Вы уверены, что хотите удалить эту привычку?', t('habits.deleteHabitTitle') || 'Delete Habit')
+    const result = await confirm(t('habits.deleteConfirm'), t('habits.deleteHabitTitle'))
     if (!result) return;
     
     try {

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/utils/currency';
-import { formatDate, isToday, isSameWeek } from '@/lib/dateUtils';
+import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/dateUtils';
+import { isToday, isSameWeek } from 'date-fns';
 
 describe('Utility Functions', () => {
   describe('cn (className merger)', () => {
@@ -81,13 +82,13 @@ describe('Utility Functions', () => {
       it('should return true for same week dates', () => {
         const date1 = new Date('2025-10-15'); // Wednesday
         const date2 = new Date('2025-10-17'); // Friday
-        expect(isSameWeek(date1, date2)).toBe(true);
+        expect(isSameWeek(date1, date2, { weekStartsOn: 1 })).toBe(true);
       });
 
       it('should return false for different weeks', () => {
         const date1 = new Date('2025-10-15');
         const date2 = new Date('2025-10-22');
-        expect(isSameWeek(date1, date2)).toBe(false);
+        expect(isSameWeek(date1, date2, { weekStartsOn: 1 })).toBe(false);
       });
     });
   });

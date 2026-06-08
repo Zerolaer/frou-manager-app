@@ -55,7 +55,7 @@ body {
 html, body, #root { height: 100%; }
 html, body { margin: 0; padding: 0; }
 body { 
-  background-color: #F8F8F8;
+  background-color: #ffffff;
   @apply text-gray-900 font-[Inter]; 
   font-size: 14px; 
   font-weight: 400;
@@ -63,24 +63,30 @@ body {
   overflow-x: hidden; /* Блокируем горизонтальный скролл */
   width: 100%;
   max-width: 100vw;
-  /* Скрыть скроллбар, но оставить возможность прокрутки */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
 }
 
-/* Скрыть скроллбар в WebKit браузерах (Chrome, Safari, Opera) */
-body::-webkit-scrollbar {
+/* --- Global: hide all scrollbars, keep scroll --- */
+*,
+*::before,
+*::after {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
-/* Скрыть скроллбар в основном контейнере контента */
-#main-content {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-#main-content::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+html::-webkit-scrollbar {
+  display: none;
 }
 
 /* Login page responsive fixes */
@@ -125,7 +131,30 @@ body::-webkit-scrollbar {
 }
 
 /* Shell & content */
-.app-shell { min-height: 100vh; width: 100vw; }
+.app-shell {
+  min-height: 100vh;
+  width: 100vw;
+  background-color: #ffffff;
+}
+
+/* White margin around the inset gray content well */
+.app-content-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px 16px;
+  background-color: #ffffff;
+}
+
+.app-content-well,
+#main-content.app-content-well {
+  flex: 1;
+  min-height: 0;
+  border-radius: 28px;
+  background-color: #f3f4f6;
+}
+
 .content-scroll { flex: 1; }
 .card { @apply bg-white rounded-xl p-4 shadow border border-gray-200; }
 
@@ -178,11 +207,6 @@ input[type='number'] { -moz-appearance: textfield; }
 .cell-name .chev svg{ width:16px; height:16px; transition: transform .18s ease; }
 .cell-name .chev.open svg{ transform: rotate(90deg); }
 
-.finance-cell:hover{
-  background:#f8fafc;
-  outline:1px solid #e5e7eb;
-  outline-offset:-1px;
-}
 .finance-cell .cell-btn{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:flex-start;
@@ -197,30 +221,56 @@ input[type='number'] { -moz-appearance: textfield; }
   background: #fff;
 }
 
-/* --- Finance scroll fix (final) --- */
-/* Скроллим ВНЕШНИЙ контейнер контента только на странице Финансы */
-.finance-mode #main-content {
-  height: calc(100vh - 172px) !important; /* Header (64px) + SubHeader (80px) + Bottom padding (24px) + Extra margin (4px) = 172px */
-  overflow-y: auto !important;
+/* Sub-header: sticky glass bar; content scrolls underneath */
+.page-subheader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding: 1rem 1rem 0;
+  min-height: 2.5rem;
+  background-color: rgba(243, 244, 246, 0.52);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.app-content-well--with-subheader #app-content-body {
+  flex: none;
+  min-height: 0;
+  overflow: visible !important;
+}
+
+/* Home: fit bento grid in viewport — no main scroll */
+body.home-mode .app-content-well--with-subheader,
+body.home-mode #main-content {
+  overflow: hidden !important;
+}
+
+body.home-mode .app-content-well--with-subheader #app-content-body {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Tasks / Notes: keep internal scroll in page layout */
+body.tasks-mode .app-content-well--with-subheader,
+body.notes-mode .app-content-well--with-subheader {
+  overflow: hidden !important;
+}
+
+body.tasks-mode .app-content-well--with-subheader #app-content-body,
+body.notes-mode .app-content-well--with-subheader #app-content-body {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.finance-mode .app-content-well--with-subheader {
   overflow-x: auto !important;
-  max-height: calc(100vh - 172px) !important;
 }
 
-/* Никаких overflow:visible для Finance — иначе скролл прячется */
-
-/* Скрыть скроллбар на странице Финансов, но оставить прокрутку */
-.finance-mode #main-content {
-  scrollbar-width: none !important;      /* Firefox */
-  -ms-overflow-style: none !important;   /* IE/Edge */
-}
-
-.finance-mode #main-content::-webkit-scrollbar {
-  display: none !important;              /* Chrome, Safari, Opera */
-}
-
-/* Убеждаемся что finance-grid не мешает скроллу */
 .finance-mode .finance-grid {
-  /* overflow: hidden для отображения border-radius, скролл через #main-content */
   max-width: 100% !important;
 }
 
@@ -228,7 +278,7 @@ input[type='number'] { -moz-appearance: textfield; }
 
 /* --- Force light background (defensive override) --- */
 html, body, #root {
-  background-color: #F8F8F8 !important;
+  background-color: #ffffff !important;
   background-image: none !important;
 }
 
@@ -333,7 +383,7 @@ html, body, #root {
 .tasks-header{ display:flex; align-items:center; justify-content:center; gap:12px; padding:0 8px 12px; }
 .tasks-header .range{ min-width:220px; text-align:center; font-weight:600; }
 
-.week-grid{ flex:1; overflow:hidden; border:1px solid #e5e7eb; border-radius:12px; background:#fff; display:grid; grid-template-columns: repeat(7, 1fr); }
+.week-grid{ flex:1; overflow:hidden; border:1px solid #E9F2F6; border-radius:24px; background:#fff; display:grid; grid-template-columns: repeat(7, 1fr); box-shadow:none; }
 .day-col{ border-left:1px solid #f1f5f9; display:flex; flex-direction:column; min-width:0; }
 .day-col:first-child{ border-left:0; }
 .day-head{ padding:10px 12px; border-bottom:1px solid #f1f5f9; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
@@ -341,8 +391,8 @@ html, body, #root {
 .add-on-hover{ opacity:0; transition:opacity .12s ease; }
 .day-col:hover .add-on-hover{ opacity:1; }
 
-/* Hover effects for grid cells */
-.finance-grid .finance-cell:hover .cell-btn{ background:#f8fafc; border-color:#e2e8f0; }
+/* Hover only on editable month amount cells */
+.finance-grid .finance-cell:has(.cell-btn:not(.cell-btn-parent)):hover .cell-btn:not(.cell-btn-parent){ background:#f8fafc; border-color:#e2e8f0; }
 .btn.btn-xs { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
 
 /* Dropdowns & Context menus */
@@ -355,17 +405,16 @@ html, body, #root {
   border: 1px solid #e5e7eb; 
   border-radius: 12px; 
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  min-width: 200px;
-  max-width: 300px;
+  width: max-content;
+  min-width: 0;
+  max-width: min(320px, calc(100vw - 16px));
   padding: 8px;
-  /* Hide scrollbars but allow scrolling */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
-.dd-menu::-webkit-scrollbar, .ctx-menu::-webkit-scrollbar {
-  display: none;
+.dd-menu.full{
+  width: max-content;
+  min-width: 0;
+  max-width: min(320px, calc(100vw - 16px));
 }
-.dd-menu.full{ min-width: 220px; }
 .dd-item, .ctx-item{
   padding: 12px 8px !important; 
   font-size: 15px !important; 
@@ -384,8 +433,13 @@ html, body, #root {
 }
 .ctx-item:active,
 .ctx-item[data-active="true"] {
-  background: #000000 !important;
-  color: #ffffff !important;
+  background: #e5e7eb;
+  color: #111827;
+}
+.ctx-item--danger:active,
+.ctx-item--danger[data-active="true"] {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* Form controls */
@@ -407,24 +461,6 @@ select:focus,
   color: inherit !important;
 }
 
-/* Hide scrollbars in all select elements and dropdowns */
-select,
-.dd-menu,
-.ctx-menu,
-[role="listbox"],
-[role="menu"] {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-select::-webkit-scrollbar,
-.dd-menu::-webkit-scrollbar,
-.ctx-menu::-webkit-scrollbar,
-[role="listbox"]::-webkit-scrollbar,
-[role="menu"]::-webkit-scrollbar {
-  display: none;
-}
-
 /* Cell editor styles from cell-editor.css */
 .editor-modal { position: fixed; inset: 0; z-index: 50; display:flex; align-items:center; justify-content:center; padding:16px; }
 .editor-backdrop { position:absolute; inset:0; background: rgba(0,0,0,.4); }
@@ -440,26 +476,56 @@ select::-webkit-scrollbar,
 .editor-body .loading-overlay { position:absolute; inset:0; background:rgba(255,255,255,.6); display:flex; align-items:center; justify-content:center; font-size:13px; color:#334155; }
 
 /* add form */
-.editor-add { display:flex; gap:8px; margin-bottom:12px; }
-.editor-input.number { width:120px; }
-.editor-input.currency { width:auto; }
+.editor-add { display:flex; gap:8px; margin-bottom:12px; align-items: stretch; }
+.editor-input.number,
+.editor-input.entry-amount {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  flex-shrink: 0;
+}
 .editor-input.text { flex:1; min-width:0; }
+
+/* fixed-width currency column — prevents layout jump when switching EUR/USD/GEL */
+.editor-body .editor-input.currency,
+.editor-body .editor-input.entry-currency,
+.entry-currency-wrap {
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  flex-shrink: 0;
+}
+.editor-body .editor-input.currency > button,
+.editor-body .editor-input.entry-currency > button {
+  width: 100%;
+  padding-left: 10px;
+  padding-right: 10px;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
 
 /* entries list */
 .entry-row { display:flex; align-items:center; gap:8px; border:1px solid #e5e7eb; background:#f8fafc; border-radius:16px; padding:8px 10px; }
 .entry-row + .entry-row { margin-top:8px; }
-.entry-drag { width:18px; height:18px; display:flex; align-items:center; justify-content:center; color:#94a3b8; cursor:grab; }
+.entry-drag { width:18px; height:18px; display:flex; align-items:center; justify-content:center; color:#94a3b8; cursor:grab; flex-shrink: 0; }
 .entry-left { display:flex; align-items:center; gap:8px; }
-.entry-amount { width:120px; text-align:right; }
-.entry-currency { width:auto; }
+.entry-amount { text-align:right; }
 .entry-note { flex:1; min-width:0; }
 
 .entry-remove { color:#b91c1c; font-size:13px; }
 .entry-remove:hover { text-decoration:underline; }
 
-/* currency dropdown z-index only in cell editor */
-.editor-body .currency-dropdown { 
-  z-index: 10000 !important; 
+/* currency dropdown in cell editor — compact menu, matches trigger width */
+.editor-body .currency-dropdown {
+  z-index: 10000 !important;
+  min-width: 72px !important;
+  width: 72px !important;
+  max-width: 72px !important;
+  padding: 4px !important;
+}
+.editor-body .currency-dropdown button {
+  padding: 6px 4px;
+  text-align: center;
 }
 
 /* active entry with open dropdown gets higher z-index */

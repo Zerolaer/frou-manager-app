@@ -172,7 +172,7 @@ function NotesPageContent() {
   const handleDuplicate = useCallback(async (n: Note) => {
     try {
       const duplicated = await createNote({
-        title: `${n.title} (Копия)`,
+        title: `${n.title} (${t('notes.copy')})`,
         content: n.content,
         folder_id: n.folder_id,
         pinned: false
@@ -182,7 +182,7 @@ function NotesPageContent() {
     } catch (error) {
       logger.error('Error duplicating note:', error);
     }
-  }, []);
+  }, [t]);
 
 
   const handleEditNote = useCallback((note: Note) => {
@@ -200,7 +200,8 @@ function NotesPageContent() {
   // Export functionality
   const handleExportNotes = useCallback(async () => {
     const exportFormat = await confirm(
-      t('notes.exportFormat') || 'Экспортировать в JSON? (Отмена = Markdown)', 'Экспорт заметок'
+      t('notes.exportFormat'),
+      t('notes.exportTitle')
     )
     
     const notesToExport = activeFolder === 'ALL' 
@@ -288,9 +289,9 @@ function NotesPageContent() {
       {/* Правая область: заметки */}
       <div className="notes-content">
         {isLoading ? null : error ? (
-          <div className="p-4 text-red-600">Ошибка загрузки заметок</div>
+          <div className="p-4 text-red-600">{t('notes.loadError')}</div>
         ) : notes.length === 0 ? (
-          <div className="p-4 text-gray-500">Пока нет заметок. Создайте первую заметку!</div>
+          <div className="p-4 text-gray-500">{t('notes.emptyStateDescription')}</div>
         ) : notes.length > 50 ? (
           <VirtualizedGrid
             items={applyNotesFilters(notes)}
@@ -356,9 +357,10 @@ function NotesPageContent() {
 }
 
 export default function NotesPage() {
+  const { t } = useSafeTranslation()
   return (
     <PageErrorBoundary 
-      pageName="Заметки"
+      pageName={t('pages.notes')}
       onError={(error, errorInfo) => {
         logger.error('Notes page error:', { error, errorInfo });
       }}

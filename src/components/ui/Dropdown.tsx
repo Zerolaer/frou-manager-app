@@ -43,14 +43,18 @@ interface DropdownProps {
   icon?: React.ReactNode
   hideChevron?: boolean
   renderInPortal?: boolean
+  /** 'content' = shrink-wrap menu to items; 'trigger' = same width as the button (form selects). Auto: trigger when className includes w-full. */
+  menuWidth?: 'content' | 'trigger'
   'aria-label'?: string
 }
+
+const MENU_MAX_WIDTH = 'min(320px, calc(100vw - 16px))'
 
 export default function Dropdown({
   options,
   value,
   onChange,
-  placeholder = 'Выберите...',
+  placeholder = 'Select...',
   disabled = false,
   className = '',
   buttonClassName = '',
@@ -59,8 +63,12 @@ export default function Dropdown({
   icon,
   hideChevron = false,
   renderInPortal = false,
+  menuWidth,
   'aria-label': ariaLabel
 }: DropdownProps) {
+  const resolvedMenuWidth =
+    menuWidth ?? (/\bw-full\b/.test(className) ? 'trigger' : 'content')
+  const menuFitsContent = resolvedMenuWidth === 'content'
   const [open, setOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
   const [dropdownAlignment, setDropdownAlignment] = useState<'left' | 'right'>('left')
@@ -180,33 +188,50 @@ export default function Dropdown({
     setOpen(false)
   }
 
+  const triggerMinWidth =
+    buttonWidth > 0
+      ? buttonWidth
+      : btnRef.current?.offsetWidth || 0
+
   const dropdownContent = (
     <div
       ref={dropdownRef}
-      className={`bg-white border border-gray-200 rounded-xl shadow-lg z-[140] max-h-48 overflow-y-auto p-2 ${dropdownClassName}`}
+      className={`flex flex-col bg-white border border-gray-200 rounded-xl shadow-lg z-[140] max-h-48 overflow-y-auto p-2 ${
+        menuFitsContent ? 'w-max min-w-0' : 'w-full min-w-0'
+      } ${dropdownClassName}`}
       style={{
         ...(renderInPortal
           ? (() => {
               const rect = btnRef.current?.getBoundingClientRect()
-              const width = buttonWidth > 0 ? buttonWidth : rect?.width || 240
+              const triggerWidth = triggerMinWidth || rect?.width || 0
               const top =
                 dropdownPosition === 'bottom'
                   ? (rect?.bottom || 0) + 8
                   : (rect?.top || 0) - 8
-              const left =
+              const portalLeft =
                 dropdownAlignment === 'left'
                   ? (rect?.left || 0)
-                  : (rect?.right || 0) - width
+                  : (rect?.right || 0)
+              const portalTransform = [
+                dropdownPosition === 'bottom' ? 'translateY(0)' : 'translateY(calc(-100%))',
+                dropdownAlignment === 'right' ? 'translateX(-100%)' : '',
+              ].join(' ').trim()
               return {
                 position: 'fixed' as const,
                 top,
-                left,
-                minWidth: `${width}px`,
-                width: 'auto',
-                transform:
-                  dropdownPosition === 'bottom'
-                    ? 'translateY(0)'
-                    : 'translateY(calc(-100%))',
+                left: portalLeft,
+                transform: portalTransform,
+                ...(menuFitsContent
+                  ? {
+                      width: 'max-content',
+                      maxWidth: MENU_MAX_WIDTH,
+                      minWidth: 0,
+                    }
+                  : {
+                      width: triggerWidth > 0 ? `${triggerWidth}px` : undefined,
+                      minWidth: triggerWidth > 0 ? `${triggerWidth}px` : undefined,
+                      maxWidth: triggerWidth > 0 ? `${triggerWidth}px` : MENU_MAX_WIDTH,
+                    }),
               }
             })()
           : {
@@ -214,8 +239,17 @@ export default function Dropdown({
               [dropdownPosition === 'bottom' ? 'top' : 'bottom']: '100%',
               [dropdownPosition === 'bottom' ? 'marginTop' : 'marginBottom']: '8px',
               [dropdownAlignment === 'left' ? 'left' : 'right']: '0',
-              minWidth: buttonWidth > 0 ? `${buttonWidth}px` : '240px',
-              width: 'auto',
+              ...(menuFitsContent
+                ? {
+                    width: 'max-content',
+                    maxWidth: MENU_MAX_WIDTH,
+                    minWidth: 0,
+                  }
+                : {
+                    width: triggerMinWidth > 0 ? `${triggerMinWidth}px` : undefined,
+                    minWidth: triggerMinWidth > 0 ? `${triggerMinWidth}px` : undefined,
+                    maxWidth: triggerMinWidth > 0 ? `${triggerMinWidth}px` : MENU_MAX_WIDTH,
+                  }),
             }),
         animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
         transformOrigin: dropdownPosition === 'bottom' ? 'top' : 'bottom',
@@ -228,7 +262,9 @@ export default function Dropdown({
           onClick={() => !option.disabled && handleOptionSelect(option.value)}
           disabled={option.disabled}
           style={{ fontSize: '13px' }}
-          className={`w-full px-2 py-3 text-left transition-colors ${
+          className={`block w-full shrink-0 text-left transition-colors ${
+            menuFitsContent ? 'whitespace-nowrap' : ''
+          } px-2 py-3 ${
             option.value === value 
               ? 'bg-black text-white font-medium' 
               : option.disabled
@@ -245,7 +281,7 @@ export default function Dropdown({
   )
 
   return (
-    <div className={`relative w-full ${className}`}>
+    <div className={`relative ${/\bw-full\b/.test(className) ? 'w-full' : ''} ${className}`}>
       <button
         ref={btnRef}
         onClick={(e) => {

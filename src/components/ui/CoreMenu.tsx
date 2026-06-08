@@ -22,7 +22,7 @@ const CoreMenu: React.FC<CoreMenuProps> = ({
   buttonClassName,
   buttonStyle,
   dropdownClassName,
-  ariaLabel = 'Меню'
+  ariaLabel = 'Menu'
 }) => {
   // We pass a value that is never equal to any option to avoid selection highlighting
   const sentinelValue = '__menu__'
@@ -46,7 +46,7 @@ const CoreMenu: React.FC<CoreMenuProps> = ({
         `relative flex h-[34px] w-[34px] px-0 justify-center items-center hover:bg-gray-100 transition-colors ${buttonClassName || ''}`
       }
       buttonStyle={{ borderRadius: '12px', backgroundColor: 'transparent', border: '1px solid #e5e7eb', color: '#000000', ...buttonStyle }}
-      dropdownClassName={`min-w-48 ${dropdownClassName || ''}`}
+      dropdownClassName={dropdownClassName || ''}
       icon={
         <div style={{ 
           position: 'absolute',

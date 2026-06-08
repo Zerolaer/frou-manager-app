@@ -156,14 +156,14 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       const { error } = await supabase.from('invoice_folders').update({ name }).eq('id', ctxFolder.id)
       if (error) {
         console.error('Error renaming folder:', error)
-        await alert(`Ошибка переименования: ${error.message}`, t('common.error') || 'Error')
+        await alert(t('invoice.renameFolderError', { message: error.message }), t('common.error'))
         return
       }
       setItems(items.map(p=> p.id===ctxFolder.id ? {...p, name} : p))
       setRenameOpen(false)
     } catch (error) {
       console.error('Error renaming folder:', error)
-      await alert(`Ошибка переименования: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
+      await alert(t('invoice.renameFolderError', { message: error instanceof Error ? error.message : t('common.unknownError') }), t('common.error'))
     }
   }
   async function deleteOk(){
@@ -172,7 +172,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       const { error } = await supabase.from('invoice_folders').delete().eq('id', ctxFolder.id)
       if (error) {
         console.error('Error deleting folder:', error)
-        await alert(`Ошибка удаления: ${error.message}`, t('common.error') || 'Error')
+        await alert(t('invoice.deleteFolderError', { message: error.message }), t('common.error'))
         return
       }
       setItems(items.filter(p=> p.id!==ctxFolder.id))
@@ -180,7 +180,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       setDelOpen(false)
     } catch (error) {
       console.error('Error deleting folder:', error)
-      await alert(`Ошибка удаления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
+      await alert(t('invoice.deleteFolderError', { message: error instanceof Error ? error.message : t('common.unknownError') }), t('common.error'))
     }
   }
 
@@ -219,7 +219,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       
       if (error) {
         console.error('Error creating folder:', error)
-        await alert(`Ошибка создания папки: ${error.message}`, t('common.error') || 'Error')
+        await alert(t('invoice.createFolderError', { message: error.message }), t('common.error'))
         return
       }
       
@@ -243,7 +243,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
       }
     } catch (error) {
       console.error('Error creating folder:', error)
-      await alert(`Ошибка создания папки: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, t('common.error') || 'Error')
+      await alert(t('invoice.createFolderError', { message: error instanceof Error ? error.message : t('common.unknownError') }), t('common.error'))
     }
   }
 
@@ -256,7 +256,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
         <button 
           className="sidebar-btn btn-outline" 
           onClick={onToggleCollapse} 
-          aria-label={collapsed ? "Развернуть" : "Свернуть"}
+          aria-label={collapsed ? t('aria.expand') : t('aria.collapse')}
           style={{ 
             position: 'absolute',
             left: '0',
@@ -401,7 +401,7 @@ export default function InvoiceFolderSidebar({ userId, activeId, onChange, colla
               zIndex: 1000
             }}
           >
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-max min-w-0 max-w-[min(320px,calc(100vw-16px))]">
               <button
                 onClick={()=>{ setRenameValue(ctxFolder.name); setRenameOpen(true); setCtxOpen(false) }}
                 className="w-full px-2 py-3 text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100"

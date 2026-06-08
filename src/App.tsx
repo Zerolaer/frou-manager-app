@@ -1,15 +1,20 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { AppErrorBoundary } from './components/ErrorBoundaries'
 import { SkipLinks } from './components/AccessibleComponents'
-import AppLoader from './components/AppLoader'
+import PageRouteFallback from './components/PageRouteFallback'
 import { useMobileDetection } from './hooks/useMobileDetection'
+import { prefetchCommonRoutes } from './lib/routePrefetch'
+import MobileRouteRedirect from './components/mobile/MobileRouteRedirect'
+import BottomNav from './components/mobile/BottomNav'
+import { isAuthPath } from './constants/authPaths'
 import { ModalConfirmProvider } from './utils/modalConfirm'
 
 // Supabase configuration is now hardcoded in supabaseClient.ts
 
 // Lazy load heavy components
 import Header from './components/Header'
+import AppContentFrame from './components/AppContentFrame'
 import KeyboardShortcuts from './components/KeyboardShortcuts'
 import OfflineSupport from './components/OfflineSupport'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
@@ -42,10 +47,15 @@ export default function App(){
   // Save current page when navigating (SPA), not only on первый mount
   useEffect(() => {
     const pathname = location.pathname
-    if (pathname !== '/login') {
+    if (!isAuthPath(pathname)) {
       localStorage.setItem('frovo_last_page', pathname)
     }
   }, [location.pathname])
+
+  // Warm likely next route chunks after shell is interactive
+  useEffect(() => {
+    prefetchCommonRoutes({ mobile: isMobile })
+  }, [isMobile])
 
   // Supabase is now hardcoded, no need to check
 
@@ -104,21 +114,6 @@ export default function App(){
       }
     } else if (isFinance) {
       document.body.classList.add('finance-mode')
-      console.log('✅ Added finance-mode class')
-      
-      // Force apply finance scroll styles after a small delay
-      setTimeout(() => {
-        const mainContent = document.getElementById('main-content')
-        if (mainContent) {
-          mainContent.style.height = 'calc(100vh - 172px)'
-          mainContent.style.overflowY = 'auto'
-          mainContent.style.overflowX = 'auto'
-          mainContent.style.maxHeight = 'calc(100vh - 172px)'
-          if (import.meta.env.DEV) {
-            console.log('[mode] applied finance scroll styles')
-          }
-        }
-      }, 100)
     } else if (isNotes) {
       document.body.classList.add('notes-mode')
       // Reset finance styles
@@ -200,46 +195,45 @@ export default function App(){
     applyModeClass()
   }, [applyModeClass, location.pathname])
 
+  const showMobileBottomNav =
+    isMobile &&
+    (location.pathname === '/finance' ||
+      location.pathname === '/tasks' ||
+      location.pathname === '/')
+
   // Handle preloader completion
   return (
     <AppErrorBoundary>
       <ModalConfirmProvider>
+        <MobileRouteRedirect />
         <SkipLinks />
-      <div className="app-shell app-content flex flex-col h-screen overflow-x-hidden">
-        {!isMobile && (
-          <Header 
-              currentYear={currentYear}
-              selectedWeek={selectedWeek}
-              tasksProjectsData={tasksProjectsData}
-              onAction={(action) => {
-                // Dispatch action to current page
-                window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
-              }}
-              onYearChange={(year) => {
-                setCurrentYear(year)
-                // Dispatch year change to current page
-                window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
-              }}
-              onWeekChange={(week) => {
-                setSelectedWeek(week)
-                // Dispatch week change to current page
-                window.dispatchEvent(new CustomEvent('subheader-week-change', { detail: week }))
-              }}
-              onProjectsFilterChange={(projectIds) => {
-                // Dispatch project filter change to Tasks page
-                window.dispatchEvent(new CustomEvent('tasks-projects-filter-change', { detail: projectIds }))
-              }}
-            />
-        )}
-        <main 
-          id="main-content"
-          className={`flex-1 overflow-x-hidden flex flex-col ${isMobile ? 'p-0' : 'p-4'}`}
-          style={{ backgroundColor: isMobile ? '#ffffff' : '#F8F8F8' }}
-          role="main"
-          aria-label="Основное содержимое"
+      <div className="app-shell app-content flex flex-col h-screen overflow-hidden bg-white">
+        {!isMobile && <Header />}
+        <AppContentFrame
+          isMobile={isMobile}
+          currentYear={currentYear}
+          selectedWeek={selectedWeek}
+          tasksProjectsData={tasksProjectsData}
+          onAction={(action) => {
+            window.dispatchEvent(new CustomEvent('subheader-action', { detail: action }))
+          }}
+          onYearChange={(year) => {
+            setCurrentYear(year)
+            window.dispatchEvent(new CustomEvent('subheader-year-change', { detail: year }))
+          }}
+          onWeekChange={(week) => {
+            setSelectedWeek(week)
+            window.dispatchEvent(new CustomEvent('subheader-week-change', { detail: week }))
+          }}
+          onProjectsFilterChange={(projectIds) => {
+            window.dispatchEvent(new CustomEvent('tasks-projects-filter-change', { detail: projectIds }))
+          }}
         >
-          <Outlet />
-        </main>
+          <Suspense fallback={<PageRouteFallback />}>
+            <Outlet />
+          </Suspense>
+        </AppContentFrame>
+        {showMobileBottomNav && <BottomNav />}
       </div>
         <KeyboardShortcuts />
         <OfflineSupport />

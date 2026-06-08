@@ -9,6 +9,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import CoreMenu from '@/components/ui/CoreMenu'
 import Dropdown from '@/components/ui/Dropdown'
 import { useSafeTranslation } from '@/utils/safeTranslation'
+import { filterVisibleTaskProjects } from '@/lib/taskProjects'
 import { logger } from '@/lib/monitoring'
 import CustomDatePicker from '@/components/ui/CustomDatePicker'
 
@@ -81,9 +82,11 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
         .from('tasks_projects')
         .select('id,name')
         .order('created_at', { ascending: true })
-      setProjects((data as Project[]) || [])
+      setProjects(
+        filterVisibleTaskProjects((data as Project[]) || [], t('projects.uncategorized'))
+      )
     })()
-  }, []) // Load only once on component mount
+  }, [t]) // Load only once on component mount
 
   function addTodo() {
     const id = Math.random().toString(36).slice(2)
@@ -244,8 +247,8 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
           <div ref={menuRef}>
             <CoreMenu
               options={[
-                { value: 'duplicate', label: i18n?.language === 'ru' ? 'Дублировать' : 'Duplicate' },
-                { value: 'delete', label: i18n?.language === 'ru' ? 'Удалить' : 'Delete', destructive: true },
+                { value: 'duplicate', label: t('tasks.duplicate') },
+                { value: 'delete', label: t('actions.delete'), destructive: true },
               ]}
               onSelect={(value) => {
                 if (value === 'duplicate') duplicateTask()
@@ -257,7 +260,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
       }
       footer={createDangerFooter(
         { 
-          label: i18n?.language === 'ru' ? 'Удалить' : 'Delete', 
+          label: t('actions.delete'), 
           onClick: deleteTask,
           loading: deleteLoading
         },
@@ -314,7 +317,7 @@ export default function TaskViewModal({ open, onClose, task, onUpdated }: Props)
                   />
                   <button className="h-9 rounded-xl border border-gray-200 px-3 text-sm hover:bg-gray-50 flex items-center gap-1" onClick={() => removeTodo(item.id)}>
                     <Trash2 className="w-4 h-4" />
-                    {i18n?.language === 'ru' ? 'Удалить' : 'Delete'}
+                    {t('actions.delete')}
                   </button>
                 </li>
               ))}
@@ -501,7 +504,7 @@ function DateQuick({
     <CustomDatePicker
       value={value || ''}
       onChange={onChange}
-      placeholder={t('tasks.selectDate') || 'Выбрать дату'}
+      placeholder={t('tasks.selectDate')}
     />
   )
 }

@@ -3,9 +3,14 @@ import { logger } from '@/lib/monitoring'
 import { CheckSquare, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSafeTranslation } from '@/utils/safeTranslation';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import WidgetHeader from './WidgetHeader';
-import { startOfWeek, endOfWeek, subWeeks, isSameWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { Skeleton } from '@/components/ui/Skeleton';
+import {
+  filterVisibleTaskProjects,
+  resolveTaskProjectDisplayName,
+} from '@/lib/taskProjects';
 
 interface TasksStatsWidgetProps {
   type: 'total' | 'completed';
@@ -18,134 +23,158 @@ interface ProjectStats {
   percentage: number;
 }
 
+interface TaskRow {
+  id: string;
+  status: string;
+  project_id: string | null;
+  date?: string;
+  created_at?: string;
+}
+
+const emptyStats = {
+  current: 0,
+  previous: 0,
+  change: 0,
+  changePercent: 0,
+};
+
 const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetProps) => {
   const { t } = useSafeTranslation();
-  const [stats, setStats] = useState({
-    current: 0,
-    previous: 0,
-    change: 0,
-    changePercent: 0
-  });
+  const { userId, loading: authLoading } = useSupabaseAuth();
+  const [stats, setStats] = useState(emptyStats);
   const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!userId) {
+      setStats(emptyStats);
+      setProjectStats([]);
+      setLoading(false);
+      return;
+    }
+
     const loadStats = async () => {
     try {
       setLoading(true);
-      
-      // Get selected week and previous week
-      const selectedWeekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 }); // Monday
-      const selectedWeekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 }); // Sunday
+
+      const noProjectLabel = t('tasks.noProject') || 'No Project';
+      const selectedWeekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+      const selectedWeekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
       const previousWeekStart = startOfWeek(subWeeks(selectedWeek, 1), { weekStartsOn: 1 });
       const previousWeekEnd = endOfWeek(subWeeks(selectedWeek, 1), { weekStartsOn: 1 });
 
-      // Format dates for query
       const currentWeekStart = selectedWeekStart.toISOString().split('T')[0];
       const currentWeekEnd = selectedWeekEnd.toISOString().split('T')[0];
       const previousWeekStartStr = previousWeekStart.toISOString().split('T')[0];
       const previousWeekEndStr = previousWeekEnd.toISOString().split('T')[0];
 
-      // Query for selected week - strict date filter
-      const { data: currentData, error: currentError } = await supabase
-        .from('tasks_items')
-        .select('id, title, status, project_id, date')
-        .gte('date', currentWeekStart)
-        .lte('date', currentWeekEnd)
-        .order('date', { ascending: false });
+      const currentRangeStart = `${currentWeekStart}T00:00:00.000Z`;
+      const currentRangeEnd = `${currentWeekEnd}T23:59:59.999Z`;
+      const previousRangeStart = `${previousWeekStartStr}T00:00:00.000Z`;
+      const previousRangeEnd = `${previousWeekEndStr}T23:59:59.999Z`;
 
-      // Query for previous week
-      const { data: previousData } = await supabase
-        .from('tasks_items')
-        .select('id, status, project_id')
-        .gte('date', previousWeekStartStr)
-        .lte('date', previousWeekEndStr);
+      const selectFields = 'id, status, project_id, date, created_at';
 
-      let currentCount = 0;
-      let previousCount = 0;
+      let currentQuery = supabase
+        .from('tasks_items')
+        .select(selectFields)
+        .eq('user_id', userId);
+
+      let previousQuery = supabase
+        .from('tasks_items')
+        .select(selectFields)
+        .eq('user_id', userId);
 
       if (type === 'total') {
-        // All tasks already filtered by dates in DB query
-        const tasksWithProject = (currentData || []).filter(task => task.project_id);
-        currentCount = tasksWithProject.length;
-        previousCount = (previousData || []).filter(task => task.project_id).length;
+        currentQuery = currentQuery
+          .gte('created_at', currentRangeStart)
+          .lte('created_at', currentRangeEnd);
+        previousQuery = previousQuery
+          .gte('created_at', previousRangeStart)
+          .lte('created_at', previousRangeEnd);
       } else {
-        // All tasks already filtered by dates in DB query
-        const closedTasksWithProject = (currentData || []).filter(task => task.status === 'closed' && task.project_id);
-        currentCount = closedTasksWithProject.length;
-        previousCount = (previousData || []).filter(task => task.status === 'closed' && task.project_id).length;
+        currentQuery = currentQuery
+          .gte('date', currentWeekStart)
+          .lte('date', currentWeekEnd)
+          .eq('status', 'closed');
+        previousQuery = previousQuery
+          .gte('date', previousWeekStartStr)
+          .lte('date', previousWeekEndStr)
+          .eq('status', 'closed');
       }
+
+      const [{ data: currentData, error: currentError }, { data: previousData }] = await Promise.all([
+        currentQuery.order(type === 'total' ? 'created_at' : 'date', { ascending: false }),
+        previousQuery,
+      ]);
+
+      if (currentError) {
+        logger.error('Error loading tasks stats:', currentError);
+      }
+
+      const currentTasks = (currentData || []) as TaskRow[];
+      const previousTasks = (previousData || []) as TaskRow[];
+      const currentCount = currentTasks.length;
+      const previousCount = previousTasks.length;
 
       const change = currentCount - previousCount;
       const changePercent = previousCount > 0 ? Math.round((change / previousCount) * 100) : 0;
 
-      // Get projects separately
       const { data: allProjects, error: projectsError } = await supabase
         .from('tasks_projects')
         .select('id, name')
+        .eq('user_id', userId)
         .order('name');
 
-      // Calculate project statistics
-      const projectCounts: Record<string, number> = {};
-      const filteredData = type === 'total' 
-        ? (currentData || []).filter(task => task.project_id) // Only tasks with project
-        : (currentData || []).filter(task => task.status === 'closed' && task.project_id); // Only closed tasks with project
+      const visibleProjects = filterVisibleTaskProjects(
+        allProjects || [],
+        t('projects.uncategorized')
+      );
 
-      // Create project map for quick lookup
       const projectMap: Record<string, string> = {};
-      if (allProjects && !projectsError) {
-        allProjects.forEach(project => {
-          projectMap[project.id] = project.name;
-        });
-      }
+      visibleProjects.forEach((project) => {
+        projectMap[project.id] = project.name;
+      });
 
-      // If projects table is unavailable, use data from tasks
       if (projectsError || !allProjects) {
-        // Collect unique project_ids from tasks
         const uniqueProjectIds = new Set<string>();
-        filteredData.forEach(task => {
-          if (task.project_id) {
-            uniqueProjectIds.add(task.project_id);
+        currentTasks.forEach((task) => {
+          if (task.project_id) uniqueProjectIds.add(task.project_id);
+        });
+        Array.from(uniqueProjectIds).forEach((projectId, index) => {
+          if (!projectMap[projectId]) {
+            projectMap[projectId] =
+              t('dashboard.projectNumber', { number: index + 1 }) || `Project ${index + 1}`;
           }
         });
-        
-        // Create map with names "Project 1", "Project 2", etc.
-        Array.from(uniqueProjectIds).forEach((projectId, index) => {
-          projectMap[projectId] = t('dashboard.projectNumber', { number: index + 1 }) || `Project ${index + 1}`;
-        });
       }
 
-      // Initialize all projects with zero values
-      if (allProjects && !projectsError) {
-        allProjects.forEach(project => {
-          projectCounts[project.name] = 0;
-        });
-      } else {
-        // If projects unavailable, initialize found ones
-        Object.values(projectMap).forEach(projectName => {
-          projectCounts[projectName] = 0;
-        });
-      }
+      const projectCounts: Record<string, number> = {};
+      visibleProjects.forEach((project) => {
+        projectCounts[project.name] = 0;
+      });
+      projectCounts[noProjectLabel] = 0;
 
-      // Remove "No project" - all tasks should have project
-
-      // Count tasks by projects
-      filteredData.forEach(task => {
-        // Only consider tasks with project
-        if (task.project_id) {
-          const projectName = projectMap[task.project_id] || t('dashboard.projectNumber', { number: task.project_id.slice(0, 8) }) || `Project ${task.project_id.slice(0, 8)}`;
-          projectCounts[projectName] = (projectCounts[projectName] || 0) + 1;
-        }
+      currentTasks.forEach((task) => {
+        const label = resolveTaskProjectDisplayName(
+          task.project_id,
+          projectMap,
+          noProjectLabel
+        );
+        projectCounts[label] = (projectCounts[label] || 0) + 1;
       });
 
       const projectStatsArray: ProjectStats[] = Object.entries(projectCounts)
+        .filter(([, count]) => count > 0)
         .map(([project_name, count]) => ({
           project_name,
           count,
           percentage: currentCount > 0 ? Math.round((count / currentCount) * 100) : 0
         }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5); // Show top-5 projects
+        .slice(0, 5);
 
       setStats({
         current: currentCount,
@@ -161,13 +190,13 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
       setLoading(false);
     }
     };
-    
+
     loadStats();
-  }, [type, selectedWeek]);
+    // `t` from useSafeTranslation is unstable (new function each render) — must not be a dep
+  }, [type, selectedWeek, userId, authLoading]);
 
   const isPositive = stats.change >= 0;
   const title = type === 'total' ? t('dashboard.createdTasks') || 'Created Tasks' : t('dashboard.completedTasks') || 'Completed Tasks';
-  const icon = type === 'total' ? CheckSquare : CheckSquare;
 
   return (
     <div className="h-full flex flex-col">
@@ -177,19 +206,14 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
         subtitle={t('dashboard.tasksStatsDescription') || 'Task statistics'}
       />
 
-      <div className="flex-1 p-6 flex flex-col justify-center">
+      <div className="flex-1 p-6 flex flex-col items-start justify-start min-h-0">
         {loading ? (
           <>
-            {/* Skeleton for large number */}
             <Skeleton variant="rectangular" height={48} className="mb-2 rounded-lg" />
-            
-            {/* Skeleton for change percentage */}
             <div className="flex items-center gap-2 mb-3">
               <Skeleton variant="rectangular" width={100} height={20} className="rounded" />
             </div>
-
-            {/* Skeleton for project bars */}
-            <div className="space-y-2">
+            <div className="space-y-2 w-full">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="space-y-1">
                   <div className="flex items-center justify-between">
@@ -203,12 +227,10 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
           </>
         ) : (
           <>
-            {/* Large number */}
             <div className="text-4xl font-bold text-gray-900 mb-2">
               {stats.current}
             </div>
-            
-            {/* Change percentage */}
+
             <div className="flex items-center gap-2 text-sm mb-3">
               {stats.change !== 0 && (
                 <>
@@ -218,7 +240,7 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
                     <TrendingDown className="w-5 h-5 text-gray-900" />
                   )}
                   <span className="font-medium text-gray-900">
-                    +{Math.abs(stats.changePercent)}%
+                    {isPositive ? '+' : '-'}{Math.abs(stats.changePercent)}%
                   </span>
                 </>
               )}
@@ -227,13 +249,12 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
               </span>
             </div>
 
-            {/* Horizontal bars by projects */}
-            <div className="space-y-2">
+            <div className="space-y-2 w-full">
               {projectStats.length > 0 ? (
                 projectStats.map((project, index) => {
                   const colors = ['bg-black', 'bg-gray-800', 'bg-gray-600', 'bg-gray-500', 'bg-gray-400'];
                   const color = colors[index] || 'bg-gray-500';
-                  
+
                   return (
                     <div key={project.project_name} className="space-y-1">
                       <div className="flex items-center justify-between">
@@ -252,7 +273,7 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full ${color}`}
-                          style={{ 
+                          style={{
                             width: `${Math.max(project.percentage, 2)}%`
                           }}
                         ></div>
@@ -261,7 +282,7 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
                   );
                 })
               ) : (
-                <div className="text-center text-gray-500 py-2">
+                <div className="text-left text-gray-500 py-2">
                   <div className="text-xs">{t('dashboard.noProjectData') || 'No project data'}</div>
                 </div>
               )}

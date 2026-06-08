@@ -78,6 +78,7 @@ export default function WeekSelector({
       icon={<Calendar className="w-4 h-4" />}
       aria-label={t('weekSelector.selectWeek')}
       buttonClassName="min-w-[200px]"
+      menuWidth="trigger"
     />
   )
 }

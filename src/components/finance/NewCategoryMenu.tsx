@@ -11,9 +11,10 @@ type Props = {
   onAddSub: () => void
   onDelete: () => void
   canAddSub?: boolean
+  addSubBlocked?: boolean
 }
 
-export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onDelete, canAddSub }: Props) {
+export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onDelete, canAddSub, addSubBlocked }: Props) {
   const { t } = useSafeTranslation()
   const menuRef = useRef<HTMLDivElement>(null)
   
@@ -45,7 +46,8 @@ export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onD
 
   const options = [
     { value: 'rename', label: t('actions.edit'), icon: <Edit className="w-4 h-4" /> },
-    ...(canAddSub ?? true ? [{ value: 'addsub', label: t('finance.subcategory'), icon: <Plus className="w-4 h-4" /> }] : []),
+    ...(canAddSub ? [{ value: 'addsub', label: t('finance.subcategory'), icon: <Plus className="w-4 h-4" /> }] : []),
+    ...(addSubBlocked ? [{ value: 'addsub-blocked', label: t('finance.subcategory'), icon: <Plus className="w-4 h-4" />, disabled: true, title: t('finance.cannotAddSubcategory') }] : []),
     { value: 'delete', label: t('actions.delete'), icon: <Trash2 className="w-4 h-4" />, destructive: true }
   ]
 
@@ -61,11 +63,14 @@ export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onD
           zIndex: 1000
         }}
       >
-        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-60">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-max min-w-0 max-w-[min(320px,calc(100vw-16px))]">
           {options.map((option) => (
             <button
               key={option.value}
+              disabled={'disabled' in option && option.disabled}
+              title={'title' in option ? option.title : undefined}
               onClick={() => {
+                if ('disabled' in option && option.disabled) return
                 if (option.value === 'rename') onRename()
                 if (option.value === 'addsub') onAddSub()
                 if (option.value === 'delete') onDelete()
@@ -74,7 +79,9 @@ export default function NewCategoryMenu({ x, y, onClose, onRename, onAddSub, onD
               className={`w-full px-2 py-3 text-left transition-colors rounded-lg flex items-center gap-2 ${
                 option.destructive
                   ? 'text-red-600 hover:bg-red-50'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'disabled' in option && option.disabled
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-100'
               }`}
               style={{ fontSize: '13px' }}
             >

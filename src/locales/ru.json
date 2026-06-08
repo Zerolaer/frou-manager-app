@@ -101,6 +101,8 @@
     "lowestIncome": "Минимальный доход",
     "lowestExpense": "Минимальный расход",
     "exportData": "Экспорт данных",
+    "exportFormat": "Экспортировать в JSON? (Отмена = CSV)",
+    "confirmImport": "Импортировать данные за {{year}}? Это перезапишет текущие данные.",
     "importData": "Импорт данных",
     "noData": "Нет данных",
     "loading": "Загрузка...",
@@ -159,7 +161,10 @@
       "expensesByMonths": "Расходы по месяцам"
     },
     "descriptionOptional": "Описание (необязательно)",
-    "noEntries": "Ещё нет записей."
+    "noEntries": "Ещё нет записей.",
+    "aggregatedTotal": "Сумма подкатегорий",
+    "aggregatedTotalHint": "Эта категория суммирует подкатегории. Редактируйте значения в подкатегориях.",
+    "cannotAddSubcategory": "Нельзя добавить подкатегорию — в категории уже есть собственные записи (включая отключённые)."
   },
   "tasks": {
     "months": {
@@ -206,7 +211,7 @@
     "createdAt": "Создано",
     "updatedAt": "Обновлено",
     "todos": "Подзадачи",
-    "addTodo": "Добавить подзадачу",
+    "addTodo": "Добавить пункт",
     "todoPlaceholder": "Введите задачу...",
     "tagPlaceholder": "Введите тег...",
     "titlePlaceholder": "Введите название задачи...",
@@ -231,6 +236,9 @@
     "subtaskDateOptional": "Дата подзадачи (опционально)",
     "subtaskDateValidation": "Дата подзадачи не может быть раньше даты родительской задачи",
     "subtaskOf": "Подзадача задачи",
+    "subtaskHint": "Эта задача является подзадачей другой задачи",
+    "deleteSubtask": "Удалить подзадачу?",
+    "deleteSubtaskWarning": "Вы уверены, что хотите удалить эту подзадачу? Это действие нельзя отменить.",
     "created": "Создана",
     "filterProjects": "Фильтр проектов",
     "noProjectsSelected": "Нет выбранных проектов",
@@ -367,7 +375,25 @@
     "deleteFolderWarning": "Папка и связанные заметки будут удалены.",
     "deleteNoteTitle": "Удаление заметки",
     "confirmDeleteNote": "Удалить заметку?",
-    "color": "Цвет"
+    "color": "Цвет",
+    "loadError": "Ошибка загрузки заметок",
+    "exportTitle": "Экспорт заметок",
+    "editNote": "Редактировать заметку",
+    "titlePlaceholder": "Заголовок заметки",
+    "contentLabel": "Содержимое",
+    "contentPlaceholder": "Текст заметки… Поддерживается форматирование.",
+    "updatedAt": "Обновлено: {{date}}",
+    "saving": "Сохранение...",
+    "pin": "Закрепить",
+    "unpin": "Открепить",
+    "untitled": "Без заголовка",
+    "foldersTitle": "Папки",
+    "addFolder": "Добавить папку",
+    "selectFolder": "Выберите папку",
+    "filterNotes": "Фильтр заметок",
+    "showOnlyPinned": "Только закрепленные",
+    "showOnlyWithContent": "Только с содержимым",
+    "searchInContent": "Искать в содержимом"
   },
   "projects": {
     "newProject": "Новый проект",
@@ -406,6 +432,33 @@
     "emailNotConfirmed": "Email не подтверждён. Проверьте почту.",
     "projectUpgradeRequired": "Сервис временно недоступен, попробуйте позже.",
     "sessionCreateFailed": "Не удалось создать сессию. Попробуйте ещё раз."
+  },
+  "auth": {
+    "orContinueWith": "Или продолжить с",
+    "signInWithGoogle": "Войти через Google",
+    "signInWithApple": "Войти через Apple",
+    "appleSignInComingSoon": "Вход через Apple — скоро",
+    "signUpTitle": "Создайте аккаунт",
+    "signUpSubtitle": "Регистрация по email или через Google.",
+    "createAccount": "Зарегистрироваться",
+    "signUpConfirmEmail": "Проверьте почту и подтвердите email, затем войдите.",
+    "signUpAlreadyRegistered": "Этот email уже зарегистрирован. Попробуйте войти.",
+    "passwordTooShort": "Пароль должен быть не короче 6 символов.",
+    "passwordsDoNotMatch": "Пароли не совпадают.",
+    "confirmPassword": "Подтвердите пароль",
+    "confirmPasswordPlaceholder": "Повторите пароль",
+    "forgotPasswordTitle": "Сброс пароля",
+    "forgotPasswordSubtitle": "Укажите email — мы отправим ссылку для сброса.",
+    "sendResetLink": "Отправить ссылку",
+    "forgotPasswordEmailSent": "Если аккаунт с этим email есть, письмо со ссылкой придёт в ближайшее время.",
+    "backToLogin": "Вернуться ко входу",
+    "resetPasswordTitle": "Новый пароль",
+    "resetPasswordSubtitle": "Придумайте надёжный пароль для аккаунта.",
+    "newPassword": "Новый пароль",
+    "updatePassword": "Сохранить пароль",
+    "resetPasswordSuccess": "Пароль обновлён. Переход на страницу входа…",
+    "resetLinkInvalid": "Ссылка для сброса недействительна или устарела.",
+    "requestNewResetLink": "Запросить новую ссылку"
   },
   "validation": {
     "titleRequired": "Название обязательно",
@@ -473,7 +526,14 @@
     "currentMonth": "Текущий месяц",
     "delete": "Удалить",
     "edit": "Редактировать",
-    "search": "Поиск"
+    "search": "Поиск",
+    "selectPlaceholder": "Выберите...",
+    "selectDatePlaceholder": "Выберите дату...",
+    "selectYearPlaceholder": "Выберите год...",
+    "selectTypePlaceholder": "Выберите тип...",
+    "clear": "Очистить",
+    "attention": "Внимание",
+    "unknownError": "Неизвестная ошибка"
   },
   "dashboard": {
     "tasksToday": "Задачи на сегодня",
@@ -605,6 +665,9 @@
     "folderName": "Название папки",
     "deleteFolder": "Удалить папку?",
     "deleteFolderWarning": "Папка и связанные инвойсы будут удалены.",
+    "renameFolderError": "Ошибка переименования: {{message}}",
+    "deleteFolderError": "Ошибка удаления: {{message}}",
+    "createFolderError": "Ошибка создания папки: {{message}}",
     "noFolder": "Без папки",
     "from": "От",
     "to": "Клиенту",
@@ -733,7 +796,18 @@
       "autoLoadLastPage": "Автозагрузка последней страницы",
       "autoLoadLastPageDescription": "Автоматически открывать последнюю посещенную страницу при входе",
       "autoSaveDrafts": "Автосохранение черновиков",
-      "autoSaveDraftsDescription": "Автоматически сохранять черновики задач"
+      "autoSaveDraftsDescription": "Автоматически сохранять черновики задач",
+      "themes": {
+        "light": "Светлая",
+        "dark": "Тёмная",
+        "blue": "Синяя",
+        "green": "Зелёная",
+        "purple": "Фиолетовая",
+        "highContrast": "Высокий контраст"
+      },
+      "selectTheme": "Выбрать тему",
+      "switchToLight": "Переключить на светлую тему",
+      "switchToDark": "Переключить на тёмную тему"
     },
     "notifications": {
       "pushTitle": "Настройки push-уведомлений",

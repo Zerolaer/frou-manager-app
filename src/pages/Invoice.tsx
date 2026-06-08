@@ -1279,7 +1279,7 @@ function InvoicePageContent() {
   // Show full-page create/edit mode (only for editing, not for creating - creating uses modal)
   if (isEditing && !openInRightPanel && !showCreateModal) {
     return (
-      <div className="invoice-create-page" style={{ height: 'calc(100vh - 96px)', display: 'flex', flexDirection: 'column' }}>
+      <div className="invoice-create-page" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Header with actions */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center gap-3">

@@ -185,7 +185,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('tasks.project') || 'Проект'}
+              {t('tasks.project')}
             </label>
             <ProjectDropdown
               projects={projects}
@@ -197,7 +197,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('tasks.date') || 'Дата'}
+              {t('tasks.date')}
             </label>
             <DateDropdown
               value={form.fields.selectedDate.value}
@@ -210,13 +210,13 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Заголовок */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('tasks.title') || 'Название задачи'} <span className="text-red-500">*</span>
+            {t('tasks.title')} <span className="text-red-500">*</span>
           </label>
           <CoreInput
             value={form.fields.title.value}
             onChange={(e) => form.setField('title', e.target.value)}
             onBlur={() => form.setTouched('title')}
-            placeholder={t('tasks.titlePlaceholder') || 'Введите название задачи'}
+            placeholder={t('tasks.titlePlaceholder')}
             className={form.fields.title.touched && form.fields.title.error ? 'border-red-300' : ''}
           />
           {form.fields.title.touched && form.fields.title.error && (
@@ -227,12 +227,12 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         {/* Описание */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('tasks.description') || 'Описание'}
+            {t('tasks.description')}
           </label>
           <CoreTextarea
             value={form.fields.description.value}
             onChange={(e) => form.setField('description', e.target.value)}
-            placeholder={t('tasks.descriptionPlaceholder') || 'Введите описание задачи'}
+            placeholder={t('tasks.descriptionPlaceholder')}
             rows={3}
           />
         </div>
@@ -241,7 +241,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('tasks.priority') || 'Приоритет'}
+              {t('tasks.priority')}
             </label>
             <PriorityDropdown
               value={form.fields.priority.value}
@@ -252,12 +252,12 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('tasks.tag') || 'Тег'}
+              {t('tasks.tag')}
             </label>
             <CoreInput
               value={form.fields.tag.value}
               onChange={(e) => form.setField('tag', e.target.value)}
-              placeholder={t('tasks.tagPlaceholder') || 'Введите тег'}
+              placeholder={t('tasks.tagPlaceholder')}
             />
           </div>
         </div>
@@ -266,7 +266,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-gray-700">
-              {t('tasks.todos') || 'Подзадачи'}
+              {t('tasks.todos')}
             </label>
             {todoManager.todos.length > 0 && (
               <span className="text-sm text-gray-500">
@@ -279,7 +279,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <CoreInput
               value={todoManager.newTodo || ''}
               onChange={(e) => todoManager.setNewTodo(e.target.value)}
-              placeholder={t('tasks.addTodo') || 'Добавить подзадачу'}
+              placeholder={t('tasks.addSubtask')}
               className="flex-1"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {

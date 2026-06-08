@@ -38,6 +38,7 @@ const TasksTodayWidget = () => {
       const { data, error } = await supabase
         .from('tasks_items')
         .select('id, title, status, priority, date')
+        .eq('user_id', userId)
         .eq('date', today)
         .order('position', { ascending: true });
 

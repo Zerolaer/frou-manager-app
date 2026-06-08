@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react'
+import { isMobileUI, isNativeIOS } from '@/platform/nativeApp'
 
 export function useMobileDetection() {
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => isMobileUI())
   const [isTablet, setIsTablet] = useState(false)
 
   useEffect(() => {
     const checkDevice = () => {
+      if (isNativeIOS()) {
+        setIsMobile(true)
+        setIsTablet(false)
+        return
+      }
+
       const width = window.innerWidth
       setIsMobile(width < 768) // md breakpoint
       setIsTablet(width >= 768 && width < 1024) // md to lg breakpoint
     }
 
-    // Check on mount
     checkDevice()
-
-    // Listen for resize events
     window.addEventListener('resize', checkDevice)
 
     return () => {
@@ -26,10 +30,17 @@ export function useMobileDetection() {
 }
 
 export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
+  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>(() =>
+    isNativeIOS() || isMobileUI() ? 'mobile' : 'desktop'
+  )
 
   useEffect(() => {
     const checkBreakpoint = () => {
+      if (isNativeIOS()) {
+        setBreakpoint('mobile')
+        return
+      }
+
       const width = window.innerWidth
       if (width < 768) {
         setBreakpoint('mobile')
@@ -50,4 +61,3 @@ export function useBreakpoint() {
 
   return breakpoint
 }
-
