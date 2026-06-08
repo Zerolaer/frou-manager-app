@@ -9,7 +9,7 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children, className }: MobileLayoutProps) {
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background text-primary">
+    <div className="flex flex-col flex-1 min-h-0 bg-background text-primary">
       <main className={cn('mobile-shell-main', className)}>{children}</main>
     </div>
   )

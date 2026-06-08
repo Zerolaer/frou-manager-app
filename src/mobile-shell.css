@@ -106,6 +106,7 @@
 /* Content offset under floating nav */
 .mobile-shell-main {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

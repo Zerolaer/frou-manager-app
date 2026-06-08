@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { format } from 'date-fns'
 
@@ -99,18 +99,6 @@ export default function TasksMobile() {
 
 
   const isPullActive = pullRefreshing || refreshing
-
-
-
-  const openTasks = useMemo(
-
-    () => tasks.filter((t) => t.status !== TASK_STATUSES.CLOSED),
-
-    [tasks]
-
-  )
-
-
 
   const shiftWeek = (delta: number) => {
 
@@ -284,7 +272,7 @@ export default function TasksMobile() {
 
             <TaskListSkeleton />
 
-          ) : openTasks.length === 0 ? (
+          ) : tasks.length === 0 ? (
 
             <EmptyDay
 
@@ -296,7 +284,7 @@ export default function TasksMobile() {
 
           ) : (
 
-            openTasks.map((task) => (
+            tasks.map((task) => (
 
               <MobileTaskCard
 

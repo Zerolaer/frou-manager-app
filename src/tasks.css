@@ -15,14 +15,16 @@
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Disable page scroll when on tasks page */
-body.tasks-mode {
-  overflow: hidden !important;
-}
+/* Disable page scroll when on tasks page (desktop week board only) */
+@media (min-width: 769px) {
+  body.tasks-mode {
+    overflow: hidden !important;
+  }
 
-body.tasks-mode #main-content,
-body.tasks-mode #app-content-body {
-  overflow: hidden !important;
+  body.tasks-mode #main-content,
+  body.tasks-mode #app-content-body {
+    overflow: hidden !important;
+  }
 }
 
 .tasks-page.is-collapsed {

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 import { supabase } from '@/lib/supabaseClient'
 import { TASK_PROJECT_ALL, TASK_STATUSES } from '@/lib/constants'
 import { filterVisibleTaskProjects } from '@/lib/taskProjects'
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Project, TaskItem, Todo } from '@/types/shared'
 
@@ -29,11 +30,13 @@ function mapRow(t: Record<string, unknown>): TaskItem {
 
 export function useMobileTasks(date: Date, activeProject: string) {
   const { t } = useSafeTranslation()
+  const { userId, loading: authLoading } = useSupabaseAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [weekCounts, setWeekCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const fetchGenRef = useRef(0)
 
   const dateKey = format(date, 'yyyy-MM-dd')
   const weekStart = startOfWeek(date, { weekStartsOn: 1 })
@@ -42,6 +45,7 @@ export function useMobileTasks(date: Date, activeProject: string) {
   const weekEndKey = format(weekEnd, 'yyyy-MM-dd')
 
   const loadProjects = useCallback(async () => {
+    if (!userId) return
     const { data, error } = await supabase
       .from('tasks_projects')
       .select('id,name,color')
@@ -51,9 +55,12 @@ export function useMobileTasks(date: Date, activeProject: string) {
         filterVisibleTaskProjects(data as Project[], t('projects.uncategorized'))
       )
     }
-  }, [t])
+  }, [t, userId])
 
   const loadTasks = useCallback(async (options?: { silent?: boolean }) => {
+    if (!userId) return
+
+    const fetchGen = ++fetchGenRef.current
     const silent = options?.silent ?? false
     if (silent) {
       setRefreshing(true)
@@ -83,34 +90,56 @@ export function useMobileTasks(date: Date, activeProject: string) {
 
       const [dayRes, weekRes] = await Promise.all([query, weekQuery])
 
-      if (!dayRes.error && dayRes.data) {
-        setTasks(dayRes.data.map((row) => mapRow(row as Record<string, unknown>)))
+      if (fetchGen !== fetchGenRef.current) return
+
+      if (dayRes.error) {
+        setTasks([])
+      } else {
+        setTasks((dayRes.data ?? []).map((row) => mapRow(row as Record<string, unknown>)))
       }
 
-      if (!weekRes.error && weekRes.data) {
+      if (weekRes.error) {
+        setWeekCounts({})
+      } else {
         const counts: Record<string, number> = {}
-        weekRes.data.forEach((row) => {
+        ;(weekRes.data ?? []).forEach((row) => {
           const key = row.date as string
           counts[key] = (counts[key] || 0) + 1
         })
         setWeekCounts(counts)
       }
     } finally {
+      if (fetchGen !== fetchGenRef.current) return
       if (silent) {
         setRefreshing(false)
       } else {
         setLoading(false)
       }
     }
-  }, [dateKey, weekStartKey, weekEndKey, activeProject])
+  }, [dateKey, weekStartKey, weekEndKey, activeProject, userId])
 
   useEffect(() => {
+    if (authLoading) return
+    if (!userId) {
+      setProjects([])
+      setTasks([])
+      setWeekCounts({})
+      setLoading(false)
+      return
+    }
     void loadProjects()
-  }, [loadProjects])
+  }, [authLoading, userId, loadProjects])
 
   useEffect(() => {
+    if (authLoading) return
+    if (!userId) {
+      setTasks([])
+      setWeekCounts({})
+      setLoading(false)
+      return
+    }
     void loadTasks()
-  }, [loadTasks])
+  }, [authLoading, userId, loadTasks])
 
   const toggleTask = useCallback(
     async (task: TaskItem) => {
