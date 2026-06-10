@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { TaskCardSkeleton } from '@/components/ui/Skeleton'
 
 import { TASK_PROJECT_ALL, TASK_STATUSES } from '@/lib/constants'
+import { formatTagWithTime, hasTagOrTime } from '@/lib/scheduledTime'
 
 import { updateRecurringTaskSettings } from '@/lib/updateRecurringTaskSettings'
 
@@ -126,13 +127,17 @@ export default function TasksMobile() {
 
     projId?: string,
 
-    date?: Date
+    date?: Date,
+
+    _recurring?: unknown,
+
+    scheduledTime?: string | null
 
   ) => {
 
     if (!userId) return
 
-    const ok = await createTask(userId, title, desc, prio, tag, todos, projId ?? '', date ?? currentDate)
+    const ok = await createTask(userId, title, desc, prio, tag, todos, projId ?? '', date ?? currentDate, scheduledTime)
 
     if (ok) setShowAddModal(false)
 
@@ -758,7 +763,7 @@ function MobileTaskCard({
 
 
 
-        {(priorityKey || task.project_name || task.tag || todoTotal > 0 || task.recurring_task_id) && (
+        {(priorityKey || task.project_name || hasTagOrTime(task.tag, task.scheduled_time) || todoTotal > 0 || task.recurring_task_id) && (
 
           <div className="mt-2 flex flex-wrap gap-1.5">
 
@@ -788,11 +793,11 @@ function MobileTaskCard({
 
             )}
 
-            {task.tag && (
+            {hasTagOrTime(task.tag, task.scheduled_time) && (
 
-              <Badge variant="outline" className="text-[10px] font-medium px-2 py-0 h-5">
+              <Badge variant="outline" className="text-[10px] font-medium px-2 py-0 h-5 tabular-nums">
 
-                {task.tag}
+                {formatTagWithTime(task.tag, task.scheduled_time)}
 
               </Badge>
 

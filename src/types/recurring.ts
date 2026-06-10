@@ -7,6 +7,7 @@ export type RecurringTask = {
   description?: string
   priority?: string
   tag?: string
+  scheduled_time?: string | null
   todos?: Array<{ id: string; text: string; done: boolean }>
   project_id?: string | null
   

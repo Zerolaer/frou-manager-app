@@ -5,6 +5,8 @@ import { useForm } from '@/hooks/useForm'
 import { useTodoManager } from '@/hooks/useTodoManager'
 import { ProjectDropdown, DateDropdown, PriorityDropdown } from '@/components/ui/UnifiedDropdown'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
+import TagTimeInput from '@/components/ui/TagTimeInput'
+import { isValidScheduledTime } from '@/lib/scheduledTime'
 import MobileModal from '@/components/ui/MobileModal'
 import { ModalButton } from '@/components/ui/ModalSystem'
 import { logger } from '@/lib/monitoring'
@@ -14,7 +16,7 @@ import { RecurringTaskSettings } from '@/types/recurring'
 type Props = {
   open: boolean
   onClose: () => void
-  onSubmit: (title: string, description: string, priority: string, tag: string, todos: Todo[], projectId?: string, date?: Date, recurringSettings?: RecurringTaskSettings) => Promise<void> | void
+  onSubmit: (title: string, description: string, priority: string, tag: string, todos: Todo[], projectId?: string, date?: Date, recurringSettings?: RecurringTaskSettings, scheduledTime?: string | null) => Promise<void> | void
   dateLabel: string
   projects?: { id: string; name: string }[]
   activeProject?: string | null
@@ -40,6 +42,7 @@ export default function MobileTaskAddModal({
       description: '',
       priority: 'normal' as 'low'|'normal'|'high',
       tag: '',
+      scheduledTime: null as string | null,
       projectId: (activeProject && activeProject !== 'ALL') ? activeProject : '',
       selectedDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     },
@@ -70,7 +73,8 @@ export default function MobileTaskAddModal({
           todoManager.todos,
           values.projectId,
           new Date(values.selectedDate),
-          finalRecurringSettings
+          finalRecurringSettings,
+          isValidScheduledTime(values.scheduledTime) ? values.scheduledTime : null
         )
       
         // Reset form
@@ -176,9 +180,11 @@ export default function MobileTaskAddModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('tasks.tag')}
             </label>
-            <CoreInput
-              value={form.fields.tag.value}
-              onChange={(e) => form.setField('tag', e.target.value)}
+            <TagTimeInput
+              tag={form.fields.tag.value}
+              onTagChange={(value) => form.setField('tag', value)}
+              scheduledTime={form.fields.scheduledTime.value}
+              onScheduledTimeChange={(value) => form.setField('scheduledTime', value)}
               placeholder={t('tasks.tagPlaceholder')}
             />
           </div>

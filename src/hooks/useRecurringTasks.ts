@@ -107,6 +107,7 @@ export function useRecurringTasks(userId: string) {
       description?: string
       priority?: string
       tag?: string
+      scheduled_time?: string | null
       todos?: Array<{ id: string; text: string; done: boolean }>
       project_id?: string | null
       date: string
@@ -153,6 +154,7 @@ export function useRecurringTasks(userId: string) {
             description: recurringTask.description,
             priority: recurringTask.priority,
             tag: recurringTask.tag,
+            scheduled_time: recurringTask.scheduled_time ?? null,
             todos: recurringTask.todos || [],
             project_id: recurringTask.project_id,
             date: instance.date,

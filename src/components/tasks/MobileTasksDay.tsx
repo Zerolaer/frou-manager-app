@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { TaskItem, Project } from '@/types/shared'
 import { TASK_STATUSES } from '@/lib/constants'
 import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
+import { formatTagWithTime } from '@/lib/scheduledTime'
 
 interface MobileTasksDayProps {
   date: Date
@@ -127,15 +128,15 @@ export default function MobileTasksDay({
             {/* Task metadata */}
             <div className="flex items-center gap-3 mt-2">
               {/* Tag */}
-              {task.tag && (
+              {formatTagWithTime(task.tag, task.scheduled_time) && (
                 <span 
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium tabular-nums"
                   style={{
                     backgroundColor: '#e5e7eb',
                     color: '#4b5563'
                   }}
                 >
-                  {task.tag}
+                  {formatTagWithTime(task.tag, task.scheduled_time)}
                 </span>
               )}
 

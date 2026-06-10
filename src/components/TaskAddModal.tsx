@@ -7,6 +7,8 @@ import { useForm } from '@/hooks/useForm'
 import { useTodoManager } from '@/hooks/useTodoManager'
 import { ProjectDropdown, DateDropdown, PriorityDropdown } from './ui/UnifiedDropdown'
 import { CoreInput, CoreTextarea } from './ui/CoreInput'
+import TagTimeInput from './ui/TagTimeInput'
+import { isValidScheduledTime } from '@/lib/scheduledTime'
 import { Plus, Trash2, Check } from 'lucide-react'
 import RecurringTaskSettings from './RecurringTaskSettings'
 import { RecurringTaskSettings as RecurringSettings } from '@/types/recurring'
@@ -16,7 +18,7 @@ type Todo = { id: string; text: string; done: boolean }
 type Props = {
   open: boolean
   onClose: () => void
-  onSubmit: (title: string, description: string, priority: string, tag: string, todos: Todo[], projectId?: string, date?: Date, recurringSettings?: RecurringSettings) => Promise<void> | void
+  onSubmit: (title: string, description: string, priority: string, tag: string, todos: Todo[], projectId?: string, date?: Date, recurringSettings?: RecurringSettings, scheduledTime?: string | null) => Promise<void> | void
   dateLabel: string
   projects?: { id: string; name: string }[]
   activeProject?: string | null
@@ -35,6 +37,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       description: '',
       priority: 'normal' as 'low'|'normal'|'high',
       tag: '',
+      scheduledTime: null as string | null,
       projectId: (activeProject && activeProject !== 'ALL') ? activeProject : '',
       selectedDate: initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
     },
@@ -64,6 +67,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
           form.setField('description', draft.description || '')
           form.setField('priority', draft.priority || 'normal')
           form.setField('tag', draft.tag || '')
+          form.setField('scheduledTime', draft.scheduledTime ?? null)
           form.setField('projectId', draft.projectId || ((activeProject && activeProject !== 'ALL') ? activeProject : ''))
           // Always use initialDate if provided, don't use draft.selectedDate to avoid wrong dates
           form.setField('selectedDate', initialDate ? format(initialDate, 'yyyy-MM-dd') : (draft.selectedDate || format(new Date(), 'yyyy-MM-dd')))
@@ -108,6 +112,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
         description: form.fields.description.value,
         priority: form.fields.priority.value,
         tag: form.fields.tag.value,
+        scheduledTime: form.fields.scheduledTime.value,
         projectId: form.fields.projectId.value,
         selectedDate: form.fields.selectedDate.value,
         todos: todoManager.todos,
@@ -115,7 +120,7 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
       }
       localStorage.setItem('frovo_task_draft', JSON.stringify(draft))
     }
-  }, [open, form.fields.title.value, form.fields.description.value, form.fields.priority.value, form.fields.tag.value, form.fields.projectId.value, form.fields.selectedDate.value, todoManager.todos, recurringSettings])
+  }, [open, form.fields.title.value, form.fields.description.value, form.fields.priority.value, form.fields.tag.value, form.fields.scheduledTime.value, form.fields.projectId.value, form.fields.selectedDate.value, todoManager.todos, recurringSettings])
 
   // Submit handler
       const handleSubmit = async () => {
@@ -142,7 +147,8 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
               todoManager.todos,
               values.projectId,
               localDate,
-              finalRecurringSettings
+              finalRecurringSettings,
+              isValidScheduledTime(values.scheduledTime) ? values.scheduledTime : null
             )
         
         // Show success notification
@@ -254,9 +260,11 @@ export default function TaskAddModal({ open, onClose, onSubmit, dateLabel, proje
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('tasks.tag')}
             </label>
-            <CoreInput
-              value={form.fields.tag.value}
-              onChange={(e) => form.setField('tag', e.target.value)}
+            <TagTimeInput
+              tag={form.fields.tag.value}
+              onTagChange={(value) => form.setField('tag', value)}
+              scheduledTime={form.fields.scheduledTime.value}
+              onScheduledTimeChange={(value) => form.setField('scheduledTime', value)}
               placeholder={t('tasks.tagPlaceholder')}
             />
           </div>

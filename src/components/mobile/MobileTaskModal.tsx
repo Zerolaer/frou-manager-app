@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Plus, Trash2, Calendar, Tag, Check } from 'lucide-react'
 import { ProjectDropdown, DateDropdown, PriorityDropdown } from '@/components/ui/UnifiedDropdown'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
+import TagTimeInput from '@/components/ui/TagTimeInput'
+import { isValidScheduledTime } from '@/lib/scheduledTime'
 import MobileModal from '@/components/ui/MobileModal'
 import { ModalButton } from '@/components/ui/ModalSystem'
 import { useSafeTranslation } from '@/utils/safeTranslation'
@@ -19,6 +21,7 @@ type Task = {
   description?: string | null
   priority?: string | null
   tag?: string | null
+  scheduled_time?: string | null
   date?: string | null
   todos?: Todo[]
   status?: string
@@ -43,6 +46,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('')
   const [tag, setTag] = useState('')
+  const [scheduledTime, setScheduledTime] = useState<string | null>(null)
   const [date, setDate] = useState('')
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
@@ -58,6 +62,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
       setDescription(task.description || '')
       setPriority(task.priority || 'normal')
       setTag(task.tag || '')
+      setScheduledTime(isValidScheduledTime(task.scheduled_time) ? task.scheduled_time : null)
       setDate(task.date || '')
       setTodos(task.todos || [])
       setStatus((task.status === 'closed') ? 'closed' : 'open')
@@ -111,6 +116,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
         description: description.trim() || '',
         priority: priority || 'normal',
         tag: tag.trim() || '',
+        scheduled_time: isValidScheduledTime(scheduledTime) ? scheduledTime : null,
         date: date || new Date().toISOString().split('T')[0],
         todos,
         status,
@@ -123,7 +129,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
         .from('tasks_items')
         .update(updates)
         .eq('id', task.id)
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status')
+        .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status')
 
       if (error) {
         logger.error('❌ Supabase error:', error)
@@ -180,7 +186,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
       save(true) // true = auto-save
     }, 300) // 300ms debounce
     return () => clearTimeout(timer)
-  }, [priority, tag, date, projectId, status, open, task])
+  }, [priority, tag, scheduledTime, date, projectId, status, open, task])
 
   const addTodo = () => {
     if (!newTodo.trim()) return
@@ -324,9 +330,11 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('tasks.tag')}
             </label>
-            <CoreInput
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
+            <TagTimeInput
+              tag={tag}
+              onTagChange={setTag}
+              scheduledTime={scheduledTime}
+              onScheduledTimeChange={setScheduledTime}
               placeholder={t('tasks.tagPlaceholder')}
             />
           </div>

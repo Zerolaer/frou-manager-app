@@ -83,6 +83,7 @@ create table if not exists public.recurring_tasks (
   description text default '',
   priority text default 'normal',
   tag text default '',
+  scheduled_time text,
   todos jsonb not null default '[]'::jsonb,
   project_id uuid references public.tasks_projects(id) on delete set null,
   recurrence_type text,
@@ -131,6 +132,7 @@ create table if not exists public.tasks_items (
   position integer not null default 0,
   priority text default 'normal',
   tag text,
+  scheduled_time text,
   todos jsonb not null default '[]'::jsonb,
   status text not null default 'open',
   created_at timestamptz not null default now(),
@@ -145,6 +147,8 @@ alter table public.tasks_items add column if not exists due_date date;
 alter table public.tasks_items add column if not exists todos jsonb not null default '[]'::jsonb;
 alter table public.tasks_items add column if not exists status text not null default 'open';
 alter table public.tasks_items add column if not exists tag text;
+alter table public.tasks_items add column if not exists scheduled_time text;
+alter table public.recurring_tasks add column if not exists scheduled_time text;
 -- Старые БД без timestamps: триггер set_updated_at() падает с "record new has no field updated_at"
 alter table public.tasks_items add column if not exists created_at timestamptz not null default now();
 alter table public.tasks_items add column if not exists updated_at timestamptz not null default now();

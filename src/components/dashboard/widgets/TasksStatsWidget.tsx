@@ -28,7 +28,6 @@ interface TaskRow {
   status: string;
   project_id: string | null;
   date?: string;
-  created_at?: string;
 }
 
 const emptyStats = {
@@ -70,43 +69,29 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
       const previousWeekStartStr = previousWeekStart.toISOString().split('T')[0];
       const previousWeekEndStr = previousWeekEnd.toISOString().split('T')[0];
 
-      const currentRangeStart = `${currentWeekStart}T00:00:00.000Z`;
-      const currentRangeEnd = `${currentWeekEnd}T23:59:59.999Z`;
-      const previousRangeStart = `${previousWeekStartStr}T00:00:00.000Z`;
-      const previousRangeEnd = `${previousWeekEndStr}T23:59:59.999Z`;
-
-      const selectFields = 'id, status, project_id, date, created_at';
+      const selectFields = 'id, status, project_id, date';
 
       let currentQuery = supabase
         .from('tasks_items')
         .select(selectFields)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .gte('date', currentWeekStart)
+        .lte('date', currentWeekEnd);
 
       let previousQuery = supabase
         .from('tasks_items')
         .select(selectFields)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .gte('date', previousWeekStartStr)
+        .lte('date', previousWeekEndStr);
 
-      if (type === 'total') {
-        currentQuery = currentQuery
-          .gte('created_at', currentRangeStart)
-          .lte('created_at', currentRangeEnd);
-        previousQuery = previousQuery
-          .gte('created_at', previousRangeStart)
-          .lte('created_at', previousRangeEnd);
-      } else {
-        currentQuery = currentQuery
-          .gte('date', currentWeekStart)
-          .lte('date', currentWeekEnd)
-          .eq('status', 'closed');
-        previousQuery = previousQuery
-          .gte('date', previousWeekStartStr)
-          .lte('date', previousWeekEndStr)
-          .eq('status', 'closed');
+      if (type === 'completed') {
+        currentQuery = currentQuery.eq('status', 'closed');
+        previousQuery = previousQuery.eq('status', 'closed');
       }
 
       const [{ data: currentData, error: currentError }, { data: previousData }] = await Promise.all([
-        currentQuery.order(type === 'total' ? 'created_at' : 'date', { ascending: false }),
+        currentQuery.order('date', { ascending: false }),
         previousQuery,
       ]);
 

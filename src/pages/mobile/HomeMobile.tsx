@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { CheckCircle2, ListTodo, TrendingUp, Calendar, DollarSign, Target } from 'lucide-react'
+import { CheckCircle2, ListTodo, TrendingUp, Calendar } from 'lucide-react'
+import { startOfWeek, endOfWeek } from 'date-fns'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { supabase } from '@/lib/supabaseClient'
@@ -20,16 +21,25 @@ export default function HomeMobile() {
     if (!userId) return
 
     const loadStats = async () => {
+      const now = new Date()
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 }).toISOString().split('T')[0]
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 }).toISOString().split('T')[0]
+      const today = now.toISOString().split('T')[0]
+
       const { data } = await supabase
         .from('tasks_items')
         .select('status,date')
+        .eq('user_id', userId)
+        .gte('date', weekStart)
+        .lte('date', weekEnd)
 
-      const total = data?.length || 0
-      const completed = data?.filter(t => t.status === TASK_STATUSES.CLOSED).length || 0
-      const today = data?.filter(t => t.date === new Date().toISOString().split('T')[0]).length || 0
+      const weekTasks = data || []
+      const total = weekTasks.length
+      const completed = weekTasks.filter(t => t.status === TASK_STATUSES.CLOSED).length
+      const todayCount = weekTasks.filter(t => t.date === today).length
       const productivity = total > 0 ? Math.round((completed / total) * 100) : 0
 
-      setStats({ totalTasks: total, completedTasks: completed, todayTasks: today, productivity })
+      setStats({ totalTasks: total, completedTasks: completed, todayTasks: todayCount, productivity })
     }
 
     loadStats()

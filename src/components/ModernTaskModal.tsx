@@ -4,6 +4,8 @@ import ProjectDropdown from './ProjectDropdown'
 import DateDropdown from './DateDropdown'
 import CoreMenu from '@/components/ui/CoreMenu'
 import { CoreInput, CoreTextarea } from '@/components/ui/CoreInput'
+import TagTimeInput from '@/components/ui/TagTimeInput'
+import { isValidScheduledTime } from '@/lib/scheduledTime'
 import { supabase } from '@/lib/supabaseClient'
 import SideModal from '@/components/ui/SideModal'
 import { ModalButton, UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
@@ -82,6 +84,7 @@ type Task = {
   description?: string | null
   priority?: string | null
   tag?: string | null
+  scheduled_time?: string | null
   date?: string | null
   todos?: Todo[]
   status?: string
@@ -122,6 +125,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
   const isResizingRef = useRef(false)
   const [priority, setPriority] = useState('')
   const [tag, setTag] = useState('')
+  const [scheduledTime, setScheduledTime] = useState<string | null>(null)
   const [date, setDate] = useState('')
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
@@ -269,6 +273,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       }, 0)
       setPriority((task.priority as any) || 'normal')
       setTag(task.tag || '')
+      setScheduledTime(isValidScheduledTime(task.scheduled_time) ? task.scheduled_time : null)
       setDate(task.date || '')
       // Todos are updated in separate useEffect for smooth real-time updates
       // Status is updated in separate useEffect for smooth real-time updates
@@ -309,7 +314,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
     }
     
     return () => clearTimeout(timer)
-  }, [open, task?.id, task?.title, task?.description, task?.priority, task?.tag, task?.date, task?.project_id]) // Only watch for non-todos/status changes
+  }, [open, task?.id, task?.title, task?.description, task?.priority, task?.tag, task?.scheduled_time, task?.date, task?.project_id]) // Only watch for non-todos/status changes
   
   // Обновляем доску при закрытии модального окна подзадачи
   useEffect(() => {
@@ -466,7 +471,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       clearTimeout(saveTimeoutRef.current)
     }
     
-    logger.debug('⏱️ Fields changed, scheduling save in 500ms', { date, priority, tag, status, projectId })
+    logger.debug('⏱️ Fields changed, scheduling save in 500ms', { date, priority, tag, scheduledTime, status, projectId })
     saveTimeoutRef.current = setTimeout(() => {
       if (!isSavingRef.current) {
         isSavingRef.current = true
@@ -481,7 +486,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [priority, tag, date, status, projectId, open, task?.id, task?.todos])
+  }, [priority, tag, scheduledTime, date, status, projectId, open, task?.id, task?.todos])
 
   // Auto-save todos when they change
   useEffect(() => {
@@ -595,6 +600,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       description: descriptionEditorRef.current?.innerHTML ? sanitizeRichTextHtml(descriptionEditorRef.current.innerHTML) : (description.trim() || ''),
       priority: priority || 'normal',
       tag: tag.trim() || '',
+      scheduled_time: isValidScheduledTime(scheduledTime) ? scheduledTime : null,
       date: date || null, // Allow null dates
       todos,
       status,
@@ -617,7 +623,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
         .from('tasks_items')
         .update(updates)
         .eq('id', task.id)
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status')
+        .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status')
 
       if (error) {
         logger.error('❌ Supabase error:', error)
@@ -2430,10 +2436,11 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
           {/* Tag */}
           <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 mx-6">
             <div className="text-sm font-medium text-gray-700">{t('tasks.tag')}</div>
-            <CoreInput
-              type="text"
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
+            <TagTimeInput
+              tag={tag}
+              onTagChange={setTag}
+              scheduledTime={scheduledTime}
+              onScheduledTimeChange={setScheduledTime}
               placeholder={t('tasks.tagExample')}
             />
           </section>

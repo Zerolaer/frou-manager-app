@@ -34,6 +34,7 @@ export type TaskItem = {
   position: number;
   priority?: string | null;
   tag?: string | null;
+  scheduled_time?: string | null;
   todos?: Todo[];
   status?: string;
   project_id?: string | null;

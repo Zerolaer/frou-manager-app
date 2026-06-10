@@ -22,6 +22,7 @@ import { getPriorityColor, getPriorityText } from '@/lib/taskHelpers'
 import { logger } from '@/lib/monitoring'
 import { Repeat, Plus } from 'lucide-react'
 import { registerTasksSubheaderHandler } from '@/lib/tasksSubheaderBridge'
+import { formatTagWithTime, hasTagOrTime } from '@/lib/scheduledTime'
 
 // Task Context Menu component with smart positioning
 function TaskContextMenu({ 
@@ -783,7 +784,7 @@ const projectColorById = React.useMemo(() => {
       const endDate = format(end, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
+        .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status,recurring_task_id,tasks_projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date',     { ascending:true })
@@ -825,7 +826,8 @@ const projectColorById = React.useMemo(() => {
           date: t.date, 
           position: t.position, 
           priority: t.priority, 
-          tag: t.tag, 
+          tag: t.tag,
+          scheduled_time: t.scheduled_time ?? null,
           todos: (t.todos||[]), 
           status: t.status || TASK_STATUSES.OPEN,
           project_name: t.tasks_projects?.name || null,
@@ -897,7 +899,7 @@ const projectColorById = React.useMemo(() => {
       const endDate = format(endOfMonthDate, 'yyyy-MM-dd')
       
       const q = supabase.from('tasks_items')
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)')
+        .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status,recurring_task_id,tasks_projects(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: true })
@@ -1005,7 +1007,7 @@ const projectColorById = React.useMemo(() => {
           status: task.status || TASK_STATUSES.OPEN,
           user_id: uid
         })
-        .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
+        .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status,tasks_projects(name)').single()
       if (error) {
         logger.error('Error duplicating task:', error)
         throw error
@@ -1467,7 +1469,8 @@ const projectColorById = React.useMemo(() => {
     priority: string,
     tag: string,
     todos: Todo[],
-    recurringSettings: RecurringTaskSettings
+    recurringSettings: RecurringTaskSettings,
+    scheduledTime?: string | null
   ) {
     if (!uid) return
 
@@ -1495,6 +1498,7 @@ const projectColorById = React.useMemo(() => {
           description,
           priority,
           tag,
+          scheduled_time: scheduledTime || null,
           todos,
           project_id: projectId,
           recurrence_type: recurringSettings.recurrenceType,
@@ -1578,12 +1582,13 @@ const projectColorById = React.useMemo(() => {
             date: instance.date, 
             position: nextPos, 
             priority, 
-            tag, 
+            tag,
+            scheduled_time: scheduledTime || null,
             todos, 
             user_id: uid,
             recurring_task_id: recurringTaskId
           })
-          .select('id,project_id,title,description,date,position,priority,tag,todos,status,recurring_task_id,tasks_projects(name)').single()
+          .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status,recurring_task_id,tasks_projects(name)').single()
 
         if (!error && data) {
           const newTask: TaskItem = { 
@@ -1594,7 +1599,8 @@ const projectColorById = React.useMemo(() => {
             date: data.date, 
             position: data.position, 
             priority: data.priority, 
-            tag: data.tag, 
+            tag: data.tag,
+            scheduled_time: data.scheduled_time ?? null,
             todos: (data.todos||[]),
             status: data.status || TASK_STATUSES.OPEN,
             project_name: (data as any).tasks_projects?.name || null,
@@ -1624,7 +1630,7 @@ const projectColorById = React.useMemo(() => {
     }
   }
 
-    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringTaskSettings){
+    async function createTask(titleFromModal?: string, descFromModal?: string, priorityFromModal?: string, tagFromModal?: string, todosFromModal?: Todo[], projectIdFromModal?: string, dateFromModal?: Date, recurringSettings?: RecurringTaskSettings, scheduledTimeFromModal?: string | null){
       if (!uid) return
       
       // Debug: check if recurring settings are passed correctly
@@ -1665,6 +1671,7 @@ const projectColorById = React.useMemo(() => {
     const desc  = (descFromModal ?? taskDesc)
     const priority = (priorityFromModal ?? TASK_PRIORITIES.NORMAL)
     const tag = (tagFromModal ?? '')
+    const scheduledTime = scheduledTimeFromModal ?? null
     const todos = (Array.isArray(todosFromModal) ? todosFromModal! : [])
     if (!title) return
     
@@ -1679,13 +1686,13 @@ const projectColorById = React.useMemo(() => {
     if (recurringSettings?.isRecurring && recurringSettings.recurrenceType) {
       console.log(`🔄 Creating RECURRING task only (not creating single task)`)
       console.log(`📅 Target date for recurring task: ${format(targetDate, 'yyyy-MM-dd')} (day=${targetDate.getDate()})`)
-      await createRecurringTasks(targetDate, resolvedProject, title, desc, priority, tag, todos, recurringSettings)
+      await createRecurringTasks(targetDate, resolvedProject, title, desc, priority, tag, todos, recurringSettings, scheduledTime)
       return // CRITICAL: Don't create a single task if it's recurring!
     } else {
       // Create single task
     const { data, error } = await supabase.from('tasks_items')
-      .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, todos, user_id: uid })
-      .select('id,project_id,title,description,date,position,priority,tag,todos,status,tasks_projects(name)').single()
+      .insert({ project_id: resolvedProject, title, description: desc, date: key, position: nextPos, priority, tag, scheduled_time: scheduledTime, todos, user_id: uid })
+      .select('id,project_id,title,description,date,position,priority,tag,scheduled_time,todos,status,tasks_projects(name)').single()
       
     if (!error && data){
       const newTask: TaskItem = { 
@@ -1696,7 +1703,8 @@ const projectColorById = React.useMemo(() => {
         date: data.date, 
         position: data.position, 
         priority: data.priority, 
-        tag: data.tag, 
+        tag: data.tag,
+        scheduled_time: data.scheduled_time ?? null,
         todos: (data.todos||[]),
         status: data.status || TASK_STATUSES.OPEN,
         project_name: (data as any).tasks_projects?.name || null
@@ -2134,6 +2142,7 @@ const projectColorById = React.useMemo(() => {
               description: recurringTask.description || '',
               priority: recurringTask.priority || 'normal',
               tag: recurringTask.tag || '',
+              scheduled_time: recurringTask.scheduled_time || null,
               date: inst.date,
               position: 0,
               todos: recurringTask.todos || [],
@@ -2298,6 +2307,7 @@ const projectColorById = React.useMemo(() => {
               description: recurringTask.description || '',
               priority: recurringTask.priority || 'normal',
               tag: recurringTask.tag || '',
+              scheduled_time: recurringTask.scheduled_time || null,
               date: inst.date,
               position: 0,
               todos: recurringTask.todos || [],
@@ -2693,6 +2703,7 @@ const projectColorById = React.useMemo(() => {
       updatedTask.description !== viewTask.description ||
       updatedTask.priority !== viewTask.priority ||
       updatedTask.tag !== viewTask.tag ||
+      updatedTask.scheduled_time !== viewTask.scheduled_time ||
       updatedTask.project_id !== viewTask.project_id ||
       JSON.stringify(updatedTask.todos) !== JSON.stringify(viewTask.todos)
     )
@@ -3037,16 +3048,16 @@ const projectColorById = React.useMemo(() => {
                               ) : (
                                 <div></div>
                               )}
-                              {taskItem.tag && (
+                              {hasTagOrTime(taskItem.tag, taskItem.scheduled_time) && (
                                 <span 
-                                  className={`text-xs font-medium px-2 py-1 rounded-full ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
+                                  className={`text-xs font-medium px-2 py-1 rounded-full tabular-nums ${taskItem.status === TASK_STATUSES.CLOSED ? 'opacity-30' : ''}`}
                                   style={{
                                     backgroundColor: '#f3f4f6',
                                     color: '#6b7280',
                                     borderRadius: '999px'
                                   }}
                                 >
-                                  {taskItem.tag}
+                                  {formatTagWithTime(taskItem.tag, taskItem.scheduled_time)}
                                 </span>
                               )}
                             </div>
@@ -3124,7 +3135,7 @@ const projectColorById = React.useMemo(() => {
         onClose={()=>setOpenNewTask(false)} 
         dateLabel={taskDate ? format(taskDate, "d MMMM, EEEE") : ""} 
         initialDate={taskDate || new Date()}
-        onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings) }} 
+        onSubmit={async (title, desc, prio, tag, todos, projId, date, recurringSettings, scheduledTime)=>{ await createTask(title, desc, prio, tag, todos, projId, date, recurringSettings, scheduledTime) }} 
       />
 
       {/* Main task modal - right side - always has backdrop */}

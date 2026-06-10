@@ -8,7 +8,7 @@ import { useSafeTranslation } from '@/utils/safeTranslation'
 import type { Project, TaskItem, Todo } from '@/types/shared'
 
 const TASK_SELECT =
-  'id,project_id,title,description,status,priority,tag,todos,date,position,recurring_task_id,tasks_projects(name)'
+  'id,project_id,title,description,status,priority,tag,scheduled_time,todos,date,position,recurring_task_id,tasks_projects(name)'
 
 function mapRow(t: Record<string, unknown>): TaskItem {
   const rel = t.tasks_projects as { name?: string } | null
@@ -21,6 +21,7 @@ function mapRow(t: Record<string, unknown>): TaskItem {
     position: t.position as number,
     priority: t.priority as string | null,
     tag: t.tag as string | null,
+    scheduled_time: (t.scheduled_time as string | null) ?? null,
     todos: (t.todos as Todo[]) || [],
     status: (t.status as string) || TASK_STATUSES.OPEN,
     project_name: rel?.name ?? null,
@@ -169,7 +170,8 @@ export function useMobileTasks(date: Date, activeProject: string) {
       tag: string,
       todos: Todo[],
       projId: string,
-      taskDate: Date
+      taskDate: Date,
+      scheduledTime?: string | null
     ) => {
       const taskDateKey = format(taskDate, 'yyyy-MM-dd')
       const { data, error } = await supabase
@@ -183,6 +185,7 @@ export function useMobileTasks(date: Date, activeProject: string) {
           position: tasks.length,
           priority: prio,
           tag,
+          scheduled_time: scheduledTime ?? null,
           todos: todos || [],
         })
         .select(TASK_SELECT)
