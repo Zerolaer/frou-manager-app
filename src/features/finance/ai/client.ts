@@ -28,6 +28,15 @@ async function sendViaLocalDevApi(request: FinanceAIChatRequest): Promise<Financ
   return data
 }
 
+function formatEdgeInvokeError(message: string | undefined): string {
+  const raw = message || 'Failed to reach AI service'
+  // Supabase JS when the function URL 404s (never deployed) or the gateway is unreachable
+  if (/failed to send a request/i.test(raw)) {
+    return 'Сервис Finance AI временно недоступен. Обратитесь к администратору.'
+  }
+  return raw
+}
+
 async function sendViaSupabaseEdge(request: FinanceAIChatRequest): Promise<FinanceAIChatResponse> {
   const payload = enrichRequest(request)
   const { data, error } = await supabase.functions.invoke<FinanceAIChatResponse>('finance-ai-chat', {
@@ -37,7 +46,7 @@ async function sendViaSupabaseEdge(request: FinanceAIChatRequest): Promise<Finan
   if (error) {
     return {
       message: '',
-      error: error.message || 'Failed to reach AI service',
+      error: formatEdgeInvokeError(error.message),
     }
   }
 
