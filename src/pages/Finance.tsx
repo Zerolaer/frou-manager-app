@@ -10,6 +10,7 @@ import CategoryRow from '@/components/finance/CategoryRow'
 import NewCategoryMenu from '@/components/finance/NewCategoryMenu'
 import NewCellMenu from '@/components/finance/NewCellMenu'
 import AnnualStatsModal from '@/components/AnnualStatsModal'
+import FinanceChatPanel from '@/components/finance/FinanceChatPanel'
 import { UnifiedModal, useModalActions } from '@/components/ui/ModalSystem'
 import { CoreInput } from '@/components/ui/CoreInput'
 import { YearDropdown } from '@/components/ui/UnifiedDropdown'
@@ -149,6 +150,7 @@ export default function Finance(){
   const [cellEntries, setCellEntries] = useState<EntryLite[]|null>(null)
 
   const [showStats, setShowStats] = useState(false)
+  const [showAIChat, setShowAIChat] = useState(false)
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [renameValue, setRenameValue] = useState('')
@@ -167,6 +169,9 @@ export default function Finance(){
         break
       case 'annual-stats':
         setShowStats(true)
+        break
+      case 'ai-assistant':
+        setShowAIChat(true)
         break
       case 'export':
         handleExport()
@@ -846,6 +851,14 @@ export default function Finance(){
         year={year}
         incomeByMonth={totalIncomeByMonth}
         expenseByMonth={totalExpenseByMonth}
+      />
+
+      <FinanceChatPanel
+        open={showAIChat}
+        onClose={() => setShowAIChat(false)}
+        year={year}
+        income={incomeRaw}
+        expense={expenseRaw}
       />
     </Fragment>
   )

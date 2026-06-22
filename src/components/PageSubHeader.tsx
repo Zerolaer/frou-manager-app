@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { Plus, Calendar, Target } from 'lucide-react'
+import { Plus, Calendar, Target, Bot } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import YearSelector from './YearSelector'
 import WeekSelector from './WeekSelector'
@@ -44,6 +44,7 @@ export default function PageSubHeader({
           title: t('pages.finance'),
           actions: [
             { id: 'add-category', label: t('actions.addCategory'), icon: Plus, variant: 'primary' as const },
+            { id: 'ai-assistant', label: t('actions.aiAssistant'), icon: Bot, variant: 'secondary' as const },
             { id: 'annual-stats', label: t('actions.annualStats'), icon: Target, variant: 'secondary' as const },
           ],
         }

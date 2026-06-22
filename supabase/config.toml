@@ -1,0 +1,6 @@
+# Supabase local / deploy config
+# Project: https://anugfsevzdpsehfzflji.supabase.co
+project_id = "anugfsevzdpsehfzflji"
+
+[functions.finance-ai-chat]
+verify_jwt = true

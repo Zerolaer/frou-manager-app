@@ -13,6 +13,7 @@ type SideModalProps = {
   rightContent?: React.ReactNode
   noPadding?: boolean
   noBackdrop?: boolean // Don't render backdrop
+  noBackdropBlur?: boolean // Keep dimming but disable backdrop blur
   position?: 'left' | 'right' // Position of modal
   customZIndex?: number // Custom z-index
   disableBackdropClick?: boolean // Don't close on backdrop click
@@ -31,6 +32,7 @@ const SideModal = ({
   rightContent,
   noPadding = false,
   noBackdrop = false,
+  noBackdropBlur = false,
   position = 'right',
   customZIndex,
   disableBackdropClick = false,
@@ -161,7 +163,7 @@ const SideModal = ({
     >
       {/* Overlay with backdrop blur - только если не noBackdrop */}
       {!noBackdrop && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <div className={`absolute inset-0 bg-black/40 backdrop-overlay${noBackdropBlur ? '' : ' backdrop-blur-sm'}`}></div>
       )}
       
       {/* Side panel */}

@@ -61,7 +61,8 @@
     "update": "Update",
     "close": "Close",
     "change": "Change",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "aiAssistant": "AI Assistant"
   },
   "finance": {
     "addCategory": "Add Category",
@@ -164,7 +165,23 @@
     "noEntries": "No entries yet.",
     "aggregatedTotal": "Sum of subcategories",
     "aggregatedTotalHint": "This category aggregates its subcategories. Edit values in subcategories directly.",
-    "cannotAddSubcategory": "Cannot add subcategory — this category already has its own entries (including excluded ones)."
+    "cannotAddSubcategory": "Cannot add subcategory — this category already has its own entries (including excluded ones).",
+    "ai": {
+      "title": "Finance Assistant",
+      "subtitle": "Analyzing data for {{year}}",
+      "placeholder": "Ask about budget, expenses, plans...",
+      "welcome": "I can see your full finance structure: categories, subcategories, cells and entries. Ask me for analysis, budget plans or expense optimization.",
+      "readOnlyHint": "Analysis mode — data is not modified",
+      "clearChat": "Clear chat",
+      "minimize": "Minimize to bubble",
+      "expand": "Open finance assistant",
+      "expandHeight": "Expand to full height",
+      "restoreSize": "Restore default size",
+      "promptAnalyzeMonth": "Analyze {{monthName}} {{year}} (current calendar month)",
+      "promptBudget": "Create a budget plan for next quarter",
+      "promptOverspend": "Where am I overspending?",
+      "promptSavings": "How can I increase savings?"
+    }
   },
   "tasks": {
     "months": {

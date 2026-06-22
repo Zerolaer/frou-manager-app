@@ -1,9 +1,21 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { handleFinanceAiChat } from './server/financeAiDevHandler'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
   plugins: [
+    {
+      name: 'finance-ai-dev-api',
+      configureServer(server) {
+        server.middlewares.use('/api/finance-ai-chat', (req, res) => {
+          void handleFinanceAiChat(req, res, env)
+        })
+      },
+    },
     react({
       // Enable React Fast Refresh
       fastRefresh: true,
@@ -118,4 +130,5 @@ export default defineConfig({
     // Сообщения через `logger` остаются — они отправляются на /api/logs.
     drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
   }
+}
 })
