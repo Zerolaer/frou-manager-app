@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http'
-import { parseFinanceAIPayload } from '../src/features/finance/ai/actions'
+import { parseFinanceAIPayload } from '../src/features/finance/ai/parse'
 import { buildFinanceAISystemPrompt } from '../src/features/finance/ai/context'
 import type { FinanceSnapshot } from '../src/features/finance/ai/types'
 
