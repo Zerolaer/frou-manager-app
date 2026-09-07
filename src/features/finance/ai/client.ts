@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { buildFinanceAITextContext } from '@/features/finance/ai/context'
+import { buildFinanceAISystemPrompt, buildFinanceAITextContext } from '@/features/finance/ai/context'
 import type { FinanceAIChatRequest, FinanceAIChatResponse } from '@/features/finance/ai/types'
 
 function enrichRequest(request: FinanceAIChatRequest): FinanceAIChatRequest {
@@ -8,6 +8,12 @@ function enrichRequest(request: FinanceAIChatRequest): FinanceAIChatRequest {
     ...request,
     locale,
     gridContext: request.gridContext ?? buildFinanceAITextContext(request.snapshot, locale),
+    systemPrompt:
+      request.systemPrompt ??
+      buildFinanceAISystemPrompt(request.snapshot, {
+        allowWrites: request.allowWrites,
+        activeMonthIndex: request.activeMonthIndex,
+      }),
   }
 }
 

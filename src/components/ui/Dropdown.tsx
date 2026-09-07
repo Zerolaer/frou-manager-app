@@ -261,10 +261,9 @@ export default function Dropdown({
           ref={option.value === value ? selectedOptionRef : null}
           onClick={() => !option.disabled && handleOptionSelect(option.value)}
           disabled={option.disabled}
-          style={{ fontSize: '13px' }}
-          className={`block w-full shrink-0 text-left transition-colors ${
+          className={`dd-option block w-full shrink-0 text-left transition-colors rounded-lg ${
             menuFitsContent ? 'whitespace-nowrap' : ''
-          } px-2 py-3 ${
+          } ${
             option.value === value 
               ? 'bg-black text-white font-medium' 
               : option.disabled
@@ -289,7 +288,7 @@ export default function Dropdown({
           if (!disabled) setOpen(!open)
         }}
         disabled={disabled}
-        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 ${buttonClassName}`}
+        className={`dd-trigger ${hideChevron ? 'dd-trigger--icon' : ''} w-full flex items-center justify-between px-4 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 ${buttonClassName}`}
         style={buttonStyle}
         aria-label={ariaLabel}
         aria-expanded={open}

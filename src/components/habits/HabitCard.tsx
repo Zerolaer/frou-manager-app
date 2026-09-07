@@ -1,4 +1,6 @@
-/* src/components/habits/HabitCard.tsx */
+/* src/components/habits/HabitCard.tsx
+ * PARKED (intentional): Habits UI is hidden via HABITS_FEATURE_ENABLED. Do not delete.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import { MoreVertical, Check, Plus, TrendingUp } from 'lucide-react';

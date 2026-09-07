@@ -1,4 +1,5 @@
-// Types for Habits feature
+// Types for Habits feature.
+// PARKED (intentional): page is hidden via HABITS_FEATURE_ENABLED — do not delete.
 
 export type HabitType = 'automatic' | 'manual' | 'progress'
 

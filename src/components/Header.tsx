@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, DollarSign, CheckSquare, FileText, LayoutDashboard, Sparkles } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { prefetchRoutePath } from '@/lib/routePrefetch'
+import { HABITS_FEATURE_ENABLED } from '@/lib/featureFlags'
 import UserMenu from './UserMenu'
 
 export default function Header() {
@@ -23,7 +24,10 @@ export default function Header() {
     { to: '/tasks', icon: CheckSquare, label: t('nav.tasks') },
     { to: '/notes', icon: FileText, label: t('nav.notes') },
     { to: '/canvas', icon: LayoutDashboard, label: t('nav.canvas') },
-    { to: '/habits', icon: Sparkles, label: t('nav.habits') },
+    // PARKED (intentional): Habits is hidden, not removed. See HABITS_FEATURE_ENABLED.
+    ...(HABITS_FEATURE_ENABLED
+      ? [{ to: '/habits', icon: Sparkles, label: t('nav.habits') }]
+      : []),
   ]
 
   const updateSliderPosition = (element: HTMLElement | null) => {

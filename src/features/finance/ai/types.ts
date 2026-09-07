@@ -96,9 +96,25 @@ export type FinanceAIChatRequest = {
   snapshot: FinanceSnapshot
   gridContext?: string
   locale?: string
+  allowWrites?: boolean
+  activeMonthIndex?: number
+  systemPrompt?: string
+}
+
+export type FinanceAIActionPayload = {
+  op: 'add_entry' | 'set_balance'
+  category_id?: string
+  category_name?: string
+  type?: 'income' | 'expense'
+  month?: number
+  amount?: number
+  new_total?: number
+  currency?: 'EUR' | 'USD' | 'GEL'
+  note?: string | null
 }
 
 export type FinanceAIChatResponse = {
   message: string
+  actions?: FinanceAIActionPayload[]
   error?: string
 }

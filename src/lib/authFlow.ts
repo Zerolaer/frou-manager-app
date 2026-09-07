@@ -1,6 +1,14 @@
-import type { AuthError } from '@supabase/supabase-js'
+import type { AuthError, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { isNativeIOS, NATIVE_APP_SCHEME, nativeAuthRedirectUrl } from '@/platform/nativeApp'
+
+/** Access token still usable (not expired). Stale local sessions must not drive routing. */
+export function isSessionFresh(session: Session | null | undefined): boolean {
+  if (!session?.access_token) return false
+  const expiresAt = session.expires_at
+  if (typeof expiresAt !== 'number') return true
+  return expiresAt * 1000 > Date.now() + 10_000
+}
 
 export type TranslateFn = (key: string, options?: Record<string, unknown>) => string
 

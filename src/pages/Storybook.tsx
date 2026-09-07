@@ -632,6 +632,7 @@ const StorybookPage = () => {
         }
       ]
     },
+    // PARKED (intentional): Habits is hidden from the product UI, not deleted.
     habits: {
       title: 'Habits Components',
       description: 'Компоненты для работы с привычками',

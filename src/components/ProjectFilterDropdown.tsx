@@ -77,7 +77,7 @@ export default function ProjectFilterDropdown({
           if (!disabled) setIsOpen(!isOpen)
         }}
         disabled={disabled}
-        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 flex-shrink-0 whitespace-nowrap`}
+        className={`dd-trigger w-full flex items-center justify-between px-4 rounded-xl text-button bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 flex-shrink-0 whitespace-nowrap`}
         aria-label={t('tasks.filterProjects')}
       >
         <div className="flex items-center gap-2">
@@ -110,8 +110,7 @@ export default function ProjectFilterDropdown({
             {/* Select/Deselect all button */}
             <button
               onClick={allSelected ? handleDeselectAll : handleSelectAll}
-              style={{ fontSize: '13px' }}
-              className="w-full px-2 py-3 text-left transition-colors text-gray-700 hover:bg-gray-100 border-b border-gray-100 mb-1"
+              className="dd-option w-full text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100 border-b border-gray-100 mb-1"
             >
               {allSelected ? t('common.deselectAll') : t('common.selectAll')}
             </button>
@@ -128,8 +127,7 @@ export default function ProjectFilterDropdown({
                   <button
                     key={project.id}
                     onClick={() => handleToggleProject(project.id)}
-                    style={{ fontSize: '13px' }}
-                    className="w-full px-2 py-3 text-left transition-colors text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    className="dd-option w-full text-left transition-colors rounded-lg text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                   >
                     {/* Checkbox - circular, black/white */}
                     <div

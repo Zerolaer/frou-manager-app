@@ -64,6 +64,7 @@ export default function PageSubHeader({
           ],
         }
       case '/habits':
+        // PARKED (intentional): unused while HABITS_FEATURE_ENABLED is false. Do not delete.
         return {
           title: t('pages.habits'),
           actions: [

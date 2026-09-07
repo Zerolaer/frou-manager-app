@@ -11,7 +11,8 @@ export function useSupabaseAuth() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return
-      setUser(data.session?.user ?? null)
+      const session = data.session
+      setUser(session?.user ?? null)
       setLoading(false)
     })
 
@@ -20,7 +21,6 @@ export function useSupabaseAuth() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
 
-      // Явный выход — доверяем без дополнительного getSession.
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setLoading(false)
@@ -33,13 +33,10 @@ export function useSupabaseAuth() {
         return
       }
 
-      // INITIAL_SESSION / TOKEN_REFRESHED и др. иногда приходят с session=null до финальной синхронизации.
-      // Раньше это обнуляло user во всём приложении → белые экраны, navigate на Canvas и цикл «как перезагрузка».
-      void supabase.auth.getSession().then(({ data }) => {
-        if (cancelled) return
-        setUser(data.session?.user ?? null)
+      if (event === 'INITIAL_SESSION') {
+        setUser(null)
         setLoading(false)
-      })
+      }
     })
 
     return () => {

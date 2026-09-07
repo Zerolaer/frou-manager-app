@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { sendFinanceAIChat } from '@/features/finance/ai/client'
+import { applyFinanceAIActions, parseFinanceAIPayload } from '@/features/finance/ai/actions'
 import { fetchFinanceSnapshotForAI } from '@/features/finance/snapshot'
 import type { FinanceChatMessage, FinanceSnapshot } from '@/features/finance/ai/types'
 import type { Cat } from '@/types/shared'
@@ -8,11 +9,25 @@ function newMessageId(): string {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-export function useFinanceAI(year: number, income: Cat[], expense: Cat[]) {
+type UseFinanceAIOptions = {
+  allowWrites?: boolean
+  activeMonthIndex?: number
+  userId?: string | null
+  onDataChanged?: () => void
+}
+
+export function useFinanceAI(
+  year: number,
+  income: Cat[],
+  expense: Cat[],
+  options: UseFinanceAIOptions = {}
+) {
   const [messages, setMessages] = useState<FinanceChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const snapshotRef = useRef<FinanceSnapshot | null>(null)
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   const ensureSnapshot = useCallback(async (): Promise<FinanceSnapshot> => {
     const snapshot = await fetchFinanceSnapshotForAI(year, {
@@ -46,11 +61,14 @@ export function useFinanceAI(year: number, income: Cat[], expense: Cat[]) {
           role: m.role,
           content: m.content,
         }))
+        const { allowWrites, activeMonthIndex, userId, onDataChanged } = optionsRef.current
 
         const response = await sendFinanceAIChat({
           messages: history,
           snapshot,
           locale: 'ru',
+          allowWrites,
+          activeMonthIndex,
         })
 
         if (response.error) {
@@ -58,10 +76,30 @@ export function useFinanceAI(year: number, income: Cat[], expense: Cat[]) {
           return
         }
 
+        const parsed = parseFinanceAIPayload(response.message)
+        const actions = response.actions?.length ? response.actions : parsed.actions
+        const looksLikeJson = /^\s*\{/.test(response.message) || response.message.includes('```json')
+        let reply = looksLikeJson ? parsed.reply : response.message || parsed.reply
+
+        if (allowWrites && actions.length && userId) {
+          const result = await applyFinanceAIActions({
+            userId,
+            year,
+            activeMonthIndex: activeMonthIndex ?? snapshot.temporal.calendar_month_index,
+            snapshot,
+            actions,
+          })
+          snapshotRef.current = null
+          if (result.applied.length) onDataChanged?.()
+          if (result.errors.length) {
+            reply = `${reply}\n\n${result.errors.join('\n')}`
+          }
+        }
+
         const assistantMsg: FinanceChatMessage = {
           id: newMessageId(),
           role: 'assistant',
-          content: response.message,
+          content: reply,
           created_at: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, assistantMsg])
@@ -71,7 +109,7 @@ export function useFinanceAI(year: number, income: Cat[], expense: Cat[]) {
         setLoading(false)
       }
     },
-    [loading, messages, ensureSnapshot]
+    [loading, messages, ensureSnapshot, year]
   )
 
   const clearChat = useCallback(() => {

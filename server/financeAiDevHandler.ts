@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http'
+import { parseFinanceAIPayload } from '../src/features/finance/ai/actions'
 import { buildFinanceAISystemPrompt } from '../src/features/finance/ai/context'
 import type { FinanceSnapshot } from '../src/features/finance/ai/types'
 
@@ -52,7 +53,8 @@ export async function handleFinanceAiChat(
     const body = await readJsonBody(req)
     const messages = body.messages as Array<{ role: 'user' | 'assistant'; content: string }> | undefined
     const snapshot = body.snapshot as FinanceSnapshot | undefined
-    const locale = (body.locale as string | undefined) ?? 'ru'
+    const allowWrites = body.allowWrites === true
+    const activeMonthIndex = typeof body.activeMonthIndex === 'number' ? body.activeMonthIndex : undefined
 
     if (!messages?.length || !snapshot) {
       res.statusCode = 400
@@ -61,8 +63,20 @@ export async function handleFinanceAiChat(
       return
     }
 
+    const systemPrompt =
+      (typeof body.systemPrompt === 'string' && body.systemPrompt.trim()) ||
+      buildFinanceAISystemPrompt(snapshot, { allowWrites, activeMonthIndex })
+
     const model = env.OPENAI_MODEL || 'gpt-4o-mini'
-    const systemPrompt = buildFinanceAISystemPrompt(snapshot)
+    const prelude = allowWrites
+      ? ([
+          { role: 'user', content: 'Подтверди: отвечаешь одним JSON с полями reply и actions, reply только на русском.' },
+          { role: 'assistant', content: '{"reply":"Понял. Буду отвечать JSON с reply на русском и actions.","actions":[]}' },
+        ] as const)
+      : ([
+          { role: 'user', content: 'Подтверди: будешь отвечать только на русском языке.' },
+          { role: 'assistant', content: 'Да, буду отвечать только на русском языке, используя все категории и правильный текущий месяц из данных.' },
+        ] as const)
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -74,12 +88,12 @@ export async function handleFinanceAiChat(
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Подтверди: будешь отвечать только на русском языке.' },
-          { role: 'assistant', content: 'Да, буду отвечать только на русском языке, используя все категории и правильный текущий месяц из данных.' },
+          ...prelude,
           ...messages,
         ],
-        temperature: 0.3,
+        temperature: allowWrites ? 0.1 : 0.3,
         max_tokens: 3000,
+        ...(allowWrites ? { response_format: { type: 'json_object' } } : {}),
       }),
     })
 
@@ -93,11 +107,12 @@ export async function handleFinanceAiChat(
     }
 
     const openaiData = await openaiRes.json()
-    const message = openaiData.choices?.[0]?.message?.content ?? ''
+    const raw = openaiData.choices?.[0]?.message?.content ?? ''
+    const parsed = allowWrites ? parseFinanceAIPayload(raw) : { reply: raw, actions: [] }
 
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ message }))
+    res.end(JSON.stringify({ message: parsed.reply, actions: parsed.actions }))
   } catch (err) {
     console.error('[finance-ai-dev] error:', err)
     res.statusCode = 500

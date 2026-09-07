@@ -12,6 +12,7 @@ export const routeImports = {
   tasks: () => import('@/pages/Tasks'),
   notes: () => import('@/pages/Notes'),
   canvas: () => import('@/pages/Canvas'),
+  // PARKED (intentional): Habits chunk is kept; page is hidden via HABITS_FEATURE_ENABLED.
   habits: () => import('@/pages/Habits'),
   settings: () => import('@/pages/Settings'),
   storybook: () => import('@/pages/Storybook'),

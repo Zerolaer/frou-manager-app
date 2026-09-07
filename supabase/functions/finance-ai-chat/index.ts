@@ -13,6 +13,37 @@ type RequestBody = {
   snapshot: Record<string, unknown>
   gridContext?: string
   locale?: string
+  allowWrites?: boolean
+  activeMonthIndex?: number
+  systemPrompt?: string
+}
+
+function parsePayload(raw: string): { message: string; actions: unknown[] } {
+  const trimmed = raw.trim()
+  const tryParse = (text: string) => {
+    try {
+      return JSON.parse(text) as Record<string, unknown>
+    } catch {
+      return null
+    }
+  }
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  const obj =
+    tryParse(fenced?.[1]?.trim() || '') ||
+    tryParse(trimmed) ||
+    (() => {
+      const start = trimmed.indexOf('{')
+      const end = trimmed.lastIndexOf('}')
+      return start >= 0 && end > start ? tryParse(trimmed.slice(start, end + 1)) : null
+    })()
+  if (obj && typeof obj === 'object') {
+    const message = String(obj.reply ?? obj.message ?? obj.text ?? '').trim()
+    const actions = Array.isArray(obj.actions) ? obj.actions : obj.action ? [obj.action] : []
+    if (message || actions.length) {
+      return { message: message || 'Готово.', actions }
+    }
+  }
+  return { message: trimmed, actions: [] }
 }
 
 function buildSystemPrompt(gridContext: string): string {
@@ -74,7 +105,7 @@ serve(async (req) => {
     }
 
     const body = (await req.json()) as RequestBody
-    const { messages, snapshot, gridContext, locale = 'ru' } = body
+    const { messages, snapshot, gridContext, allowWrites = false } = body
 
     if (!messages?.length || !snapshot) {
       return new Response(JSON.stringify({ error: 'Invalid request body' }), {
@@ -84,12 +115,20 @@ serve(async (req) => {
     }
 
     const contextText = gridContext || JSON.stringify(snapshot)
-    const systemPrompt = buildSystemPrompt(contextText)
+    const systemPrompt = body.systemPrompt?.trim() || buildSystemPrompt(contextText)
+    const prelude = allowWrites
+      ? [
+          { role: 'user', content: 'Подтверди: отвечаешь одним JSON с полями reply и actions, reply только на русском.' },
+          { role: 'assistant', content: '{"reply":"Понял. Буду отвечать JSON с reply на русском и actions.","actions":[]}' },
+        ]
+      : [
+          { role: 'user', content: 'Подтверди: будешь отвечать только на русском языке.' },
+          { role: 'assistant', content: 'Да, буду отвечать только на русском языке, используя правильный текущий месяц из данных.' },
+        ]
 
     const openaiMessages = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: 'Подтверди: будешь отвечать только на русском языке.' },
-      { role: 'assistant', content: 'Да, буду отвечать только на русском языке, используя правильный текущий месяц из данных.' },
+      ...prelude,
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ]
 
@@ -104,8 +143,9 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         messages: openaiMessages,
-        temperature: 0.3,
+        temperature: allowWrites ? 0.1 : 0.3,
         max_tokens: 3000,
+        ...(allowWrites ? { response_format: { type: 'json_object' } } : {}),
       }),
     })
 
@@ -119,9 +159,10 @@ serve(async (req) => {
     }
 
     const openaiData = await openaiRes.json()
-    const message = openaiData.choices?.[0]?.message?.content ?? ''
+    const raw = openaiData.choices?.[0]?.message?.content ?? ''
+    const parsed = allowWrites ? parsePayload(raw) : { message: raw, actions: [] }
 
-    return new Response(JSON.stringify({ message }), {
+    return new Response(JSON.stringify({ message: parsed.message, actions: parsed.actions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {

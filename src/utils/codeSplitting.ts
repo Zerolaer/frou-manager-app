@@ -56,6 +56,7 @@ export const LazyPages = {
   Tasks: lazy(() => import('@/pages/Tasks')),
   Notes: lazy(() => import('@/pages/Notes')),
   Invoice: lazy(() => import('@/pages/Invoice')),
+  // PARKED (intentional): Habits page is hidden via HABITS_FEATURE_ENABLED. Do not delete.
   Habits: lazy(() => import('@/pages/Habits')),
   Login: lazy(() => import('@/pages/Login')),
   Storybook: lazy(() => import('@/pages/Storybook'))

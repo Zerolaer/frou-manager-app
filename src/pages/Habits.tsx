@@ -1,4 +1,9 @@
-/* src/pages/Habits.tsx */
+/* src/pages/Habits.tsx
+ *
+ * PARKED (intentional): the Habits page is hidden from nav and `/habits`
+ * redirects home while HABITS_FEATURE_ENABLED is false.
+ * Keep this file — it is not unused / dead code. See src/lib/featureFlags.ts.
+ */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import '@/home.css';
 import { useSafeTranslation } from '@/utils/safeTranslation';

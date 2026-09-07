@@ -117,9 +117,6 @@ export default defineConfig(({ mode }) => {
     cors: true,
     port: 5173,
     strictPort: false,
-    hmr: {
-      port: 5173
-    }
   },
   // Ensure React is always available - important for Cursor browser compatibility
   esbuild: {

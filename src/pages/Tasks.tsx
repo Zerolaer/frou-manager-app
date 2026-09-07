@@ -126,13 +126,13 @@ function TaskContextMenu({
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <button type="button" onClick={onDuplicate} className="ctx-item w-full text-left whitespace-nowrap">
+        <button type="button" role="menuitem" onClick={onDuplicate} className="ctx-item">
           {t('common.duplicate')}
         </button>
-        <button type="button" onClick={onToggleStatus} className="ctx-item w-full text-left whitespace-nowrap">
+        <button type="button" role="menuitem" onClick={onToggleStatus} className="ctx-item">
           {task?.status === TASK_STATUSES.CLOSED ? t('tasks.open') : t('tasks.markComplete')}
         </button>
-        <button type="button" onClick={onDelete} className="ctx-item ctx-item--danger w-full text-left whitespace-nowrap">
+        <button type="button" role="menuitem" onClick={onDelete} className="ctx-item ctx-item--danger">
           {t('actions.delete')}
         </button>
       </div>

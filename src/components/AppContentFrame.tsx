@@ -1,8 +1,16 @@
 import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import PageSubHeader, { type PageSubHeaderProps } from './PageSubHeader'
+import { HABITS_FEATURE_ENABLED } from '@/lib/featureFlags'
 
-const SUBHEADER_ROUTES = new Set(['/', '/finance', '/tasks', '/notes', '/habits'])
+const SUBHEADER_ROUTES = new Set([
+  '/',
+  '/finance',
+  '/tasks',
+  '/notes',
+  // PARKED (intentional): keep /habits in the set for when the page is restored.
+  ...(HABITS_FEATURE_ENABLED ? ['/habits'] : []),
+])
 
 interface AppContentFrameProps extends PageSubHeaderProps {
   children: ReactNode

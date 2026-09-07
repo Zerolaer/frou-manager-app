@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import SidebarItem from "./SidebarItem";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { CACHE_KEYS, APP_NAME } from "@/lib/constants";
+import { HABITS_FEATURE_ENABLED } from "@/lib/featureFlags";
 import "../sidebar.css";
 
 type Item = { to: string; label: string; icon?: any };
@@ -21,7 +22,10 @@ export default function Sidebar() {
     { to: "/notes", label: t('nav.notes'), icon: StickyNote },
     { to: "/canvas", label: t('nav.canvas'), icon: LayoutDashboard },
     { to: "/invoice", label: t('nav.invoice'), icon: Receipt },
-    { to: "/habits", label: t('nav.habits'), icon: Sparkles },
+    // PARKED (intentional): Habits is hidden, not removed. See HABITS_FEATURE_ENABLED.
+    ...(HABITS_FEATURE_ENABLED
+      ? [{ to: "/habits", label: t('nav.habits'), icon: Sparkles }]
+      : []),
     { to: "/goals", label: t('nav.goals'), icon: Goal },
   ];
 

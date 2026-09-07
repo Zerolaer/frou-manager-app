@@ -1,4 +1,8 @@
-/* src/features/habits/api.ts */
+/* src/features/habits/api.ts
+ *
+ * PARKED (intentional): Habits UI is hidden via HABITS_FEATURE_ENABLED.
+ * Keep this module — it is not dead code. See src/lib/featureFlags.ts.
+ */
 import { supabase } from '@/lib/supabaseClient';
 import { logger } from '@/lib/monitoring';
 import type { Habit, HabitEntry, HabitWithStats } from '@/types/habits';

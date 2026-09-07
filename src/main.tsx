@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Fragment, Suspense, lazy } from 'react'
+import React, { useState, useEffect, Fragment, Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { I18nextProvider } from 'react-i18next'
@@ -6,6 +6,8 @@ import './styles.css'
 import i18n from './lib/i18n'
 import App from './App'
 import { supabase } from './lib/supabaseClient'
+import { isSessionFresh } from './lib/authFlow'
+import { HABITS_FEATURE_ENABLED } from './lib/featureFlags'
 import AppLoader from './components/AppLoader'
 import { registerServiceWorker } from './components/OfflineSupport'
 import { routeImports, prefetchDuringAuthBootstrap } from './lib/routePrefetch'
@@ -25,6 +27,8 @@ const Finance = lazy(routeImports.finance)
 const Tasks = lazy(routeImports.tasks)
 const Notes = lazy(routeImports.notes)
 const Canvas = lazy(routeImports.canvas)
+// PARKED (intentional): Habits stays lazy-loaded so the chunk is not treated as dead.
+// Hidden from nav; `/habits` redirects home while HABITS_FEATURE_ENABLED is false.
 const Habits = lazy(routeImports.habits)
 const Settings = lazy(routeImports.settings)
 const Storybook = lazy(routeImports.storybook)
@@ -36,8 +40,6 @@ const withAuthSuspense = (node: React.ReactNode) => (
 const Protected = ({children}: {children: React.ReactNode}) => {
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(false);
-  /** Пока false — не применяем onAuthStateChange (иначе часто приходит session=null раньше getSession → цикл /login ↔ /). */
-  const initialSessionSyncedRef = useRef(false)
   useEffect(() => {
     if (import.meta.env.DEV) {
       console.log('Checking session…')
@@ -45,80 +47,58 @@ const Protected = ({children}: {children: React.ReactNode}) => {
 
     prefetchDuringAuthBootstrap(isMobileUI())
 
-    initialSessionSyncedRef.current = false
-
     let cancelled = false
+    let finishedInitial = false
     const slowWarnMs = import.meta.env.DEV ? 8_000 : 12_000
-    const slowTimer = window.setTimeout(() => {
-      if (cancelled || !import.meta.env.DEV) return
-      console.warn(
-        '⚠️ Supabase getSession всё ещё ждёт ответа — проверьте сеть или доступность проекта.'
-      )
-    }, slowWarnMs)
-
-    const finishInitialSync = () => {
-      initialSessionSyncedRef.current = true
+    const settleAuth = (isAuthed: boolean) => {
+      if (cancelled) return
+      finishedInitial = true
+      window.clearTimeout(expireFallback)
+      setAuthed(isAuthed)
+      setLoading(false)
     }
 
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        window.clearTimeout(slowTimer)
-        if (cancelled) return
-        finishInitialSync()
-        if (error) {
-          console.error('❌ Error getting session:', error)
-          setAuthed(false)
-          setLoading(false)
-          return
-        }
+    // Expired local session: wait for refresh, then SIGNED_OUT or TOKEN_REFRESHED.
+    const expireFallback = window.setTimeout(() => {
+      if (cancelled || finishedInitial) return
+      settleAuth(false)
+    }, slowWarnMs)
 
-        if (import.meta.env.DEV) {
-          console.log('Session check:', {
-            hasSession: !!data.session,
-            userId: data.session?.user?.id,
-          })
-        }
-        setAuthed(!!data.session)
-        setLoading(false)
-      })
-      .catch((error) => {
-        window.clearTimeout(slowTimer)
-        if (cancelled) return
-        finishInitialSync()
-        console.error('❌ Exception getting session:', error)
-        setAuthed(false)
-        setLoading(false)
-      })
-
-    // Только явный вход/выход. Остальные события (INITIAL_SESSION, TOKEN_REFRESHED и т.д.)
-    // часто шлют промежуточные session=null → Navigate на /login → цикл с Login.
     const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
       if (cancelled) return
-      if (!initialSessionSyncedRef.current) return
-      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return
       if (import.meta.env.DEV) {
         console.log('Auth state:', event, { hasSession: !!sess })
       }
+
       if (event === 'SIGNED_OUT') {
-        void supabase.auth.getSession().then(({ data }) => {
-          if (cancelled) return
-          if (data.session) {
-            setAuthed(true)
-            setLoading(false)
-            return
-          }
-          setAuthed(false)
-          setLoading(false)
-        })
+        settleAuth(false)
         return
       }
-      setAuthed(!!sess)
-      setLoading(false)
+
+      if (event === 'SIGNED_IN') {
+        settleAuth(!!sess)
+        return
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        if (!sess) return
+        settleAuth(true)
+        return
+      }
+
+      if (event === 'INITIAL_SESSION') {
+        if (isSessionFresh(sess)) {
+          settleAuth(true)
+          return
+        }
+        if (!sess) {
+          settleAuth(false)
+        }
+      }
     })
     return () => {
       cancelled = true
-      window.clearTimeout(slowTimer)
+      window.clearTimeout(expireFallback)
       sub.subscription.unsubscribe()
     }
   }, []);
@@ -180,8 +160,10 @@ const router = createBrowserRouter([
         element: <Navigate to="/" replace />,
       },
       {
+        // PARKED (intentional): do not delete this route or the Habits page/module.
+        // Restore by setting HABITS_FEATURE_ENABLED = true in src/lib/featureFlags.ts.
         path: 'habits',
-        element: <Habits />,
+        element: HABITS_FEATURE_ENABLED ? <Habits /> : <Navigate to="/" replace />,
       },
       {
         path: 'settings',

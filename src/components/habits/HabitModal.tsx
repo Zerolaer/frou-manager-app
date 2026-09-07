@@ -1,4 +1,6 @@
-/* src/components/habits/HabitModal.tsx */
+/* src/components/habits/HabitModal.tsx
+ * PARKED (intentional): Habits UI is hidden via HABITS_FEATURE_ENABLED. Do not delete.
+ */
 import React, { useEffect, useState } from 'react';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import SideModal from '@/components/ui/SideModal';

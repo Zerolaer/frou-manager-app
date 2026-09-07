@@ -15,6 +15,11 @@ type Props = {
   year: number
   income: Cat[]
   expense: Cat[]
+  fullScreen?: boolean
+  allowWrites?: boolean
+  activeMonthIndex?: number
+  userId?: string | null
+  onDataChanged?: () => void
 }
 
 const QUICK_PROMPTS = [
@@ -22,6 +27,11 @@ const QUICK_PROMPTS = [
   'finance.ai.promptBudget',
   'finance.ai.promptOverspend',
   'finance.ai.promptSavings',
+] as const
+
+const WRITE_PROMPTS = [
+  'finance.ai.promptSpendAccount',
+  'finance.ai.promptSpendAndRecord',
 ] as const
 
 const PANEL_WIDTH = 420
@@ -74,9 +84,25 @@ function getPanelPositionFromBubble(
   )
 }
 
-export default function FinanceChatPanel({ open, onClose, year, income, expense }: Props) {
+export default function FinanceChatPanel({
+  open,
+  onClose,
+  year,
+  income,
+  expense,
+  fullScreen = false,
+  allowWrites = false,
+  activeMonthIndex,
+  userId,
+  onDataChanged,
+}: Props) {
   const { t } = useSafeTranslation()
-  const { messages, loading, error, sendMessage, clearChat } = useFinanceAI(year, income, expense)
+  const { messages, loading, error, sendMessage, clearChat } = useFinanceAI(year, income, expense, {
+    allowWrites,
+    activeMonthIndex,
+    userId,
+    onDataChanged,
+  })
   const [input, setInput] = useState('')
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -106,12 +132,14 @@ export default function FinanceChatPanel({ open, onClose, year, income, expense 
   const currentMonthName = calendarMonthNames[now.getMonth()]
   const calendarYear = now.getFullYear()
 
-  function resolveQuickPrompt(key: (typeof QUICK_PROMPTS)[number]): string {
+  function resolveQuickPrompt(key: string): string {
     if (key === 'finance.ai.promptAnalyzeMonth') {
       return t(key, { monthName: currentMonthName, year: calendarYear })
     }
     return t(key)
   }
+
+  const quickPrompts = allowWrites ? WRITE_PROMPTS : QUICK_PROMPTS
 
   useEffect(() => {
     onCloseRef.current = onClose
@@ -348,22 +376,26 @@ export default function FinanceChatPanel({ open, onClose, year, income, expense 
       aria-label={t('finance.ai.title')}
       className={cn(
         'fixed z-[100] flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl ring-1 ring-black/10 transition-all duration-200 ease-out',
-        expanded
-          ? 'w-[min(480px,calc(100vw-32px))] h-[calc(100vh-32px)]'
-          : 'w-[min(420px,calc(100vw-32px))] h-[min(560px,calc(100vh-32px))]',
+        fullScreen
+          ? 'finance-ai-mobile inset-0'
+          : expanded
+            ? 'w-[min(480px,calc(100vw-32px))] h-[calc(100vh-32px)]'
+            : 'w-[min(420px,calc(100vw-32px))] h-[min(560px,calc(100vh-32px))]',
         !isAnimating ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
         isDragging && 'select-none',
       )}
-      style={{ left: position.x, top: position.y }}
+      style={fullScreen ? { left: 0, top: 0 } : { left: position.x, top: position.y }}
     >
       <div
-        className="cursor-grab active:cursor-grabbing flex-shrink-0"
-        onMouseDown={handlePanelDragStart}
+        className={cn(!fullScreen && 'cursor-grab active:cursor-grabbing', 'flex-shrink-0')}
+        onMouseDown={fullScreen ? undefined : handlePanelDragStart}
+        style={fullScreen ? { paddingTop: 'env(safe-area-inset-top, 0px)' } : undefined}
       >
         <ModalHeader
           title={panelTitle}
           onClose={onClose}
           rightContent={
+            fullScreen ? undefined : (
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -390,6 +422,7 @@ export default function FinanceChatPanel({ open, onClose, year, income, expense 
                 <Minimize2 className="h-4 w-4 text-gray-500" />
               </button>
             </div>
+            )
           }
         />
       </div>
@@ -400,11 +433,13 @@ export default function FinanceChatPanel({ open, onClose, year, income, expense 
             <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4">
               <div className="flex items-start gap-2">
                 <Sparkles className="h-4 w-4 text-violet-500 mt-0.5 shrink-0" />
-                <p className="text-sm text-gray-600">{t('finance.ai.welcome')}</p>
+                <p className="text-sm text-gray-600">
+                  {t(allowWrites ? 'finance.ai.welcomeWrite' : 'finance.ai.welcome')}
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {QUICK_PROMPTS.map((key) => (
+              {quickPrompts.map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -484,7 +519,7 @@ export default function FinanceChatPanel({ open, onClose, year, income, expense 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={t('finance.ai.placeholder')}
+              placeholder={t(allowWrites ? 'finance.ai.placeholderWrite' : 'finance.ai.placeholder')}
               rows={1}
               disabled={loading}
               className="h-10 min-h-[40px] max-h-24 flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-60"
@@ -503,5 +538,5 @@ export default function FinanceChatPanel({ open, onClose, year, income, expense 
     </div>
   )
 
-  return createPortal(collapsed ? bubble : panel, document.body)
+  return createPortal(collapsed && !fullScreen ? bubble : panel, document.body)
 }

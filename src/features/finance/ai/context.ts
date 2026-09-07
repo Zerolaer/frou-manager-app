@@ -126,11 +126,83 @@ export function buildFinanceAITextContext(snapshot: FinanceSnapshot, locale = 'r
     formatCategoryBlock(snapshot.categories.income, '--- ДОХОДЫ (все категории и все месяцы) ---', months),
     '',
     formatCategoryBlock(snapshot.categories.expense, '--- РАСХОДЫ (все категории и все месяцы) ---', months),
+    '',
+    formatLeafCatalog(snapshot, locale),
   ].join('\n')
 }
 
-export function buildFinanceAISystemPrompt(snapshot: FinanceSnapshot): string {
+function formatLeafCatalog(snapshot: FinanceSnapshot, locale = 'ru'): string {
+  const months = locale.startsWith('ru') ? MONTHS_RU : MONTHS_EN
+  const lines = ['--- ЛИСТОВЫЕ КАТЕГОРИИ (для точного id) ---']
+  for (const type of ['income', 'expense'] as const) {
+    const cats = snapshot.categories[type].filter((c) => c.is_leaf)
+    if (!cats.length) continue
+    lines.push(type === 'income' ? 'доходы:' : 'расходы:')
+    for (const cat of cats) {
+      const monthBits = cat.monthly_totals_eur
+        .map((v, i) => `${months[i]}:€${roundEur(v)}`)
+        .join(' ')
+      lines.push(`- ${cat.name} | id:${cat.id} | ${monthBits}`)
+    }
+  }
+  return lines.join('\n')
+}
+
+export type FinanceAIPromptOptions = {
+  allowWrites?: boolean
+  activeMonthIndex?: number
+}
+
+const WRITE_RULES = `РЕЖИМ АССИСТЕНТА (МОЖНО МЕНЯТЬ ДАННЫЕ):
+Ответ СТРОГО одним JSON-объектом, без markdown и без текста вокруг:
+{
+  "reply": "короткий ответ пользователю на русском",
+  "actions": []
+}
+
+actions — массив операций. Допустимые op:
+1) set_balance — выставить ИТОГ листовой ячейки. Поля: category_id (предпочтительно), category_name, type ("income"|"expense"), month (1-12), new_total (число), currency (EUR по умолчанию), note.
+   Система сама добавит корректирующую запись, чтобы итог стал new_total.
+2) add_entry — добавить запись в листовую ячейку. Поля: category_id, category_name, type, month, amount (может быть отрицательным), currency, note.
+
+ПРАВИЛА СПИСАНИЯ (КРИТИЧНО):
+- «Потратил X из Swedbank / со счёта / с карты» БЕЗ явной просьбы записать в расходы → ТОЛЬКО изменение этой ячейки.
+  Если было €600, потратил €300 → set_balance new_total=300 (или одна add_entry amount=-300). НЕ создавать расход.
+- Расход создаётся ТОЛЬКО если пользователь ЯВНО просит: «запиши в расходы», «в дополнительные», «купил … запиши трату».
+  Тогда: add_entry в подходящую expense-категорию (amount положительный, note = что купили)
+  И если указан источник (Swedbank) — дополнительно set_balance/списание с этой income-ячейки.
+- Нельзя писать в родительские категории (is_leaf: false).
+- Нельзя создавать категории. Если категория не найдена или неоднозначна — actions: [] и спроси в reply.
+- Не делай сразу set_balance и add_entry на одну и ту же ячейку.
+- Если месяц не назван — используй месяц на экране пользователя.
+- amount/new_total всегда в указанной валюте, по умолчанию EUR.`
+
+export function buildFinanceAISystemPrompt(
+  snapshot: FinanceSnapshot,
+  options: FinanceAIPromptOptions = {}
+): string {
   const textContext = buildFinanceAITextContext(snapshot, 'ru')
+  const activeMonthIndex =
+    typeof options.activeMonthIndex === 'number' && options.activeMonthIndex >= 0 && options.activeMonthIndex <= 11
+      ? options.activeMonthIndex
+      : snapshot.temporal.reference_month_index >= 0
+        ? snapshot.temporal.reference_month_index
+        : snapshot.temporal.calendar_month_index
+  const activeMonthName = MONTHS_RU[activeMonthIndex] ?? String(activeMonthIndex + 1)
+
+  if (options.allowWrites) {
+    return `Ты — финансовый ассистент Frou Manager. Режим: ЗАПИСЬ ДАННЫХ (assistant).
+
+ЯЗЫК (КРИТИЧНО):
+- Поле reply — ИСКЛЮЧИТЕЛЬНО на русском языке.
+
+МЕСЯЦ НА ЭКРАНЕ: ${activeMonthName} ${snapshot.year} (месяц №${activeMonthIndex + 1}). Если пользователь не назвал месяц, пиши в него.
+
+${WRITE_RULES}
+
+ДАННЫЕ СЕТКИ:
+${textContext}`
+  }
 
   return `Ты — финансовый ассистент Frou Manager. Режим: ТОЛЬКО АНАЛИЗ (read-only).
 
@@ -165,12 +237,14 @@ export function buildFinanceAICompactJson(snapshot: FinanceSnapshot): string {
     temporal: snapshot.temporal,
     summary: snapshot.summary,
     income: snapshot.categories.income.map((c) => ({
+      id: c.id,
       name: c.name,
       parent: c.parent_name,
       is_leaf: c.is_leaf,
       monthly_eur: c.monthly_totals_eur,
     })),
     expense: snapshot.categories.expense.map((c) => ({
+      id: c.id,
       name: c.name,
       parent: c.parent_name,
       is_leaf: c.is_leaf,
