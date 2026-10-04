@@ -1,6 +1,26 @@
 import { logger } from '@/lib/monitoring'
 import type { Cat } from '@/types/shared'
 
+function csvCell(value: string | number): string {
+  const raw = String(value)
+  const formulaUnsafe = /^[=+\-@\t\r]/.test(raw)
+  const escaped = `"${raw.replace(/"/g, '""')}"`
+  return formulaUnsafe ? `"'${raw.replace(/"/g, '""')}"` : ( /[",\n]/.test(raw) ? escaped : raw )
+}
+
+function remapImportedCategories(cats: Cat[]): Cat[] {
+  const idMap = new Map<string, string>()
+  cats.forEach((cat) => {
+    idMap.set(cat.id, crypto.randomUUID())
+  })
+  return cats.map((cat) => ({
+    ...cat,
+    id: idMap.get(cat.id) || crypto.randomUUID(),
+    parent_id: cat.parent_id ? idMap.get(cat.parent_id) ?? null : null,
+    values: Array.isArray(cat.values) ? cat.values.slice(0, 12).map((v) => Number(v) || 0) : Array(12).fill(0),
+  }))
+}
+
 interface ExportData {
   year: number
   exportDate: string
@@ -36,7 +56,7 @@ export function exportToCSV(income: Cat[], expense: Cat[], year: number): string
   
   income.forEach(cat => {
     const total = cat.values.reduce((sum, val) => sum + val, 0)
-    csv += `${cat.name},${cat.values.join(',')},${total}\n`
+    csv += `${csvCell(cat.name)},${cat.values.map((v) => csvCell(v)).join(',')},${csvCell(total)}\n`
   })
   
   const incomeTotal = income.reduce((sum, cat) => sum + cat.values.reduce((s, v) => s + v, 0), 0)
@@ -50,7 +70,7 @@ export function exportToCSV(income: Cat[], expense: Cat[], year: number): string
   
   expense.forEach(cat => {
     const total = cat.values.reduce((sum, val) => sum + val, 0)
-    csv += `${cat.name},${cat.values.join(',')},${total}\n`
+    csv += `${csvCell(cat.name)},${cat.values.map((v) => csvCell(v)).join(',')},${csvCell(total)}\n`
   })
   
   const expenseTotal = expense.reduce((sum, cat) => sum + cat.values.reduce((s, v) => s + v, 0), 0)
@@ -95,13 +115,13 @@ export function parseJSONImport(jsonString: string): { income: Cat[], expense: C
     const data = JSON.parse(jsonString) as ExportData
     
     // Validate structure
-    if (!data.income || !data.expense || !data.year) {
+    if (!Array.isArray(data.income) || !Array.isArray(data.expense) || typeof data.year !== 'number') {
       throw new Error('Invalid data structure')
     }
-    
+
     return {
-      income: data.income,
-      expense: data.expense,
+      income: remapImportedCategories(data.income),
+      expense: remapImportedCategories(data.expense),
       year: data.year
     }
   } catch (error) {

@@ -12,6 +12,7 @@ import { ModalButton } from '@/components/ui/ModalSystem'
 import { logger } from '@/lib/monitoring'
 import type { Todo } from '@/types/shared'
 import { RecurringTaskSettings } from '@/types/recurring'
+import { toCivilDate } from '@/lib/dateUtils'
 
 type Props = {
   open: boolean
@@ -44,7 +45,7 @@ export default function MobileTaskAddModal({
       tag: '',
       scheduledTime: null as string | null,
       projectId: (activeProject && activeProject !== 'ALL') ? activeProject : '',
-      selectedDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      selectedDate: toCivilDate(initialDate ?? new Date())
     },
     validation: {
       title: (value) => !value.trim() ? t('validation.titleRequired') : undefined,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { CheckCircle2, ListTodo, TrendingUp, Calendar } from 'lucide-react'
 import { startOfWeek, endOfWeek } from 'date-fns'
+import { toCivilDate } from '@/lib/dateUtils'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { supabase } from '@/lib/supabaseClient'
@@ -22,9 +23,9 @@ export default function HomeMobile() {
 
     const loadStats = async () => {
       const now = new Date()
-      const weekStart = startOfWeek(now, { weekStartsOn: 1 }).toISOString().split('T')[0]
-      const weekEnd = endOfWeek(now, { weekStartsOn: 1 }).toISOString().split('T')[0]
-      const today = now.toISOString().split('T')[0]
+      const weekStart = toCivilDate(startOfWeek(now, { weekStartsOn: 1 }))
+      const weekEnd = toCivilDate(endOfWeek(now, { weekStartsOn: 1 }))
+      const today = toCivilDate(now)
 
       const { data } = await supabase
         .from('tasks_items')

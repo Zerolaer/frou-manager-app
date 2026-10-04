@@ -1,4 +1,4 @@
-import { useContext as useContextHook } from 'react'
+import { useCallback, useContext as useContextHook } from 'react'
 import { I18nContext } from 'react-i18next'
 
 const fallbackTranslator = {
@@ -46,7 +46,7 @@ export function useSafeTranslation() {
       ? safeCtx.ready
       : safeCtx?.i18n?.isInitialized !== false
   
-  const safeT = (key: string, options?: any): string => {
+  const safeT = useCallback((key: string, options?: any): string => {
     if (!readyFlag) {
       return key // Return key if i18n not ready
     }
@@ -70,7 +70,7 @@ export function useSafeTranslation() {
       console.warn(`Translation error for key "${key}":`, String(error))
       return key
     }
-  }
+  }, [tFn, readyFlag])
   
   return { t: safeT, ready: readyFlag, i18n: safeCtx?.i18n }
 }

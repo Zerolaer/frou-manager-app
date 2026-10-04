@@ -11,7 +11,7 @@ import AuthErrorBanner from '@/components/auth/AuthErrorBanner'
 import { useGuestOnly } from '@/hooks/useGuestOnly'
 import { authRedirectUrl, mapAuthError, mapAuthException } from '@/lib/authFlow'
 
-const MIN_PASSWORD_LENGTH = 6
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
 
 export default function Signup() {
   const { t } = useSafeTranslation()

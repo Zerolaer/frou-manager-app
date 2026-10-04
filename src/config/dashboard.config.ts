@@ -7,7 +7,7 @@ export const DASHBOARD = {
     title: 'title',
     due: 'date',
     status: 'status',
-    statusDoneValue: 'done',
+    statusDoneValue: 'closed',
     priority: 'priority',
     // ВАЖНО: раньше стояло 'project_id' по умолчанию, теперь NULL,
     // чтобы не падать, если колонки нет.

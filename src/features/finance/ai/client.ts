@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { buildFinanceAISystemPrompt, buildFinanceAITextContext } from '@/features/finance/ai/context'
+import { buildFinanceAITextContext } from '@/features/finance/ai/context'
 import type { FinanceAIChatRequest, FinanceAIChatResponse } from '@/features/finance/ai/types'
 
 function enrichRequest(request: FinanceAIChatRequest): FinanceAIChatRequest {
@@ -8,30 +8,32 @@ function enrichRequest(request: FinanceAIChatRequest): FinanceAIChatRequest {
     ...request,
     locale,
     gridContext: request.gridContext ?? buildFinanceAITextContext(request.snapshot, locale),
-    systemPrompt:
-      request.systemPrompt ??
-      buildFinanceAISystemPrompt(request.snapshot, {
-        allowWrites: request.allowWrites,
-        activeMonthIndex: request.activeMonthIndex,
-      }),
   }
 }
 
 async function sendViaLocalDevApi(request: FinanceAIChatRequest): Promise<FinanceAIChatResponse> {
   const payload = enrichRequest(request)
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) {
+    return { message: '', error: 'Unauthorized' }
+  }
   const res = await fetch('/api/finance-ai-chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(payload),
   })
 
-  const data = (await res.json()) as FinanceAIChatResponse
+  const payloadJson = (await res.json()) as FinanceAIChatResponse
 
   if (!res.ok) {
-    return { message: '', error: data.error || `Local AI API error: ${res.status}` }
+    return { message: '', error: payloadJson.error || `Local AI API error: ${res.status}` }
   }
 
-  return data
+  return payloadJson
 }
 
 function formatEdgeInvokeError(message: string | undefined): string {

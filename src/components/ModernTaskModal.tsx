@@ -264,7 +264,7 @@ export default function ModernTaskModal({ open, onClose, task, onUpdated, onUpda
       // Устанавливаем контент в contenteditable элемент
       setTimeout(() => {
         if (descriptionEditorRef.current) {
-          descriptionEditorRef.current.innerHTML = taskDescription
+          descriptionEditorRef.current.innerHTML = sanitizeRichTextHtml(taskDescription)
           // Устанавливаем начальную высоту на основе содержимого
           const editor = descriptionEditorRef.current
           editor.style.height = 'auto'

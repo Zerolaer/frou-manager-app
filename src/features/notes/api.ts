@@ -9,41 +9,58 @@ import type { Note } from './types';
  */
 export type SortKey = 'updated_at' | 'created_at' | 'title';
 
+function isMissingColumnError(error: { message?: string; code?: string } | null) {
+  if (!error) return false
+  return error.code === '42703' || /column .* does not exist/i.test(error.message || '')
+}
+
 export async function listNotes(query: string, sort: SortKey = 'updated_at', folderId?: string | null) {
-  let req = supabase
-    .from('notes')
-    .select('*')
-    .order('pinned', { ascending: false })
-    .order(sort, { ascending: sort === 'title' }) as any;
+  const { data: auth } = await supabase.auth.getUser()
+  const userId = auth.user?.id
+  if (!userId) return [] as Note[]
+
+  let req = supabase.from('notes').select('*').eq('user_id', userId)
 
   if (query?.trim()) {
-    // Simple title search; for full-text, consider pg tsvector
-    req = req.ilike('title', `%${query.trim()}%`);
+    req = req.ilike('title', `%${query.trim()}%`)
   }
 
-  // Filter by folder
-  if (folderId) {
-    if (folderId === 'ALL') {
-      // Show all notes (no additional filter)
+  // Sentinels: ALL = everything, UNFILED = folder_id IS NULL.
+  if (folderId && folderId !== 'ALL') {
+    if (folderId === 'UNFILED') {
+      req = req.is('folder_id', null)
     } else {
-      req = req.eq('folder_id', folderId);
+      req = req.eq('folder_id', folderId)
     }
-  } else {
-    // Show notes without folder (folder_id is null)
-    req = req.is('folder_id', null);
   }
 
-  const { data, error } = await req;
-  if (error) throw error;
-  
-  logger.debug('listNotes fetched', { 
-    count: data?.length
-  });
-  
-  return data as Note[];
+  const withPinOrder = req
+    .order('pinned', { ascending: false })
+    .order(sort, { ascending: sort === 'title' })
+    .limit(500)
+
+  let { data, error } = await withPinOrder
+
+  if (error && isMissingColumnError(error)) {
+    const fallback = await req.order(sort, { ascending: sort === 'title' }).limit(500)
+    data = fallback.data
+    error = fallback.error
+  }
+
+  if (error) {
+    logger.error('API listNotes error:', error)
+    throw error
+  }
+
+  logger.debug('listNotes fetched', { count: data?.length })
+  return (data ?? []) as Note[]
 }
 
 export async function createNote(payload: Partial<Note>) {
+  const { data: auth } = await supabase.auth.getUser()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('Требуется вход в аккаунт')
+
   const { data, error } = await supabase
     .from('notes')
     .insert({
@@ -51,6 +68,7 @@ export async function createNote(payload: Partial<Note>) {
       content: payload.content ?? '',
       pinned: payload.pinned ?? false,
       folder_id: payload.folder_id ?? null,
+      user_id: userId,
     })
     .select()
     .single();
@@ -65,9 +83,13 @@ export async function createNote(payload: Partial<Note>) {
 }
 
 export async function updateNote(id: string, changes: Partial<Note>) {
+  const { user_id: _userId, id: _id, created_at: _created, ...safeChanges } = changes as Partial<Note> & {
+    user_id?: string
+    created_at?: string
+  }
   const { data, error } = await supabase
     .from('notes')
-    .update(changes)
+    .update(safeChanges)
     .eq('id', id)
     .select()
     .single();

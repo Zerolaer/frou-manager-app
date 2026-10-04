@@ -7,7 +7,7 @@ export function useMobileDetection() {
 
   useEffect(() => {
     const checkDevice = () => {
-      if (isNativeIOS()) {
+      if (isNativeIOS() && window.innerWidth < 768) {
         setIsMobile(true)
         setIsTablet(false)
         return
@@ -30,13 +30,16 @@ export function useMobileDetection() {
 }
 
 export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>(() =>
-    isNativeIOS() || isMobileUI() ? 'mobile' : 'desktop'
-  )
+  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>(() => {
+    if (typeof window === 'undefined') return 'desktop'
+    if (window.innerWidth < 768) return 'mobile'
+    if (window.innerWidth < 1024) return 'tablet'
+    return 'desktop'
+  })
 
   useEffect(() => {
     const checkBreakpoint = () => {
-      if (isNativeIOS()) {
+      if (isNativeIOS() && window.innerWidth < 768) {
         setBreakpoint('mobile')
         return
       }

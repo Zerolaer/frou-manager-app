@@ -816,7 +816,8 @@
       "newPasswordPlaceholder": "Enter new password (minimum 6 characters)",
       "confirmPassword": "Confirm Password",
       "confirmPasswordPlaceholder": "Repeat new password",
-      "passwordsDontMatch": "Passwords do not match"
+      "passwordsDontMatch": "Passwords do not match",
+      "emailChangeSent": "Check your inbox to confirm the new email."
     },
     "system": {
       "title": "System Settings",
@@ -836,6 +837,7 @@
       "autoLoadLastPageDescription": "Automatically open the last visited page on login",
       "autoSaveDrafts": "Auto-save Drafts",
       "autoSaveDraftsDescription": "Automatically save task drafts",
+      "subtitle": "Language, theme, dates and currency.",
       "themes": {
         "light": "Light",
         "dark": "Dark",
@@ -862,17 +864,35 @@
       "announcementsDesc": "Receive email about product updates, improvements, etc.",
       "soundsTitle": "Sounds",
       "disableSounds": "Disable All Notification Sounds",
-      "disableSoundsDesc": "Mute all notification of the messages, contracts, documents."
+      "disableSoundsDesc": "Mute all notification of the messages, contracts, documents.",
+      "subtitle": "Choose what this device should remind you about."
+    },
+    "profile": {
+      "subtitle": "Manage how you appear across Frovo."
+    },
+    "security": {
+      "subtitle": "Protect your account with a strong password."
     },
     "billing": {
       "comingSoon": "Billing settings coming soon..."
     },
     "data": {
-      "comingSoon": "Data export functionality coming soon..."
+      "comingSoon": "Data export functionality coming soon...",
+      "subtitle": "Export from modules or clear this device cache.",
+      "exportFinance": "Export finance",
+      "exportFinanceDesc": "Open Finance and use Export JSON / CSV",
+      "exportNotes": "Export notes",
+      "exportNotesDesc": "Open Notes and use the export action",
+      "clearLocal": "Clear local cache",
+      "clearLocalDesc": "Removes offline caches and filters on this device",
+      "clearLocalConfirm": "Clear cached data on this device? Your cloud data stays intact.",
+      "clearLocalDone": "Local cache cleared."
     },
     "delete": {
       "warning": "Deleting your account will permanently remove all your data. This action cannot be undone.",
-      "confirm": "Delete Account"
+      "confirm": "Delete Account",
+      "subtitle": "Danger zone — irreversible actions.",
+      "signedOut": "Signed out and cleared local data. Contact support to permanently delete the account on the server."
     }
   },
   "canvas": {
@@ -891,6 +911,13 @@
     "activeProject": "Current project",
     "projectName": "Project name",
     "addCard": "Add card",
+    "addSticky": "Sticky",
+    "addText": "Text",
+    "addShape": "Shape",
+    "stickyDefaultTitle": "Sticky note",
+    "renameProject": "Rename",
+    "renameHint": "Double-click to rename",
+    "deleteProjectConfirm": "Delete this project? This cannot be undone.",
     "connect": "Connect",
     "connectActive": "Tap another card",
     "fitView": "Fit view",
@@ -927,6 +954,19 @@
       "e": "Right connection point",
       "s": "Bottom connection point",
       "w": "Left connection point"
+    },
+    "ai": {
+      "button": "AI map",
+      "title": "Generate project map",
+      "subtitle": "Describe a product or idea. AI will lay out sections, cards, and links — not a live website.",
+      "promptLabel": "Prompt",
+      "placeholder": "e.g. Build a site for monitoring player activity",
+      "hint": "Empty boards are filled immediately. If the board already has cards, you will be asked to replace it. Undo restores the previous map.",
+      "generate": "Generate",
+      "generating": "Generating…",
+      "replaceConfirm": "Replace the current board with the generated project map? You can undo afterwards.",
+      "replaceTitle": "Replace board",
+      "errorGeneric": "Could not generate a project map. Try a more specific prompt."
     }
   },
   "habits": {

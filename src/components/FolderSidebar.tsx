@@ -146,7 +146,7 @@ export default function FolderSidebar({ userId, activeId, onChange, collapsed = 
     if (!ctxFolder) return
     await supabase.from('notes_folders').delete().eq('id', ctxFolder.id)
     setItems(items.filter(p=> p.id!==ctxFolder.id))
-    if (activeId===ctxFolder.id) onChange(null)
+    if (activeId===ctxFolder.id) onChange('ALL')
     setDelOpen(false)
   }
 

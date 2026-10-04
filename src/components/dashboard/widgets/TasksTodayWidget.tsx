@@ -8,6 +8,7 @@ import WidgetHeader from './WidgetHeader';
 import { getPriorityTextKey } from '@/lib/taskHelpers';
 import { logger } from '@/lib/monitoring';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { toCivilDate } from '@/lib/dateUtils';
 
 interface Task {
   id: string;
@@ -33,7 +34,7 @@ const TasksTodayWidget = () => {
     try {
       setLoading(true);
       
-      const today = new Date().toISOString().split('T')[0];
+      const today = toCivilDate();
       
       const { data, error } = await supabase
         .from('tasks_items')

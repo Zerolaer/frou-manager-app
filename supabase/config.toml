@@ -4,3 +4,6 @@ project_id = "anugfsevzdpsehfzflji"
 
 [functions.finance-ai-chat]
 verify_jwt = true
+
+[functions.canvas-ai-layout]
+verify_jwt = true

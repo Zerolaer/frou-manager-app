@@ -3,6 +3,7 @@ import type { FC } from 'react'
 import { AccessibleButton } from './AccessibleComponents'
 import { announceToScreenReader } from '@/lib/accessibility'
 import { isProduction } from '../lib/env'
+import { isNativeApp } from '@/platform/nativeApp'
 import { logger } from '@/lib/monitoring'
 
 // Hook for detecting online/offline status
@@ -259,6 +260,7 @@ export const OfflineQueueIndicator: FC = () => {
 
 // Service Worker registration
 export function registerServiceWorker() {
+  if (isNativeApp()) return
   if ('serviceWorker' in navigator && isProduction()) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')

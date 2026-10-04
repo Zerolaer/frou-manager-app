@@ -15,7 +15,38 @@ type RequestBody = {
   locale?: string
   allowWrites?: boolean
   activeMonthIndex?: number
-  systemPrompt?: string
+}
+
+const MAX_MESSAGES = 20
+const MAX_CONTENT_CHARS = 4000
+const rateBuckets = new Map<string, number[]>()
+
+function sanitizeMessages(input: unknown): ChatMessage[] {
+  if (!Array.isArray(input)) return []
+  const out: ChatMessage[] = []
+  for (const item of input) {
+    if (!item || typeof item !== 'object') continue
+    const role = (item as { role?: string }).role
+    const content = (item as { content?: unknown }).content
+    if (role !== 'user' && role !== 'assistant') continue
+    if (typeof content !== 'string' || !content.trim()) continue
+    out.push({ role, content: content.slice(0, MAX_CONTENT_CHARS) })
+    if (out.length >= MAX_MESSAGES) break
+  }
+  return out
+}
+
+function consumeRateLimit(userId: string, maxPerWindow = 20, windowMs = 10 * 60 * 1000): boolean {
+  const now = Date.now()
+  const prev = rateBuckets.get(userId) ?? []
+  const recent = prev.filter((t) => now - t < windowMs)
+  if (recent.length >= maxPerWindow) {
+    rateBuckets.set(userId, recent)
+    return false
+  }
+  recent.push(now)
+  rateBuckets.set(userId, recent)
+  return true
 }
 
 function parsePayload(raw: string): { message: string; actions: unknown[] } {
@@ -95,6 +126,13 @@ serve(async (req) => {
       })
     }
 
+    if (!consumeRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: 'Too many AI requests' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     if (!openaiKey) {
       return new Response(
         JSON.stringify({
@@ -105,9 +143,10 @@ serve(async (req) => {
     }
 
     const body = (await req.json()) as RequestBody
-    const { messages, snapshot, gridContext, allowWrites = false } = body
+    const messages = sanitizeMessages(body.messages)
+    const { snapshot, gridContext, allowWrites = false } = body
 
-    if (!messages?.length || !snapshot) {
+    if (!messages.length || !snapshot) {
       return new Response(JSON.stringify({ error: 'Invalid request body' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -115,7 +154,7 @@ serve(async (req) => {
     }
 
     const contextText = gridContext || JSON.stringify(snapshot)
-    const systemPrompt = body.systemPrompt?.trim() || buildSystemPrompt(contextText)
+    const systemPrompt = buildSystemPrompt(contextText.slice(0, 80_000))
     const prelude = allowWrites
       ? [
           { role: 'user', content: 'Подтверди: отвечаешь одним JSON с полями reply и actions, reply только на русском.' },
@@ -129,7 +168,7 @@ serve(async (req) => {
     const openaiMessages = [
       { role: 'system', content: systemPrompt },
       ...prelude,
-      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ...messages,
     ]
 
     const model = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'
@@ -144,7 +183,7 @@ serve(async (req) => {
         model,
         messages: openaiMessages,
         temperature: allowWrites ? 0.1 : 0.3,
-        max_tokens: 3000,
+        max_tokens: 1500,
         ...(allowWrites ? { response_format: { type: 'json_object' } } : {}),
       }),
     })

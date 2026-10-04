@@ -11,10 +11,12 @@ import { HABITS_FEATURE_ENABLED } from './lib/featureFlags'
 import AppLoader from './components/AppLoader'
 import { registerServiceWorker } from './components/OfflineSupport'
 import { routeImports, prefetchDuringAuthBootstrap } from './lib/routePrefetch'
-import { isMobileUI } from './platform/nativeApp'
+import { isMobileUI, isNativeApp } from './platform/nativeApp'
 import { initCapacitorNative } from './platform/capacitorInit'
 import { setupNativeApp } from './lib/nativeAppLifecycle'
 import NativeSplashGate from './components/NativeSplashGate'
+import { AuthProvider } from './hooks/useSupabaseAuth'
+import { AppErrorBoundary } from './components/ErrorBoundaries'
 
 // Default landing route — eager to avoid a second full-screen loader after auth.
 import Home from './pages/Home'
@@ -49,7 +51,7 @@ const Protected = ({children}: {children: React.ReactNode}) => {
 
     let cancelled = false
     let finishedInitial = false
-    const slowWarnMs = import.meta.env.DEV ? 8_000 : 12_000
+    const slowWarnMs = isNativeApp() ? 25_000 : import.meta.env.DEV ? 8_000 : 12_000
     const settleAuth = (isAuthed: boolean) => {
       if (cancelled) return
       finishedInitial = true
@@ -187,7 +189,11 @@ registerServiceWorker()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <I18nextProvider i18n={i18n}>
-    <NativeSplashGate />
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <AppErrorBoundary>
+        <NativeSplashGate />
+        <RouterProvider router={router} />
+      </AppErrorBoundary>
+    </AuthProvider>
   </I18nextProvider>
 )

@@ -1,29 +1,27 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { User, Settings, Languages, LogOut, Home, FileText, Video, Users, Moon, HelpCircle, MessageSquare, Zap, Check } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  CheckSquare,
+  FileText,
+  FolderKanban,
+  Languages,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Wallet,
+} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useSafeTranslation } from '@/utils/safeTranslation'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
-import { useNavigate } from 'react-router-dom'
+import { HABITS_FEATURE_ENABLED } from '@/lib/featureFlags'
+import { cn } from '@/lib/utils'
 
-// Add keyframe animation for dropdown appearance
-const dropdownAnimation = `
-  @keyframes dropdownAppear {
-    0% {
-      opacity: 0;
-      transform: scale(0.95) translateY(-4px);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-`;
-
-// Inject styles if not already present
-if (typeof document !== 'undefined' && !document.getElementById('dropdown-animation')) {
-  const style = document.createElement('style');
-  style.id = 'dropdown-animation';
-  style.textContent = dropdownAnimation;
-  document.head.appendChild(style);
+type NavItem = {
+  id: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  to?: string
+  onClick?: () => void
+  trailing?: React.ReactNode
 }
 
 export default function UserMenu() {
@@ -34,207 +32,203 @@ export default function UserMenu() {
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  // Get user display name
-  const displayName = user?.user_metadata?.name || user?.user_metadata?.full_name || email?.split('@')[0] || 'User'
+  const displayName =
+    user?.user_metadata?.name ||
+    user?.user_metadata?.full_name ||
+    email?.split('@')[0] ||
+    'User'
   const userEmail = email || ''
 
-  // Close menu when clicking outside
   useEffect(() => {
+    if (!open) return
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setOpen(false)
       }
     }
-
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
     }
   }, [open])
 
   const handleSignOut = async () => {
     setOpen(false)
     try {
-      // Сначала корректно завершаем сессию в Supabase, чтобы токен в другой вкладке тоже инвалидировался.
-      await signOut().catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error('[auth] signOut failed:', error)
-        }
-      })
-
-      // Затем чистим локальные ключи нашего приложения и кэши Supabase.
+      await signOut().catch(() => undefined)
       const drop = (storage: Storage) => {
         const keys: string[] = []
         for (let i = 0; i < storage.length; i++) {
           const key = storage.key(i)
-          if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) {
-            keys.push(key)
-          }
+          if (key && (key.startsWith('frovo_') || key.startsWith('sb-'))) keys.push(key)
         }
         keys.forEach((key) => storage.removeItem(key))
       }
       drop(localStorage)
       drop(sessionStorage)
-
       navigate('/login', { replace: true })
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[auth] logout error:', error)
-      }
+    } catch {
       navigate('/login', { replace: true })
     }
   }
 
   const toggleLanguage = () => {
-    if (!i18n || !i18n.language) return
-    const newLang = i18n.language === 'en' ? 'ru' : 'en'
+    if (!i18n?.language) return
+    const newLang = i18n.language.startsWith('ru') ? 'en' : 'ru'
     localStorage.setItem('frovo_language', newLang)
-    i18n.changeLanguage(newLang)
-    // Don't close menu on language change
+    void i18n.changeLanguage(newLang)
   }
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2)
+
+  const go = (path: string) => {
+    setOpen(false)
+    navigate(path)
+  }
+
+  const primaryNav: NavItem[] = [
+    { id: 'home', label: t('nav.home'), icon: LayoutDashboard, to: '/' },
+    { id: 'tasks', label: t('nav.tasks'), icon: CheckSquare, to: '/tasks' },
+    { id: 'finance', label: t('nav.finance'), icon: Wallet, to: '/finance' },
+    { id: 'notes', label: t('nav.notes'), icon: FileText, to: '/notes' },
+    { id: 'canvas', label: t('nav.canvas'), icon: FolderKanban, to: '/canvas' },
+  ]
+
+  const secondaryNav: NavItem[] = [
+    {
+      id: 'settings',
+      label: t('user.settings') || t('nav.settings'),
+      icon: Settings,
+      to: '/settings',
+    },
+    {
+      id: 'language',
+      label: t('user.changeLanguage') || 'Language',
+      icon: Languages,
+      onClick: toggleLanguage,
+      trailing: (
+        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium uppercase text-gray-600">
+          {(i18n?.language || 'en').slice(0, 2)}
+        </span>
+      ),
+    },
+  ]
+
+  if (HABITS_FEATURE_ENABLED) {
+    primaryNav.push({
+      id: 'habits',
+      label: t('nav.habits') || 'Habits',
+      icon: CheckSquare,
+      to: '/habits',
+    })
   }
 
   return (
     <div className="relative">
       <button
         ref={buttonRef}
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-3 px-4 py-2 rounded-full transition-all duration-300 ease-out hover:scale-[1.03] text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-3 rounded-full px-3 py-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
         aria-label={t('user.menu')}
         aria-expanded={open}
+        aria-haspopup="menu"
       >
-        {/* User Info - Left */}
-        <div className="flex flex-col items-end text-right">
-          <div className="font-medium text-sm text-gray-900 leading-tight">
-            {displayName}
-          </div>
-          <div className="text-xs text-gray-500 leading-tight">
+        <div className="hidden text-right sm:flex sm:flex-col">
+          <span className="text-sm font-medium leading-tight text-gray-900">{displayName}</span>
+          <span className="max-w-[160px] truncate text-xs leading-tight text-gray-500">
             {userEmail}
-          </div>
+          </span>
         </div>
-        
-        {/* Avatar - Right */}
-        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700 flex-shrink-0">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
           {getInitials(displayName)}
         </div>
       </button>
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
           <div
             ref={menuRef}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden"
-            style={{
-              animation: 'dropdownAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
+            role="menu"
+            className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
           >
-            {/* Profile Card */}
-            <div className="bg-white p-4 border-b border-gray-100">
+            <div className="border-b border-gray-100 px-4 py-4">
               <div className="flex items-center gap-3">
-                {/* Avatar */}
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
-                    {getInitials(displayName)}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
-                    <Check className="w-2.5 h-2.5 text-white" />
-                  </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white">
+                  {getInitials(displayName)}
                 </div>
-                
-                {/* Name and Email */}
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 truncate">{displayName}</div>
-                  <div className="text-sm text-gray-500 truncate">{userEmail}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-gray-900">{displayName}</div>
+                  <div className="truncate text-sm text-gray-500">{userEmail}</div>
                 </div>
-                
-                {/* PRO Badge */}
-                <button className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm hover:shadow-md transition-shadow">
-                  <Zap className="w-3 h-3" />
-                  PRO
-                </button>
               </div>
             </div>
 
-            {/* Navigation Items */}
-            <div className="bg-white py-2">
-              {/* First Group */}
-              <button 
-                onClick={() => { navigate('/'); setOpen(false); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group"
-              >
-                <Home className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('nav.home')}</span>
-              </button>
-              
-              <button 
-                onClick={() => { navigate('/notes'); setOpen(false); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group"
-              >
-                <FileText className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('nav.notes') || 'Pages'}</span>
-              </button>
-              
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-left bg-gray-50 hover:bg-gray-100 transition-colors group">
-                <Video className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium text-gray-900">{t('user.activeStream') || 'Active stream'}</span>
-              </button>
-              
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group">
-                <Users className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('user.people') || 'People'}</span>
-              </button>
-
-              {/* Separator */}
-              <div className="h-px bg-gray-100 my-2" />
-
-              {/* Settings Group */}
-              <button onClick={() => { setOpen(false); navigate('/settings') }} className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group">
-                <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('user.settings') || 'Settings'}</span>
-              </button>
-              
-              <button 
-                onClick={toggleLanguage}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <Languages className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">{t('user.changeLanguage') || 'Language'}</span>
-                </div>
-                <span className="text-xs text-gray-500 uppercase">{i18n?.language || 'EN'}</span>
-              </button>
-              
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group">
-                <User className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('user.profilePreferences') || 'My profile & preferences'}</span>
-              </button>
-              
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors group">
-                <HelpCircle className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('user.helpCenter') || 'Help center'}</span>
-              </button>
+            <div className="py-1.5">
+              {primaryNav.map((item) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => (item.to ? go(item.to) : item.onClick?.())}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-50"
+                  >
+                    <Icon className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-800">{item.label}</span>
+                  </button>
+                )
+              })}
             </div>
 
-            {/* Footer */}
-            <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-              <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                {t('user.feedback') || 'Feedback'}
-              </button>
+            <div className="border-t border-gray-100 py-1.5">
+              {secondaryNav.map((item) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => (item.to ? go(item.to) : item.onClick?.())}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-50"
+                  >
+                    <Icon className="h-4 w-4 text-gray-500" />
+                    <span className="flex-1 text-sm font-medium text-gray-800">{item.label}</span>
+                    {item.trailing}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="border-t border-gray-100 p-3">
               <button
-                onClick={handleSignOut}
-                className="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                type="button"
+                role="menuitem"
+                onClick={() => void handleSignOut()}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5',
+                  'text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50',
+                )}
               >
+                <LogOut className="h-4 w-4" />
                 {t('nav.logout')}
               </button>
             </div>

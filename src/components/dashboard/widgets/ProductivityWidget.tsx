@@ -6,6 +6,7 @@ import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { startOfWeek, endOfWeek, format, eachDayOfInterval } from 'date-fns';
+import { toCivilDate } from '@/lib/dateUtils';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface DayData {
@@ -44,8 +45,8 @@ const ProductivityWidget = ({ selectedWeek = new Date() }: ProductivityWidgetPro
         .from('tasks_items')
         .select('date, status, project_id')
         .eq('user_id', userId)
-        .gte('date', startDate.toISOString().split('T')[0])
-        .lte('date', endDate.toISOString().split('T')[0]);
+        .gte('date', toCivilDate(startDate))
+        .lte('date', toCivilDate(endDate));
 
       if (error) {
         logger.error('Error loading productivity data:', error);

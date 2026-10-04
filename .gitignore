@@ -51,6 +51,9 @@ temp/
 # Local Netlify folder
 .netlify
 
+# Supabase CLI cache
+supabase/.temp/
+
 # Playwright e2e artifacts
 test-results/
 playwright-report/

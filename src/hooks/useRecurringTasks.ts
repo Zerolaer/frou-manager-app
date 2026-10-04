@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { RecurringTask, RecurringTaskSettings } from '@/types/recurring'
 import { generateTaskInstances, calculateNextOccurrence } from '@/utils/recurringUtils'
 import { logger } from '@/lib/monitoring'
+import { toCivilDate } from '@/lib/dateUtils'
 
 export function useRecurringTasks(userId: string) {
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([])
@@ -75,7 +76,7 @@ export function useRecurringTasks(userId: string) {
       recurrence_month_of_year: settings.recurrenceMonthOfYear,
       start_date: taskData.startDate,
       end_date: settings.endDate,
-      next_occurrence: nextOccurrence.toISOString().split('T')[0],
+      next_occurrence: toCivilDate(nextOccurrence),
       is_active: true
     }
 

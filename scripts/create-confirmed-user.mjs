@@ -3,9 +3,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase данные
-const supabaseUrl = 'https://anugfsevzdpsehfzflji.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFudWdmc2V2emRwc2VoZnpmbGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3OTM4NDEsImV4cCI6MjA3MTM2OTg0MX0.1-UpIU59Xp8T93Gcp5TpIOXJVSm2ANdTvEm69uD1ciw'
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 
+if (!supabaseUrl || !supabaseKey) throw new Error('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 console.log('🔄 Создание подтвержденного демо-пользователя...')
@@ -18,7 +19,7 @@ async function createConfirmedUser() {
     // Пытаемся войти и удалить
     const { data: signInData } = await supabase.auth.signInWithPassword({
       email: 'demo@frovo.com',
-      password: 'demo123456'
+      password: process.env.DEMO_PASSWORD,
     })
     
     if (signInData?.user) {
@@ -32,7 +33,7 @@ async function createConfirmedUser() {
     
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: newEmail,
-      password: 'demo123456',
+      password: process.env.DEMO_PASSWORD,
       options: {
         data: {
           name: 'Demo User'
@@ -52,7 +53,7 @@ async function createConfirmedUser() {
     
     const { data: testSignIn, error: testError } = await supabase.auth.signInWithPassword({
       email: newEmail,
-      password: 'demo123456'
+      password: process.env.DEMO_PASSWORD,
     })
     
     if (testError) {

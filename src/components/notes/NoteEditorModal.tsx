@@ -120,7 +120,7 @@ export default function NoteEditorModal({ open, note, onClose, onSave, onAutoSav
     // чтобы убедиться что DOM элемент уже существует
     setTimeout(() => {
       if (textareaRef.current) {
-        textareaRef.current.innerHTML = noteContent;
+        textareaRef.current.innerHTML = sanitizeRichTextHtml(noteContent);
         console.log('✅ Content set to contenteditable:', { 
           refExists: !!textareaRef.current,
           innerHTML: textareaRef.current.innerHTML.substring(0, 100)

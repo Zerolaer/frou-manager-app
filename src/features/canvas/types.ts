@@ -3,6 +3,9 @@ export type PortSide = 'n' | 'e' | 's' | 'w'
 /** Обводка и шапка карточки; по умолчанию нейтральная «бумага» */
 export type CanvasCardAccent = 'default' | 'red' | 'blue' | 'green'
 
+/** card = note card, sticky = sticky note, shape = rectangle frame, text = free text */
+export type CanvasNodeKind = 'card' | 'sticky' | 'shape' | 'text'
+
 export type CanvasNode = {
   id: string
   title: string
@@ -12,6 +15,7 @@ export type CanvasNode = {
   h: number
   text: string
   accent?: CanvasCardAccent
+  kind?: CanvasNodeKind
 }
 
 export type CanvasEdge = {
@@ -56,6 +60,39 @@ export function isCanvasCardAccent(v: unknown): v is CanvasCardAccent {
   return v === 'default' || v === 'red' || v === 'blue' || v === 'green'
 }
 
+export function isCanvasNodeKind(v: unknown): v is CanvasNodeKind {
+  return v === 'card' || v === 'sticky' || v === 'shape' || v === 'text'
+}
+
+export function nodeKindOf(n: Pick<CanvasNode, 'kind'> | CanvasNodeKind | undefined): CanvasNodeKind {
+  if (typeof n === 'string') return isCanvasNodeKind(n) ? n : 'card'
+  return isCanvasNodeKind(n?.kind) ? n.kind : 'card'
+}
+
+export function defaultNodeSize(kind: CanvasNodeKind): { w: number; h: number } {
+  switch (kind) {
+    case 'sticky':
+      return { w: 180, h: 180 }
+    case 'shape':
+      return { w: 220, h: 160 }
+    case 'text':
+      return { w: 220, h: 64 }
+    default:
+      return { w: DEFAULT_W, h: DEFAULT_H }
+  }
+}
+
+export function minNodeSize(kind: CanvasNodeKind): { w: number; h: number } {
+  switch (kind) {
+    case 'text':
+      return { w: 120, h: 40 }
+    case 'sticky':
+      return { w: 140, h: 120 }
+    default:
+      return { w: 160, h: 80 }
+  }
+}
+
 function normalizeAccent(raw: unknown): CanvasCardAccent | undefined {
   if (raw === undefined || raw === null) return undefined
   return isCanvasCardAccent(raw) ? raw : undefined
@@ -81,14 +118,18 @@ export function normalizeBoardState(raw: unknown): CanvasBoardState {
     nodes: p.nodes.map((n) => {
       const entry = n as Record<string, unknown>
       const accent = normalizeAccent(entry.accent)
+      const kind = nodeKindOf(entry.kind as CanvasNodeKind | undefined)
+      const min = minNodeSize(kind)
+      const fallback = defaultNodeSize(kind)
       return {
         id: String(entry.id),
         title: typeof entry.title === 'string' ? entry.title : '',
         x: Number(entry.x) || 0,
         y: Number(entry.y) || 0,
-        w: Math.max(160, Number(entry.w) || DEFAULT_W),
-        h: Math.max(80, Number(entry.h) || DEFAULT_H),
+        w: Math.max(min.w, Number(entry.w) || fallback.w),
+        h: Math.max(min.h, Number(entry.h) || fallback.h),
         text: typeof entry.text === 'string' ? entry.text : '',
+        kind,
         ...(accent ? { accent } : {}),
       }
     }),

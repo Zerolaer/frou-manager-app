@@ -627,6 +627,73 @@ body.canvas-mode #app-content-body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.canvas-node.canvas-node--kind-sticky {
+  background: #fef9c3;
+  border-color: #fde68a;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 8%);
+}
+
+.canvas-node.canvas-node--kind-sticky .canvas-node-drag {
+  background: #fef08a;
+  border-bottom-color: #fde047;
+}
+
+.canvas-node.canvas-node--kind-shape {
+  background: rgb(255 255 255 / 0.55);
+  border-style: dashed;
+  border-color: #94a3b8;
+}
+
+.canvas-node.canvas-node--kind-shape .canvas-node-drag {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+
+.canvas-node.canvas-node--kind-text {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  min-height: 40px;
+}
+
+.canvas-node.canvas-node--kind-text .canvas-node-drag--minimal {
+  background: transparent;
+  border-bottom-color: transparent;
+  min-height: 22px;
+  padding: 2px 6px;
+}
+
+.canvas-node.canvas-node--kind-text textarea {
+  min-height: 28px;
+  font-size: 16px;
+  padding: 4px 12px 10px;
+}
+
+.canvas-node.canvas-node--kind-text.is-selected,
+.canvas-node-wrap--text.is-selected .canvas-node {
+  box-shadow: 0 0 0 1.5px rgb(17 24 39 / 35%);
+  border-radius: 6px;
+}
+
+.canvas-node.canvas-node--kind-sticky {
+  min-height: 120px;
+}
+
+.canvas-node.canvas-node--kind-sticky textarea {
+  min-height: 88px;
+}
+
+.canvas-project-rename-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+}
+
 .canvas-node.canvas-node--accent-red {
   border-color: #c08888;
 }

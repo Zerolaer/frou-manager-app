@@ -44,7 +44,8 @@ class Logger {
   private sessionId = this.generateSessionId()
 
   constructor() {
-    // Capture unhandled errors
+    if (typeof window === 'undefined') return
+
     window.addEventListener('error', (event) => {
       this.error('Unhandled error', {
         message: event.message,
@@ -55,11 +56,9 @@ class Logger {
       })
     })
 
-    // Capture unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
       this.error('Unhandled promise rejection', {
         reason: event.reason,
-        promise: event.promise
       })
     })
   }
@@ -100,27 +99,10 @@ class Logger {
     }
   }
 
-  private async sendToExternalService(logEntry: LogEntry) {
-    try {
-      // Send to your monitoring service (e.g., Sentry, LogRocket, etc.)
-      await fetch('/api/logs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(logEntry)
-      })
-    } catch (error) {
-      // Fallback: store in localStorage
-      try {
-        const stored = localStorage.getItem('pendingLogs') || '[]'
-        const logs = JSON.parse(stored)
-        logs.push(logEntry)
-        localStorage.setItem('pendingLogs', JSON.stringify(logs.slice(-100))) // Keep last 100
-      } catch (storageError) {
-        console.error('Failed to store log:', storageError)
-      }
-    }
+  private async sendToExternalService(_logEntry: LogEntry) {
+    // No log sink is deployed with this app. Do not POST to /api/logs (SPA rewrite)
+    // and do not persist logs in localStorage.
+    return
   }
 
   debug(message: string, context?: any) {
@@ -332,18 +314,8 @@ class ErrorReporter {
     }
   }
 
-  private async sendToExternalService(report: ErrorReport) {
-    try {
-      await fetch('/api/errors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(report)
-      })
-    } catch (error) {
-      logger.error('Failed to send error report', { error, report })
-    }
+  private async sendToExternalService(_report: ErrorReport) {
+    return
   }
 
   getErrors(): ErrorReport[] {
@@ -382,18 +354,8 @@ class UserAnalytics {
     }
   }
 
-  private async sendToExternalService(eventData: any) {
-    try {
-      await fetch('/api/analytics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(eventData)
-      })
-    } catch (error) {
-      logger.warn('Failed to send analytics event', { error, eventData })
-    }
+  private async sendToExternalService(_eventData: unknown) {
+    return
   }
 
   getEvents(): any[] {

@@ -4,6 +4,7 @@ import {
   validateObject,
   sanitizeHtml,
   sanitizeForDisplay,
+  sanitizeRichTextHtml,
   VALIDATION_PATTERNS,
   SANITIZATION_FUNCTIONS,
   VALIDATION_SCHEMAS
@@ -158,6 +159,17 @@ describe('Data Validation', () => {
       expect(output).not.toContain('onclick=');
     });
   });
+
+  describe('sanitizeRichTextHtml', () => {
+    it('strips scripts and javascript URLs', () => {
+      const dirty = '<p>Hi</p><script>alert(1)</script><a href=" javascript:alert(1)">x</a><img src=x onerror=alert(1)>'
+      const clean = sanitizeRichTextHtml(dirty)
+      expect(clean).not.toMatch(/script/i)
+      expect(clean).not.toMatch(/javascript:/i)
+      expect(clean).not.toMatch(/onerror/i)
+      expect(clean).toContain('Hi')
+    })
+  })
 
   describe('VALIDATION_PATTERNS', () => {
     it('should validate email addresses', () => {

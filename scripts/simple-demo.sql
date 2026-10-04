@@ -1,8 +1,8 @@
--- Простой SQL для создания демо-данных
--- Выполните этот SQL в Supabase SQL Editor
+-- RETIRED: this script disabled RLS and must never be run against a live project.
+DO $$ BEGIN
+  RAISE EXCEPTION 'simple-demo.sql is retired because it DISABLES RLS. Use scripts/00-release-setup.sql';
+END $$;
 
--- 1. Отключаем RLS временно
-ALTER TABLE public.projects DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notes_folders DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notes DISABLE ROW LEVEL SECURITY;

@@ -88,6 +88,7 @@ export async function updateCanvasProjectBoard(
   id: string,
   boardState: CanvasBoardState
 ): Promise<void> {
+  const userId = await requireUserId()
   const { error } = await db()
     .from('canvas_projects')
     .update({
@@ -95,6 +96,7 @@ export async function updateCanvasProjectBoard(
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('user_id', userId)
 
   if (error) {
     logger.error('updateCanvasProjectBoard', error)
@@ -106,6 +108,7 @@ export async function updateCanvasProjectName(
   id: string,
   name: string
 ): Promise<void> {
+  const userId = await requireUserId()
   const { error } = await db()
     .from('canvas_projects')
     .update({
@@ -113,6 +116,7 @@ export async function updateCanvasProjectName(
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('user_id', userId)
 
   if (error) {
     logger.error('updateCanvasProjectName', error)
@@ -121,7 +125,8 @@ export async function updateCanvasProjectName(
 }
 
 export async function deleteCanvasProject(id: string): Promise<void> {
-  const { error } = await db().from('canvas_projects').delete().eq('id', id)
+  const userId = await requireUserId()
+  const { error } = await db().from('canvas_projects').delete().eq('id', id).eq('user_id', userId)
   if (error) {
     logger.error('deleteCanvasProject', error)
     throw error

@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom';
 import { Pin, Copy, Trash2 } from 'lucide-react';
 import type { Note } from '@/features/notes/types';
+import { sanitizeRichTextHtml } from '@/lib/dataValidation';
 import { useModalConfirm } from '@/utils/modalConfirm';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 
@@ -28,8 +29,9 @@ const NoteCard = ({ note, folder, onEdit, onTogglePin, onDuplicate, onDelete }: 
   // Strip HTML tags for preview
   const preview = useMemo(() => {
     const content = note.content ?? '';
+    const sanitized = sanitizeRichTextHtml(content);
     const temp = document.createElement('div');
-    temp.innerHTML = content;
+    temp.innerHTML = sanitized;
     const text = temp.textContent || temp.innerText || '';
     return text.slice(0, 100);
   }, [note.content]);

@@ -13,30 +13,42 @@ import {
   Plus,
   Redo2,
   Scan,
+  Sparkles,
+  Square,
+  StickyNote,
+  Type,
   Undo2,
   Ungroup,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
 import { useSafeTranslation } from '@/utils/safeTranslation'
+import { useModalConfirm } from '@/utils/modalConfirm'
+import { sendCanvasAILayout } from '@/features/canvas/ai/client'
+import { compileGeneratedBoard } from '@/features/canvas/ai/compileGeneratedBoard'
+import { CanvasAiPromptModal } from '@/components/canvas/CanvasAiPromptModal'
 import {
+  defaultNodeSize,
   isPortSide,
+  minNodeSize,
+  nodeKindOf,
   type CanvasBoardState,
   type CanvasCardAccent,
   type CanvasEdge,
   type CanvasNode,
+  type CanvasNodeKind,
   type CanvasSection,
   type CanvasViewport,
   type PortSide,
 } from '@/features/canvas/types'
-
-const CARD_ACCENTS: CanvasCardAccent[] = ['default', 'red', 'blue', 'green']
 import {
   cloneBoardSnapshot,
   MAX_BOARD_HISTORY,
   type BoardHistorySnapshot,
 } from '@/features/canvas/history'
 import '@/canvas.css'
+
+const CARD_ACCENTS: CanvasCardAccent[] = ['default', 'red', 'blue', 'green']
 
 /** Порог в px: меньше — считаем тапом, больше — начинаем перетаскивание карточки */
 const CARD_DRAG_THRESHOLD_SQ = 8 * 8
@@ -87,14 +99,22 @@ const CARD_BODY_TEXTAREA_MIN = 72
 /** Верх + низ border у .canvas-node */
 const CARD_NODE_BORDER_Y = 2
 
-function measureCanvasCardHeightPx(textarea: HTMLTextAreaElement): number {
+function measureCanvasCardHeightPx(
+  textarea: HTMLTextAreaElement,
+  kind: CanvasNodeKind = 'card'
+): number {
   const nodeRoot = textarea.closest('.canvas-node')
   const header = nodeRoot?.querySelector<HTMLElement>('[data-card-header]')
+  const minBody =
+    kind === 'text' ? 28 : kind === 'sticky' ? 88 : CARD_BODY_TEXTAREA_MIN
   textarea.style.height = 'auto'
-  const bodyH = Math.max(CARD_BODY_TEXTAREA_MIN, textarea.scrollHeight)
+  const bodyH = Math.max(minBody, textarea.scrollHeight)
   textarea.style.height = `${bodyH}px`
-  const headerH = header?.offsetHeight ?? 36
-  return Math.max(DEFAULT_H, headerH + bodyH + CARD_NODE_BORDER_Y)
+  const headerEl = header as HTMLElement | null | undefined
+  const headerHidden = !headerEl || headerEl.offsetParent === null
+  const headerH = headerHidden ? 0 : headerEl.offsetHeight
+  const minH = minNodeSize(kind).h
+  return Math.max(minH, headerH + bodyH + CARD_NODE_BORDER_Y)
 }
 
 /** Дополнительная зона для hover / захвата вокруг карточки (px с каждой стороны) */
@@ -381,6 +401,10 @@ export function CanvasBoard({
   onPersist,
 }: CanvasBoardProps) {
   const { t } = useSafeTranslation()
+  const { confirm } = useModalConfirm()
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   const [nodes, setNodes] = useState<CanvasNode[]>(initialBoard.nodes)
   const [edges, setEdges] = useState<CanvasEdge[]>(initialBoard.edges)
   const [viewport, setViewport] = useState<Viewport>(initialBoard.viewport)
@@ -582,6 +606,87 @@ export function CanvasBoard({
     onPersist(projectId, { nodes, edges, viewport, sections })
   }, [projectId, nodes, edges, viewport, sections, onPersist])
 
+  const applyGeneratedBoard = useCallback(
+    (board: CanvasBoardState) => {
+      pushHistory()
+      setNodes(board.nodes)
+      setEdges(board.edges)
+      setSections(board.sections ?? [])
+      setSelectedIds([])
+      setSelectedEdgeId(null)
+      setEditingCardId(null)
+      setEditingSectionTitleId(null)
+      setEdgeDraft(null)
+      setDraftPoint(null)
+      setPostDragLeaveWatch(false)
+
+      const el = viewportRef.current
+      if (!el || board.nodes.length === 0) {
+        setViewport(board.viewport)
+        return
+      }
+      const rect = el.getBoundingClientRect()
+      let minX = Infinity
+      let minY = Infinity
+      let maxX = -Infinity
+      let maxY = -Infinity
+      for (const n of board.nodes) {
+        minX = Math.min(minX, n.x)
+        minY = Math.min(minY, n.y)
+        maxX = Math.max(maxX, n.x + n.w)
+        maxY = Math.max(maxY, n.y + n.h)
+      }
+      const pad = 80
+      const bw = maxX - minX + pad * 2
+      const bh = maxY - minY + pad * 2
+      const sx = rect.width / bw
+      const sy = rect.height / bh
+      const scale = Math.min(
+        CANVAS_SCALE_MAX,
+        Math.max(CANVAS_SCALE_MIN, Math.min(sx, sy) * 0.92)
+      )
+      const cx = (minX + maxX) / 2
+      const cy = (minY + maxY) / 2
+      setViewport({
+        scale,
+        tx: rect.width / 2 - cx * scale,
+        ty: rect.height / 2 - cy * scale,
+      })
+    },
+    [pushHistory]
+  )
+
+  const generateAiLayout = useCallback(
+    async (prompt: string) => {
+      if (aiLoading) return
+      if (nodesRef.current.length > 0) {
+        const ok = await confirm(
+          t('canvas.ai.replaceConfirm'),
+          t('canvas.ai.replaceTitle')
+        )
+        if (!ok) return
+      }
+      setAiLoading(true)
+      setAiError(null)
+      try {
+        const res = await sendCanvasAILayout({
+          messages: [{ role: 'user', content: prompt }],
+        })
+        if (res.error || !res.layout) {
+          setAiError(res.error || t('canvas.ai.errorGeneric'))
+          return
+        }
+        applyGeneratedBoard(compileGeneratedBoard(res.layout))
+        setAiOpen(false)
+      } catch (err) {
+        setAiError(err instanceof Error ? err.message : String(err))
+      } finally {
+        setAiLoading(false)
+      }
+    },
+    [aiLoading, applyGeneratedBoard, confirm, t]
+  )
+
   /** Enter в карточке: сразу сохранить и выйти из редактирования + снять выделение */
   const flushSaveAndExitCardEdit = useCallback(
     (nodeId: string) => {
@@ -636,7 +741,7 @@ export function CanvasBoard({
               `[data-card-body="${n.id}"]`
             )
             if (!ta) return n
-            const nextH = measureCanvasCardHeightPx(ta)
+            const nextH = measureCanvasCardHeightPx(ta, nodeKindOf(n))
             if (nextH !== n.h) {
               changed = true
               return { ...n, h: nextH }
@@ -730,26 +835,37 @@ export function CanvasBoard({
     })
   }, [])
 
-  const addCardAt = useCallback((worldX: number, worldY: number) => {
+  const addNodeAt = useCallback((worldX: number, worldY: number, kind: CanvasNodeKind = 'card') => {
     pushHistory()
     const id = newId()
+    const size = defaultNodeSize(kind)
+    const stickyTitle = t('canvas.stickyDefaultTitle')
     const card: CanvasNode = {
       id,
-      title: '',
-      x: worldX - DEFAULT_W / 2,
-      y: worldY - DEFAULT_H / 2,
-      w: DEFAULT_W,
-      h: DEFAULT_H,
+      title: kind === 'sticky' && stickyTitle !== 'canvas.stickyDefaultTitle' ? stickyTitle : '',
+      x: worldX - size.w / 2,
+      y: worldY - size.h / 2,
+      w: size.w,
+      h: size.h,
       text: '',
+      kind,
     }
     setNodes((prev) => [...prev, card])
     setSelectedEdgeId(null)
     setSelectedIds([id])
     setEditingCardId(id)
-    focusNewCardTitle(id)
-  }, [pushHistory, focusNewCardTitle])
+    if (kind === 'card') {
+      focusNewCardTitle(id)
+    } else {
+      window.requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLTextAreaElement>(`[data-card-body="${id}"]`)
+          ?.focus()
+      })
+    }
+  }, [pushHistory, focusNewCardTitle, t])
 
-  const addCardCenterVisible = useCallback(() => {
+  const addNodeCenterVisible = useCallback((kind: CanvasNodeKind = 'card') => {
     const el = viewportRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
@@ -762,8 +878,12 @@ export function CanvasBoard({
     )
     const wx = (cx - tx) / viewport.scale
     const wy = (cy - ty) / viewport.scale
-    addCardAt(wx, wy)
-  }, [addCardAt, viewport])
+    addNodeAt(wx, wy, kind)
+  }, [addNodeAt, viewport])
+
+  const addCardCenterVisible = useCallback(() => {
+    addNodeCenterVisible('card')
+  }, [addNodeCenterVisible])
 
   const tryCommitEdge = useCallback(
     (toId: string, toSide: PortSide, fromSideOverride?: PortSide) => {
@@ -936,6 +1056,7 @@ export function CanvasBoard({
             w: DEFAULT_W,
             h: DEFAULT_H,
             text: '',
+            kind: 'card',
           }
           const edgeId = newId()
           setNodes((prev) => [...prev, node])
@@ -1312,6 +1433,7 @@ export function CanvasBoard({
                 y: node.y,
                 w: node.w,
                 h: node.h,
+                kind: nodeKindOf(node),
                 ...(node.accent ? { accent: node.accent } : {}),
               }
               setNodes((prev) => [...prev, clone])
@@ -1962,12 +2084,13 @@ export function CanvasBoard({
 
           {nodes.map((node) => {
             const accent = node.accent ?? 'default'
+            const kind = nodeKindOf(node)
             const showPorts = showPortsFor(node.id)
             return (
               <div
                 key={node.id}
                 data-canvas-node-id={node.id}
-                className={`canvas-node-wrap ${hoveredId === node.id ? 'is-hover' : ''} ${selectedIds.includes(node.id) ? 'is-selected' : ''} ${showPorts ? 'show-ports' : ''}`}
+                className={`canvas-node-wrap canvas-node-wrap--${kind} ${hoveredId === node.id ? 'is-hover' : ''} ${selectedIds.includes(node.id) ? 'is-selected' : ''} ${showPorts ? 'show-ports' : ''}`}
                 style={{
                   left: node.x - CARD_HOVER_PADDING,
                   top: node.y - CARD_HOVER_PADDING,
@@ -2073,7 +2196,7 @@ export function CanvasBoard({
                   }}
                 >
                 <div
-                  className={`canvas-node canvas-node--accent-${accent} ${selectedIds.includes(node.id) ? 'is-selected' : ''}`}
+                  className={`canvas-node canvas-node--kind-${kind} canvas-node--accent-${accent} ${selectedIds.includes(node.id) ? 'is-selected' : ''}`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -2081,8 +2204,8 @@ export function CanvasBoard({
                   }}
                 >
                   <div
-                    className="canvas-node-drag"
-                    data-card-title-zone=""
+                    className={`canvas-node-drag ${kind === 'text' ? 'canvas-node-drag--minimal' : ''}`}
+                    data-card-title-zone={kind === 'text' ? undefined : ''}
                     data-card-header=""
                   >
                     <button
@@ -2093,13 +2216,14 @@ export function CanvasBoard({
                     >
                       <GripHorizontal className="w-4 h-4 pointer-events-none" aria-hidden />
                     </button>
+                    {kind !== 'text' && (
                     <input
                       type="text"
                       data-card-title={node.id}
                       readOnly={editingCardId !== node.id}
                       className={`canvas-node-title ${editingCardId !== node.id ? 'canvas-node-title-inactive' : ''}`}
                       value={node.title}
-                      placeholder={t('canvas.card')}
+                      placeholder={kind === 'sticky' ? t('canvas.stickyDefaultTitle') : t('canvas.card')}
                       maxLength={120}
                       onChange={(e) => {
                         const title = e.target.value
@@ -2114,7 +2238,7 @@ export function CanvasBoard({
                               `[data-card-body="${node.id}"]`
                             )
                           if (!ta) return
-                          const nextH = measureCanvasCardHeightPx(ta)
+                          const nextH = measureCanvasCardHeightPx(ta, kind)
                           setNodes((prev) =>
                             prev.map((n) =>
                               n.id === node.id && n.h !== nextH
@@ -2146,6 +2270,7 @@ export function CanvasBoard({
                       }}
                       spellCheck={false}
                     />
+                    )}
                   </div>
                   <textarea
                     data-card-body={node.id}
@@ -2159,7 +2284,7 @@ export function CanvasBoard({
                     onChange={(e) => {
                       const text = e.target.value
                       const ta = e.currentTarget
-                      const nextH = measureCanvasCardHeightPx(ta)
+                      const nextH = measureCanvasCardHeightPx(ta, kind)
                       setNodes((prev) =>
                         prev.map((n) =>
                           n.id === node.id
@@ -2167,6 +2292,18 @@ export function CanvasBoard({
                             : n
                         )
                       )
+                    }}
+                    onPointerDown={
+                      editingCardId === node.id
+                        ? (e) => e.stopPropagation()
+                        : undefined
+                    }
+                    onKeyDown={(e) => {
+                      if (editingCardId !== node.id) return
+                      if (e.key === 'Escape') {
+                        e.preventDefault()
+                        flushSaveAndExitCardEdit(node.id)
+                      }
                     }}
                   />
                 </div>
@@ -2507,9 +2644,49 @@ export function CanvasBoard({
           type="button"
           onClick={addCardCenterVisible}
           className="canvas-floating-bar-btn canvas-floating-bar-btn--primary"
+          title={t('canvas.addCard')}
         >
           <Plus className="w-4 h-4" aria-hidden />
           {t('canvas.addCard')}
+        </button>
+        <button
+          type="button"
+          onClick={() => addNodeCenterVisible('sticky')}
+          className="canvas-floating-bar-btn canvas-floating-bar-btn--secondary"
+          title={t('canvas.addSticky')}
+        >
+          <StickyNote className="w-4 h-4" aria-hidden />
+          {t('canvas.addSticky')}
+        </button>
+        <button
+          type="button"
+          onClick={() => addNodeCenterVisible('text')}
+          className="canvas-floating-bar-btn canvas-floating-bar-btn--secondary"
+          title={t('canvas.addText')}
+        >
+          <Type className="w-4 h-4" aria-hidden />
+          {t('canvas.addText')}
+        </button>
+        <button
+          type="button"
+          onClick={() => addNodeCenterVisible('shape')}
+          className="canvas-floating-bar-btn canvas-floating-bar-btn--secondary"
+          title={t('canvas.addShape')}
+        >
+          <Square className="w-4 h-4" aria-hidden />
+          {t('canvas.addShape')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAiError(null)
+            setAiOpen(true)
+          }}
+          className="canvas-floating-bar-btn canvas-floating-bar-btn--secondary"
+          title={t('canvas.ai.button')}
+        >
+          <Sparkles className="w-4 h-4" aria-hidden />
+          {t('canvas.ai.button')}
         </button>
         <button
           type="button"
@@ -2522,6 +2699,19 @@ export function CanvasBoard({
           {t('canvas.frameSelection')}
         </button>
       </div>
+
+      <CanvasAiPromptModal
+        open={aiOpen}
+        loading={aiLoading}
+        error={aiError}
+        onClose={() => {
+          if (aiLoading) return
+          setAiOpen(false)
+        }}
+        onGenerate={(prompt) => {
+          void generateAiLayout(prompt)
+        }}
+      />
     </div>
   )
 }

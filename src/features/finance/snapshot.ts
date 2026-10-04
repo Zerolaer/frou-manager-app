@@ -1,3 +1,4 @@
+import { toCivilDate } from '@/lib/dateUtils'
 import { supabase } from '@/lib/supabaseClient'
 import { FINANCE_TYPES, MONTHS_IN_YEAR } from '@/lib/constants'
 import { convertToEUR, initializeExchangeRates } from '@/utils/currency'
@@ -63,7 +64,7 @@ function buildTemporalContext(
   const bestExpenseIdx = expenseByMonth.indexOf(Math.max(...expenseByMonth, 0))
 
   return {
-    today_iso: now.toISOString().slice(0, 10),
+    today_iso: toCivilDate(now),
     calendar_year: now.getFullYear(),
     calendar_month_number: calendarMonthIndex + 1,
     calendar_month_index: calendarMonthIndex,

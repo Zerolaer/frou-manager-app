@@ -6,6 +6,7 @@ import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import WidgetHeader from './WidgetHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { toCivilDate } from '@/lib/dateUtils';
 
 interface PriorityData {
   high: number;
@@ -51,7 +52,7 @@ const PrioritiesWidget = () => {
       
       // Correct date calculation for month
       const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-      const monthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]; // Last day of month
+      const monthEnd = toCivilDate(new Date(currentYear, currentMonth + 1, 0));
 
       // Get tasks for current month
       const { data: tasksData } = await supabase

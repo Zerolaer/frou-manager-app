@@ -63,9 +63,10 @@ export async function createHabit(payload: Partial<Habit>): Promise<Habit> {
 // Обновить привычку
 export async function updateHabit(id: string, changes: Partial<Habit>): Promise<Habit> {
   try {
+    const { user_id: _userId, id: _id, ...safeChanges } = changes as Partial<Habit> & { user_id?: string }
     const { data, error } = await supabase
       .from('habits')
-      .update(changes)
+      .update(safeChanges)
       .eq('id', id)
       .select()
       .single();

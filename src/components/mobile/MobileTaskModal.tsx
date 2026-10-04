@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { logger } from '@/lib/monitoring'
 import { useModalConfirm } from '@/utils/modalConfirm'
 import RecurringTaskBlock from '@/components/RecurringTaskBlock'
+import { toCivilDate } from '@/lib/dateUtils'
 import type { Todo, Project } from '@/types/shared'
 
 type Task = {
@@ -117,7 +118,7 @@ export default function MobileTaskModal({ open, onClose, task, onUpdated, onUpda
         priority: priority || 'normal',
         tag: tag.trim() || '',
         scheduled_time: isValidScheduledTime(scheduledTime) ? scheduledTime : null,
-        date: date || new Date().toISOString().split('T')[0],
+        date: date || toCivilDate(),
         todos,
         status,
         project_id: projectId || null,

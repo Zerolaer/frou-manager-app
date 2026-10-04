@@ -21,24 +21,26 @@ export function useModalConfirm() {
     // Используем временный модал вместо системного alert
     const tempAlert = (message: string, title?: string): Promise<void> => {
       return new Promise((resolve) => {
-        // Создаем временный модал элемент
         const modal = document.createElement('div')
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'
-        modal.innerHTML = `
-          <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 class="text-lg font-semibold mb-4">${title || 'Уведомление'}</h3>
-            <p class="text-gray-700 mb-6">${message}</p>
-            <button class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
-              OK
-            </button>
-          </div>
-        `
-        const button = modal.querySelector('button')
+        const box = document.createElement('div')
+        box.className = 'bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl'
+        const heading = document.createElement('h3')
+        heading.className = 'text-lg font-semibold mb-4'
+        heading.textContent = title || 'Уведомление'
+        const body = document.createElement('p')
+        body.className = 'text-gray-700 mb-6'
+        body.textContent = message
+        const button = document.createElement('button')
+        button.className = 'w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600'
+        button.textContent = 'OK'
+        box.append(heading, body, button)
+        modal.appendChild(box)
         const close = () => {
           document.body.removeChild(modal)
           resolve()
         }
-        button?.addEventListener('click', close)
+        button.addEventListener('click', close)
         modal.addEventListener('click', (e) => {
           if (e.target === modal) close()
         })

@@ -1,4 +1,5 @@
 // Курсы валют к EUR (базовые значения, будут обновляться через API)
+import { toCivilDate } from '@/lib/dateUtils'
 import { logger } from '@/lib/monitoring'
 
 const EXCHANGE_RATES = {
@@ -13,7 +14,7 @@ let lastFetchDate: string | null = null
 
 // Получение курсов валют с API
 export async function fetchExchangeRates(): Promise<typeof EXCHANGE_RATES> {
-  const today = new Date().toISOString().split('T')[0]
+  const today = toCivilDate()
   
   // Проверяем кэш
   if (cachedRates && lastFetchDate === today) {
@@ -75,7 +76,8 @@ export function convertToEUR(amount: number, fromCurrency: keyof typeof EXCHANGE
     return amount
   }
   
-  const rate = cachedRates?.[fromCurrency] || EXCHANGE_RATES[fromCurrency]
+  const rate = cachedRates?.[fromCurrency]
+  if (!rate) return amount
   return amount * rate
 }
 
@@ -85,7 +87,8 @@ export function convertFromEUR(amount: number, toCurrency: keyof typeof EXCHANGE
     return amount
   }
   
-  const rate = cachedRates?.[toCurrency] || EXCHANGE_RATES[toCurrency]
+  const rate = cachedRates?.[toCurrency]
+  if (!rate) return amount
   return amount / rate
 }
 

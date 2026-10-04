@@ -6,6 +6,7 @@ import { useSafeTranslation } from '@/utils/safeTranslation';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import WidgetHeader from './WidgetHeader';
 import { startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { toCivilDate } from '@/lib/dateUtils';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
   filterVisibleTaskProjects,
@@ -64,10 +65,10 @@ const TasksStatsWidget = ({ type, selectedWeek = new Date() }: TasksStatsWidgetP
       const previousWeekStart = startOfWeek(subWeeks(selectedWeek, 1), { weekStartsOn: 1 });
       const previousWeekEnd = endOfWeek(subWeeks(selectedWeek, 1), { weekStartsOn: 1 });
 
-      const currentWeekStart = selectedWeekStart.toISOString().split('T')[0];
-      const currentWeekEnd = selectedWeekEnd.toISOString().split('T')[0];
-      const previousWeekStartStr = previousWeekStart.toISOString().split('T')[0];
-      const previousWeekEndStr = previousWeekEnd.toISOString().split('T')[0];
+      const currentWeekStart = toCivilDate(selectedWeekStart);
+      const currentWeekEnd = toCivilDate(selectedWeekEnd);
+      const previousWeekStartStr = toCivilDate(previousWeekStart);
+      const previousWeekEndStr = toCivilDate(previousWeekEnd);
 
       const selectFields = 'id, status, project_id, date';
 

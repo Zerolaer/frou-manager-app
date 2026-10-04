@@ -68,8 +68,14 @@ export function isDateInRange(date: Date, start: Date, end: Date): boolean {
   return date >= start && date <= end
 }
 
+export function toCivilDate(date: Date | string | number = new Date()): string {
+  const dateObj = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date
+  if (!isValidDate(dateObj)) return ''
+  return format(dateObj, 'yyyy-MM-dd')
+}
+
 export function isSameDay(date1: Date, date2: Date): boolean {
-  return format(date1, 'yyyy-MM-dd') === format(date2, 'yyyy-MM-dd')
+  return toCivilDate(date1) === toCivilDate(date2)
 }
 
 // Business date utilities

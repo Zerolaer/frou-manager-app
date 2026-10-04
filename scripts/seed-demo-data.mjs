@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
+import { requireDemoPassword, requireDemoEmail } from './_requireDemoPassword.mjs'
 
-// Supabase configuration - замените на ваши данные
-const supabaseUrl = 'https://your-project.supabase.co'
-const supabaseKey = 'your-anon-key'
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Demo user credentials
 const DEMO_USER = {
-  email: 'demo@frovo.com',
-  password: 'demo123456',
+  email: requireDemoEmail(),
+  password: requireDemoPassword(),
   name: 'Demo User'
 }
 

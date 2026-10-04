@@ -1,5 +1,5 @@
 /* src/pages/Notes.tsx */
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSafeTranslation } from '@/utils/safeTranslation';
 import NoteCard from '@/components/notes/NoteCard';
 import NoteEditorModal from '@/components/notes/NoteEditorModal';
@@ -8,8 +8,7 @@ import NotesFilterModal, { type NotesFilters } from '@/components/NotesFilterMod
 import type { Note } from '@/features/notes/types';
 import { createNote, deleteNote, listNotes, togglePin, updateNote } from '@/features/notes/api';
 import { VirtualizedGrid } from '@/components/VirtualizedList';
-import { PageErrorBoundary, FeatureErrorBoundary } from '@/components/ErrorBoundaries';
-import { useApiWithRetry } from '@/hooks/useRetry';
+import { PageErrorBoundary } from '@/components/ErrorBoundaries';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { downloadNotes } from '@/lib/notesExport';
 import { logger } from '@/lib/monitoring';
@@ -25,7 +24,6 @@ type Folder = {
 
 function NotesPageContent() {
   const { t } = useSafeTranslation();
-  const { executeApiCall, isLoading: isRetrying, retryCount } = useApiWithRetry();
   const { userId } = useSupabaseAuth();
   const { confirm } = useModalConfirm();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -33,6 +31,7 @@ function NotesPageContent() {
   const [activeFolder, setActiveFolder] = useState<string | null>('ALL');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const loadGeneration = useRef(0);
   const [foldersCollapsed, setFoldersCollapsed] = useState(() => {
     const saved = localStorage.getItem('frovo_folders_collapsed')
     return saved === 'true'
@@ -44,25 +43,30 @@ function NotesPageContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
 
-  async function reload(signal?: AbortSignal) {
+  const reload = useCallback(async () => {
+    if (!userId) return;
+    const generation = ++loadGeneration.current;
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      const data = await executeApiCall(() => listNotes('', 'updated_at', activeFolder));
-      if (signal?.aborted) return;
-      if (data) {
-        setNotes(data);
-        setIsLoading(false);
-        setError(null);
-      }
+      const data = await listNotes('', 'updated_at', activeFolder ?? 'ALL');
+      if (generation !== loadGeneration.current) return;
+      setNotes(data ?? []);
     } catch (err) {
-      if (!signal?.aborted) {
-        const error = err instanceof Error ? err : new Error(t('errors.unknownError'));
-        setError(error);
-        setIsLoading(false);
-        logger.error('Error loading notes:', err);
-      }
+      if (generation !== loadGeneration.current) return;
+      const message =
+        err instanceof Error
+          ? err.message
+          : err && typeof err === 'object' && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : String(err);
+      const nextError = new Error(message || t('notes.loadError'));
+      setError(nextError);
+      logger.error('Error loading notes:', err);
+    } finally {
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
-  }
+  }, [userId, activeFolder, t]);
 
   // Load folders
   useEffect(() => {
@@ -93,10 +97,8 @@ function NotesPageContent() {
   }, [userId]);
 
   useEffect(() => {
-    const ctl = new AbortController();
-    reload(ctl.signal);
-    return () => ctl.abort();
-  }, [activeFolder]);
+    void reload();
+  }, [reload]);
 
   // Create folder map for quick lookup
   const folderMap = useMemo(() => {
@@ -288,8 +290,13 @@ function NotesPageContent() {
       
       {/* Правая область: заметки */}
       <div className="notes-content">
-        {isLoading ? null : error ? (
-          <div className="p-4 text-red-600">{t('notes.loadError')}</div>
+        {isLoading ? (
+          <div className="p-4 text-gray-500">{t('notes.loading')}</div>
+        ) : error ? (
+          <div className="p-4 text-red-600">
+            {t('notes.loadError')}
+            {error.message ? <div className="mt-1 text-sm opacity-80">{error.message}</div> : null}
+          </div>
         ) : notes.length === 0 ? (
           <div className="p-4 text-gray-500">{t('notes.emptyStateDescription')}</div>
         ) : notes.length > 50 ? (

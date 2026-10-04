@@ -32,7 +32,7 @@ export class PageErrorBoundary extends Component<PageErrorBoundaryProps, PageErr
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const { pageName, onError, maxRetries = 3 } = this.props
+    const { pageName, onError, maxRetries = 0 } = this.props
     const { retryCount } = this.state
 
     // Log error
@@ -293,6 +293,7 @@ export const AppErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }
   return (
     <PageErrorBoundary
       pageName="Приложение"
+      maxRetries={0}
       onError={(error, errorInfo) => {
         logger.error('App error:', { error, errorInfo })
       }}

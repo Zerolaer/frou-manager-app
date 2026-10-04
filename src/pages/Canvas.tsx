@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, FolderKanban, FolderOpen, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, FolderKanban, FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useModalConfirm } from '@/utils/modalConfirm'
 import { PageErrorBoundary } from '@/components/ErrorBoundaries'
 import { CanvasBoard } from '@/components/canvas/CanvasBoard'
 import { useSafeTranslation } from '@/utils/safeTranslation'
@@ -29,7 +30,8 @@ function CanvasProjectsShell() {
   const { t } = useSafeTranslation()
   const navigate = useNavigate()
   const { projectId } = useParams<{ projectId: string }>()
-  const { userId } = useSupabaseAuth()
+  const { userId, loading: authLoading } = useSupabaseAuth()
+  const { confirm } = useModalConfirm()
 
   const [summaries, setSummaries] = useState<CanvasProjectSummary[]>([])
   const [activeProject, setActiveProject] = useState<CanvasProjectRow | null>(
@@ -39,6 +41,11 @@ function CanvasProjectsShell() {
   const [loadingProject, setLoadingProject] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [projectsPanelOpen, setProjectsPanelOpen] = useState(readProjectsPanelOpen)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
+  const skipRenameCommitRef = useRef(false)
+  const renamingIdRef = useRef<string | null>(null)
   const latestBoardRef = useRef<Map<string, CanvasBoardState>>(new Map())
   const persistQueueRef = useRef<
     Map<
@@ -186,6 +193,11 @@ function CanvasProjectsShell() {
   )
 
   const handleDeleteProject = async (id: string) => {
+    const ok = await confirm(
+      t('canvas.deleteProjectConfirm') || 'Delete this project? This cannot be undone.',
+      t('canvas.deleteProject')
+    )
+    if (!ok) return
     try {
       await canvasApi.deleteCanvasProject(id)
       const next = summaries.filter((p) => p.id !== id)
@@ -198,6 +210,46 @@ function CanvasProjectsShell() {
     } catch (e) {
       logger.error('delete canvas project', e)
     }
+  }
+
+  const startRename = (id: string, currentName: string) => {
+    skipRenameCommitRef.current = false
+    renamingIdRef.current = id
+    setRenamingId(id)
+    setRenameValue(currentName)
+    window.requestAnimationFrame(() => renameInputRef.current?.focus())
+  }
+
+  const commitRename = async () => {
+    if (skipRenameCommitRef.current) {
+      skipRenameCommitRef.current = false
+      renamingIdRef.current = null
+      setRenamingId(null)
+      return
+    }
+    const id = renamingIdRef.current
+    if (!id) return
+    const name = renameValue.trim() || t('canvas.newProjectName')
+    renamingIdRef.current = null
+    setRenamingId(null)
+    try {
+      await canvasApi.updateCanvasProjectName(id, name)
+      setSummaries((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, name } : p))
+      )
+      setActiveProject((prev) =>
+        prev?.id === id ? { ...prev, name } : prev
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      logger.error('rename canvas project', e)
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="canvas-project-loading">{t('canvas.loadingBoard')}</div>
+    )
   }
 
   if (!userId) {
@@ -266,12 +318,50 @@ function CanvasProjectsShell() {
                 key={p.id}
                 className={`canvas-project-row ${projectId === p.id ? 'is-active' : ''}`}
               >
+                {renamingId === p.id ? (
+                  <input
+                    ref={renameInputRef}
+                    className="canvas-project-rename-input"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => void commitRename()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void commitRename()
+                      }
+                      if (e.key === 'Escape') {
+                        skipRenameCommitRef.current = true
+                        renamingIdRef.current = null
+                        setRenamingId(null)
+                      }
+                    }}
+                    aria-label={t('canvas.projectName')}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="canvas-project-link"
+                    onClick={() => navigate(`/canvas/${p.id}`)}
+                    onDoubleClick={(e) => {
+                      e.preventDefault()
+                      startRename(p.id, p.name)
+                    }}
+                    title={t('canvas.renameHint') || 'Double-click to rename'}
+                  >
+                    <span className="truncate">{p.name}</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="canvas-project-link"
-                  onClick={() => navigate(`/canvas/${p.id}`)}
+                  className="canvas-project-delete"
+                  title={t('canvas.renameProject') || 'Rename'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    startRename(p.id, p.name)
+                  }}
                 >
-                  <span className="truncate">{p.name}</span>
+                  <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
@@ -279,7 +369,7 @@ function CanvasProjectsShell() {
                   title={t('canvas.deleteProject')}
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleDeleteProject(p.id)
+                    void handleDeleteProject(p.id)
                   }}
                 >
                   <Trash2 className="w-4 h-4" />

@@ -7,7 +7,7 @@ import AuthLayout from '@/components/auth/AuthLayout'
 import AuthErrorBanner from '@/components/auth/AuthErrorBanner'
 import { isRecoveryHash, mapAuthError, mapAuthException } from '@/lib/authFlow'
 
-const MIN_PASSWORD_LENGTH = 6
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
 
 export default function ResetPassword() {
   const { t } = useSafeTranslation()

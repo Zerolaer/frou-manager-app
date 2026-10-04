@@ -1,5 +1,5 @@
 // Service Worker for caching static assets
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v4'
 const CACHE_NAME = `frou-manager-${CACHE_VERSION}`
 const STATIC_CACHE = `static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`
@@ -82,9 +82,31 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Navigations must be network-first so XSS/incident patches are not stuck in cache
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(networkFirst(request, DYNAMIC_CACHE))
+    return
+  }
+
   // Everything else - cache first
   event.respondWith(cacheFirstWithRefresh(request, DYNAMIC_CACHE))
 })
+
+async function networkFirst(request, cacheName) {
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      const cache = await caches.open(cacheName)
+      cache.put(request, response.clone())
+    }
+    return response
+  } catch (error) {
+    const cache = await caches.open(cacheName)
+    const cached = await cache.match(request)
+    if (cached) return cached
+    return caches.match('/')
+  }
+}
 
 // Cache strategies
 async function cacheFirstWithRefresh(request, cacheName) {

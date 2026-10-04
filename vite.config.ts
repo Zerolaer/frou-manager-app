@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { handleFinanceAiChat } from './server/financeAiDevHandler'
+import { handleCanvasAiLayout } from './server/canvasAiDevHandler'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -11,8 +12,22 @@ export default defineConfig(({ mode }) => {
     {
       name: 'finance-ai-dev-api',
       configureServer(server) {
+        const register = (middlewares: typeof server.middlewares) => {
+          middlewares.use('/api/finance-ai-chat', (req, res) => {
+            void handleFinanceAiChat(req, res, env)
+          })
+          middlewares.use('/api/canvas-ai-layout', (req, res) => {
+            void handleCanvasAiLayout(req, res, env)
+          })
+        }
+        register(server.middlewares)
+      },
+      configurePreviewServer(server) {
         server.middlewares.use('/api/finance-ai-chat', (req, res) => {
           void handleFinanceAiChat(req, res, env)
+        })
+        server.middlewares.use('/api/canvas-ai-layout', (req, res) => {
+          void handleCanvasAiLayout(req, res, env)
         })
       },
     },
@@ -108,13 +123,13 @@ export default defineConfig(({ mode }) => {
   },
   server: {
     fs: {
-      strict: false
+      strict: true
     },
     headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'X-Content-Type-Options': 'nosniff'
     },
-    // Fix for dynamic imports
-    cors: true,
+    cors: false,
     port: 5173,
     strictPort: false,
   },
@@ -122,10 +137,7 @@ export default defineConfig(({ mode }) => {
   esbuild: {
     jsx: 'automatic',
     jsxImportSource: 'react',
-    // В production-сборке вырезаем console.* и debugger,
-    // чтобы случайный console.log не светил данные пользователей в DevTools.
-    // Сообщения через `logger` остаются — они отправляются на /api/logs.
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
+    drop: mode === 'production' ? ['console', 'debugger'] : []
   }
 }
 })

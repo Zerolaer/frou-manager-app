@@ -22,7 +22,7 @@ export function isMobileViewport(): boolean {
 }
 
 export function isMobileUI(): boolean {
-  return isNativeIOS() || isMobileViewport()
+  return isMobileViewport()
 }
 
 /** OAuth / email link redirect base for Supabase auth. */

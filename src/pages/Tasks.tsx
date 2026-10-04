@@ -580,22 +580,22 @@ export default function Tasks(){
       }
 
       const allItems = dayKey === fromDayKey ? fromList : [...fromList, ...toList]
-      for (const item of allItems) {
-        const { error: posErr, data: posData } = await supabase
-          .from('tasks_items')
-          .update({ position: item.position })
-          .eq('id', item.id)
-          .select('id')
-        if (posErr) {
-          logger.error('handleDrop: failed to update position', posErr)
-          setRefreshTrigger((t) => t + 1)
-          return
-        }
-        if (!posData?.length) {
-          logger.error('handleDrop: position update returned 0 rows', { id: item.id })
-          setRefreshTrigger((t) => t + 1)
-          return
-        }
+      const results = await Promise.all(
+        allItems.map((item) =>
+          supabase
+            .from('tasks_items')
+            .update({
+              position: item.position,
+              date: item.id === movedItem.id ? dayKey : item.date,
+            })
+            .eq('id', item.id)
+            .select('id')
+        )
+      )
+      const failed = results.find((r) => r.error || !r.data?.length)
+      if (failed) {
+        logger.error('handleDrop: failed to update positions', failed.error)
+        setRefreshTrigger((t) => t + 1)
       }
     } catch (error) {
       logger.error('Error updating task positions:', error)
@@ -635,18 +635,19 @@ export default function Tasks(){
 
   // Global mouse event handlers for drag and drop
   React.useEffect(() => {
+    if (!isDragging && !pendingDrag) return
+
     const handleGlobalMouseMove = (e: MouseEvent) => {
       handleMouseMove(e)
     }
-    
+
     const handleGlobalMouseUp = (e: MouseEvent) => {
       handleMouseUp(e)
     }
-    
-    // Always add handlers to track mouse movement
+
     document.addEventListener('mousemove', handleGlobalMouseMove)
     document.addEventListener('mouseup', handleGlobalMouseUp)
-    
+
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove)
       document.removeEventListener('mouseup', handleGlobalMouseUp)
@@ -656,18 +657,7 @@ export default function Tasks(){
   // projects
   const [projects, setProjects] = React.useState<Project[]>([])
   const [activeProject, setActiveProject] = React.useState<string|null>(TASK_PROJECT_ALL)
-  const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('frovo_selected_projects')
-      if (!saved) return []
-      const parsed = JSON.parse(saved)
-      return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
-    } catch {
-      // битый JSON в localStorage не должен ломать рендер всей страницы
-      try { localStorage.removeItem('frovo_selected_projects') } catch { /* noop */ }
-      return []
-    }
-  })
+  const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>([])
   const [projectsCollapsed, setProjectsCollapsed] = React.useState(() => {
     const saved = localStorage.getItem('frovo_projects_collapsed')
     return saved === 'true'
@@ -685,7 +675,8 @@ const projectColorById = React.useMemo(() => {
 
     const readSavedIds = (list: Project[]): string[] => {
       try {
-        const saved = localStorage.getItem('frovo_selected_projects')
+        const scopedKey = `frovo_selected_projects:${uid}`
+        const saved = localStorage.getItem(scopedKey) ?? localStorage.getItem('frovo_selected_projects')
         if (!saved) return list.map((p) => p.id)
         const parsed = JSON.parse(saved)
         if (!Array.isArray(parsed)) return list.map((p) => p.id)
@@ -1443,10 +1434,9 @@ const projectColorById = React.useMemo(() => {
 
   // Save selected projects to localStorage
   React.useEffect(() => {
-    if (selectedProjectIds.length > 0) {
-      localStorage.setItem('frovo_selected_projects', JSON.stringify(selectedProjectIds))
-    }
-  }, [selectedProjectIds])
+    if (!uid || selectedProjectIds.length === 0) return
+    localStorage.setItem(`frovo_selected_projects:${uid}`, JSON.stringify(selectedProjectIds))
+  }, [selectedProjectIds, uid])
 
   // Listen for project filter changes from Header
   React.useEffect(() => {
